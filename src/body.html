@@ -1,0 +1,39 @@
+<body>
+
+<!-- ملف الطالب -->
+<div class="cover" id="profileCover" hidden>
+  <form class="profile" id="profileForm" autocomplete="off">
+    <h1>أَهْلًا وَسَهْلًا فِي هَنْدَسُوبُولِيس!</h1>
+    <label for="pName" style="font-size:20px;font-weight:700">الاسْمُ</label>
+    <input type="text" id="pName" maxlength="24" placeholder="الاسم">
+    <div class="gender" role="group" aria-label="ولد أو بنت"><button type="button" id="gM" aria-pressed="false"></button><button type="button" id="gF" aria-pressed="false"></button></div>
+    <div class="photo-row"><span class="round" id="photoPrev"></span><label class="photo-btn" for="pPhoto">صُورَتِي (اختياري)</label><input type="file" id="pPhoto" accept="image/*" hidden></div>
+    <p id="pMsg" style="color:var(--think);min-height:1.6em;margin:0"></p>
+    <button class="go" type="submit" id="pSave">تَمَّ</button>
+  </form>
+</div>
+
+<!-- خريطة الوحدة -->
+<main class="screen" id="home" hidden>
+  <div class="hello"><button class="round" id="meBtn" aria-label="ملفّي"></button><b id="helloName"></b><button class="round ico" id="galBtn" aria-label="معرضي وصيد الأشكال بالكاميرا"></button><button class="round ico digits" id="digBtn" aria-label="الأرقام: شرقية أو غربية"></button><button class="round ico" id="muteBtn" aria-label="كتم الصوت أو تشغيله"></button></div>
+  <div class="banner"><div id="cityBanner"></div><h1>هَنْدَسُوبُولِيس</h1><p>المرحلة الأولى: البذور</p></div>
+  <nav class="path" id="path" aria-label="دروس الوحدة"></nav>
+</main>
+
+<!-- الدرس -->
+<section class="screen" id="lesson" hidden>
+  <div class="top"><button class="round ico" id="mapBtn" aria-label="خريطة الوحدة"></button><div class="steps" id="steps"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div><button class="round ico" id="muteBtn2" aria-label="كتم الصوت أو تشغيله"></button></div>
+  <div class="talk" id="talk"><div class="who" id="who"></div><div class="bubble" id="bubble"><span id="say" aria-live="polite"></span><button class="replay" id="replay" aria-label="أعد الجملة"></button></div></div>
+  <div class="stage" id="stage"></div>
+  <div class="bar"><button class="help" id="helpBtn" aria-label="هل نفكّر معاً؟" hidden></button><button class="go" id="go" disabled></button></div>
+</section>
+
+<button class="adult-link" id="adultBtn">للكبار</button>
+<div class="panel" id="panel" hidden></div>
+<div class="cover" id="breakCover" hidden></div>
+<div class="cover" id="kidsCover" hidden></div>
+<div class="cover" id="galCover" hidden></div>
+<div class="cityfloor" id="cityfloor" aria-hidden="true"></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+<svg id="gdefs" width="0" height="0" style="position:absolute;width:0;height:0" aria-hidden="true" focusable="false"></svg>
+
