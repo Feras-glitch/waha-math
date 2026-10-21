@@ -284,7 +284,7 @@ ITEM.sentence = {
     const plus = { a: item.a, b: item.b, c: item.a + item.b }, minus = { a: item.a, b: item.b, c: item.a - item.b };
     const box = document.createElement('div'); box.className = 'choices cards sentences'; $('#stage').appendChild(box);
     const opts = shuffle([['+', plus], ['-', minus]]); let answered = false;
-    const btns = opts.map(([op, v]) => { const b = document.createElement('button'); b.className = 'pick card'; b.dataset.k = op; b.innerHTML = `<span class="sent" dir="ltr">${esc(sentenceText(v.a, op, v.b, v.c))}</span>`; b.setAttribute('aria-label', sentenceText(v.a, op, v.b, v.c)); /*T*/if (TESTHOOK) b.dataset.ok = op === item.op;/*/T*/ box.appendChild(b); return b; });
+    const btns = opts.map(([op, v]) => { const b = document.createElement('button'); b.className = 'pick card'; b.dataset.k = op; b.innerHTML = `<bdo class="sent" dir="${NUM_DIR()}">${esc(sentenceText(v.a, op, v.b, v.c))}</bdo>`; b.setAttribute('aria-label', sentenceText(v.a, op, v.b, v.c)); /*T*/if (TESTHOOK) b.dataset.ok = op === item.op;/*/T*/ box.appendChild(b); return b; });
     AUTO({ kind: 'sentence', ok: () => btns.find(b => b.dataset.k === item.op).click(), wrong: () => btns.find(b => b.dataset.k !== item.op).click() });
     const p = gate(new Promise(res => btns.forEach(b => b.onclick = () => { if (answered) return; answered = true; AUTO_CLEAR(); hush(); res(b.dataset.k); })));
     (async () => { for (const [i, b] of btns.entries()) { if (answered) break; b.classList.add('reading'); const [op, v] = opts[i]; await readSentence(v.a, op, v.b, v.c); b.classList.remove('reading'); } })();
@@ -302,7 +302,7 @@ ITEM.eqPair = {
     const colors = Array.from({ length: item.parts[0] + item.parts[1] }, (_, i) => i < item.parts[0] ? CUBE.lemon : CUBE.white); const Rt = towerAt(svg, 270, 240, colors.length, { size: 22, colors });
     const t = el('text', { x: 180, y: 160, 'text-anchor': 'middle', 'font-size': 56, 'font-weight': 800, fill: css('--compass'), 'font-family': css('--f') }, svg); t.textContent = '=';
     el('text', { x: 90, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f') }, svg).textContent = DG(item.n);
-    el('text', { x: 270, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f'), direction: 'ltr', 'unicode-bidi': 'bidi-override' }, svg).textContent = `${DG(item.parts[0])} + ${DG(item.parts[1])}`;
+    el('text', { x: 270, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f'), direction: NUM_DIR(), 'unicode-bidi': 'bidi-override' }, svg).textContent = `${DG(item.parts[0])} + ${DG(item.parts[1])}`;
     if (tries >= 3) { await S('gen.eq.together'); await pairLines(svg, Rt, L, 500); }
     await S('gen.eq.ask'); const k = await choosePick([['yes', labelText('yes'), PICKICON.yes], ['no', labelText('no'), PICKICON.no]], item.want); return { ans: k, ctx: { svg, L, Rt } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'eqMeaning' }; },

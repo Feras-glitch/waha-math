@@ -60,7 +60,7 @@ let gateUntil = 0, gateWait = 0;
 function adultGate(then, onBack) {
   if (Date.now() < gateUntil) return then();
   const a = R(6, 9), b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
-  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq" dir="ltr">${DG(a)} × ${DG(b)} = ؟</p>
+  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="${NUM_DIR()}">${DG(a)} × ${DG(b)} = ؟</bdo></p>
     <form id="gateForm"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit" id="gateGo">متابعة</button></form><p id="gateMsg" class="msg" role="status"></p><button class="pick" id="gateBack">رجوع</button></div>`;
   P.hidden = false; setTimeout(() => { try { $('#gateIn').focus(); } catch (e) {} }, 50);
   $('#gateBack').onclick = () => { P.hidden = true; if (onBack) onBack(); };

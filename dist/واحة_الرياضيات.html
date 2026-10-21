@@ -153,7 +153,7 @@ g[role="button"]:focus-visible { outline: none; filter: drop-shadow(0 0 6px var(
 .choices.cards { grid-template-columns: 1fr; }
 .choices.cards .card { text-align: center; font-size: 20px; min-height: 64px; }
 .choices.cards .card.hidden-text .q { font-size: 30px; font-weight: 800; color: var(--chaos); }
-.choices.cards .sent { font-size: 28px; font-weight: 800; letter-spacing: .04em; unicode-bidi: isolate; }
+.choices.cards .sent { font-size: 28px; font-weight: 800; letter-spacing: .04em; unicode-bidi: isolate-override; }
 .choices.nums { grid-template-columns: repeat(3, 1fr); }
 .choices.nums .num { display: grid; justify-items: center; text-align: center; min-height: 72px; }
 .choices.nums .num b { font-size: 30px; line-height: 1.1; color: var(--compass); }
@@ -1362,12 +1362,13 @@ function towerTapCount(svg, T, opt = {}) {
       if (k === n) { AUTO_CLEAR(); g.remove(); res(n); } };
     g.onclick = act; g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(); }; }));
 }
-/* جملة عددية تُكتب بالكتابة المختارة: «٤ + ٣ = ٧». اتجاهها الآن من اليسار إلى اليمين، وهو **قرار معلّق** (الميثاق 1.61، القسم 8):
-   D229 (6) يحسم طريق الأعداد وشبكة المئة فقط، والكتب المشرقية بالأرقام المشرقية تكتب الجملة من اليمين. التبديل سطر واحد هنا (direction) */
+/* جملة عددية تُكتب بالكتابة المختارة: «٤ + ٣ = ٧». واتجاهها يتبع الكتابة (D251): من اليمين مع الأرقام المشرقية كما في الكتب المشرقية
+   فتُقرأ كما تُنطق، ومن اليسار مع الغربية. والصوت واحد. (طريق الأعداد وشبكة المئة من اليسار دائماً، D229 (6).) */
+const NUM_DIR = () => SET.digits === 'west' ? 'ltr' : 'rtl';
 function sentenceText(a, op, b, c) { return `${DG(a)} ${op === '+' ? '+' : '−'} ${DG(b)} = ${c == null ? '؟' : DG(c)}`; }
 function sentenceAt(parent, x, y, a, op, b, c, opt = {}) { const g = el('g', { transform: `translate(${x} ${y})` }, parent);
   if (opt.box !== false) el('rect', { x: -96, y: -30, width: 192, height: 52, rx: 14, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 3 }, g);
-  const t = el('text', { y: 8, 'text-anchor': 'middle', 'font-size': 34, 'font-weight': 800, fill: opt.box === false ? css('--ink') : CARD_INK, 'font-family': css('--f'), direction: 'ltr', 'unicode-bidi': 'bidi-override' }, g); t.textContent = sentenceText(a, op, b, c); return g; }
+  const t = el('text', { y: 8, 'text-anchor': 'middle', 'font-size': 34, 'font-weight': 800, fill: opt.box === false ? css('--ink') : CARD_INK, 'font-family': css('--f'), direction: NUM_DIR(), 'unicode-bidi': 'bidi-override' }, g); t.textContent = sentenceText(a, op, b, c); return g; }
 /* قراءة الجملة بالكلمات: «أَرْبَعَة» «زَائِد» «ثَلَاثَة» «يُسَاوِي» «سَبْعَة» */
 async function readSentence(a, op, b, c) { await S(numw(a), { noGap: true }); await S(op === '+' ? 'gen.op.plus' : 'gen.op.minus', { noGap: true }); await S(numw2(b), { noGap: true });
   if (c != null) { await S('gen.op.eq', { noGap: true }); await S(numw2(c)); } }
@@ -1922,7 +1923,7 @@ ITEM.sentence = {
     const plus = { a: item.a, b: item.b, c: item.a + item.b }, minus = { a: item.a, b: item.b, c: item.a - item.b };
     const box = document.createElement('div'); box.className = 'choices cards sentences'; $('#stage').appendChild(box);
     const opts = shuffle([['+', plus], ['-', minus]]); let answered = false;
-    const btns = opts.map(([op, v]) => { const b = document.createElement('button'); b.className = 'pick card'; b.dataset.k = op; b.innerHTML = `<span class="sent" dir="ltr">${esc(sentenceText(v.a, op, v.b, v.c))}</span>`; b.setAttribute('aria-label', sentenceText(v.a, op, v.b, v.c));  box.appendChild(b); return b; });
+    const btns = opts.map(([op, v]) => { const b = document.createElement('button'); b.className = 'pick card'; b.dataset.k = op; b.innerHTML = `<bdo class="sent" dir="${NUM_DIR()}">${esc(sentenceText(v.a, op, v.b, v.c))}</bdo>`; b.setAttribute('aria-label', sentenceText(v.a, op, v.b, v.c));  box.appendChild(b); return b; });
     AUTO({ kind: 'sentence', ok: () => btns.find(b => b.dataset.k === item.op).click(), wrong: () => btns.find(b => b.dataset.k !== item.op).click() });
     const p = gate(new Promise(res => btns.forEach(b => b.onclick = () => { if (answered) return; answered = true; AUTO_CLEAR(); hush(); res(b.dataset.k); })));
     (async () => { for (const [i, b] of btns.entries()) { if (answered) break; b.classList.add('reading'); const [op, v] = opts[i]; await readSentence(v.a, op, v.b, v.c); b.classList.remove('reading'); } })();
@@ -1940,7 +1941,7 @@ ITEM.eqPair = {
     const colors = Array.from({ length: item.parts[0] + item.parts[1] }, (_, i) => i < item.parts[0] ? CUBE.lemon : CUBE.white); const Rt = towerAt(svg, 270, 240, colors.length, { size: 22, colors });
     const t = el('text', { x: 180, y: 160, 'text-anchor': 'middle', 'font-size': 56, 'font-weight': 800, fill: css('--compass'), 'font-family': css('--f') }, svg); t.textContent = '=';
     el('text', { x: 90, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f') }, svg).textContent = DG(item.n);
-    el('text', { x: 270, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f'), direction: 'ltr', 'unicode-bidi': 'bidi-override' }, svg).textContent = `${DG(item.parts[0])} + ${DG(item.parts[1])}`;
+    el('text', { x: 270, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f'), direction: NUM_DIR(), 'unicode-bidi': 'bidi-override' }, svg).textContent = `${DG(item.parts[0])} + ${DG(item.parts[1])}`;
     if (tries >= 3) { await S('gen.eq.together'); await pairLines(svg, Rt, L, 500); }
     await S('gen.eq.ask'); const k = await choosePick([['yes', labelText('yes'), PICKICON.yes], ['no', labelText('no'), PICKICON.no]], item.want); return { ans: k, ctx: { svg, L, Rt } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'eqMeaning' }; },
@@ -3160,7 +3161,7 @@ let gateUntil = 0, gateWait = 0;
 function adultGate(then, onBack) {
   if (Date.now() < gateUntil) return then();
   const a = R(6, 9), b = R(6, 9); 
-  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq" dir="ltr">${DG(a)} × ${DG(b)} = ؟</p>
+  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="${NUM_DIR()}">${DG(a)} × ${DG(b)} = ؟</bdo></p>
     <form id="gateForm"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit" id="gateGo">متابعة</button></form><p id="gateMsg" class="msg" role="status"></p><button class="pick" id="gateBack">رجوع</button></div>`;
   P.hidden = false; setTimeout(() => { try { $('#gateIn').focus(); } catch (e) {} }, 50);
   $('#gateBack').onclick = () => { P.hidden = true; if (onBack) onBack(); };

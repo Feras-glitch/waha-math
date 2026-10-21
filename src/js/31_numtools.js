@@ -65,12 +65,13 @@ function towerTapCount(svg, T, opt = {}) {
       if (k === n) { AUTO_CLEAR(); g.remove(); res(n); } };
     g.onclick = act; g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(); }; }));
 }
-/* جملة عددية تُكتب بالكتابة المختارة: «٤ + ٣ = ٧». اتجاهها الآن من اليسار إلى اليمين، وهو **قرار معلّق** (الميثاق 1.61، القسم 8):
-   D229 (6) يحسم طريق الأعداد وشبكة المئة فقط، والكتب المشرقية بالأرقام المشرقية تكتب الجملة من اليمين. التبديل سطر واحد هنا (direction) */
+/* جملة عددية تُكتب بالكتابة المختارة: «٤ + ٣ = ٧». واتجاهها يتبع الكتابة (D251): من اليمين مع الأرقام المشرقية كما في الكتب المشرقية
+   فتُقرأ كما تُنطق، ومن اليسار مع الغربية. والصوت واحد. (طريق الأعداد وشبكة المئة من اليسار دائماً، D229 (6).) */
+const NUM_DIR = () => SET.digits === 'west' ? 'ltr' : 'rtl';
 function sentenceText(a, op, b, c) { return `${DG(a)} ${op === '+' ? '+' : '−'} ${DG(b)} = ${c == null ? '؟' : DG(c)}`; }
 function sentenceAt(parent, x, y, a, op, b, c, opt = {}) { const g = el('g', { transform: `translate(${x} ${y})` }, parent);
   if (opt.box !== false) el('rect', { x: -96, y: -30, width: 192, height: 52, rx: 14, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 3 }, g);
-  const t = el('text', { y: 8, 'text-anchor': 'middle', 'font-size': 34, 'font-weight': 800, fill: opt.box === false ? css('--ink') : CARD_INK, 'font-family': css('--f'), direction: 'ltr', 'unicode-bidi': 'bidi-override' }, g); t.textContent = sentenceText(a, op, b, c); return g; }
+  const t = el('text', { y: 8, 'text-anchor': 'middle', 'font-size': 34, 'font-weight': 800, fill: opt.box === false ? css('--ink') : CARD_INK, 'font-family': css('--f'), direction: NUM_DIR(), 'unicode-bidi': 'bidi-override' }, g); t.textContent = sentenceText(a, op, b, c); return g; }
 /* قراءة الجملة بالكلمات: «أَرْبَعَة» «زَائِد» «ثَلَاثَة» «يُسَاوِي» «سَبْعَة» */
 async function readSentence(a, op, b, c) { await S(numw(a), { noGap: true }); await S(op === '+' ? 'gen.op.plus' : 'gen.op.minus', { noGap: true }); await S(numw2(b), { noGap: true });
   if (c != null) { await S('gen.op.eq', { noGap: true }); await S(numw2(c)); } }
