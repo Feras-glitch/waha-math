@@ -72,7 +72,7 @@ ITEM.produce = {
   async ask(item, mode, tries) {
     const svg = newStage(270, { oasis: false, ground: 0 }); const proto = make(item.mk); const pb = pileBasket(svg, proto, item.pile || item.n + 3, tries >= 3 ? item.n : 0);
     if (tries >= 3) { await S('gen.produce.together'); } else { await S('gen.produce.ask'); await S(numw(item.n)); }
-    pb.pieces.forEach(pc => { pc.g.style.cursor = 'pointer'; pc.g.setAttribute('role', 'button'); hitPad(pc.g, 56); pc.g.onclick = () => { pb.place(pc, !pc.inB); SFX.pop(); if (pc.inB && !SET.muted && !FAST) say(...lineOf(numw(pb.count())), { num: true, noGap: true, free: true }); }; });
+    pb.pieces.forEach(pc => { pc.g.style.cursor = 'pointer'; pc.g.setAttribute('role', 'button'); hitPad(pc.g, 70); pc.g.onclick = () => { pb.place(pc, !pc.inB); SFX.pop(); if (pc.inB && !SET.muted && !FAST) say(...lineOf(numw(pb.count())), { num: true, noGap: true, free: true }); }; });
     const d = doneBtn(); AUTO({ kind: 'produce', ok: () => { while (pb.count() < item.n) pb.place(pb.pieces.find(q => !q.inB), true); while (pb.count() > item.n) pb.place(pb.inside[pb.inside.length - 1], false); d.b.click(); },
       wrong: () => { while (pb.count() < Math.min(item.n + 2, pb.pieces.length)) pb.place(pb.pieces.find(q => !q.inB), true); d.b.click(); } });
     const ans = await gate(new Promise(res => d.b.onclick = () => { if (!pb.count()) return; AUTO_CLEAR(); hush(); d.bar.remove(); res(pb.count()); }));
@@ -138,7 +138,7 @@ ITEM.fill = {
     const place = (pc, on) => { pc.inB = on; if (on) inside.push(pc); else inside.splice(inside.indexOf(pc), 1); inside.forEach((q, j) => { const s = slot(j); q.g.setAttribute('transform', `translate(${s.x} ${s.y}) scale(.55)`); }); if (!on) pc.g.setAttribute('transform', `translate(${pc.p.x} ${pc.p.y})`); };
     if (tries >= 3) { await S('gen.fill.together'); for (let i = 0; i < item.n; i++) { place(pcs[i], true); await S(numw(i + 1), { noGap: true, num: true }); } }
     else { await S('gen.fill.ask'); }
-    pcs.forEach(pc => { pc.g.style.cursor = 'pointer'; pc.g.setAttribute('role', 'button'); hitPad(pc.g, 56); pc.g.onclick = () => { place(pc, !pc.inB); SFX.pop(); if (pc.inB && !SET.muted && !FAST) say(...lineOf(numw(inside.length)), { num: true, noGap: true, free: true }); }; });
+    pcs.forEach(pc => { pc.g.style.cursor = 'pointer'; pc.g.setAttribute('role', 'button'); hitPad(pc.g, 104); /* الرسائل متماثلة: منطقة واسعة تبقى ≥ 56 داخل الصندوق المصغّر (.55) */ pc.g.onclick = () => { place(pc, !pc.inB); SFX.pop(); if (pc.inB && !SET.muted && !FAST) say(...lineOf(numw(inside.length)), { num: true, noGap: true, free: true }); }; });
     const d = doneBtn(); AUTO({ kind: 'fill', ok: () => { while (inside.length < item.n) place(pcs.find(q => !q.inB), true); while (inside.length > item.n) place(inside[inside.length - 1], false); d.b.click(); }, wrong: () => { while (inside.length < item.n + 1) place(pcs.find(q => !q.inB), true); d.b.click(); } });
     const ans = await gate(new Promise(res => d.b.onclick = () => { AUTO_CLEAR(); hush(); d.bar.remove(); res(inside.length); }));
     return { ans, ctx: { svg, inside, slot } }; },

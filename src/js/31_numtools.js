@@ -21,9 +21,10 @@ function mailboxAt(parent, x, y, n, opt = {}) { const g = el('g', { transform: `
   const hook = el('g', { transform: 'translate(0 -66)' }, g); el('circle', { r: 4, fill: MAT.woodDk }, hook);
   return { g, letters, hook, x, y, n }; }
 /* بطاقة رقم: الرقم بالكتابة التي اختارها الطفل (والمشرقية وحدها حتى نهاية درس الجسر، D229) */
+const CARD_INK = '#1b3440';                               // البطاقة ورقة فاتحة في الوضعين، فحبرها داكن ثابت (لا --ink الذي يفتح ليلاً)
 function digitCard(parent, x, y, n, opt = {}) { const s = opt.size || 1; const g = el('g', { transform: `translate(${x} ${y}) scale(${s})` }, parent);
   el('rect', { x: -26, y: -32, width: 52, height: 64, rx: 10, fill: opt.fill || '#fffdf6', stroke: opt.stroke || css('--compass'), 'stroke-width': 3.5, filter: 'url(#pp)' }, g);
-  const t = el('text', { y: 16, 'text-anchor': 'middle', 'font-size': 44, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f') }, g); t.textContent = DG(n); g.dataset.n = n; return g; }
+  const t = el('text', { y: 16, 'text-anchor': 'middle', 'font-size': 44, 'font-weight': 800, fill: opt.fill ? css('--ink') : CARD_INK, 'font-family': css('--f') }, g); t.textContent = DG(n); g.dataset.n = n; return g; }
 /* نقاط كوجه النرد (اللمحة السريعة حتى 5) */
 const DICE = { 1: [[0, 0]], 2: [[-1, -1], [1, 1]], 3: [[-1, -1], [0, 0], [1, 1]], 4: [[-1, -1], [1, -1], [-1, 1], [1, 1]], 5: [[-1, -1], [1, -1], [0, 0], [-1, 1], [1, 1]], 6: [[-1, -1], [1, -1], [-1, 0], [1, 0], [-1, 1], [1, 1]] };
 function diceAt(parent, x, y, n, opt = {}) { const g = el('g', { transform: `translate(${x} ${y})` }, parent); const sp = opt.sp || 34;
@@ -69,7 +70,7 @@ function towerTapCount(svg, T, opt = {}) {
 function sentenceText(a, op, b, c) { return `${DG(a)} ${op === '+' ? '+' : '−'} ${DG(b)} = ${c == null ? '؟' : DG(c)}`; }
 function sentenceAt(parent, x, y, a, op, b, c, opt = {}) { const g = el('g', { transform: `translate(${x} ${y})` }, parent);
   if (opt.box !== false) el('rect', { x: -96, y: -30, width: 192, height: 52, rx: 14, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 3 }, g);
-  const t = el('text', { y: 8, 'text-anchor': 'middle', 'font-size': 34, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f'), direction: 'ltr', 'unicode-bidi': 'bidi-override' }, g); t.textContent = sentenceText(a, op, b, c); return g; }
+  const t = el('text', { y: 8, 'text-anchor': 'middle', 'font-size': 34, 'font-weight': 800, fill: opt.box === false ? css('--ink') : CARD_INK, 'font-family': css('--f'), direction: 'ltr', 'unicode-bidi': 'bidi-override' }, g); t.textContent = sentenceText(a, op, b, c); return g; }
 /* قراءة الجملة بالكلمات: «أَرْبَعَة» «زَائِد» «ثَلَاثَة» «يُسَاوِي» «سَبْعَة» */
 async function readSentence(a, op, b, c) { await S(numw(a), { noGap: true }); await S(op === '+' ? 'gen.op.plus' : 'gen.op.minus', { noGap: true }); await S(numw2(b), { noGap: true });
   if (c != null) { await S('gen.op.eq', { noGap: true }); await S(numw2(c)); } }

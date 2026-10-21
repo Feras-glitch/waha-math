@@ -21,7 +21,8 @@ async function chaosBins(C) {
     if (it.wrong) break; SFX.soft(); await S('gen.chaos.no'); }
   SFX.good(); hush(); fz.remove(); const W = items.find(it => it.wrong);
   /* يتحقّق الطفل بيده: يعدّ الرؤوس أو الأضلاع، أو يدير الورقة، أو يلمس الوجوه */
-  const stage = newStage(260, { oasis: false, ground: 0 }); const s = { ...W.s, label: null }; const g = thingAt(stage, s, 180, 104);
+  const stage = newStage(260, { oasis: false, ground: 0 }); const s = { ...W.s, label: null }; if (C.check === 'faces') Object.assign(s, { size: Math.max(160, s.size || 0), ry: .34 });   /* وجوه يلمسها الإصبع (≥ 56) */
+  const g = thingAt(stage, s, 180, 104);
   await S(C.foundLine || 'gen.chaos.found');
   if (C.check === 'countVertices' || C.check === 'countSides') { const P = worldPoly({ ...s, x: 180, y: 104 });
     const pts = C.check === 'countSides' ? P.map((a, i) => { const b = P[(i + 1) % P.length]; return { x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2 }; }) : P.map(([x, y]) => ({ x, y }));
@@ -47,14 +48,14 @@ async function chaosFlag(C) {
 async function chaosCard(C) {
   const svg = newStage(300, { oasisOpacity: .15, ground: C.tower ? 14 : 0 }); let pts;
   if (C.tower) pts = towerAt(svg, 180, 262, C.n, { size: 28, color: CUBE.lemon });
-  else pts = mailboxAt(svg, 180, 150, C.n);
-  const card = digitCard(svg, C.tower ? 260 : 180, C.tower ? 120 : 64, C.shown, { size: .9, stroke: css('--chaos') });
+  else pts = mailboxAt(svg, 180, 128, C.n);   /* أعلى قليلاً: تنتشر الرسائل تحته للعدّ */
+  const card = digitCard(svg, C.tower ? 260 : 180, C.tower ? 120 : 42, C.shown, { size: .9, stroke: css('--chaos') });
   const fz = chaosAt(svg, 40, 60, .42); await chaosGiggle(fz); await S(C.find); fz.remove();
-  if (C.tower) await towerTapCount(svg, pts); else await mailSpread(svg, pts, 248);
+  if (C.tower) await towerTapCount(svg, pts); else await mailSpread(svg, pts, 250);
   const opts = shuffle([C.n, C.shown, ...(C.extra != null ? [C.extra] : [])]); const cards = opts.map((n, i) => ({ g: digitCard(svg, 300 - i * (240 / Math.max(1, opts.length - 1)), 250, n, { size: .95 }), k: n, label: T(numw(n)) }));
   await S(C.ask || 'gen.chaos.whichCard');
   let tries = 0; while (true) { const k = await tapOne(cards, { ok: C.n, pad: 84 }); tries++; logAttempt({ scene: 'chaos', tag: 'card', ok: k === C.n, firstTry: tries === 1 }); if (k === C.n) break; SFX.soft(); await S('gen.count.again'); }
-  SFX.good(); card.remove(); digitCard(svg, C.tower ? 260 : 180, C.tower ? 120 : 64, C.n, { size: .9 }); if (C.after) await S(C.after);
+  SFX.good(); card.remove(); digitCard(svg, C.tower ? 260 : 180, C.tower ? 120 : 42, C.n, { size: .9 }); if (C.after) await S(C.after);
 }
 /* البطاقتان المسموعتان: الخاطئة بلا نصّ، تسبقها النغمة الثابتة و«فوضى تظنّ…» */
 async function chaosCards(C) {

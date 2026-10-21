@@ -133,7 +133,7 @@ SCENES.chaosDouble = async c => { const svg = newStage(280, { oasisOpacity: .2 }
 /* «بيت الأشكال» (لعبة الدرس 2، تعرّف فقط): المس القطعة ثم مكانها */
 SCENES.houseMatch = async c => {
   const svg = newStage(330, { oasisOpacity: .15 });
-  const slots = c.slots; const slotG = slots.map(sl => { const g = el('g', { transform: `translate(${sl.x} ${sl.y})` }, svg); const geo = shapeGeom(sl.s);
+  const slots = c.slots.map(sl => ({ ...sl, filled: false })); const slotG = slots.map(sl =>   /* نسخة لكل تشغيل: «filled» لا يبقى في بيانات الدرس فيتعطّل اللعب في المرة الثانية */ { const g = el('g', { transform: `translate(${sl.x} ${sl.y})` }, svg); const geo = shapeGeom(sl.s);
     const d = sl.s.type === 'circle' ? el('circle', { r: geo.r }, g) : el('polygon', { points: polyStr(geo.poly) }, g); d.setAttribute('fill', '#ffffff'); d.setAttribute('fill-opacity', .5); d.setAttribute('stroke', css('--ink')); d.setAttribute('stroke-width', 3); d.setAttribute('stroke-dasharray', '8 6'); d.setAttribute('opacity', .6); return g; });
   const tray = el('g', {}, svg); el('rect', { x: -360, y: 256, width: 1080, height: 74, fill: css('--paper'), opacity: .92 }, tray);
   const shown = shuffle(c.pieces).map((p, i, a) => { const x = 360 - (i + .5) * (360 / a.length); const sc = p.sc || .5; const g = shapeAt(svg, p.s, x, 293); g.setAttribute('transform', `translate(${x} 293) scale(${sc})`);
@@ -244,7 +244,7 @@ SCENES.mailExplore = async c => {
 SCENES.digitCards = async c => { const svg = newStage(270, { oasis: false, ground: 0 }); const cards = [];
   for (let n = 0; n <= 10; n++) { const r = n <= 5 ? 0 : 1, col = n <= 5 ? n : n - 6; const x = 330 - col * 58 - (r ? 29 : 0), y = 70 + r * 110; const g = digitCard(svg, x, y, n, { size: .9 }); cards.push({ g, k: n, label: T(numw(n)) }); }
   await S(c.lines[0]); for (const cd of cards) { anim(cd.g, [{ opacity: .4 }, { opacity: 1 }], 300); await S(numw(cd.k), { noGap: true }); }
-  cards.forEach(cd => { cd.g.style.cursor = 'pointer'; cd.g.setAttribute('role', 'button'); cd.g.setAttribute('aria-label', plain(cd.label)); cd.g.onclick = () => { SFX.tick(); say(...lineOf(numw(cd.k)), { free: true }); }; });
+  cards.forEach(cd => { cd.g.style.cursor = 'pointer'; hitPad(cd.g, 58); cd.g.setAttribute('role', 'button'); cd.g.setAttribute('aria-label', plain(cd.label)); cd.g.onclick = () => { SFX.tick(); say(...lineOf(numw(cd.k)), { free: true }); }; });
   await S(c.lines[1]); };
 /* أول تتبّع لرقم مع عرض اليد الشبح (N003) */
 SCENES.traceIntro = async c => { await S(c.lines[0]); for (const n of c.digits) await runItem({ t: 'trace', n }, 'explore'); await S(c.lines[1]); };
@@ -382,7 +382,7 @@ function mosqueAt(svg) { const g = el('g', {}, svg); floorLine(svg, 236);
   const body = thingAt(g, { solid: 'cube', size: 150, color: '#e9dcc3' }, 140, 180);
   const dome = el('g', { transform: 'translate(132 104)' }, g); const df = grad(dome, 'radialGradient', [[0, '#ffe3ef'], [.55, SOLIDC.sphere], [1, mix(SOLIDC.sphere, 'b', .35)]], { cx: .38, cy: .3, r: .9 });
   el('path', { d: 'M-46 0 A46 46 0 0 1 46 0 Z', fill: df, stroke: '#fff', 'stroke-width': 3 }, dome); el('line', { x1: 0, y1: -46, x2: 0, y2: -62, stroke: '#c98f55', 'stroke-width': 3 }, dome); el('circle', { cx: 0, cy: -66, r: 4, fill: '#f2b33d' }, dome);
-  const mn = el('g', { transform: 'translate(272 0)' }, g); const w = 34, h = 150, top = 92, ry = 6;
+  const mn = el('g', { transform: 'translate(272 0)' }, g); const w = 48, h = 150, top = 92, ry = 8;   /* مئذنة أعرض: جسمها ورأسها هدفان يلمسهما الإصبع (≥ 56) */
   const cf = grad(mn, 'linearGradient', [[0, mix(SOLIDC.cylinder, 'b', .28)], [.35, mix(SOLIDC.cylinder, 'w', .3)], [.65, SOLIDC.cylinder], [1, mix(SOLIDC.cylinder, 'b', .4)]]);
   const cyl = el('g', {}, mn); el('path', { d: `M${-w / 2} ${top} L${-w / 2} ${top + h - 6} A${w / 2} ${ry} 0 0 0 ${w / 2} ${top + h - 6} L${w / 2} ${top} Z`, fill: cf, stroke: '#fff', 'stroke-width': 3 }, cyl);
   el('ellipse', { cx: 0, cy: top, rx: w / 2, ry, fill: mix(SOLIDC.cylinder, 'w', .32), stroke: '#fff', 'stroke-width': 3 }, cyl); el('rect', { x: -w / 2 - 6, y: top + 34, width: w + 12, height: 8, rx: 3, fill: '#e9dcc3', stroke: '#fff', 'stroke-width': 2 }, cyl);
@@ -410,7 +410,7 @@ SCENES.facesCount = async c => {
   for (const r of c.rounds) {
     const svg = newStage(300, { oasisOpacity: .12 }); const stuck = new Set(); let view = 0; const holder = el('g', { transform: 'translate(180 140)' }, svg);
     const isBox = r.solid === 'box'; const dims = isBox ? { w: 150, h: 92, d: 104 } : { w: 112, h: 112, d: 112 }; const col = isBox ? BOXC : SOLIDC.cube;
-    const VIEWS = [{ yaw: 36, pitch: 34 }, { yaw: 216, pitch: -34 }];   /* ميل أكبر: الوجه العلوي ≥ 56 بكسل ليلمسه الإصبع */
+    const VIEWS = [{ yaw: 40, pitch: 34 }, { yaw: 220, pitch: -34 }];   /* ميل أكبر: الوجه العلوي ≥ 56 بكسل ليلمسه الإصبع */
     const marks = el('g', { 'pointer-events': 'none' }, svg); const marksAt = {};
     const draw = () => { holder.innerHTML = ''; const { B } = drawBox(holder, { ...dims, ...VIEWS[view], color: col, deco: isBox ? teaDeco : null });
       marks.innerHTML = ''; holder.querySelectorAll('[data-face]').forEach(f => { const k = f.dataset.face; const pts = f.getAttribute('points').split(' ').map(p => p.split(',').map(Number)); const cx = pts.reduce((a, p) => a + p[0], 0) / pts.length + 180, cy = pts.reduce((a, p) => a + p[1], 0) / pts.length + 140;
