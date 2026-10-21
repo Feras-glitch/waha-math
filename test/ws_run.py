@@ -3,6 +3,10 @@ from playwright.async_api import async_playwright
 import os
 U1FILE = os.environ.get('U1FILE', '/home/claude/proto/unit1.html'); AUD = os.environ.get('AUDIT_DIR', '/home/claude/engine/test/out'); os.makedirs(AUD, exist_ok=True)
 IDS_JSON = os.environ.get('IDS_JSON', '/home/claude/audit/script_u1.xlsx.ids.json')
+SEED = os.environ.get('SEED')   # عشوائية مثبّتة لمقارنة بناءين: SEED=1 sh test/run_all.sh …
+async def _seed(ctx):
+    if SEED: await ctx.add_init_script("(() => { let s = %d; Math.random = () => { s = (s * 1103515245 + 12345) %% 2147483648; return s / 2147483648; }; })();" % int(SEED))
+    return ctx
 URL = 'file://' + U1FILE + '#fast'; OUT = AUD + '/s152_'
 KID_PNG = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'fixtures', 'kid.png')
 async def wait_scene(pg, pred, ms=8000):
@@ -15,7 +19,7 @@ async def go(pg):
   await pg.wait_for_function("!document.getElementById('go').disabled", timeout=8000); await pg.click('#go')
 async def main():
   async with async_playwright() as p:
-    b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await ctx.new_page(); errs = []
+    b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await (await _seed(ctx)).new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append('console:' + m.text) if m.type == 'error' and 'ERR_TUNNEL' not in m.text else None)
     await pg.goto(URL); await pg.wait_for_timeout(300)
     prog = {f'm1.u1.d{i}': {'done': True, 'mastered': True, 'at': int(time.time() * 1000)} for i in range(1, 6)}

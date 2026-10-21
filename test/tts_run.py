@@ -2,6 +2,10 @@ import asyncio, json, re, sys, os
 from playwright.async_api import async_playwright
 U1FILE = os.environ.get('U1FILE', '/home/claude/proto/unit1.html'); AUD = os.environ.get('AUDIT_DIR', '/home/claude/engine/test/out'); os.makedirs(AUD, exist_ok=True)
 IDS_JSON = os.environ.get('IDS_JSON', '/home/claude/audit/script_u1.xlsx.ids.json')
+SEED = os.environ.get('SEED')   # عشوائية مثبّتة لمقارنة بناءين: SEED=1 sh test/run_all.sh …
+async def _seed(ctx):
+    if SEED: await ctx.add_init_script("(() => { let s = %d; Math.random = () => { s = (s * 1103515245 + 12345) %% 2147483648; return s / 2147483648; }; })();" % int(SEED))
+    return ctx
 GENDER = sys.argv[1] if len(sys.argv) > 1 else 'f'
 NAME = 'سلمى' if GENDER == 'f' else 'يوسف'
 URL = 'file://' + U1FILE + '#test'
@@ -29,7 +33,7 @@ MOCK = """(() => { const RATE = %d; const log = window.__tts = []; let queue = [
 
 async def main():
   async with async_playwright() as p:
-    b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await ctx.new_page(); errs = []
+    b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await (await _seed(ctx)).new_page(); errs = []
     await pg.add_init_script(MOCK)
     pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append('console:' + m.text) if m.type == 'error' else None)
     await pg.goto(URL); await pg.wait_for_timeout(700)
@@ -122,6 +126,7 @@ async def main():
     await pg.click('#adultBtn'); await pg.wait_for_timeout(300); await pg.screenshot(path=SHOT + '99_panel.png', full_page=True)
     clips = set(await pg.evaluate("window.__clips||[]")); ids = set(json.load(open(IDS_JSON)))
     print('clips spoken', len(clips), '| missing from script table', sorted(clips - ids))
+    json.dump(sorted(clips), open(SHOT + 'clips.json', 'w', encoding='utf-8'), ensure_ascii=False)   # قائمة الجمل المنطوقة للمقارنة بين بناءين
     said = await pg.evaluate("window.__said")
     log = await pg.evaluate("JSON.parse(localStorage.getItem('hp_log:'+JSON.parse(localStorage.getItem('hp_kid'))))")
     errsN = {}

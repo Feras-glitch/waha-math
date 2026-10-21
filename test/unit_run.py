@@ -2,6 +2,10 @@ import asyncio, json, re, sys, os
 from playwright.async_api import async_playwright
 U1FILE = os.environ.get('U1FILE', '/home/claude/proto/unit1.html'); AUD = os.environ.get('AUDIT_DIR', '/home/claude/engine/test/out'); os.makedirs(AUD, exist_ok=True)
 IDS_JSON = os.environ.get('IDS_JSON', '/home/claude/audit/script_u1.xlsx.ids.json')
+SEED = os.environ.get('SEED')   # عشوائية مثبّتة لمقارنة بناءين: SEED=1 sh test/run_all.sh …
+async def _seed(ctx):
+    if SEED: await ctx.add_init_script("(() => { let s = %d; Math.random = () => { s = (s * 1103515245 + 12345) %% 2147483648; return s / 2147483648; }; })();" % int(SEED))
+    return ctx
 GENDER = sys.argv[1] if len(sys.argv) > 1 else 'f'
 FAIL_MASTERY = len(sys.argv) > 2 and sys.argv[2] == 'failmastery'   # D233: يخفق في فحص الإتقان دورتين فيُؤجَّل
 NAME = 'سلمى' if GENDER == 'f' else 'يوسف'
@@ -17,7 +21,7 @@ STATE = """() => { const q = s => document.querySelector(s); const vis = s => { 
 
 async def main():
   async with async_playwright() as p:
-    b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await ctx.new_page(); errs = []
+    b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await (await _seed(ctx)).new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e))); pg.on('console', lambda m: errs.append('console:' + m.text) if m.type == 'error' else None)
     await pg.goto(URL); await pg.wait_for_timeout(700)
     await pg.evaluate("localStorage.setItem('hp_settings', JSON.stringify({sessionMax: 0}))"); await pg.reload(); await pg.wait_for_timeout(700)   # المسار الكامل بلا حدّ جلسة (الحدّ يُفحص في session_run.py)
@@ -60,7 +64,7 @@ async def main():
                 await pg.evaluate("document.querySelector('[role=button][data-k=rect]').dispatchEvent(new MouseEvent('click',{bubbles:true}));document.querySelector('[data-slot=circle]').dispatchEvent(new MouseEvent('click',{bubbles:true}))"); await pg.wait_for_timeout(400)
               await pg.evaluate(f"document.querySelector('[role=button][data-k={k}]').dispatchEvent(new MouseEvent('click',{{bubbles:true}}));document.querySelector('[data-slot={k}]').dispatchEvent(new MouseEvent('click',{{bubbles:true}}))"); await pg.wait_for_timeout(120)
             acted = True
-        if FAIL_MASTERY and sc == 'mastery' and lid == 'u1d1' and st['rawbins'] and st['n'] != last_n:
+        if FAIL_MASTERY and sc == 'mastery' and lid == 'u1d1' and st['rawbins'] and st['n'] != last_n and (await pg.evaluate("window.__sortScene||''")).startswith('mastery'):
           kind = st['kind']; bins = await pg.evaluate("[...document.querySelectorAll('.bins .bin')].map(b=>b.dataset.k)")
           wb = next(x for x in bins if x != kind); await pg.click(f'.bin[data-k="{wb}"]'); last_n = st['n']; acted = True
         elif st['bins'] and st['n'] != last_n:
@@ -118,6 +122,7 @@ async def main():
     await pg.fill('#gateIn', str(await pg.evaluate('window.__gateAns'))); await pg.click('#gateForm button'); await pg.wait_for_timeout(300); await pg.screenshot(path=SHOT + '99_panel.png', full_page=True)
     clips = set(await pg.evaluate("window.__clips||[]")); ids = set(json.load(open(IDS_JSON)))
     print('clips spoken', len(clips), '| missing from script table', sorted(clips - ids))
+    json.dump(sorted(clips), open(SHOT + 'clips.json', 'w', encoding='utf-8'), ensure_ascii=False)   # قائمة الجمل المنطوقة للمقارنة بين بناءين
     said = await pg.evaluate("window.__said")
     log = await pg.evaluate("JSON.parse(localStorage.getItem('hp_log:'+JSON.parse(localStorage.getItem('hp_kid'))))")
     errsN = {}
