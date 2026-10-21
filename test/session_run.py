@@ -1,7 +1,7 @@
 import asyncio, json, time
 from playwright.async_api import async_playwright
 import os
-U1FILE = os.environ.get('U1FILE', '/home/claude/proto/unit1.html'); AUD = os.environ.get('AUDIT_DIR', '/home/claude/engine/test/out'); os.makedirs(AUD, exist_ok=True)
+U1FILE = os.environ.get('U1FILE', os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'dist', 'واحة_الرياضيات.dev.html')); AUD = os.environ.get('AUDIT_DIR', '/home/claude/engine/test/out'); os.makedirs(AUD, exist_ok=True)
 IDS_JSON = os.environ.get('IDS_JSON', '/home/claude/audit/script_u1.xlsx.ids.json')
 SEED = os.environ.get('SEED')   # عشوائية مثبّتة لمقارنة بناءين: SEED=1 sh test/run_all.sh …
 async def _seed(ctx):

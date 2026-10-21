@@ -6,6 +6,7 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { lint } from './lint.mjs';
+import { loadContent, readModules } from './content.mjs';
 import { writeScript } from './script.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -15,17 +16,6 @@ const read = p => readFileSync(p, 'utf8');
 const json = p => JSON.parse(read(p));
 
 /* يجمع content/ في كائن واحد: {gen, labels, errors, units: [{...unit.json, lessons: [d1.json, …]}]} */
-export function loadContent() {
-  const units = [];
-  for (const m of readdirSync(CONTENT_DIR).filter(d => /^m\d+$/.test(d)).sort())
-    for (const u of readdirSync(join(CONTENT_DIR, m)).filter(d => /^u\d+$/.test(d)).sort()) {
-      const dir = join(CONTENT_DIR, m, u); const unit = json(join(dir, 'unit.json'));
-      unit.lessons = readdirSync(dir).filter(f => /^d\d+\.json$/.test(f)).sort((a, b) => parseInt(a.slice(1)) - parseInt(b.slice(1))).map(f => json(join(dir, f)));
-      units.push(unit);
-    }
-  return { gen: json(join(CONTENT_DIR, 'strings', 'gen.json')), labels: json(join(CONTENT_DIR, 'strings', 'labels.json')), errors: json(join(CONTENT_DIR, 'errors.json')), units };
-}
-export const readModules = () => readdirSync(join(SRC, 'js')).filter(f => f.endsWith('.js')).sort().map(f => read(join(SRC, 'js', f))).join('');
 
 // خطافات الفحص محاطة في المصدر بعلامتي T (تعليق فتح «/*T*/» وتعليق إغلاق «/*/T*/»): البناء الإنتاجي يحذفها كلها، وبناء --dev يحذف العلامتين فقط
 const T_RX = /\/\*T\*\/([\s\S]*?)\/\*\/T\*\//g;

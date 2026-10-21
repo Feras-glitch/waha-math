@@ -5,6 +5,7 @@
 //  4) كل وسم خطأ يعيده errorOf أو يُسجَّل بـ err: له مدخل في سجلّ الأخطاء (تفسيرٌ لما يعيده errorOf، واسمٌ على الأقل لما يُسجَّل فقط)
 //  5) مراجع البيانات: المولّدات بالاسم، ومعرّفات المدح والمهمة والتفسير
 import { readFileSync, readdirSync } from 'node:fs';
+const read = p => readFileSync(p, 'utf8');
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { collectClips, clipsFromContent, GEN_RX } from './clips.mjs';
@@ -64,14 +65,19 @@ export function lint(content, js) {
     if (L.chaos && L.chaos.placed.filter(p => p.wrong).length !== 1) errors.push(`${L.id}: مشهد فوضى يحتاج خطأً واحداً بالضبط`);
     if (L.chaos && L.chaos.reasons.filter(r => r.ok).length !== 1) errors.push(`${L.id}: سبب صحيح واحد بالضبط`);
   }
+  // D232: قشرة التسليم: رأس HTML كامل ولا تحميل من الشبكة إلا رابط الخط غير الحاجب
+  const head = read(join(ROOT, 'src', 'head.html'));
+  for (const need of ['<!doctype html>', 'lang="ar"', 'dir="rtl"', 'charset="utf-8"', 'name="viewport"']) if (!head.includes(need)) errors.push(`الرأس ينقصه ${need} (D232)`);
+  const net = (head.match(/https?:\/\/[^"'\s)]+/g) || []).filter(u => !/fonts\.(googleapis|gstatic)\.com/.test(u));
+  if (net.length) errors.push('الرأس يحمّل من الشبكة: ' + net.join(', '));
   const gendered = clips.filter(c => { GEN_RX.lastIndex = 0; return GEN_RX.test(c.text); }).length;
   const summary = `فحص المحتوى: ${clips.length} جملة (${gendered} بصيغتين)، ${Object.keys(ERR).length} وسم خطأ، ${Object.keys(lessons).length} دروس — ${errors.length} مخالفة، ${warn.length} تنبيه`;
   return { errors, warn, summary };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const { loadContent } = await import('./build.mjs');
-  const js = readdirSync(join(ROOT, 'src', 'js')).filter(f => f.endsWith('.js')).sort().map(f => readFileSync(join(ROOT, 'src', 'js', f), 'utf8')).join('');
+  const { loadContent, readModules } = await import('./content.mjs');
+  const js = readModules();
   const r = lint(loadContent(), js);
   console.log(r.summary); for (const w of r.warn) console.log('  تنبيه:', w); for (const e of r.errors) console.log('  مخالفة:', e);
   process.exit(r.errors.length ? 1 : 0);

@@ -42,7 +42,7 @@ const SRS_DAYS = [1, 3, 7, 21], DAY = 864e5;
 if (!PROG.srs || typeof PROG.srs !== 'object') PROG.srs = {};
 function srsStart(id) { if (!PROG.srs[id]) { PROG.srs[id] = { step: 0, due: Date.now() + SRS_DAYS[0] * DAY }; saveProg(); } }
 function srsUpdate(id, ok) { const r = PROG.srs[id] || { step: 0 };
-  if (ok) { r.step++; r.due = r.step >= SRS_DAYS.length ? null : Date.now() + SRS_DAYS[r.step] * DAY; } else { r.step = 0; r.due = Date.now() + SRS_DAYS[0] * DAY; }
+  if (ok) { r.step++; r.due = r.step >= SRS_DAYS.length ? null : Date.now() + SRS_DAYS[r.step] * DAY; } else { r.step = Math.max(0, r.step - 1); r.due = Date.now() + SRS_DAYS[r.step] * DAY; }   // D237: الرجوع خطوة واحدة لا إلى أول الجدول
   r.last = Date.now(); PROG.srs[id] = r; }
 const LOG = store.get(kk('hp_log'), null) || { attempts: [] };
 function logAttempt(a) { LOG.attempts.push({ t: Date.now(), lesson: CUR ? CUR.id : '', ...a }); if (LOG.attempts.length > 600) LOG.attempts.shift(); store.set(kk('hp_log'), LOG); }
