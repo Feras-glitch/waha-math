@@ -73,14 +73,6 @@ $('#meBtn').onclick = () => { stopVoice(); openKids(false); };
 $('#galBtn').onclick = () => { SFX.tick(); openGallery(); };
 
 /* لوحة الكبار */
-const ERRN = { rotatedSquare: 'يظن المربع المدوَّر شكلاً آخر', ovalAsCircle: 'يظن الشكل الممطوط دائرة', curvedEdge: 'لم ينتبه للحافة المنحنية', countCorners: 'لم يعدّ الرؤوس',
-  flipped: 'يظن المثلث المقلوب ليس مثلثاً', thin: 'يرفض المثلث الطويل الرفيع', curved: 'يقبل شكلاً بحافة منحنية مثلثاً', open: 'يقبل الشكل المفتوح مثلثاً', fourCorners: 'يخلط المربع بالمثلث',
-  squareAsRect: 'يسمّي المربع مستطيلاً', rectAsSquare: 'يسمّي المستطيل مربعاً', rotatedRect: 'يرفض المستطيل المدوَّر', standingRect: 'يرفض المستطيل الواقف', equalSides: 'لم يقارن الأضلاع',
-  rotated: 'يتأثر بتدوير الشكل', byShape: 'يصنّف بالاسم لا بالشكل', slot: 'تركيب: قطعة في غير مكانها', generic: 'خطأ عام',
-  flatAsCube: 'يسمّي المربع الورقي مكعباً', flatAsSphere: 'يسمّي الدائرة الورقية كرة', cubeTurned: 'يرفض المكعب المائل', cubeNotRoll: 'يظن المكعب يتدحرج', sphereNoFace: 'يظن للكرة وجوهاً مسطّحة',
-  newSolid: 'يضع مجسّماً جديداً مع المكعب أو الكرة', riddle: 'لم يطابق الوصف بالمجسّم', cylAsCone: 'يخلط الأسطوانة بالمخروط', coneAsCyl: 'يخلط المخروط بالأسطوانة',
-  lyingCyl: 'يرفض الأسطوانة النائمة', cylOther: 'لم يتعرّف الأسطوانة', coneTurned: 'يرفض المخروط المقلوب أو النائم', otherSolid: 'يضع المكعب أو الكرة مع الأسطوانة أو المخروط',
-  flatAsSolid: 'يعدّ الشكل الورقي مجسّماً', drawnFlat: 'يعدّ الرسم على الورق مجسّماً', solidAsFlat: 'يعدّ المجسّم مسطّحاً', sphereBase: 'بناء: وضع شيئاً فوق الكرة', coneTop: 'بناء: وضع شيئاً فوق المخروط', archPart: 'لم يجد المجسّم في المبنى', wsTurn: 'ورشة: لم يدوّر القطعة', wsKind: 'ورشة: قطعة لا تشبه الظل' };
 function openPanel() {
   const A = LOG.attempts; const errs = {}; A.filter(a => a.err && ERRN[a.err] && a.scene !== 'ws').forEach(a => errs[a.err] = (errs[a.err] || 0) + 1);
   const firsts = A.filter(a => a.firstTry !== undefined && /^(practice|mastery|test)/.test(a.scene || '')); const fOk = firsts.filter(a => a.firstTry && a.ok).length, fN = firsts.filter(a => a.firstTry).length;

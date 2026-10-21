@@ -242,7 +242,6 @@ function chaosSVG() {
 }
 const CHAR = { compass: compassSVG, chaos: chaosSVG };
 /* D194: شخصيات الأشكال مضيفات للوحدات: الأشكال الأربعة لـ«صيّادو الأشكال»، ورفاق المجسّمات لـ«عالم المجسّمات» */
-const HOSTS = { 'm1.u1': ['circle', 'square', 'triangle', 'rect'], 'm1.u2': ['cube', 'sphere', 'cylinder', 'cone'] };
 function hostFace(g, y, k) { const f = el('g', { transform: `translate(0 ${y}) scale(${k})` }, g); const e = el('g', { class: 'blink' }, f);
   for (const x of [-8, 8]) { el('ellipse', { cx: x, cy: 0, rx: 4.6, ry: 5.4, fill: '#fff' }, e); el('circle', { cx: x + .8, cy: 1, r: 2.5, fill: '#1b3440' }, e); }
   el('path', { d: 'M-6 9 q6 6 12 0', fill: 'none', stroke: '#1b3440', 'stroke-width': 2.4, 'stroke-linecap': 'round' }, f); return f; }
@@ -276,6 +275,4 @@ function binIcon(k) {
   if (k === 'rect') return `<rect x="39" y="56" width="32" height="17" fill="${c}"/>`;
   return `<path d="M46 55l18 18M64 55L46 73" stroke="${c}" stroke-width="5" stroke-linecap="round"/>`;
 }
-const BIN_NAMES = { circle: 'دَائِرَة', square: 'مُرَبَّع', triangle: 'مُثَلَّث', rect: 'مُسْتَطِيل', other: 'غَيْرُ ذَلِكَ',
-  cube: 'مُكَعَّب', sphere: 'كُرَة', cylinder: 'أُسْطُوَانَة', cone: 'مَخْرُوط', flat: 'مُسَطَّح', solid: 'مُجَسَّم' };
 

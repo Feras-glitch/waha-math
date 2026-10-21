@@ -27,4 +27,5 @@ const MK = {
   door: () => ({ type: 'rect', kind: 'rect', w: 88, h: 160, rot: 0, color: '#9c6837', object: 'door', label: 'بَاب', tag: 'rectV' }),
   envelope: () => ({ type: 'rect', kind: 'rect', w: 170, h: 104, rot: R(-12, 12), color: nextColor(), object: 'envelope', label: 'ظَرْف', tag: 'rectRot' }),
 };
+Object.assign(MAKER, MK);
 

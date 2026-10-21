@@ -1,15 +1,11 @@
 /* =====================================================================
    الدروس
    ===================================================================== */
-const UNITS = [
-  { id: 'm1.u1', title: 'صَيَّادُو الأَشْكَالِ', sub: 'الوَحْدَةُ الأُولَى' },
-  { id: 'm1.u2', title: 'عَالَمُ المُجَسَّمَاتِ', sub: 'الوَحْدَةُ الثَّانِيَةُ' },
-];
 const unitOf = L => L.id.split('.').slice(0, 2).join('.');
 const LESSONS = [];
 
 /* ---------------- [m1.u1.d1] الدرس 1: الدائرة والمربع ---------------- */
-LESSONS.push({ id: 'm1.u1.d1', title: 'الدَّائِرَةُ وَالمُرَبَّعُ', icon: ['circle', 'square'],
+LESSONS.push(lesson('m1.u1.d1', W => ({
   async hook() {
     const svg = newStage(300, { cityOpacity: .3 });
     el('rect', { x: 0, y: 136, width: 360, height: 8, fill: css('--line') }, svg);
@@ -65,44 +61,25 @@ LESSONS.push({ id: 'm1.u1.d1', title: 'الدَّائِرَةُ وَالمُرَ
       for (let a = 0; a <= 360; a += 4) { const r = a * Math.PI / 180; dot.setAttribute('cx', 180 + 70 * Math.cos(r)); dot.setAttribute('cy', 140 + 70 * Math.sin(r)); await sleep(18); } await sp; },
   ],
   sort: {
-    bins: ['circle', 'square', 'other'],
-    intro: ['pr.01', 'إِلَى أَيِّ سَلَّةٍ يَذْهَبُ كُلُّ شَكْلٍ؟ {اِلْمَسِ|اِلْمَسِي} السَّلَّةَ، {أَوِ اسْحَبِ|أَوِ اسْحَبِي} الشَّكْلَ إِلَيْهَا.'],
-    practice: [MK.squareUp, MK.plate, () => MK.squareRot(45), MK.oval, MK.triUp],
-    sets: [[MK.tile, MK.clock, MK.oval], [() => MK.squareRot(20), MK.circle, MK.triUp]],
-    remedial: [() => MK.squareRot(), MK.oval],
     errorOf(item, bin) { if (item.tag === 'squareRot') return 'rotatedSquare'; if (item.tag === 'oval' && bin === 'circle') return 'ovalAsCircle'; if (item.kind === 'circle') return 'curvedEdge'; if (item.kind === 'square') return 'countCorners'; return 'generic'; },
-    ERR: { rotatedSquare: ['gen.err.rotatedSquare.01', 'لِنُفَكِّرْ مَعًا: هَيَّا نَعُدُّ رُؤُوسَهُ… أَرْبَعَةٌ، وَحَوَافُّهُ مُسْتَقِيمَةٌ. لَقَدْ دَوَّرْنَاهُ فَقَطْ!'],
-      ovalAsCircle: ['gen.err.ovalAsCircle.01', 'لِنُفَكِّرْ مَعًا: هَذَا الشَّكْلُ مَمْطُوطٌ، طَوِيلٌ مِنْ جِهَةٍ وَقَصِيرٌ مِنْ جِهَةٍ. الدَّائِرَةُ مُتَسَاوِيَةٌ مِنْ كُلِّ الجِهَاتِ.'],
-      curvedEdge: ['gen.err.curvedEdge.01', 'لِنُفَكِّرْ مَعًا: هَلْ لِهَذَا الشَّكْلِ رُؤُوسٌ؟ حَافَّتُهُ مُنْحَنِيَةٌ كُلُّهَا.'],
-      countCorners: ['gen.err.countCorners.01', 'لِنُفَكِّرْ مَعًا: هَيَّا نَعُدُّ رُؤُوسَهُ وَنَنْظُرُ إِلَى حَوَافِّهِ.'], generic: ['gen.err.generic.01', 'لِنُفَكِّرْ مَعًا: كَمْ رَأْسًا لَهُ؟ وَهَلْ حَوَافُّهُ مُسْتَقِيمَةٌ؟'] },
     showErr(err, item, g, svg) { if (err === 'rotatedSquare') straighten(g, item); if (err === 'ovalAsCircle') { const c = el('circle', { cx: 180, cy: 104, r: item.size / 2, fill: 'none', stroke: css('--circle'), 'stroke-width': 4, 'stroke-dasharray': '8 6' }, svg); c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 400 }); } },
-    reason(item) { if (item.kind === 'square') return item.rot ? ['why.sqRot', 'أَرْبَعَةُ رُؤُوسٍ وَحَوَافُّ مُسْتَقِيمَةٌ، حَتَّى وَهُوَ مُدَوَّرٌ.'] : ['why.sq', 'أَرْبَعَةُ رُؤُوسٍ وَحَوَافُّ مُسْتَقِيمَةٌ.'];
-      if (item.kind === 'circle') return ['why.c', 'حَافَّتُهُ مُنْحَنِيَةٌ وَلَا رُؤُوسَ لَهُ.']; return item.tag === 'oval' ? ['why.oval', 'مَمْطُوطٌ، فَلَيْسَ دَائِرَةً.'] : ['why.tri', 'لَهُ ثَلَاثَةُ رُؤُوسٍ، فَلَيْسَ مُرَبَّعًا وَلَا دَائِرَةً.']; },
+    reason(item) { if (item.kind === 'square') return item.rot ? W('why.sqRot') : W('why.sq');
+      if (item.kind === 'circle') return W('why.c'); return item.tag === 'oval' ? W('why.oval') : W('why.tri'); },
     twin(item) { return { squareRot: () => MK.squareRot(), squareUp: () => MK.squareRot(), circle: MK.circle, oval: MK.oval }[item.tag] || MK.circle; },
-    msOk: ['ms.ok', 'ثَلَاثَةٌ مِنْ ثَلَاثَةٍ! {أَتْقَنْتَ|أَتْقَنْتِ} الدَّائِرَةَ وَالمُرَبَّعَ.'],
     async recall() { const svg = newStage(300); const g = shapeAt(svg, { type: 'square', size: 124, rot: 40, color: css('--square') }, 180, 140);
       g.animate([{ transform: 'translate(180px,140px) rotate(40deg)' }, { transform: 'translate(180px,140px) rotate(0deg)' }], { duration: 1200, fill: 'forwards' });
       await say('compass', 'ms.recall', 'المُرَبَّعُ المُدَوَّرُ مَا زَالَ مُرَبَّعًا: أَرْبَعَةُ رُؤُوسٍ. وَالدَّائِرَةُ مُتَسَاوِيَةٌ مِنْ كُلِّ الجِهَاتِ بِلَا رُؤُوسٍ.'); },
   },
-  chaos: { bins: ['circle', 'square', 'other'], boast: ['chaos', 'chaos.boast', 'رَتَّبْتُ الأَشْكَالَ فِي السِّلَالِ وَحْدِي! كُلُّ شَيْءٍ صَحِيحٌ… أَظُنُّ!'],
-    placed: [{ s: { type: 'circle', size: 76, color: NEUTRAL[0] }, bin: 'circle', y: 70 }, { s: { type: 'circle', size: 70, color: NEUTRAL[2], object: 'plate' }, bin: 'circle', y: 170 },
-      { s: { type: 'square', size: 70, color: NEUTRAL[1] }, bin: 'square', y: 120 }, { s: { type: 'square', size: 70, rot: 40, color: NEUTRAL[3] }, bin: 'other', y: 70, wrong: true }, { s: { type: 'triangle', size: 78, color: NEUTRAL[4] }, bin: 'other', y: 175 }],
-    fixTo: 'square', hint: ['compass', 'chaos.hint', '{اُنْظُرْ|اُنْظُرِي} إِلَى سَلَّةِ «غَيْرُ ذَلِكَ»، {وَعُدَّ|وَعُدِّي} الرُّؤُوسَ.'],
-    reasons: [{ id: 'chaos.r1', t: 'ظَنَّتْ أَنَّ المُرَبَّعَ المُدَوَّرَ شَكْلٌ آخَرُ، وَلَهُ أَرْبَعَةُ رُؤُوسٍ.', ok: true }, { id: 'chaos.r2', t: 'لِأَنَّ لَوْنَهُ مُخْتَلِفٌ عَنِ المُرَبَّعَاتِ الأُخْرَى.', ok: false }],
-    whyNo: ['compass', 'chaos.whyNo', 'اللَّوْنُ لَا يُغَيِّرُ الشَّكْلَ. {عُدَّ|عُدِّي} الرُّؤُوسَ.'], thanks: ['chaos', 'chaos.thanks', 'أُوه! خَدَعَنِي التَّدْوِيرُ! شُكْرًا يَا {مُهَنْدِسُ|مُهَنْدِسَةُ}!'] },
   async wrap(svg) { for (let i = 0; i < 9; i++) { const r = el('rect', { x: 64 + i * 26, y: 236, width: 22, height: 22, rx: 2, fill: css('--square'), stroke: '#fff', 'stroke-width': 2, opacity: 0 }, svg);
       r.animate([{ opacity: 0, transform: 'translateY(-16px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 380, delay: 150 + i * 80, fill: 'forwards' }); }
     const f = el('g', { transform: 'translate(180 176)' }, svg); el('circle', { r: 58, fill: css('--circle'), stroke: '#fff', 'stroke-width': 4, filter: 'url(#pp)' }, f); el('circle', { r: 40, fill: '#9fd4ea' }, f);
     const jet = el('path', { d: 'M0 -6 Q-14 -50 -30 -24 M0 -6 Q14 -50 30 -24 M0 -6 L0 -56', stroke: '#9fd4ea', 'stroke-width': 5, fill: 'none', 'stroke-linecap': 'round' }, f);
     jet.animate([{ opacity: .6 }, { opacity: 1 }], { duration: 700, iterations: Infinity, direction: 'alternate' });
     f.animate([{ transform: 'translate(180px,176px) scale(0)' }, { transform: 'translate(180px,176px) scale(1.08)' }, { transform: 'translate(180px,176px) scale(1)' }], { duration: 900, delay: 700, fill: 'both', easing: 'ease-out' }); },
-  wrapLines: [['compass', 'wrap.01', '{بَنَيْتَ|بَنَيْتِ} لِلْمَدِينَةِ نَافُورَةً دَائِرِيَّةً، وَحَوْلَهَا بَلَاطٌ مُرَبَّعٌ!'],
-    ['compass', 'wrap.02', 'اليَوْمَ عَرَفْنَا: الدَّائِرَةُ حَافَّتُهَا مُنْحَنِيَةٌ بِلَا رُؤُوسٍ، وَالمُرَبَّعُ لَهُ أَرْبَعَةُ رُؤُوسٍ مَهْمَا دَوَّرْنَاهُ.'],
-    ['chaos', 'wrap.03', 'مُهِمَّةُ البَيْتِ: ثَلَاثَةُ أَشْيَاءَ دَائِرِيَّةٍ، وَثَلَاثَةُ أَشْيَاءَ مُرَبَّعَةٍ. سَأَخْتَبِئُ فِي أَحَدِهَا!']],
-});
+})));
 
 /* ---------------- [m1.u1.d2] الدرس 2: المثلث (يدخل مصطلح «ضلع») ---------------- */
-LESSONS.push({ id: 'm1.u1.d2', title: 'المُثَلَّثُ', icon: ['triangle'],
+LESSONS.push(lesson('m1.u1.d2', W => ({
   async hook() {
     const svg = newStage(300, { cityOpacity: .25 });
     const house = el('g', { filter: 'url(#pp)' }, svg); el('rect', { x: 120, y: 150, width: 120, height: 104, fill: '#f4a38e', stroke: '#fff', 'stroke-width': 4 }, house); el('rect', { x: 166, y: 204, width: 28, height: 50, fill: '#9c6837' }, house);
@@ -147,43 +124,23 @@ LESSONS.push({ id: 'm1.u1.d2', title: 'المُثَلَّثُ', icon: ['triangle
       await say('compass', 'wk.07', '{اِنْتَبِهْ|اِنْتَبِهِي}: إِذَا انْحَنَتْ إِحْدَى الحَوَافِّ، أَوْ كَانَ الشَّكْلُ مَفْتُوحًا، فَلَيْسَ مُثَلَّثًا.'); },
   ],
   sort: {
-    bins: ['triangle', 'square', 'other'],
-    intro: ['pr.01', 'إِلَى أَيِّ سَلَّةٍ يَذْهَبُ كُلُّ شَكْلٍ؟ {عُدَّ|عُدِّي} الأَضْلَاعَ قَبْلَ أَنْ {تَخْتَارَ|تَخْتَارِي}.'],
-    practice: [MK.triUp, MK.triFlip, MK.curvedTri, MK.triThin, MK.openTri],
-    sets: [[MK.sign, MK.curvedTri, MK.triThin], [MK.triFlip, MK.openTri, () => MK.squareRot()]],
-    remedial: [MK.triFlip, MK.openTri],
     errorOf(item, bin) { if (item.tag === 'triFlip') return 'flipped'; if (item.tag === 'triThin') return 'thin'; if (item.tag === 'curvedTri') return 'curved'; if (item.tag === 'openTri') return 'open'; if (item.kind === 'square') return 'fourCorners'; return 'generic'; },
-    ERR: { flipped: ['gen.err.flipped.01', 'لِنُفَكِّرْ مَعًا: هَيَّا نَعُدُّ أَضْلَاعَهُ… ثَلَاثَةٌ. قَلَبْنَاهُ فَقَطْ!'],
-      thin: ['gen.err.thin.01', 'لِنُفَكِّرْ مَعًا: هَيَّا نَعُدُّ أَضْلَاعَهُ. ثَلَاثَةٌ! الطَّوِيلُ الرَّفِيعُ مُثَلَّثٌ أَيْضًا.'],
-      curved: ['gen.err.curved.01', 'لِنُفَكِّرْ مَعًا: إِحْدَى حَوَافِّهِ مُنْحَنِيَةٌ، وَأَضْلَاعُ المُثَلَّثِ مُسْتَقِيمَةٌ كُلُّهَا.'],
-      open: ['gen.err.open.01', 'لِنُفَكِّرْ مَعًا: هَذَا الشَّكْلُ مَفْتُوحٌ، فِيهِ فَتْحَةٌ. المُثَلَّثُ مُغْلَقٌ.'],
-      fourCorners: ['gen.err.fourCorners.01', 'لِنُفَكِّرْ مَعًا: كَمْ رَأْسًا لَهُ؟ أَرْبَعَةٌ، فَلَيْسَ مُثَلَّثًا.'], generic: ['gen.err.generic.02', 'لِنُفَكِّرْ مَعًا: كَمْ ضِلْعًا لَهُ؟ وَهَلْ أَضْلَاعُهُ مُسْتَقِيمَةٌ؟'] },
     showErr(err, item, g) { if (err === 'flipped' || err === 'thin') straighten(g, item); },
-    reason(item) { if (item.kind === 'triangle') return ['why.t', 'ثَلَاثَةُ أَضْلَاعٍ مُسْتَقِيمَةٍ وَثَلَاثَةُ رُؤُوسٍ.']; if (item.kind === 'square') return ['why.sq', 'أَرْبَعَةُ أَضْلَاعٍ وَأَرْبَعَةُ رُؤُوسٍ.'];
-      return item.tag === 'open' || item.tag === 'openTri' ? ['why.open', 'مَفْتُوحٌ، فَلَيْسَ مُثَلَّثًا.'] : ['why.curved', 'فِيهِ حَافَّةٌ مُنْحَنِيَةٌ، فَلَيْسَ مُثَلَّثًا.']; },
+    reason(item) { if (item.kind === 'triangle') return W('why.t'); if (item.kind === 'square') return W('why.sq');
+      return item.tag === 'open' || item.tag === 'openTri' ? W('why.open') : W('why.curved'); },
     twin(item) { return { triFlip: MK.triFlip, triThin: MK.triWide, curvedTri: MK.curvedTri, openTri: MK.openTri, triUp: MK.triFlip }[item.tag] || MK.triFlip; },
-    msOk: ['ms.ok', 'ثَلَاثَةٌ مِنْ ثَلَاثَةٍ! {أَتْقَنْتَ|أَتْقَنْتِ} المُثَلَّثَ.'],
     async recall() { const svg = newStage(300); const g = shapeAt(svg, { type: 'triangle', w: 170, h: 150, rot: 180, color: css('--triangle') }, 180, 140);
       g.animate([{ transform: 'translate(180px,140px) rotate(180deg)' }, { transform: 'translate(180px,140px) rotate(0deg)' }], { duration: 1200, fill: 'forwards' });
       await say('compass', 'ms.recall', 'المُثَلَّثُ المَقْلُوبُ مَا زَالَ مُثَلَّثًا: ثَلَاثَةُ أَضْلَاعٍ مُسْتَقِيمَةٍ. وَالشَّكْلُ المَفْتُوحُ أَوِ المُنْحَنِي لَيْسَ مُثَلَّثًا.'); },
   },
-  chaos: { bins: ['triangle', 'square', 'other'], boast: ['chaos', 'chaos.boast', 'رَتَّبْتُ المُثَلَّثَاتِ! المُثَلَّثُ رَأْسُهُ إِلَى الأَعْلَى دَائِمًا، صَحِيحٌ؟'],
-    placed: [{ s: { type: 'triangle', size: 78, color: NEUTRAL[0] }, bin: 'triangle', y: 70 }, { s: { type: 'triangle', w: 84, h: 60, apex: -1, color: '#f2c14e', object: 'cheese' }, bin: 'triangle', y: 175 },
-      { s: { type: 'square', size: 70, color: NEUTRAL[1] }, bin: 'square', y: 120 }, { s: { type: 'triangle', size: 76, rot: 180, color: NEUTRAL[3] }, bin: 'other', y: 70, wrong: true }, { s: { type: 'circle', size: 70, color: NEUTRAL[4] }, bin: 'other', y: 175 }],
-    fixTo: 'triangle', hint: ['compass', 'chaos.hint', '{اُنْظُرْ|اُنْظُرِي} إِلَى سَلَّةِ «غَيْرُ ذَلِكَ»، {وَعُدَّ|وَعُدِّي} الأَضْلَاعَ.'],
-    reasons: [{ id: 'chaos.r1', t: 'ظَنَّتْ أَنَّ المُثَلَّثَ المَقْلُوبَ لَيْسَ مُثَلَّثًا، وَلَهُ ثَلَاثَةُ أَضْلَاعٍ.', ok: true }, { id: 'chaos.r2', t: 'لِأَنَّ المُثَلَّثَ رَأْسُهُ إِلَى الأَعْلَى دَائِمًا.', ok: false }],
-    whyNo: ['compass', 'chaos.whyNo', 'لَا، قَلْبُ المُثَلَّثِ لَا يُغَيِّرُ أَضْلَاعَهُ. {عُدَّ|عُدِّي} مَعِي.'], thanks: ['chaos', 'chaos.thanks', 'أُوه! كُنْتُ أَظُنُّ أَنَّ رَأْسَهُ إِلَى الأَعْلَى دَائِمًا! شُكْرًا يَا {مُهَنْدِسُ|مُهَنْدِسَةُ}!'] },
   async wrap(svg) { for (const [i, x] of [70, 180, 290].entries()) { const h = el('g', { transform: `translate(${x} 240)`, opacity: 0 }, svg);
       el('rect', { x: -34, y: -60, width: 68, height: 60, fill: ['#f4a38e', '#7cc4b8', '#f6cf7e'][i], stroke: '#fff', 'stroke-width': 3, filter: 'url(#pp)' }, h); el('rect', { x: -8, y: -26, width: 16, height: 26, fill: '#9c6837' }, h);
       el('polygon', { points: '-42,-60 0,-104 42,-60', fill: css('--triangle'), stroke: '#fff', 'stroke-width': 3, filter: 'url(#pp)' }, h);
       h.animate([{ opacity: 0, transform: `translate(${x}px,270px)` }, { opacity: 1, transform: `translate(${x}px,240px)` }], { duration: 600, delay: 300 + i * 350, fill: 'forwards', easing: 'cubic-bezier(.3,1.4,.6,1)' }); } },
-  wrapLines: [['compass', 'wrap.01', '{بَنَيْتَ|بَنَيْتِ} سُقُوفًا مُثَلَّثَةً لِبُيُوتِ المَدِينَةِ!'],
-    ['compass', 'wrap.02', 'اليَوْمَ عَرَفْنَا: لِلْمُثَلَّثِ ثَلَاثَةُ أَضْلَاعٍ مُسْتَقِيمَةٍ وَثَلَاثَةُ رُؤُوسٍ، مَهْمَا قَلَبْنَاهُ.'],
-    ['chaos', 'wrap.03', 'مُهِمَّةُ البَيْتِ: {اِبْحَثْ|اِبْحَثِي} عَنْ ثَلَاثَةِ أَشْيَاءَ مُثَلَّثَةٍ. وَاحِدٌ مِنْهَا قِطْعَةُ جُبْنٍ… رُبَّمَا أَكَلْتُهَا!']],
-});
+})));
 
 /* ---------------- [m1.u1.d3] الدرس 3: المستطيل (ومقارنة الأطوال من بداية مشتركة C014) ---------------- */
-LESSONS.push({ id: 'm1.u1.d3', title: 'المُسْتَطِيلُ', icon: ['rect'],
+LESSONS.push(lesson('m1.u1.d3', W => ({
   async hook() {
     const svg = newStage(300, { cityOpacity: .25 });
     const door = (x, w, h, lbl) => { const g = el('g', { transform: `translate(${x} 266)`, tabindex: 0, role: 'button', 'aria-label': lbl, style: 'cursor:pointer' }, svg);
@@ -246,42 +203,22 @@ LESSONS.push({ id: 'm1.u1.d3', title: 'المُسْتَطِيلُ', icon: ['rect
       await say('compass', 'wk.05', 'وَالمُرَبَّعُ؟ أَضْلَاعُهُ الأَرْبَعَةُ كُلُّهَا بِالطُّولِ نَفْسِهِ، فَنُسَمِّيهِ مُرَبَّعًا، لَا مُسْتَطِيلًا.'); },
   ],
   sort: {
-    bins: ['rect', 'square', 'other'],
-    intro: ['pr.01', 'إِلَى أَيِّ سَلَّةٍ يَذْهَبُ كُلُّ شَكْلٍ؟ {قَارِنِ|قَارِنِي} الأَضْلَاعَ: هَلْ فِيهَا طَوِيلٌ وَقَصِيرٌ؟'],
-    practice: [MK.rectH, MK.rectV, MK.squareUp, MK.rectRot, MK.triUp],
-    sets: [[MK.door, () => MK.squareRot(15), MK.envelope], [MK.rectRot, MK.window4, MK.curvedTri]],
-    remedial: [MK.rectV, MK.squareUp],
     errorOf(item, bin) { if (item.kind === 'square' && bin === 'rect') return 'squareAsRect'; if (item.kind === 'rect' && bin === 'square') return 'rectAsSquare'; if (item.kind === 'rect') return item.rot ? 'rotatedRect' : 'standingRect'; if (item.kind === 'square') return 'equalSides'; return 'generic'; },
-    ERR: { squareAsRect: ['gen.err.squareAsRect.01', 'لِنُفَكِّرْ مَعًا: أَضْلَاعُهُ الأَرْبَعَةُ كُلُّهَا بِالطُّولِ نَفْسِهِ. هَذَا نُسَمِّيهِ مُرَبَّعًا.'],
-      rectAsSquare: ['gen.err.rectAsSquare.01', 'لِنُفَكِّرْ مَعًا: ضِلْعَانِ أَطْوَلُ مِنَ الآخَرَيْنِ، فَلَيْسَ مُرَبَّعًا.'],
-      rotatedRect: ['gen.err.rotatedRect.01', 'لِنُفَكِّرْ مَعًا: دَوَّرْنَاهُ فَقَطْ. مَا زَالَ لَهُ ضِلْعَانِ طَوِيلَانِ وَضِلْعَانِ قَصِيرَانِ.'],
-      standingRect: ['gen.err.standingRect.01', 'لِنُفَكِّرْ مَعًا: المُسْتَطِيلُ الوَاقِفُ مِثْلُ البَابِ: ضِلْعَانِ طَوِيلَانِ وَضِلْعَانِ قَصِيرَانِ.'],
-      equalSides: ['gen.err.equalSides.01', 'لِنُفَكِّرْ مَعًا: هَلْ أَضْلَاعُهُ الأَرْبَعَةُ مُتَسَاوِيَةٌ؟'], generic: ['gen.err.generic.03', 'لِنُفَكِّرْ مَعًا: كَمْ ضِلْعًا لَهُ؟ وَهَلْ فِيهَا طَوِيلٌ وَقَصِيرٌ؟'] },
     showErr(err, item, g) { if (err === 'rotatedRect') straighten(g, item); },
-    reason(item) { if (item.kind === 'rect') return ['why.r', 'ضِلْعَانِ طَوِيلَانِ وَضِلْعَانِ قَصِيرَانِ.']; if (item.kind === 'square') return ['why.sq', 'أَضْلَاعُهُ الأَرْبَعَةُ مُتَسَاوِيَةٌ.']; return ['why.o', 'لَيْسَ لَهُ أَرْبَعَةُ أَضْلَاعٍ مُسْتَقِيمَةٍ.']; },
+    reason(item) { if (item.kind === 'rect') return W('why.r'); if (item.kind === 'square') return W('why.sq'); return W('why.o'); },
     twin(item) { return item.kind === 'square' ? () => MK.squareRot() : item.kind === 'rect' ? MK.rectRot : MK.curvedTri; },
-    msOk: ['ms.ok', 'ثَلَاثَةٌ مِنْ ثَلَاثَةٍ! {أَتْقَنْتَ|أَتْقَنْتِ} المُسْتَطِيلَ.'],
     async recall() { const svg = newStage(300); shapeAt(svg, { type: 'rect', w: 90, h: 170, color: css('--rect') }, 110, 140); shapeAt(svg, { type: 'square', size: 120, color: css('--square') }, 260, 140);
       await say('compass', 'ms.recall', 'المُسْتَطِيلُ لَهُ ضِلْعَانِ طَوِيلَانِ وَضِلْعَانِ قَصِيرَانِ، وَاقِفًا أَوْ نَائِمًا. وَالمُرَبَّعُ أَضْلَاعُهُ كُلُّهَا مُتَسَاوِيَةٌ.'); },
   },
-  chaos: { bins: ['rect', 'square', 'other'], boast: ['chaos', 'chaos.boast', 'المُسْتَطِيلُ نَائِمٌ دَائِمًا! وَهَذَا البَابُ الوَاقِفُ… غَيْرُ ذَلِكَ!'],
-    placed: [{ s: { type: 'rect', w: 90, h: 50, color: NEUTRAL[0] }, bin: 'rect', y: 80 }, { s: { type: 'rect', w: 96, h: 58, color: NEUTRAL[2], object: 'envelope' }, bin: 'rect', y: 175 },
-      { s: { type: 'square', size: 70, color: NEUTRAL[1] }, bin: 'square', y: 120 }, { s: { type: 'rect', w: 52, h: 96, color: '#9c6837', object: 'door' }, bin: 'other', y: 82, wrong: true }, { s: { type: 'triangle', size: 70, color: NEUTRAL[4] }, bin: 'other', y: 190 }],
-    fixTo: 'rect', hint: ['compass', 'chaos.hint', '{اُنْظُرْ|اُنْظُرِي} إِلَى البَابِ: {قَارِنْ|قَارِنِي} أَضْلَاعَهُ.'],
-    reasons: [{ id: 'chaos.r1', t: 'ظَنَّتْ أَنَّ المُسْتَطِيلَ الوَاقِفَ لَيْسَ مُسْتَطِيلًا، وَلَهُ ضِلْعَانِ طَوِيلَانِ وَضِلْعَانِ قَصِيرَانِ.', ok: true }, { id: 'chaos.r2', t: 'لِأَنَّ البَابَ بُنِّيٌّ، وَالمُسْتَطِيلَاتُ لَيْسَتْ بُنِّيَّةً.', ok: false }],
-    whyNo: ['compass', 'chaos.whyNo', 'اللَّوْنُ لَا يُغَيِّرُ الشَّكْلَ. {قَارِنِ|قَارِنِي} الأَضْلَاعَ.'], thanks: ['chaos', 'chaos.thanks', 'أُوه! البَابُ مُسْتَطِيلٌ وَاقِفٌ! شُكْرًا يَا {مُهَنْدِسُ|مُهَنْدِسَةُ}!'] },
   async wrap(svg) { const b = el('g', { transform: 'translate(180 266)', opacity: 0 }, svg);
       el('rect', { x: -90, y: -170, width: 180, height: 170, fill: '#7cc4b8', stroke: '#fff', 'stroke-width': 4, filter: 'url(#pp)' }, b);
       for (const [x, y] of [[-66, -150], [-14, -150], [38, -150], [-66, -96], [38, -96]]) el('rect', { x, y, width: 28, height: 40, fill: '#d9f0f7', stroke: '#fff', 'stroke-width': 3 }, b);
       el('rect', { x: -18, y: -70, width: 36, height: 70, fill: '#9c6837', stroke: '#fff', 'stroke-width': 3 }, b);
       b.animate([{ opacity: 0, transform: 'translate(180px,300px)' }, { opacity: 1, transform: 'translate(180px,266px)' }], { duration: 800, delay: 300, fill: 'forwards', easing: 'cubic-bezier(.3,1.4,.6,1)' }); },
-  wrapLines: [['compass', 'wrap.01', '{بَنَيْتَ|بَنَيْتِ} عِمَارَةً بِأَبْوَابٍ وَشَبَابِيكَ مُسْتَطِيلَةٍ!'],
-    ['compass', 'wrap.02', 'اليَوْمَ عَرَفْنَا: لِلْمُسْتَطِيلِ ضِلْعَانِ طَوِيلَانِ وَضِلْعَانِ قَصِيرَانِ، وَنُقَارِنُ الأَطْوَالَ مِنْ بِدَايَةٍ وَاحِدَةٍ.'],
-    ['chaos', 'wrap.03', 'مُهِمَّةُ البَيْتِ: {اِبْحَثْ|اِبْحَثِي} عَنْ بَابٍ وَشُبَّاكٍ وَظَرْفٍ مُسْتَطِيلٍ!']],
-});
+})));
 
 /* ---------------- [m1.u1.d4] الدرس 4: صيد الأشكال وتركيبها (C005، مدخل C163) ---------------- */
-LESSONS.push({ id: 'm1.u1.d4', title: 'صَيْدُ الأَشْكَالِ', icon: ['circle', 'triangle', 'rect'],
+LESSONS.push(lesson('m1.u1.d4', W => ({
   async hook() {
     const svg = newStage(300, { cityOpacity: .2 });
     const things = [[MK.plate(), 60, 90, .55], [MK.door(), 150, 190, .55], [MK.sign(), 255, 90, .55], [MK.tile(), 300, 210, .55], [MK.clock(), 70, 215, .5], [MK.envelope(), 200, 92, .5]];
@@ -332,59 +269,26 @@ LESSONS.push({ id: 'm1.u1.d4', title: 'صَيْدُ الأَشْكَالِ', ico
       await say('compass', 'wk.05', 'وَصَيَّادُ الأَشْكَالِ يَنْتَبِهُ: الطَّبَقُ مُسَطَّحٌ دَائِرِيٌّ، أَمَّا الكُرَةُ فَنُمْسِكُهَا مِنْ كُلِّ الجِهَاتِ؛ لَيْسَتْ دَائِرَةً.'); },
   ],
   sort: {
-    bins: ['circle', 'square', 'triangle', 'rect'],
-    intro: ['pr.01', 'هَيَّا نُرَتِّبُ أَشْيَاءَ البَيْتِ: كُلُّ شَيْءٍ إِلَى سَلَّةِ شَكْلِهِ.'],
-    practice: [MK.plate, MK.door, MK.sign, MK.napkin, MK.envelope, MK.cheese],
-    sets: [[MK.window4, MK.wheel, MK.cheese], [MK.clock, MK.envelope, MK.tile]],
-    remedial: [MK.napkin, MK.door],
     errorOf(item, bin) { if (item.kind === 'square' && bin === 'rect') return 'squareAsRect'; if (item.kind === 'rect' && bin === 'square') return 'rectAsSquare'; if (item.rot && item.kind !== 'circle') return 'rotated'; return 'byShape'; },
-    ERR: { squareAsRect: ['gen.err.squareAsRect.01', 'لِنُفَكِّرْ مَعًا: أَضْلَاعُهُ الأَرْبَعَةُ كُلُّهَا بِالطُّولِ نَفْسِهِ. هَذَا نُسَمِّيهِ مُرَبَّعًا.'], rectAsSquare: ['gen.err.rectAsSquare.01', 'لِنُفَكِّرْ مَعًا: ضِلْعَانِ أَطْوَلُ مِنَ الآخَرَيْنِ، فَلَيْسَ مُرَبَّعًا.'],
-      rotated: ['gen.err.rotated.01', 'لِنُفَكِّرْ مَعًا: هُوَ مُدَوَّرٌ فَقَطْ. هَيَّا نَعُدُّ أَضْلَاعَهُ وَنُقَارِنُهَا.'], byShape: ['gen.err.byShape.01', 'لِنُفَكِّرْ مَعًا: لَا نَنْظُرُ إِلَى اسْمِ الشَّيْءِ؛ نَنْظُرُ إِلَى حَوَافِّهِ وَرُؤُوسِهِ.'] },
     showErr(err, item, g) { if (err === 'rotated') straighten(g, item); },
-    reason(item) { return { circle: ['why.c', 'حَافَّتُهُ مُنْحَنِيَةٌ بِلَا رُؤُوسٍ.'], square: ['why.sq', 'أَرْبَعَةُ أَضْلَاعٍ مُتَسَاوِيَةٍ.'], triangle: ['why.t', 'ثَلَاثَةُ أَضْلَاعٍ.'], rect: ['why.r', 'ضِلْعَانِ طَوِيلَانِ وَضِلْعَانِ قَصِيرَانِ.'] }[item.kind]; },
+    reason(item) { return { circle: W('why.c'), square: W('why.sq'), triangle: W('why.t'), rect: W('why.r') }[item.kind]; },
     twin(item) { return { circle: MK.clock, square: MK.napkin, triangle: MK.cheese, rect: MK.envelope }[item.kind]; },
-    msOk: ['ms.ok', 'ثَلَاثَةٌ مِنْ ثَلَاثَةٍ! {أَتْقَنْتَ|أَتْقَنْتِ} صَيْدَ الأَشْكَالِ.'],
     async recall() { const svg = newStage(300); [['circle', 60], ['square', 140], ['triangle', 220], ['rect', 305]].forEach(([k, x]) => shapeAt(svg, { type: k, size: 64, w: k === 'rect' ? 80 : k === 'triangle' ? 70 : undefined, h: k === 'rect' ? 44 : k === 'triangle' ? 64 : undefined, color: css(IDC[k]) }, x, 140));
       await say('compass', 'ms.recall', 'الدَّائِرَةُ بِلَا رُؤُوسٍ، وَالمُثَلَّثُ ثَلَاثَةُ أَضْلَاعٍ، وَالمُرَبَّعُ أَرْبَعَةٌ مُتَسَاوِيَةٌ، وَالمُسْتَطِيلُ طَوِيلَانِ وَقَصِيرَانِ.'); },
   },
-  chaos: { bins: ['circle', 'square', 'triangle', 'rect'], boast: ['chaos', 'chaos.boast', 'وَضَعْتُ الكُرَةَ فِي سَلَّةِ الدَّوَائِرِ. الكُرَةُ دَائِرَةٌ، أَلَيْسَ كَذَلِكَ؟'],
-    placed: [{ s: { type: 'circle', size: 60, color: NEUTRAL[0], object: 'plate' }, bin: 'circle', y: 70 }, { s: { ball: true }, bin: 'circle', y: 170, wrong: true },
-      { s: { type: 'square', size: 56, color: NEUTRAL[1] }, bin: 'square', y: 120 }, { s: { type: 'triangle', size: 60, color: NEUTRAL[4] }, bin: 'triangle', y: 120 }, { s: { type: 'rect', w: 70, h: 40, color: NEUTRAL[2] }, bin: 'rect', y: 120 }],
-    fixTo: null, hint: ['compass', 'chaos.hint', '{اُنْظُرْ|اُنْظُرِي} جَيِّدًا إِلَى سَلَّةِ الدَّوَائِرِ: هَلْ كُلُّ مَا فِيهَا مُسَطَّحٌ؟'],
-    reasons: [{ id: 'chaos.r1', t: 'الكُرَةُ لَيْسَتْ مُسَطَّحَةً؛ نُمْسِكُهَا مِنْ كُلِّ الجِهَاتِ، أَمَّا الدَّائِرَةُ فَمُسَطَّحَةٌ كَالطَّبَقِ.', ok: true }, { id: 'chaos.r2', t: 'لِأَنَّ الكُرَةَ أَكْبَرُ مِنَ الطَّبَقِ.', ok: false }],
-    whyNo: ['compass', 'chaos.whyNo', 'الحَجْمُ لَا يُغَيِّرُ الشَّكْلَ. هَلِ الكُرَةُ مُسَطَّحَةٌ؟'], thanks: ['chaos', 'chaos.thanks', 'أُوه! الكُرَةُ تَتَدَحْرَجُ مِنْ كُلِّ الجِهَاتِ… سَأُعِيدُهَا إِلَى المَلْعَبِ!'] },
   async wrap(svg) { const items = [['circle', 70, 200], ['triangle', 140, 190], ['square', 220, 200], ['rect', 290, 205]];
       items.forEach(([k, x, y], i) => { const g = shapeAt(svg, { type: k, size: 54, w: k === 'rect' ? 70 : k === 'triangle' ? 60 : undefined, h: k === 'rect' ? 40 : k === 'triangle' ? 56 : undefined, color: css(IDC[k]) }, x, y);
         g.animate([{ opacity: 0, transform: `translate(${x}px,${y - 60}px)` }, { opacity: 1, transform: `translate(${x}px,${y}px)` }], { duration: 500, delay: 250 + i * 220, fill: 'both', easing: 'cubic-bezier(.3,1.4,.6,1)' }); });
       label(svg, 180, 262, 'حَدِيقَةُ الأَشْكَالِ', 17); },
-  wrapLines: [['compass', 'wrap.01', '{صَنَعْتَ|صَنَعْتِ} حَدِيقَةَ الأَشْكَالِ فِي وَسَطِ المَدِينَةِ!'],
-    ['compass', 'wrap.02', 'اليَوْمَ صِدْنَا الأَشْكَالَ فِي أَشْيَاءِ البَيْتِ، وَرَكَّبْنَا مِنْهَا أَشْكَالًا جَدِيدَةً.'],
-    ['chaos', 'wrap.03', 'مُهِمَّةُ البَيْتِ: {صَوِّرْ|صَوِّرِي} شَيْئًا لِكُلِّ شَكْلٍ فِي {بَيْتِكَ… وَلَا تُصَوِّرِ|بَيْتِكِ… وَلَا تُصَوِّرِي} الكُرَةَ!']],
-});
+})));
 
 /* ---------------- [m1.u1.d5] الدرس 5: مراجعة واختبار الوحدة (D30: شفوي بصري من 8 أسئلة؛ D178: 85%) ---------------- */
-const TEST_LESSON = { t1: 'm1.u1.d1', t2: 'm1.u1.d1', t6: 'm1.u1.d1', t3: 'm1.u1.d2', t5: 'm1.u1.d2', t4: 'm1.u1.d3', t7: 'm1.u1.d3', t8: 'm1.u1.d3' };   // كل سؤال ← الدرس الذي يعلّمه
-const TEST_CRYSTAL = ['chaos', 'test.crystal', 'أُفّ! هَذِهِ قِطْعَةُ البِلَّوْرَةِ… {أَنْتَ|أَنْتِ} {تَسْتَحِقُّهَا|تَسْتَحِقِّينَهَا}!'];
-const TEST_BADGE = ['compass', 'test.badge', '{رَبِحْتَ|رَبِحْتِ} شَارَةَ صَيَّادِ الأَشْكَالِ!'];
-const TEST_REVIEW = { 'm1.u1.d1': ['test.review.d1', 'هَيَّا نُرَاجِعُ دَرْسَ الدَّائِرَةِ وَالمُرَبَّعِ مَرَّةً أُخْرَى، ثُمَّ نَعُودُ لِلتَّحَدِّي.'],
-  'm1.u1.d2': ['test.review.d2', 'هَيَّا نُرَاجِعُ دَرْسَ المُثَلَّثِ مَرَّةً أُخْرَى، ثُمَّ نَعُودُ لِلتَّحَدِّي.'],
-  'm1.u1.d3': ['test.review.d3', 'هَيَّا نُرَاجِعُ دَرْسَ المُسْتَطِيلِ مَرَّةً أُخْرَى، ثُمَّ نَعُودُ لِلتَّحَدِّي.'] };
-const TEST = [
-  { q: ['test.t1', 'أَيْنَ الدَّائِرَةُ؟'], id: 't1', ans: 0, opts: () => [MK.circle(), MK.oval(), MK.squareUp()] },
-  { q: ['test.t2', 'أَيْنَ المُرَبَّعُ؟'], id: 't2', ans: 0, opts: () => [MK.squareRot(45), MK.rectH(), MK.triUp()] },
-  { q: ['test.t3', 'أَيْنَ المُثَلَّثُ؟'], id: 't3', ans: 0, opts: () => [MK.triFlip(), MK.openTri(), MK.squareUp()] },
-  { q: ['test.t4', 'أَيْنَ المُسْتَطِيلُ؟'], id: 't4', ans: 0, opts: () => [MK.rectV(), MK.squareUp(), MK.circle()] },
-  { q: ['test.t5', 'أَيُّ شَكْلٍ لَهُ ثَلَاثَةُ رُؤُوسٍ؟'], id: 't5', ans: 0, opts: () => [MK.triThin(), MK.squareRot(), MK.circle()] },
-  { q: ['test.t6', 'أَيُّ شَيْءٍ لَيْسَ لَهُ رُؤُوسٌ؟'], id: 't6', ans: 0, opts: () => [MK.plate(), MK.tile(), MK.sign()] },
-  { q: ['test.t7', 'أَيُّ شَيْءٍ مُسْتَطِيلٌ؟'], id: 't7', ans: 0, opts: () => [MK.door(), MK.clock(), MK.napkin()] },
-  { q: ['test.t8', 'أَيُّ شَكْلٍ لَهُ ضِلْعَانِ طَوِيلَانِ وَضِلْعَانِ قَصِيرَانِ؟'], id: 't8', ans: 0, opts: () => [MK.envelope(), MK.window4(), MK.cheese()] },
-];
 function badgeArt1(svg) { const b = el('g', { transform: 'translate(150 160)' }, svg);
   el('circle', { r: 70, fill: '#f6cf7e', stroke: '#fff', 'stroke-width': 5, filter: 'url(#pp)' }, b); el('circle', { r: 54, fill: '#ffe9a8' }, b);
   [['circle', -20, -14], ['square', 20, -14], ['triangle', -20, 22], ['rect', 20, 22]].forEach(([k, x, y]) => shapeAt(b, { type: k, size: 28, w: k === 'rect' ? 34 : k === 'triangle' ? 32 : undefined, h: k === 'rect' ? 20 : k === 'triangle' ? 28 : undefined, color: css(IDC[k]) }, x, y));
   label(svg, 150, 258, 'شَارَةُ صَيَّادِ الأَشْكَالِ', 17); return b; }
-LESSONS.push({ id: 'm1.u1.d5', title: 'مُرَاجَعَةٌ وَتَحَدٍّ', icon: ['crystal'],
-  test: { items: TEST, lessonOf: TEST_LESSON, review: TEST_REVIEW, badgeLine: TEST_BADGE, winLine: TEST_CRYSTAL, art: badgeArt1, badgeName: 'شارة صيّاد الأشكال' },
+LESSONS.push(lesson('m1.u1.d5', W => ({
+  test: { art: badgeArt1 },
   async hook() {
     const svg = newStage(300, { cityOpacity: .3 });
     const cr = el('g', { transform: 'translate(180 130)' }, svg); el('polygon', { points: '0,-60 40,-14 22,56 -22,56 -40,-14', fill: '#9fd4ea', stroke: '#fff', 'stroke-width': 4, filter: 'url(#pp)' }, cr);
@@ -399,5 +303,5 @@ LESSONS.push({ id: 'm1.u1.d5', title: 'مُرَاجَعَةٌ وَتَحَدٍّ
       g.animate([{ transform: `translate(${x}px,140px) scale(.3)` }, { transform: `translate(${x}px,140px) scale(1.15)` }, { transform: `translate(${x}px,140px) scale(1)` }], { duration: 500, fill: 'both' }); await say('compass', id, t); }
   },
   worked: [],
-});
+})));
 

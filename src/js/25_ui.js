@@ -22,7 +22,7 @@ help.innerHTML = compassSVG();
 let idleTimer = null, idleHandler = null;
 function armIdle(h) { idleHandler = h; resetIdle(); }
 function resetIdle() { clearTimeout(idleTimer); help.hidden = true; if (!idleHandler) return;
-  idleTimer = setTimeout(async () => { if (speechBusy()) { resetIdle(); return; } help.hidden = false; help.onclick = () => { help.hidden = true; clearTimeout(idleTimer); const h = idleHandler; if (h) Promise.resolve(h()).then(() => { if (idleHandler === h) resetIdle(); }); }; await say('compass', 'gen.hintOffer.01', 'هَلْ نُفَكِّرُ مَعًا؟ {اِلْمَسْ|اِلْمَسِي} فِرْجَار.', { ifIdle: true, free: true }); }, FAST ? 1500 : 20000); }
+  idleTimer = setTimeout(async () => { if (speechBusy()) { resetIdle(); return; } help.hidden = false; help.onclick = () => { help.hidden = true; clearTimeout(idleTimer); const h = idleHandler; if (h) Promise.resolve(h()).then(() => { if (idleHandler === h) resetIdle(); }); }; await say('compass', ...GEN.lines.hintOffer, { ifIdle: true, free: true }); }, FAST ? 1500 : 20000); }
 function disarmIdle() { idleHandler = null; clearTimeout(idleTimer); help.hidden = true; }
 document.addEventListener('pointerdown', e => { if (idleHandler && !help.contains(e.target)) resetIdle(); }, true);   // لمسة زر المساعدة نفسه لا تلغيه
 

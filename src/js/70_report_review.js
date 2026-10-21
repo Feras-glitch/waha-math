@@ -41,9 +41,6 @@ async function weeklyReport() {
 
 
 /* مراجعة اليوم: سؤال من كل درس حان موعده، من دروس ووحدات مختلفة مخلوطة (المبدأ 14) */
-const REVIEW_INTRO = ['compass', 'gen.review.intro', 'مُرَاجَعَةٌ قَصِيرَةٌ! أَسْئِلَةٌ مِنْ دُرُوسٍ {دَرَسْتَهَا|دَرَسْتِهَا} قَبْلَ أَيَّامٍ.'];
-const REVIEW_DONE = ['compass', 'gen.review.done', '{أَحْسَنْتَ|أَحْسَنْتِ}! {تَذَكَّرْتَ|تَذَكَّرْتِ} كُلَّ شَيْءٍ، وَالمُرَاجَعَةُ القَادِمَةُ بَعْدَ أَيَّامٍ أَكْثَرَ.'];
-const REVIEW_LATER = ['compass', 'gen.review.later', 'جَيِّدٌ! مَا {أَخْطَأْتَ|أَخْطَأْتِ} فِيهِ نُرَاجِعُهُ غَدًا مَرَّةً أُخْرَى.'];
 function reviewDue() { const now = Date.now(); return LESSONS.filter(L => L.sort && L.sort.sets && PROG.srs[L.id] && PROG.srs[L.id].due && PROG.srs[L.id].due <= now); }
 async function runReview() {
   const due = shuffle(reviewDue()).slice(0, 4); if (!due.length) return showHome();
@@ -64,7 +61,6 @@ async function runReview() {
   await nextBtn('خَرِيطَةُ الوَحْدَةِ'); showHome();
 }
 /* الاستراحة بعد حدّ الجلسة (المبدأ 11): يقترحها فرجار، والمتابعة بإذن الكبير */
-const SESSION_BREAK = ['compass', 'gen.session.break', 'عَمَلٌ رَائِعٌ! حَانَ وَقْتُ الاسْتِرَاحَةِ: {اِشْرَبْ|اِشْرَبِي} مَاءً، {وَتَحَرَّكْ|وَتَحَرَّكِي} قَلِيلًا، ثُمَّ نَعُودُ.'];
 function breakScene(L) { const c = $('#breakCover'); window.__scene = 'break';
   c.innerHTML = `<div class="breakbox"><div class="who">${compassSVG()}</div><p>${G(SESSION_BREAK[2])}</p><button class="go" id="restBtn">${G('سَأَسْتَرِيحُ الآنَ')}</button><button class="more" id="moreBtn">للكبار: درس إضافي الآن</button></div>`;
   c.hidden = false; say(...SESSION_BREAK);
@@ -84,16 +80,5 @@ function adultGate(then, onBack) {
     if (v === a * b) { gateUntil = Date.now() + 10 * 60 * 1000; then(); } else adultGate(then, onBack); };
 }
 /* بطاقة حوار للأهل بعد كل درس (D198): سؤال يفتح حديثاً عن الدرس، ومهمة البيت كما قالتها فوضى */
-const TALK = {
-  'm1.u1.d1': 'اسألوا {name}: «أرِني شيئاً دائرياً وشيئاً مربعاً في الغرفة. كيف {عرفتَ|عرفتِ} الفرق؟» الجواب المنتظر: الحافة المنحنية، أو عدّ الرؤوس الأربعة.',
-  'm1.u1.d2': 'ارسموا معاً مثلثاً مقلوباً، واسألوا: «هل ما زال مثلثاً؟ لماذا؟» الجواب المنتظر: له ثلاثة أضلاع وثلاثة رؤوس مهما دار.',
-  'm1.u1.d3': 'قفوا أمام باب ونافذة، واسألوا: «أيّهما مستطيل؟ وما الفرق بين المستطيل والمربع؟»',
-  'm1.u1.d4': 'في المطبخ: «كم شكلاً {تجد|تجدين} من كل نوع؟» واطلبوا أن يعدّ الأضلاع بإصبعه.',
-  'm1.u1.d5': 'اسألوا: «ما أصعب سؤال في التحدي؟ ولماذا؟» واستمعوا دون تصحيح.',
-  'm1.u2.d1': 'دحرجوا معاً كرة وعلبة مكعبة على الأرض، واسألوا: «أيّهما يتدحرج؟ ولماذا يقف الآخر؟»',
-  'm1.u2.d2': 'اسألوا: «أين {ترى|ترين} أسطوانة في البيت؟ وأين {ترى|ترين} مخروطاً؟» وجرّبوا دحرجة كوب ورقي.',
-  'm1.u2.d3': 'ارسموا حول علبة على ورقة، واسألوا: «ماذا ظهر على الورقة؟ هل الرسم مجسّم أم مسطّح؟»',
-  'm1.u2.d4': 'ابنوا برجاً من أشياء البيت، واسألوا: «ماذا {وضعتَ|وضعتِ} في الأسفل؟ ولماذا لا نضع الكرة هناك؟»',
-};
-const homeTask = L => { const w = (L.wrapLines || []).find(x => /مُهِمَّةُ البَيْتِ/.test(x[2])); return w ? plain(G(w[2])) : ''; };
+const homeTask = L => { const w = (L.wrapLines || []).find(x => x[1] === L.homeTask); return w ? plain(G(w[2])) : ''; };   // معرّف جملة المهمة في بيانات الدرس (homeTask)
 

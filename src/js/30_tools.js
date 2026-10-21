@@ -5,7 +5,6 @@
 async function traceTool(svg, shapes, opt = {}) {
   const trail = el('g', {}, svg), marks = el('g', {}, svg);
   const state = shapes.map(s => ({ s, found: new Set(), buckets: new Set(), done: false }));
-  const NUM = [['gen.num.01', 'وَاحِد'], ['gen.num.02', 'اثْنَان'], ['gen.num.03', 'ثَلَاثَة'], ['gen.num.04', 'أَرْبَعَة']];
   shapes.forEach(s => { s.g = shapeAt(svg, s, s.x, s.y); if (s.caption) s.cap = label(svg, s.x, s.capY || 280, ''); });
   svg.appendChild(trail); svg.appendChild(marks);
   const worldPoly = s => shapeGeom(s).poly.map(([px, py]) => { const a = (s.rot || 0) * Math.PI / 180; return [s.x + px * Math.cos(a) - py * Math.sin(a), s.y + px * Math.sin(a) + py * Math.cos(a)]; });
@@ -29,7 +28,7 @@ async function traceTool(svg, shapes, opt = {}) {
   svg.addEventListener('pointerup', () => { down = false; });
   async function demo() { for (const st of state) { const s = st.s; if (s.type === 'circle') { const r = shapeGeom(s).r; for (let a = 0; a <= 360; a += 8) { const q = a * Math.PI / 180; touch({ x: s.x + r * Math.cos(q), y: s.y + r * Math.sin(q) }); await sleep(18); } }
       else { const P = worldPoly(s); const path = [...P, P[0]]; for (let k = 0; k < P.length; k++) for (let t = 0; t <= 1; t += .1) { touch({ x: path[k][0] + (path[k + 1][0] - path[k][0]) * t, y: path[k][1] + (path[k + 1][1] - path[k][1]) * t }); await sleep(25); } } } }
-  armIdle(async () => { await say('compass', 'gen.demo.01', '{شَاهِدْ|شَاهِدِي} إِصْبَعِي أَوَّلًا.'); demo(); });
+  armIdle(async () => { await say('compass', ...GEN.lines.demo); demo(); });
   await allDone; disarmIdle();
   // عدّ الأضلاع باللمس (من الدرس الثاني، حين يدخل مصطلح «ضلع»)
   if (opt.sides) {
@@ -74,28 +73,16 @@ function askSort(item, bins) {
       if (hot) pick(hot.dataset.k); else g.setAttribute('transform', `translate(180 104) rotate(${item.rot || 0})`); });
   });
 }
-const PRAISE = [['gen.correct.01', '{أَحْسَنْتَ|أَحْسَنْتِ}! {عَدَدْتَ|عَدَدْتِ} {كَمُهَنْدِسٍ حَقِيقِيٍّ|كَمُهَنْدِسَةٍ حَقِيقِيَّةٍ}.'], ['gen.correct.02', 'تَمَامًا!'],
-  ['gen.correct.03', 'رَائِعٌ! {نَظَرْتَ|نَظَرْتِ} إِلَى الحَوَافِّ جَيِّدًا.'], ['gen.correct.04', 'صَحِيحٌ!'], ['gen.correct.05', 'بِالضَّبْطِ!'], ['gen.correct.06', 'عَيْنُ {مُهَنْدِسٍ|مُهَنْدِسَةٍ}!']];
 let praiseIx = 0;
 /* جمل التحدي العامة (كل الوحدات) */
-const TEST_INTRO = ['compass', 'gen.test.intro', 'الآنَ ثَمَانِيَةُ أَسْئِلَةٍ. {اِسْمَعِ|اِسْمَعِي} السُّؤَالَ، ثُمَّ {اِلْمَسِ|اِلْمَسِي} الجَوَابَ.'];
-const TEST_SCORE = { 7: ['gen.test.score.7', 'رَائِعٌ! {أَجَبْتَ|أَجَبْتِ} عَنْ أَسْئِلَةِ الوَحْدَةِ'], 8: ['gen.test.score.8', 'مُمْتَازٌ! {أَجَبْتَ|أَجَبْتِ} عَنْ كُلِّ أَسْئِلَةِ الوَحْدَةِ!'] };
 /* D233: لا أرقام أمام الطفل؛ الدرجة في لوحة الكبار فقط */
-const TEST_AGAIN_LOW = ['gen.test.again.low', 'قَرِيبٌ! نُرَاجِعُ دَرْسًا وَاحِدًا مَعًا، ثُمَّ نَعُودُ إِلَى التَّحَدِّي.'];
-const TEST_AGAIN_NEAR = ['gen.test.again.near', 'قَرِيبٌ جِدًّا! نُرَاجِعُ دَرْسًا وَاحِدًا مَعًا، ثُمَّ نَعُودُ.'];
-const SOLVE = { circle: ['gen.solve.circle', 'هَيَّا نَحُلُّهَا مَعًا: هَذِهِ دَائِرَةٌ.'], square: ['gen.solve.square', 'هَيَّا نَحُلُّهَا مَعًا: هَذَا مُرَبَّعٌ.'],
-  triangle: ['gen.solve.triangle', 'هَيَّا نَحُلُّهَا مَعًا: هَذَا مُثَلَّثٌ.'], rect: ['gen.solve.rect', 'هَيَّا نَحُلُّهَا مَعًا: هَذَا مُسْتَطِيلٌ.'], other: ['gen.solve.other', 'هَيَّا نَحُلُّهَا مَعًا: مَكَانُهُ سَلَّةُ «غَيْرُ ذَلِكَ».'],
-  cube: ['gen.solve.cube', 'هَيَّا نَحُلُّهَا مَعًا: هَذَا مُكَعَّبٌ.'], sphere: ['gen.solve.sphere', 'هَيَّا نَحُلُّهَا مَعًا: هَذِهِ كُرَةٌ.'], cylinder: ['gen.solve.cylinder', 'هَيَّا نَحُلُّهَا مَعًا: هَذِهِ أُسْطُوَانَةٌ.'],
-  cone: ['gen.solve.cone', 'هَيَّا نَحُلُّهَا مَعًا: هَذَا مَخْرُوطٌ.'], flat: ['gen.solve.flat', 'هَيَّا نَحُلُّهَا مَعًا: هَذَا مُسَطَّحٌ.'], solid: ['gen.solve.solid', 'هَيَّا نَحُلُّهَا مَعًا: هَذَا مُجَسَّمٌ.'] };
-const MS_AGAIN = ['gen.ms.again', 'لِنَعُدْ إِلَى الفِكْرَةِ مَعًا، ثُمَّ نُحَاوِلُ مَرَّةً أُخْرَى.'];
-const MS_LATER = ['gen.ms.later', 'أَحْسَنْتَ المُحَاوَلَةَ! سَنَعُودُ إِلَى هَذِهِ الفِكْرَةِ فِي مُرَاجَعَةِ اليَوْمِ. هَيَّا نُكْمِلُ.'];
 /* سؤال سلال كامل: محاولة أولى ← تفسير خاص بالخطأ ← محاولة ثانية ← حل مشترك ← مسألة توأم */
 async function sortItem(make, cfg, scene, allowHelp = true) {
   const item = make(); let tries = 0; window.__sortScene = scene;   // TESTHOOK
   if (cfg.kindOf) item.kind = cfg.kindOf(item);
   if (!item.riddle && !cfg.bins.includes(item.kind)) item.kind = 'other';   // شكل لا سلّة له في هذا الدرس يذهب إلى «غير ذلك»
   while (true) {
-    if (allowHelp) armIdle(async () => { await say('compass', 'gen.hint.look', '{لَاحِظِ|لَاحِظِي} الأَضْلَاعَ وَالرُّؤُوسَ.'); });
+    if (allowHelp) armIdle(async () => { await say('compass', ...GEN.lines.hintLook); });
     const askP = askSort(item, cfg.bins); if (item.riddle) say('compass', ...item.riddle); const t0 = Date.now();
     const { bin, binsEl, g, svg } = await askP; disarmIdle(); if (item.riddle) hush();
     const err = item.kind === bin ? null : (cfg.errorOf(item, bin) || 'generic'); tries++;
@@ -104,11 +91,11 @@ async function sortItem(make, cfg, scene, allowHelp = true) {
     if (!err) { binEl.classList.add('ok'); SFX.good(); g.animate([{ opacity: 1 }, { opacity: 0, transform: 'translate(180px,250px) scale(.25)' }], { duration: 450, fill: 'forwards' });
       const PR = cfg.praise || PRAISE; const p = PR[praiseIx++ % PR.length]; await say('compass', p[0], p[1]); await say('compass', ...cfg.reason(item)); return { firstTry: tries === 1, item }; }
     binEl.classList.add('no'); SFX.soft();
-    if (!allowHelp) { await say('compass', 'gen.ms.noted', 'حَسَنًا.'); return { firstTry: false, item }; }
+    if (!allowHelp) { await say('compass', ...GEN.lines.msNoted); return { firstTry: false, item }; }
     if (tries === 1) { const [eid, et] = cfg.ERR[err] || cfg.ERR.generic; if (cfg.showErr) cfg.showErr(err, item, g, svg); await say('compass', eid, et); await sleep(500); continue; }
     binsEl.querySelector(`[data-k="${item.kind}"]`).classList.add('ok');
     await say('compass', ...SOLVE[item.kind]); await say('compass', ...cfg.reason(item));
-    await say('compass', 'gen.twin.01', 'وَالآنَ شَكْلٌ يُشْبِهُهُ، {جَرِّبْهُ بِنَفْسِكَ|جَرِّبِيهِ بِنَفْسِكِ}.');
+    await say('compass', ...GEN.lines.twin);
     await sortItem(cfg.twin(item), cfg, scene + '-twin', true); return { firstTry: false };
   }
 }
@@ -128,14 +115,14 @@ async function chaosScene(cfg) {
       if (p.wrong) { SFX.good(); logAttempt({ scene: 'chaos', tag: 'findWrong', ok: true, firstTry: tries === 1 });
         const to = cfg.fixTo ? cols.find(c => c.k === cfg.fixTo) : null;
         g.animate([{ transform: `translate(${x}px,${p.y}px) rotate(${p.s.rot || 0}deg)` }, { transform: to ? `translate(${to.x}px,238px) rotate(0deg) scale(.7)` : `translate(${x}px,-60px) rotate(0deg)` }], { duration: 1100, fill: 'forwards', easing: 'ease-in-out' }); res(); }
-      else { SFX.soft(); logAttempt({ scene: 'chaos', tag: 'findWrong', ok: false, firstTry: tries === 1 }); await say('compass', 'gen.chaos.no', 'هَذَا فِي مَكَانِهِ. {اِبْحَثْ|اِبْحَثِي} عَنْ غَيْرِهِ.'); } };
+      else { SFX.soft(); logAttempt({ scene: 'chaos', tag: 'findWrong', ok: false, firstTry: tries === 1 }); await say('compass', ...GEN.lines.chaosNo); } };
     g.onclick = act; g.onkeydown = e => { if (e.key === 'Enter') act(); }; }));
   let found = false; foundP.then(() => { found = true; });
   await say(...cfg.boast);
-  if (!found) await say('compass', 'gen.chaos.find', 'هُنَاكَ شَيْءٌ فِي غَيْرِ مَكَانِهِ. {اِلْمَسْهُ|اِلْمَسِيهِ}.');
+  if (!found) await say('compass', ...GEN.lines.chaosFind);
   if (!found) armIdle(async () => { await say(...cfg.hint); });
   await foundP; disarmIdle(); groups.forEach(({ g }) => g.onclick = null); await sleep(1100);
-  await say('compass', 'gen.chaos.why', '{وَجَدْتَهُ|وَجَدْتِهِ}! لِمَاذَا أَخْطَأَتْ فَوْضَى؟');
+  await say('compass', ...GEN.lines.chaosWhy);
   const box = document.createElement('div'); box.className = 'choices'; $('#stage').appendChild(box);
   let answered = false;
   const whyP = new Promise(res => shuffle(cfg.reasons).forEach(o => { const b = document.createElement('button'); b.className = 'pick'; b.textContent = G(o.t); b.dataset.id = o.id; if (TESTHOOK) b.dataset.ok = o.ok; box.appendChild(b);
@@ -149,7 +136,7 @@ async function chaosScene(cfg) {
 /* ④ فحص الإتقان (D182): ثلاثة جديدة بلا مساعدة، من المحاولة الأولى؛ وإلا فمسار علاجي ثم إعادة */
 async function masteryScene(cfg) {
   for (let round = 1; round <= 2; round++) {
-    await say('compass', 'gen.ms.intro', 'ثَلَاثَةُ أَشْكَالٍ جَدِيدَةٍ، بِلَا مُسَاعَدَةٍ. {خُذْ وَقْتَكَ|خُذِي وَقْتَكِ}.');
+    await say('compass', ...GEN.lines.msIntro);
     let score = 0; for (const make of cfg.sets[(round - 1) % cfg.sets.length]) { const r = await sortItem(make, cfg, 'mastery' + round, false); if (r.firstTry) score++; }
     PROG[CUR.id] = { ...(PROG[CUR.id] || {}), score, round }; saveProg();
     if (score === 3) { SFX.win(); confetti(); await say('compass', ...cfg.msOk); PROG[CUR.id].mastered = true; saveProg(); srsStart(CUR.id); return; }

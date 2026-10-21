@@ -5,7 +5,6 @@
 function coverSay(box, line) { const p = box.querySelector('.coversay'); if (p) p.textContent = G(line[2]); return say(...line); }
 
 /* ---------- أطفال الجهاز (D200) ---------- */
-const KIDS_WHO = ['compass', 'gen.kids.who', 'مَنْ يَتَعَلَّمُ الآنَ؟'];
 function openKids(first) {
   const c = $('#kidsCover'); window.__scene = 'kids';
   c.innerHTML = `<div class="breakbox"><div class="who">${compassSVG()}</div><p class="coversay"></p><div class="kids" id="kidList"></div>
@@ -36,15 +35,6 @@ const IDB = { db: null, mem: [],
     const list = await this.all(); return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); list.forEach(x => tx.objectStore('photos').delete(x.id)); tx.oncomplete = () => res(); tx.onerror = () => res(); } catch (e) { res(); } }); },
 };
 /* ما يُصاد: كل شكل بعد الدرس الذي يعلّمه */
-const HUNT = [['circle', 'm1.u1.d1'], ['square', 'm1.u1.d1'], ['triangle', 'm1.u1.d2'], ['rect', 'm1.u1.d3'], ['cube', 'm1.u2.d1'], ['sphere', 'm1.u2.d1'], ['cylinder', 'm1.u2.d2'], ['cone', 'm1.u2.d2']];
-const HUNT_LINE = {
-  circle: ['gen.hunt.circle', 'شَيْءٌ دَائِرِيٌّ: {اِبْحَثْ|اِبْحَثِي} عَنْهُ {وَصَوِّرْهُ|وَصَوِّرِيهِ}.'], square: ['gen.hunt.square', 'شَيْءٌ مُرَبَّعٌ: {اِبْحَثْ|اِبْحَثِي} عَنْهُ {وَصَوِّرْهُ|وَصَوِّرِيهِ}.'],
-  triangle: ['gen.hunt.triangle', 'شَيْءٌ مُثَلَّثٌ: {اِبْحَثْ|اِبْحَثِي} عَنْهُ {وَصَوِّرْهُ|وَصَوِّرِيهِ}.'], rect: ['gen.hunt.rect', 'شَيْءٌ مُسْتَطِيلٌ: {اِبْحَثْ|اِبْحَثِي} عَنْهُ {وَصَوِّرْهُ|وَصَوِّرِيهِ}.'],
-  cube: ['gen.hunt.cube', 'شَيْءٌ يُشْبِهُ المُكَعَّبَ: {اِبْحَثْ|اِبْحَثِي} عَنْهُ {وَصَوِّرْهُ|وَصَوِّرِيهِ}.'], sphere: ['gen.hunt.sphere', 'شَيْءٌ يُشْبِهُ الكُرَةَ: {اِبْحَثْ|اِبْحَثِي} عَنْهُ {وَصَوِّرْهُ|وَصَوِّرِيهِ}.'],
-  cylinder: ['gen.hunt.cylinder', 'شَيْءٌ يُشْبِهُ الأُسْطُوَانَةَ: {اِبْحَثْ|اِبْحَثِي} عَنْهُ {وَصَوِّرْهُ|وَصَوِّرِيهِ}.'], cone: ['gen.hunt.cone', 'شَيْءٌ يُشْبِهُ المَخْرُوطَ: {اِبْحَثْ|اِبْحَثِي} عَنْهُ {وَصَوِّرْهُ|وَصَوِّرِيهِ}.'] };
-const GAL_INTRO = ['compass', 'gen.gallery.intro', 'هَذَا {مَعْرِضُكَ|مَعْرِضُكِ}: صُوَرُ {صَيْدِكَ|صَيْدِكِ} وَتَصَامِيمُ {وَرْشَتِكَ|وَرْشَتِكِ}. {اِلْمَسْ|اِلْمَسِي} شَكْلًا لِتَصِيدَهُ بِالكَامِيرَا.'];
-const GAL_EMPTY = ['compass', 'gen.gallery.empty', 'بَعْدَ أَوَّلِ دَرْسٍ {تَسْتَطِيعُ|تَسْتَطِيعِينَ} أَنْ {تَصِيدَ|تَصِيدِي} الأَشْكَالَ بِالكَامِيرَا.'];
-const HUNT_SAVED = ['compass', 'gen.hunt.saved', '{صِدْتَهُ|صِدْتِهِ}! الصُّورَةُ فِي {مَعْرِضِكَ|مَعْرِضِكِ}.'];
 const designsKey = () => kk('hp_designs');
 function designSVG(d, w = 150) { const s = el('svg', { viewBox: '0 0 360 250', width: w, 'aria-hidden': 'true' }); el('rect', { width: 360, height: 250, fill: css('--sky-bot') }, s);
   d.pieces.forEach(p => wsDraw(s, p, p.x, p.y, 1)); return s.outerHTML; }

@@ -5,35 +5,6 @@ function wsDraw(parent, p, x, y, k) { const g = el('g', { transform: `translate(
   if (SOLIDC[p.k]) solidAt(inner, { solid: p.k, size: p.size, pose: p.pose }, 0, 0);
   else shapeAt(inner, { type: p.k, size: p.size, w: p.w, h: p.h, color: css(IDC[p.k]) }, 0, 0);
   g.inner = inner; return g; }
-const WS = {
-  'm1.u1': { pieces: [{ k: 'circle', size: 70 }, { k: 'square', size: 70 }, { k: 'triangle', size: 76, w: 76, h: 66 }, { k: 'rect', size: 70, w: 96, h: 50 }],
-    puzzles: [
-      { id: 'house', name: ['gen.ws.p.house', 'لُغْزُ البَيْتِ'], slots: [{ k: 'square', x: 180, y: 160, size: 92 }, { k: 'triangle', x: 180, y: 82, size: 112, w: 112, h: 64 }], extra: { k: 'circle', size: 60 } },
-      { id: 'tree', name: ['gen.ws.p.tree', 'لُغْزُ الشَّجَرَةِ'], slots: [{ k: 'rect', x: 180, y: 190, size: 64, w: 64, h: 28, rot: 90 }, { k: 'circle', x: 180, y: 108, size: 100 }], extra: { k: 'triangle', size: 60, w: 60, h: 52 } },
-      { id: 'fish', name: ['gen.ws.p.fish', 'لُغْزُ السَّمَكَةِ'], slots: [{ k: 'circle', x: 205, y: 140, size: 92 }, { k: 'triangle', x: 132, y: 140, size: 60, w: 60, h: 52, rot: 90 }], extra: { k: 'square', size: 56 } },
-      { id: 'rocket', name: ['gen.ws.p.rocket', 'لُغْزُ الصَّارُوخِ'], slots: [{ k: 'rect', x: 180, y: 152, size: 120, w: 120, h: 50, rot: 90 }, { k: 'triangle', x: 180, y: 70, size: 50, w: 50, h: 44 },
-        { k: 'triangle', x: 136, y: 194, size: 38, w: 38, h: 40 }, { k: 'triangle', x: 224, y: 194, size: 38, w: 38, h: 40 }], extra: { k: 'circle', size: 50 } },
-      { id: 'train', name: ['gen.ws.p.train', 'لُغْزُ القِطَارِ'], slots: [{ k: 'rect', x: 128, y: 140, size: 92, w: 92, h: 52 }, { k: 'rect', x: 232, y: 140, size: 92, w: 92, h: 52 },
-        { k: 'circle', x: 104, y: 182, size: 32 }, { k: 'circle', x: 152, y: 182, size: 32 }, { k: 'circle', x: 208, y: 182, size: 32 }, { k: 'circle', x: 256, y: 182, size: 32 }], extra: { k: 'triangle', size: 50, w: 50, h: 44 } },
-    ] },
-  'm1.u2': { pieces: [{ k: 'cube', size: 70 }, { k: 'sphere', size: 70 }, { k: 'cylinder', size: 70 }, { k: 'cone', size: 70 }],
-    puzzles: [
-      { id: 'ice', name: ['gen.ws.p.ice', 'لُغْزُ البُوظَةِ'], slots: [{ k: 'cone', x: 180, y: 178, size: 104, pose: 'tipdown' }, { k: 'sphere', x: 180, y: 112, size: 84 }], extra: { k: 'cube', size: 60 } },
-      { id: 'rocket2', name: ['gen.ws.p.rocket', 'لُغْزُ الصَّارُوخِ'], slots: [{ k: 'cylinder', x: 180, y: 168, size: 104 }, { k: 'cone', x: 180, y: 86, size: 84 }], extra: { k: 'sphere', size: 60 } },
-      { id: 'snow', name: ['gen.ws.p.snow', 'لُغْزُ رَجُلِ الثَّلْجِ'], slots: [{ k: 'sphere', x: 180, y: 178, size: 112 }, { k: 'sphere', x: 180, y: 104, size: 76 }, { k: 'cone', x: 180, y: 58, size: 52 }], extra: { k: 'cube', size: 56 } },
-      { id: 'castle', name: ['gen.ws.p.castle', 'لُغْزُ القَلْعَةِ'], slots: [{ k: 'cube', x: 120, y: 186, size: 84 }, { k: 'cube', x: 240, y: 186, size: 84 }, { k: 'cylinder', x: 180, y: 176, size: 96 },
-        { k: 'cone', x: 180, y: 108, size: 70 }], extra: { k: 'sphere', size: 56 } },
-    ] },
-};
-const WS_INTRO = ['compass', 'gen.ws.intro', 'أَهْلًا فِي {وَرْشَتِكَ|وَرْشَتِكِ}! {اِخْتَرْ|اِخْتَارِي}: أَلْغَازُ الظِّلَالِ، أَوْ بِنَاءٌ حُرٌّ.'];
-const WS_PUZ = ['compass', 'gen.ws.puzzle', '{اِسْحَبْ|اِسْحَبِي} كُلَّ قِطْعَةٍ إِلَى ظِلِّهَا. قِطْعَةٌ وَاحِدَةٌ لَا مَكَانَ لَهَا!'];
-const WS_TURN = ['compass', 'gen.ws.turn', 'الشَّكْلُ صَحِيحٌ، لَكِنَّهُ يَحْتَاجُ دَوَرَانًا. {اِلْمَسْهُ|اِلْمَسِيهِ}، ثُمَّ {اِلْمَسْ|اِلْمَسِي} زِرَّ التَّدْوِيرِ.'];
-const WS_NO = ['compass', 'gen.ws.no', 'هَذِهِ القِطْعَةُ لَا تُشْبِهُ هَذَا الظِّلَّ.'];
-const WS_HINT = ['compass', 'gen.ws.hint', '{اُنْظُرْ|اُنْظُرِي} إِلَى الظِّلِّ المُضِيءِ: أَيُّ قِطْعَةٍ تُشْبِهُهُ؟'];
-const WS_SOLVED = ['compass', 'gen.ws.solved', '{أَكْمَلْتَ|أَكْمَلْتِ} اللُّغْزَ! كُلُّ قِطْعَةٍ فِي ظِلِّهَا.'];
-const WS_ALL = ['compass', 'gen.ws.all', '{حَلَلْتَ|حَلَلْتِ} كُلَّ الأَلْغَازِ! {جَرِّبِ|جَرِّبِي} البِنَاءَ الحُرَّ.'];
-const WS_FREE = ['compass', 'gen.ws.free', '{اِلْمَسْ|اِلْمَسِي} قِطْعَةً فَتَظْهَرُ، ثُمَّ {اِسْحَبْهَا|اِسْحَبِيهَا}. {اِبْنِ|اِبْنِي} مَا {تُحِبُّ|تُحِبِّينَ}!'];
-const WS_SAVED = ['compass', 'gen.ws.saved', 'حَفِظْتُ {تَصْمِيمَكَ|تَصْمِيمَكِ} فِي المَعْرِضِ!'];
 const WS_ICON = { puzzle: '<svg viewBox="0 0 40 24" width="40" height="24"><polygon points="20,2 34,12 6,12" fill="currentColor" opacity=".35"/><rect x="9" y="12" width="22" height="11" fill="currentColor" opacity=".35"/><rect x="9" y="12" width="22" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"/></svg>',
   free: '<svg viewBox="0 0 40 24" width="40" height="24"><circle cx="11" cy="15" r="7" fill="currentColor"/><rect x="19" y="4" width="14" height="14" fill="currentColor" opacity=".6"/></svg>' };
 function wsButtons(btns) { const bar = document.createElement('div'); bar.className = 'wsbar'; $('#stage').appendChild(bar);
