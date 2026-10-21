@@ -200,12 +200,12 @@ async function mosqueScene() {
       ['cube', ['arch.04', 'وَالمَبْنَى الكَبِيرُ؟ {اِلْمَسِ|اِلْمَسِي} المُكَعَّبَ.'], ['arch.04ok', 'نَعَمْ! المَبْنَى يُشْبِهُ مُكَعَّبًا كَبِيرًا.']]]) {
     let first = true;
     while (true) { say('compass', ...ask);
-      const hit = await gate(new Promise(res => Object.entries(parts).forEach(([pk, g]) => { g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); if (TESTHOOK) g.dataset.ok = pk === k; g.onclick = () => res(pk); })));
+      const hit = await gate(new Promise(res => Object.entries(parts).forEach(([pk, g]) => { g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); /*T*/if (TESTHOOK) g.dataset.ok = pk === k;/*/T*/ g.onclick = () => res(pk); })));
       hush(); logAttempt({ scene: 'build', tag: 'arch-' + k, ok: hit === k, firstTry: first, err: hit === k ? null : 'archPart' });
       if (hit === k) { SFX.good(); parts[k].animate([{ opacity: 1 }, { opacity: .55 }, { opacity: 1 }], { duration: 600 }); await say('compass', ...ok); break; }
       SFX.soft(); first = false; await say('compass', 'arch.no', 'لَيْسَ هَذَا. {اُنْظُرْ|اُنْظُرِي} إِلَى شَكْلِهِ جَيِّدًا.'); }
   }
-  Object.values(parts).forEach(g => { g.onclick = null; g.style.cursor = ''; g.removeAttribute('role'); if (TESTHOOK) delete g.dataset.ok; });
+  Object.values(parts).forEach(g => { g.onclick = null; g.style.cursor = ''; g.removeAttribute('role'); /*T*/if (TESTHOOK) delete g.dataset.ok;/*/T*/ });
   parts.dome.animate([{ transform: 'translate(132px,104px) scale(1)' }, { transform: 'translate(132px,104px) scale(1.12)' }, { transform: 'translate(132px,104px) scale(1)' }], { duration: 900, iterations: 2 });
   await say('compass', 'arch.05', 'وَالقُبَّةُ الكَبِيرَةُ تُشْبِهُ نِصْفَ الكُرَةِ، كَأَنَّنَا قَطَعْنَا الكُرَةَ وَوَضَعْنَاهَا عَلَى السَّقْفِ.');
 }

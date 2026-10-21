@@ -6,7 +6,7 @@ function coverSay(box, line) { const p = box.querySelector('.coversay'); if (p) 
 
 /* ---------- أطفال الجهاز (D200) ---------- */
 function openKids(first) {
-  const c = $('#kidsCover'); window.__scene = 'kids';
+  const c = $('#kidsCover'); /*T*/window.__scene = 'kids';/*/T*/
   c.innerHTML = `<div class="breakbox"><div class="who">${compassSVG()}</div><p class="coversay"></p><div class="kids" id="kidList"></div>
     <button class="more" id="kidNew">للكبار: إضافة طفل</button>${first ? '' : `<button class="more" id="kidEdit">${G('تَعْدِيلُ مَلَفِّي')}</button>`}</div>`;
   const list = $('#kidList');
@@ -39,7 +39,7 @@ const designsKey = () => kk('hp_designs');
 function designSVG(d, w = 150) { const s = el('svg', { viewBox: '0 0 360 250', width: w, 'aria-hidden': 'true' }); el('rect', { width: 360, height: 250, fill: css('--sky-bot') }, s);
   d.pieces.forEach(p => wsDraw(s, p, p.x, p.y, 1)); return s.outerHTML; }
 async function openGallery() {
-  const c = $('#galCover'); window.__scene = 'gallery'; hush();
+  const c = $('#galCover'); /*T*/window.__scene = 'gallery';/*/T*/ hush();
   const open = HUNT.filter(([k, l]) => (PROG[l] || {}).done);
   const photos = (await IDB.all()).sort((a, b) => b.t - a.t); const designs = store.get(designsKey(), []);
   c.innerHTML = `<div class="gallery"><div class="ghead"><button class="round ico" id="galClose" aria-label="رجوع">${ICON.map}</button><b>${G('مَعْرِضِي')}</b></div>

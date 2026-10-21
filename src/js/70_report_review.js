@@ -46,22 +46,22 @@ async function runReview() {
   const due = shuffle(reviewDue()).slice(0, 4); if (!due.length) return showHome();
   const qs = due.slice(); while (qs.length < 3) qs.push(due[qs.length % due.length]);   // ثلاثة أسئلة على الأقل
   for (let i = 1; i < qs.length; i++) if (unitOf(qs[i]) === unitOf(qs[i - 1]) && i + 1 < qs.length && unitOf(qs[i + 1]) !== unitOf(qs[i])) [qs[i], qs[i + 1]] = [qs[i + 1], qs[i]];   // تداخل الوحدات ما أمكن
-  CUR = null; show('lesson'); setStep(0); setGo('هَيَّا', null, false); colorIx = 0; window.__scene = 'review:intro';
+  CUR = null; show('lesson'); setStep(0); setGo('هَيَّا', null, false); colorIx = 0; /*T*/window.__scene = 'review:intro';/*/T*/
   { const svg = newStage(300, { cityOpacity: .3 }); qs.forEach((L, i) => { const sv = new DOMParser().parseFromString(stopIcon(L), 'image/svg+xml').documentElement;
       const g = el('g', { transform: `translate(${250 - i * 70} 120) scale(1.1)` }, svg); [...sv.childNodes].forEach(n => g.appendChild(document.importNode(n, true))); }); }
   await say(...REVIEW_INTRO); await nextBtn('هَيَّا');
   const res = {};
-  for (const [i, L] of qs.entries()) { CUR = L; setStep(1 + Math.min(5, i)); window.__scene = 'review:' + L.id;
+  for (const [i, L] of qs.entries()) { CUR = L; setStep(1 + Math.min(5, i)); /*T*/window.__scene = 'review:' + L.id;/*/T*/
     const pool = L.sort.sets.flat(); const r = await sortItem(pool[Math.floor(Math.random() * pool.length)], L.sort, 'review', false);
     if (!r.firstTry) { await say('compass', ...SOLVE[r.item.kind]); await say('compass', ...L.sort.reason(r.item)); }
     res[L.id] = (res[L.id] ?? true) && r.firstTry; await sleep(400); }
   for (const [id, ok] of Object.entries(res)) srsUpdate(id, ok); saveProg();
-  CUR = null; setStep(7); window.__scene = 'review:end'; newStage(300, { cityOpacity: .9 });
+  CUR = null; setStep(7); /*T*/window.__scene = 'review:end';/*/T*/ newStage(300, { cityOpacity: .9 });
   if (Object.values(res).every(Boolean)) { SFX.win(); confetti(); await say(...REVIEW_DONE); } else await say(...REVIEW_LATER);
   await nextBtn('خَرِيطَةُ الوَحْدَةِ'); showHome();
 }
 /* الاستراحة بعد حدّ الجلسة (المبدأ 11): يقترحها فرجار، والمتابعة بإذن الكبير */
-function breakScene(L) { const c = $('#breakCover'); window.__scene = 'break';
+function breakScene(L) { const c = $('#breakCover'); /*T*/window.__scene = 'break';/*/T*/
   c.innerHTML = `<div class="breakbox"><div class="who">${compassSVG()}</div><p>${G(SESSION_BREAK[2])}</p><button class="go" id="restBtn">${G('سَأَسْتَرِيحُ الآنَ')}</button><button class="more" id="moreBtn">للكبار: درس إضافي الآن</button></div>`;
   c.hidden = false; say(...SESSION_BREAK);
   $('#restBtn').onclick = () => { hush(); c.hidden = true; SFX.tick(); showHome(); };
@@ -71,7 +71,7 @@ function breakScene(L) { const c = $('#breakCover'); window.__scene = 'break';
 let gateUntil = 0;
 function adultGate(then, onBack) {
   if (Date.now() < gateUntil) return then();
-  const a = R(6, 9), b = R(6, 9); if (TESTHOOK) window.__gateAns = a * b;
+  const a = R(6, 9), b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
   const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p style="margin:0">هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq">${DG(a)} × ${DG(b)} = ؟</p>
     <form id="gateForm" style="display:grid;gap:10px"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit">متابعة</button></form><p id="gateMsg" style="color:var(--think);min-height:1.6em;margin:0"></p><button class="pick" id="gateBack" style="min-height:44px">رجوع</button></div>`;
   P.hidden = false; setTimeout(() => { try { $('#gateIn').focus(); } catch (e) {} }, 50);

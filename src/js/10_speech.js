@@ -45,7 +45,7 @@ function speakNow(who, id, text) {
   $('#bubble').classList.toggle('chaos', who === 'chaos');
   const talk = $('#talk'); talk.classList.add('speaking');
   const full = (id.startsWith('gen.') ? id : (CUR ? CUR.id : 'm1.u1') + '.' + id) + gSuffix(raw);
-  if (TESTHOOK) (window.__clips = window.__clips || []).push(full);   // للفحص: مطابقة الجمل المنطوقة مع جدول التسجيل
+  /*T*/if (TESTHOOK) (window.__clips = window.__clips || []).push(full);/*/T*/   // للفحص: مطابقة الجمل المنطوقة مع جدول التسجيل
   return new Promise(resolve => {
     speaking = true; let done = false, poll = null, safety = null, silent = null;
     const finish = () => { if (done) return; done = true; clearInterval(poll); clearTimeout(safety); clearTimeout(silent); speaking = false; currentFinish = null; talk.classList.remove('speaking'); resolve(); };

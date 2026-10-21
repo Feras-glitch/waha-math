@@ -10,7 +10,7 @@ const WS_ICON = { puzzle: '<svg viewBox="0 0 40 24" width="40" height="24"><poly
 function wsButtons(btns) { const bar = document.createElement('div'); bar.className = 'wsbar'; $('#stage').appendChild(bar);
   btns.forEach(([id, label, fn]) => { const b = document.createElement('button'); b.className = 'pick'; b.id = id; b.textContent = G(label); b.onclick = fn; bar.appendChild(b); }); return bar; }
 async function runWorkshop(U) {
-  CUR = null; show('lesson'); setStep(0); setGo('هَيَّا', null, false); window.__scene = 'ws:menu'; const W = WS[U.id];
+  CUR = null; show('lesson'); setStep(0); setGo('هَيَّا', null, false); /*T*/window.__scene = 'ws:menu';/*/T*/ const W = WS[U.id];
   const svg = newStage(250, { cityOpacity: .3 }); (HOSTS[U.id] || []).forEach((k, i) => hostAt(svg, k, 290 - i * 72, 150, 62));
   say(...WS_INTRO);
   const mode = await choosePick([['puzzle', 'أَلْغَازُ الظِّلَالِ', WS_ICON.puzzle], ['free', 'بِنَاءٌ حُرٌّ', WS_ICON.free]], null);
@@ -24,7 +24,7 @@ async function runWorkshop(U) {
 }
 /* لغز ظلال: القطع في الرفّ مصغّرة وبزاوية 0؛ الظل يقبل القطعة إذا طابق نوعها وزاويتها (حتى التماثل) */
 function wsPuzzle(U, P, ix) {
-  window.__scene = 'ws:' + P.id; setStep(Math.min(5, ix + 1));
+  /*T*/window.__scene = 'ws:' + P.id;/*/T*/ setStep(Math.min(5, ix + 1));
   const svg = newStage(330, { city: false, ground: 0 }); el('rect', { x: 0, y: 236, width: 360, height: 94, fill: css('--paper'), opacity: .95 }, svg);
   const shadows = el('g', {}, svg), layer = el('g', {}, svg);
   const slots = P.slots.map(s => { const g = wsDraw(shadows, s, s.x, s.y, 1); g.style.filter = 'brightness(0)'; g.style.opacity = '.18'; return { ...s, g, filled: false }; });
@@ -55,16 +55,16 @@ function wsPuzzle(U, P, ix) {
     pc.g.addEventListener('pointerup', () => { if (!drag) return; const moved = drag.moved; drag = null; if (!moved) { setPos(pc, pc.home.x, pc.home.y, TK); select(pc); SFX.tick(); return; } tryDrop(pc, pc.x, pc.y); }); });
   if (P.slots.some(q => q.rot)) wsButtons([['wsRot', '↻ دَوِّرْ', () => rotate(sel)]]);   // زر التدوير حين يحتاجه اللغز فقط
   armIdle(async () => { const s = slots.find(q => !q.filled); if (!s) return; s.g.animate([{ opacity: .18 }, { opacity: .45 }, { opacity: .18 }], { duration: 900, iterations: 3 }); await say(...WS_HINT); });
-  if (TESTHOOK) window.__wsSolve = async () => {           // للفحص: يحلّ اللغز بالمنطق نفسه (يجرّب أولاً قطعة تحتاج دوراناً بلا دوران، ثم قطعة غريبة)
+  /*T*/if (TESTHOOK) window.__wsSolve = async () => {           // للفحص: يحلّ اللغز بالمنطق نفسه (يجرّب أولاً قطعة تحتاج دوراناً بلا دوران، ثم قطعة غريبة)
     const ex = pieces.find(q => q.p.extra), s0 = slots.find(s => !s.filled); if (ex && s0) tryDrop(ex, s0.x, s0.y);
     for (const s of slots) { const pc = pieces.find(q => !q.placed && !q.p.extra && q.p.k === s.k && q.p.size === s.size); if (!pc) continue;
       if ((s.rot || 0) && !rotOk(pc.p.k, pc.p.rot, s.rot)) { tryDrop(pc, s.x, s.y); while (!rotOk(pc.p.k, pc.p.rot, s.rot)) rotate(pc); }
-      tryDrop(pc, s.x, s.y); await new Promise(r => setTimeout(r, 30)); } };
+      tryDrop(pc, s.x, s.y); await new Promise(r => setTimeout(r, 30)); } };/*/T*/
   say(...WS_PUZ, {}); say('compass', ...P.name);
   return doneP;
 }
 async function wsFree(U) {
-  window.__scene = 'ws:free'; setStep(1); const W = WS[U.id];
+  /*T*/window.__scene = 'ws:free';/*/T*/ setStep(1); const W = WS[U.id];
   const svg = newStage(330, { city: false, ground: 0 }); el('rect', { x: 0, y: 248, width: 360, height: 82, fill: css('--paper'), opacity: .95 }, svg);
   const layer = el('g', {}, svg); const placed = []; let sel = null;
   const select = pc => { placed.forEach(q => q.g.classList.remove('wssel')); sel = pc; if (pc) pc.g.classList.add('wssel'); };

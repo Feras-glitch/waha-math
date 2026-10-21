@@ -49,7 +49,7 @@ async function traceTool(svg, shapes, opt = {}) {
 /* ② السلال: يعرض شيئاً واحداً، ويعيد اختيار الطفل (لمس السلة أو سحب الشيء إليها) */
 function askSort(item, bins) {
   const svg = newStage(330, { city: false, ground: 0 });
-  window.__item = item; window.__n = (window.__n || 0) + 1;
+  /*T*/window.__item = item; window.__n = (window.__n || 0) + 1;/*/T*/
   let g;
   if (item.riddle) {                                   // متجر المجسّمات: مظلّة ورفّ، والطلب يُسمَع
     for (let i = 0; i < 9; i++) el('path', { d: `M${i * 40} 0 h40 v34 q-20 14 -40 0z`, fill: i % 2 ? '#fffdf6' : '#ee7a5f' }, svg);
@@ -78,7 +78,7 @@ let praiseIx = 0;
 /* D233: لا أرقام أمام الطفل؛ الدرجة في لوحة الكبار فقط */
 /* سؤال سلال كامل: محاولة أولى ← تفسير خاص بالخطأ ← محاولة ثانية ← حل مشترك ← مسألة توأم */
 async function sortItem(make, cfg, scene, allowHelp = true) {
-  const item = make(); let tries = 0; window.__sortScene = scene;   // TESTHOOK
+  const item = make(); let tries = 0; /*T*/window.__sortScene = scene;   // TESTHOOK/*/T*/
   if (cfg.kindOf) item.kind = cfg.kindOf(item);
   if (!item.riddle && !cfg.bins.includes(item.kind)) item.kind = 'other';   // شكل لا سلّة له في هذا الدرس يذهب إلى «غير ذلك»
   while (true) {
@@ -108,7 +108,7 @@ async function chaosScene(cfg) {
   const svg = newStage(366, { city: false, ground: 0 });
   const cols = cfg.bins.map((k, i) => ({ k, x: 360 - (i + .5) * (360 / cfg.bins.length) }));
   cols.forEach(c => { const g = el('g', { transform: `translate(${c.x - 40} 266) scale(.73)` }, svg); g.innerHTML = basketSVG(c.k).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, ''); label(svg, c.x, 356, plain(BIN_NAMES[c.k]), 15); });
-  window.__chaosIx = cfg.placed.findIndex(p => p.wrong);
+  /*T*/window.__chaosIx = cfg.placed.findIndex(p => p.wrong);/*/T*/
   const groups = cfg.placed.map(p => { const x = cols.find(c => c.k === p.bin).x; const g = p.s.ball ? ballAt(svg, x, p.y, 32) : thingAt(svg, p.s, x, p.y); g.style.cursor = 'pointer'; g.setAttribute('tabindex', 0); g.setAttribute('role', 'button'); return { p, g, x }; });
   let tries = 0;
   const foundP = new Promise(res => groups.forEach(({ p, g, x }) => { const act = async () => { tries++;
@@ -125,7 +125,7 @@ async function chaosScene(cfg) {
   await say('compass', ...GEN.lines.chaosWhy);
   const box = document.createElement('div'); box.className = 'choices'; $('#stage').appendChild(box);
   let answered = false;
-  const whyP = new Promise(res => shuffle(cfg.reasons).forEach(o => { const b = document.createElement('button'); b.className = 'pick'; b.textContent = G(o.t); b.dataset.id = o.id; if (TESTHOOK) b.dataset.ok = o.ok; box.appendChild(b);
+  const whyP = new Promise(res => shuffle(cfg.reasons).forEach(o => { const b = document.createElement('button'); b.className = 'pick'; b.textContent = G(o.t); b.dataset.id = o.id; /*T*/if (TESTHOOK) b.dataset.ok = o.ok;/*/T*/ box.appendChild(b);
     b.onclick = async () => { logAttempt({ scene: 'chaos', tag: 'why', ok: o.ok }); if (o.ok) { answered = true; hush(); b.classList.add('ok'); SFX.good(); res(); } else { hush(); b.classList.add('no'); SFX.soft(); await say(...cfg.whyNo); } }; }));
   // الطفل في السادسة قد لا يقرأ: يقرأ المرشد كل خيار وهو يضيئه، ويمكن الإجابة قبل انتهاء القراءة
   for (const b of [...box.children]) { if (answered) break; b.classList.add('reading'); const o = cfg.reasons.find(r => r.id === b.dataset.id); await say('compass', o.id, o.t); b.classList.remove('reading'); }

@@ -7,7 +7,7 @@ function stopIcon(L) { const s = el('svg', { viewBox: '0 0 72 56' });
   if (SOLIDC[L.icon[0]] || L.icon[0] === 'flat') { L.icon.forEach((k, i) => { const x = 36 + (i - (L.icon.length - 1) / 2) * 28; thingAt(s, k === 'flat' ? { type: 'square', size: 26, color: css('--square'), plain: true } : { solid: k, size: 44 }, x, 28); }); return s.outerHTML; }
   L.icon.forEach((k, i) => { const x = 36 + (i - (L.icon.length - 1) / 2) * 24; shapeAt(s, { type: k, size: 28, w: k === 'rect' ? 36 : k === 'triangle' ? 32 : undefined, h: k === 'rect' ? 22 : k === 'triangle' ? 28 : undefined, color: css(IDC[k]) }, x, 28); }); return s.outerHTML; }
 function showHome() {
-  show('home'); CUR = null; window.__scene = 'home';
+  show('home'); CUR = null; /*T*/window.__scene = 'home';/*/T*/
   $('#helloName').textContent = PROFILE ? G('أَهْلًا يَا {name}!') : '';
   const me = $('#meBtn'); me.innerHTML = ''; me.appendChild(avatarNode(PROFILE)); $('#galBtn').innerHTML = ICON.gallery;
   const nDone = LESSONS.filter(L => PROG[L.id] && PROG[L.id].done).length;

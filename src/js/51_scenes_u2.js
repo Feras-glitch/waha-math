@@ -19,7 +19,7 @@ const PICKICON = {
 function choosePick(options, okKey) {
   const box = document.createElement('div'); box.className = 'choices icons'; $('#stage').appendChild(box);
   return gate(new Promise(res => options.forEach(([k, t, ic]) => { const b = document.createElement('button'); b.className = 'pick'; b.innerHTML = (ic || PICKICON[k] || '') + `<span>${G(t)}</span>`; b.dataset.k = k;
-    if (TESTHOOK) b.dataset.ok = k === okKey; box.appendChild(b);
+    /*T*/if (TESTHOOK) b.dataset.ok = k === okKey;/*/T*/ box.appendChild(b);
     b.onclick = () => { if (box.dataset.done) return; box.dataset.done = 1; hush(); b.classList.add(k === okKey ? 'ok' : 'no'); SFX.tick(); res(k); }; }))).then(k => { setTimeout(() => box.remove(), FAST ? 30 : 900); return k; });
 }
 /* يد صغيرة تدفع الشيء من اليسار */
@@ -65,7 +65,7 @@ async function pushLab(rounds) {
 async function faceTouch(svg, s, x, y, cfg) {
   const g = thingAt(svg, s, x, y);
   const faces = [...g.querySelectorAll('[data-face]')].filter(f => cfg.faces.includes(f.dataset.face));
-  const touched = new Set(); window.__faces = faces.length;
+  const touched = new Set(); /*T*/window.__faces = faces.length;/*/T*/
   await new Promise(res => faces.forEach(f => { f.style.cursor = 'pointer'; f.setAttribute('role', 'button'); f.setAttribute('tabindex', 0); f.setAttribute('data-t', 'face');
     const act = async () => { if (touched.has(f)) return; touched.add(f); SFX.pop(); buzz(25);
       const bb = f.getBBox(); const palm = el('g', { transform: `translate(${bb.x + bb.width / 2} ${bb.y + bb.height / 2})`, 'pointer-events': 'none' }, g);
