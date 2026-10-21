@@ -1,31 +1,80 @@
 /* =====================================================================
-   مولّدات الأشكال والأشياء
+   مولّدات الأشكال والأشياء. أسماء الأشياء المكتوبة في labels.json (obj.*)، وألوان أشياء البيت مادّية لا من ألوان الهوية (M7)
    ===================================================================== */
-const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const objLabel = k => (LABELS.obj || {})[k] || '';
 const MK = {
   circle: () => ({ type: 'circle', kind: 'circle', size: R(110, 136), color: nextColor(), tag: 'circle' }),
-  plate: () => ({ type: 'circle', kind: 'circle', size: 132, color: nextColor(), object: 'plate', label: 'طَبَق', tag: 'circle' }),
-  clock: () => ({ type: 'circle', kind: 'circle', size: 128, color: nextColor(), object: 'clock', label: 'سَاعَة', tag: 'circle' }),
-  wheel: () => ({ type: 'circle', kind: 'circle', size: 124, color: '#4a5a62', object: 'wheel', label: 'عَجَلَة', tag: 'circle' }),
-  oval: () => ({ type: 'oval', kind: 'other', size: 156, rot: Math.random() < .5 ? 0 : 90, color: nextColor(), tag: 'oval' }),
+  circleS: () => ({ type: 'circle', kind: 'circle', size: R(64, 80), color: nextColor(), tag: 'circle' }),
+  plate: () => ({ type: 'circle', kind: 'circle', size: 132, color: '#7f9fb0', object: 'plate', label: objLabel('plate'), tag: 'circle' }),
+  clock: () => ({ type: 'circle', kind: 'circle', size: 128, color: MAT.wood, object: 'clock', label: objLabel('clock'), tag: 'circle' }),
+  wheel: () => ({ type: 'circle', kind: 'circle', size: 124, color: '#4a5a62', object: 'wheel', label: objLabel('wheel'), tag: 'circle' }),
+  oval: () => ({ type: 'oval', kind: 'other', size: 156, rot: rand() < .5 ? 0 : 90, color: nextColor(), tag: 'oval' }),
+  ovalWide: () => ({ type: 'oval', kind: 'other', size: 176, rot: R(-10, 10), color: nextColor(), tag: 'oval' }),          // للتمرين (D240: غير مولّد الإتقان)
   squareUp: () => ({ type: 'square', kind: 'square', size: 120, rot: 0, color: nextColor(), tag: 'squareUp' }),
   squareRot: (rot) => ({ type: 'square', kind: 'square', size: R(96, 124), rot: rot ?? R(25, 55), color: nextColor(), tag: 'squareRot' }),
-  tile: () => ({ type: 'square', kind: 'square', size: 104, rot: 45, color: nextColor(), object: 'tile', label: 'بَلَاطَة', tag: 'squareRot' }),
-  napkin: () => ({ type: 'square', kind: 'square', size: 112, rot: 20, color: nextColor(), object: 'napkin', label: 'مِنْدِيل', tag: 'squareRot' }),
-  window4: () => ({ type: 'square', kind: 'square', size: 116, rot: 0, color: '#8a6d4e', object: 'window', label: 'شُبَّاك', tag: 'squareUp' }),
+  tile: () => ({ type: 'square', kind: 'square', size: 104, rot: 45, color: '#7e9a4e', object: 'tile', label: objLabel('tile'), tag: 'squareRot' }),
+  napkin: () => ({ type: 'square', kind: 'square', size: 112, rot: 20, color: '#b8607a', object: 'napkin', label: objLabel('napkin'), tag: 'squareRot' }),
+  window4: () => ({ type: 'square', kind: 'square', size: 116, rot: 0, color: MAT.wood, object: 'window', label: objLabel('window'), tag: 'squareUp' }),
+  windowTilt: () => ({ type: 'square', kind: 'square', size: 108, rot: 30, color: MAT.wood, object: 'window', label: objLabel('window'), tag: 'squareRot' }),
   triUp: () => ({ type: 'triangle', kind: 'triangle', size: 130, rot: 0, color: nextColor(), tag: 'triUp' }),
   triFlip: () => ({ type: 'triangle', kind: 'triangle', size: 126, rot: 180, color: nextColor(), tag: 'triFlip' }),
   triThin: () => ({ type: 'triangle', kind: 'triangle', w: 70, h: 150, rot: R(-20, 20), color: nextColor(), tag: 'triThin' }),
+  triThinTilt: () => ({ type: 'triangle', kind: 'triangle', w: 62, h: 156, rot: R(28, 40), color: nextColor(), tag: 'triThin' }),
   triWide: () => ({ type: 'triangle', kind: 'triangle', w: 170, h: 80, apex: .5, rot: 0, color: nextColor(), tag: 'triThin' }),
-  sign: () => ({ type: 'triangle', kind: 'triangle', size: 130, rot: 0, color: '#d9483b', object: 'sign', label: 'لَافِتَة', tag: 'triUp' }),
-  cheese: () => ({ type: 'triangle', kind: 'triangle', w: 140, h: 100, apex: -1, rot: 0, color: '#f2c14e', object: 'cheese', label: 'قِطْعَةُ جُبْنٍ', tag: 'triThin' }),
+  sign: () => ({ type: 'triangle', kind: 'triangle', size: 130, rot: 0, color: MAT.red, object: 'sign', label: objLabel('sign'), tag: 'triUp' }),
+  signFlip: () => ({ type: 'triangle', kind: 'triangle', size: 126, rot: 180, color: MAT.red, object: 'sign', label: objLabel('sign'), tag: 'triFlip' }),
+  cheese: () => ({ type: 'triangle', kind: 'triangle', w: 140, h: 100, apex: -1, rot: 0, color: '#e8c25a', object: 'cheese', label: objLabel('cheese'), tag: 'triThin' }),
+  cheeseOdd: () => ({ type: 'triangle', kind: 'triangle', w: 150, h: 92, apex: -1, rot: 160, color: '#e8c25a', object: 'cheese', label: objLabel('cheese'), tag: 'triFlip' }),
   curvedTri: () => ({ type: 'curvedTri', kind: 'other', size: 130, rot: 0, color: nextColor(), tag: 'curvedTri' }),
   openTri: () => ({ type: 'openTri', kind: 'other', size: 130, rot: 0, color: nextColor(), tag: 'openTri' }),
   rectH: () => ({ type: 'rect', kind: 'rect', w: R(160, 190), h: R(80, 96), rot: 0, color: nextColor(), tag: 'rectH' }),
   rectV: () => ({ type: 'rect', kind: 'rect', w: R(80, 92), h: R(150, 170), rot: 0, color: nextColor(), tag: 'rectV' }),
   rectRot: () => ({ type: 'rect', kind: 'rect', w: 170, h: 84, rot: R(25, 40), color: nextColor(), tag: 'rectRot' }),
-  door: () => ({ type: 'rect', kind: 'rect', w: 88, h: 160, rot: 0, color: '#9c6837', object: 'door', label: 'بَاب', tag: 'rectV' }),
-  envelope: () => ({ type: 'rect', kind: 'rect', w: 170, h: 104, rot: R(-12, 12), color: nextColor(), object: 'envelope', label: 'ظَرْف', tag: 'rectRot' }),
+  door: () => ({ type: 'rect', kind: 'rect', w: 88, h: 160, rot: 0, color: MAT.wood, object: 'door', label: objLabel('door'), tag: 'rectV' }),
+  envelope: () => ({ type: 'rect', kind: 'rect', w: 170, h: 104, rot: R(-12, 12), color: '#7f9fb0', object: 'envelope', label: objLabel('envelope'), tag: 'rectRot' }),
+  envelopeTilt: () => ({ type: 'rect', kind: 'rect', w: 170, h: 100, rot: R(28, 38), color: '#7f9fb0', object: 'envelope', label: objLabel('envelope'), tag: 'rectRot' }),
+  windowTall: () => ({ type: 'rect', kind: 'rect', w: 84, h: 150, rot: 0, color: MAT.wood, object: 'window', label: objLabel('window'), tag: 'rectV' }),
+  quadLean: () => ({ type: 'quad', kind: 'other', w: 156, h: 92, skew: .2, rot: 0, color: nextColor(), tag: 'notRight' }),        // للتمرين (D240)
+  plateS: () => ({ type: 'circle', kind: 'circle', size: 48, color: '#7f9fb0', object: 'plate', tag: 'count' }),
+  windowS: () => ({ type: 'square', kind: 'square', size: 46, color: MAT.wood, object: 'window', tag: 'count' }),
+  capS: () => ({ type: 'circle', kind: 'circle', size: 40, color: pick(['#5c9bb0', '#d9483b', '#f2b33d', '#7e9a4e']), object: 'cap', tag: 'count' }),
+  stoneS: () => ({ type: 'oval', kind: 'other', size: 52, color: '#a9a59b', tag: 'count' }),
+  triS: () => ({ type: 'triangle', kind: 'triangle', size: 44, color: css('--triangle'), tag: 'count' }),
+  quadOdd: () => ({ type: 'quad', kind: 'other', w: 170, h: 96, skew: .3, rot: R(-8, 8), color: nextColor(), tag: 'notRight' }),          // ركن غير قائم: ليس مستطيلاً (D241: يُكشف بركن الورقة)
+  openRect: () => ({ type: 'openRect', kind: 'other', w: 160, h: 92, rot: 0, color: nextColor(), tag: 'openRect' }),
 };
-Object.assign(MAKER, MK);
-
+const MK2 = {
+  cube: () => ({ solid: 'cube', kind: 'cube', size: R(108, 124), color: nextColor(), tag: 'cube' }),
+  cubeTurned: () => ({ solid: 'cube', kind: 'cube', pose: 'turned', size: 116, color: nextColor(), tag: 'cubeTurned' }),
+  cubeTilt: () => ({ solid: 'cube', kind: 'cube', pose: 'tilt', size: 112, color: nextColor(), tag: 'cubeTurned' }),
+  die: () => ({ solid: 'cube', kind: 'cube', object: 'die', size: 112, color: '#f3eee2', label: objLabel('die'), tag: 'cube' }),
+  dieTilt: () => ({ solid: 'cube', kind: 'cube', object: 'die', pose: 'tilt', size: 110, color: '#f3eee2', label: objLabel('die'), tag: 'cubeTurned' }),
+  ice: () => ({ solid: 'cube', kind: 'cube', object: 'ice', pose: 'turned', size: 104, color: '#a8dcef', label: objLabel('ice'), tag: 'cubeTurned' }),
+  gift: () => ({ solid: 'cube', kind: 'cube', object: 'gift', size: 112, color: '#5c9bb0', label: objLabel('gift'), tag: 'cube' }),
+  sphere: () => ({ solid: 'sphere', kind: 'sphere', size: R(110, 124), color: nextColor(), tag: 'sphere' }),
+  ball: () => ({ solid: 'sphere', kind: 'sphere', object: 'ball', size: 118, color: '#f3f3f3', label: objLabel('ball'), tag: 'sphere' }),
+  marble: () => ({ solid: 'sphere', kind: 'sphere', object: 'marble', size: 84, color: '#5c9bb0', label: objLabel('marble'), tag: 'sphere' }),
+  beadBall: () => ({ solid: 'sphere', kind: 'sphere', object: 'marble', size: 76, color: '#d9483b', tag: 'sphere' }),
+  orange: () => ({ solid: 'sphere', kind: 'sphere', object: 'orange', size: 112, color: '#f39a2c', label: objLabel('orange'), tag: 'sphere' }),
+  cyl: () => ({ solid: 'cylinder', kind: 'cylinder', size: 120, color: nextColor(), tag: 'cylinder' }),
+  cylLying: () => ({ solid: 'cylinder', kind: 'cylinder', pose: 'lying', size: 120, color: nextColor(), tag: 'cylLying' }),
+  drum: () => ({ solid: 'cylinder', kind: 'cylinder', object: 'drum', size: 118, color: '#3f7fbf', label: objLabel('drum'), tag: 'cylinder' }),
+  tube: () => ({ solid: 'cylinder', kind: 'cylinder', object: 'tube', pose: 'lying', size: 124, color: '#c9a072', label: objLabel('tube'), tag: 'cylLying' }),
+  candle: () => ({ solid: 'cylinder', kind: 'cylinder', object: 'candle', size: 120, color: '#f1e3c6', label: objLabel('candle'), tag: 'cylinder' }),
+  cone: () => ({ solid: 'cone', kind: 'cone', size: 122, color: nextColor(), tag: 'cone' }),
+  coneLying: () => ({ solid: 'cone', kind: 'cone', pose: 'lying', size: 124, color: nextColor(), tag: 'coneTurned' }),
+  hat: () => ({ solid: 'cone', kind: 'cone', object: 'hat', size: 120, color: '#6c7fa8', label: objLabel('hat'), tag: 'cone' }),
+  hatTilt: () => ({ solid: 'cone', kind: 'cone', object: 'hat', size: 116, rot: 24, color: '#6c7fa8', label: objLabel('hat'), tag: 'coneTurned' }),
+  waffle: () => ({ solid: 'cone', kind: 'cone', object: 'waffle', pose: 'tipdown', size: 118, color: '#e0b070', label: objLabel('waffle'), tag: 'coneTurned' }),
+  teaBox: () => ({ solid: 'box', kind: 'other', object: 'tea', size: 120, color: BOXC, label: objLabel('teaBox'), tag: 'box' }),               // العلبة (C319 أمثلةً): مجسّم ليس مكعباً
+  teaBoxTall: () => ({ solid: 'box', kind: 'other', object: 'tea', pose: 'tall', size: 124, color: BOXC, label: objLabel('teaBox'), tag: 'box' }),
+  flatSquare: () => ({ type: 'square', kind: 'flat', size: 110, color: nextColor(), label: objLabel('paperSquare'), tag: 'flatSquare' }),
+  flatSquareTilt: () => ({ type: 'square', kind: 'flat', size: 104, rot: 30, color: nextColor(), label: objLabel('paperSquare'), tag: 'flatSquare' }),
+  flatCircle: () => ({ type: 'circle', kind: 'flat', size: 112, color: nextColor(), label: objLabel('paperCircle'), tag: 'flatCircle' }),
+  flatTri: () => ({ type: 'triangle', kind: 'flat', size: 118, color: nextColor(), label: objLabel('paperTriangle'), tag: 'flatTri' }),
+  sheetCircle: () => ({ sheet: true, draw: 'circle', kind: 'flat', label: objLabel('drawnCircle'), tag: 'sheet' }),
+  sheetSquare: () => ({ sheet: true, draw: 'square', kind: 'flat', label: objLabel('drawnSquare'), tag: 'sheet' }),
+};
+Object.assign(MAKER, MK, MK2);
+/* طلبات زبائن المتجر (riddles في بيانات الدرس): كل طلب مولّد يعيد نسخة جديدة */
+for (const L of Object.values(LDATA)) if (L.riddles) for (const [k, r] of Object.entries(L.riddles)) MAKER[k] = () => ({ ...r, shopper: rand() < .5 ? 'm' : 'f' });

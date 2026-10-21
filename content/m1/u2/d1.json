@@ -1,177 +1,768 @@
 {
-  "id": "m1.u2.d1",
-  "title": "المُكَعَّبُ وَالكُرَةُ",
-  "icon": [
+ "id": "m1.u2.d1",
+ "title": "المُكَعَّبُ وَالكُرَةُ",
+ "icon": [
+  "cube",
+  "sphere"
+ ],
+ "concepts": {
+  "C006": "تعرّف المكعب والكرة",
+  "C009": "خصائص المجسّم: يتدحرج أم يقف"
+ },
+ "bag": {
+  "items": [
+   "ball",
+   "die",
+   {
+    "icon": "bag",
+    "label": "bagCloth"
+   }
+  ],
+  "ask": "bag.ask",
+  "adult": "كرة، ومكعب أو نرد، وكيس قماش.",
+  "screenPath": "على الشاشة يصف فرجار ما تحسّه الأصابع في الكيس، ويُوسم الدرس «مدخل» حتى يلمس الطفل الكيس الحقيقي."
+ },
+ "labels": {
+  "bagCloth": "كِيسُ قُمَاشٍ",
+  "paperSq": "مُرَبَّعٌ مِنْ وَرَقٍ",
+  "cubeName": "مُكَعَّب",
+  "paperCi": "دَائِرَةٌ مِنْ وَرَقٍ",
+  "sphereName": "كُرَة",
+  "ballName": "كُرَةُ قَدَمٍ",
+  "orangeName": "بُرْتُقَالَة"
+ },
+ "lines": {
+  "bag.ask": "هَلْ {مَعَكَ|مَعَكِ} كُرَةٌ، وَمُكَعَّبٌ أَوْ نَرْدٌ، وَكِيسُ قُمَاشٍ؟ أَمْ نَلْعَبُ عَلَى الشَّاشَةِ؟",
+  "hook.01": "فَوْضَى خَبَّأَتْ كُرَةً وَمُكَعَّبًا فِي كِيسَيْنِ. {اِلْمَسْ|اِلْمَسِي} كِيسًا، فَتَدْخُلُ يَدُنَا دُونَ أَنْ نَنْظُرَ.",
+  "feel.sphere": "أَصَابِعِي تَشْعُرُ بِسَطْحٍ مُنْحَنٍ نَاعِمٍ فِي كُلِّ مَكَانٍ، بِلَا رُؤُوسٍ.",
+  "feel.cube": "أَصَابِعِي تَشْعُرُ بِسُطُوحٍ مُسَطَّحَةٍ، وَبِرُؤُوسٍ مُدَبَّبَةٍ.",
+  "hook.ask": "مَا الَّذِي فِي هَذَا الكِيسِ؟",
+  "is.sphere": "إِنَّهَا الكُرَةُ!",
+  "is.cube": "إِنَّهُ المُكَعَّبُ!",
+  "hook.03": "عَرَفْنَاهُمَا بِأَصَابِعِنَا: سَطْحٌ مُنْحَنٍ، أَوْ سُطُوحٌ مُسَطَّحَةٌ وَرُؤُوسٌ.",
+  "mat.01": "خَبِّئُوا الكُرَةَ وَالنَّرْدَ فِي الكِيسِ. {أَدْخِلْ يَدَكَ|أَدْخِلِي يَدَكِ} دُونَ أَنْ {تَنْظُرَ|تَنْظُرِي}، وَ{أَخْرِجِ|أَخْرِجِي} الكُرَةَ. ثُمَّ {اِلْمَسْ|اِلْمَسِي} «تَمَّ».",
+  "mat.02": "كَيْفَ {عَرَفْتَهَا|عَرَفْتِهَا} {بِيَدِكَ|بِيَدِكِ}؟ هَيَّا نُجَرِّبُ عَلَى الشَّاشَةِ.",
+  "push.sphere": "سَنَدْفَعُ الكُرَةَ. هَلْ تَتَدَحْرَجُ، أَمْ تَبْقَى مَكَانَهَا؟ {تَوَقَّعْ|تَوَقَّعِي}.",
+  "push.sphere.after": "تَدَحْرَجَتِ الكُرَةُ بَعِيدًا! وَتَتَدَحْرَجُ فِي كُلِّ اتِّجَاهٍ.",
+  "push.cube": "وَالآنَ المُكَعَّبُ. هَلْ يَتَدَحْرَجُ مِثْلَ الكُرَةِ، أَمْ يَقِفُ؟ {تَوَقَّعْ|تَوَقَّعِي}.",
+  "push.cube.after": "انْقَلَبَ المُكَعَّبُ مَرَّةً وَاحِدَةً، ثُمَّ وَقَفَ ثَابِتًا. لَا يَتَدَحْرَجُ.",
+  "pose.01": "وَالمُكَعَّبُ عَلَى وَجْهٍ، أَوْ عَلَى أَحَدِ رُؤُوسِهِ، يَبْقَى مُكَعَّبًا.",
+  "pose.02": "الكُرَةُ وَالمُكَعَّبُ مُجَسَّمَانِ: المُجَسَّمُ يَمْلَأُ الكَفَّ، وَلَهُ سُمْكٌ.",
+  "pose.03": "وَهَذِهِ صُوَرُ مُجَسَّمَاتٍ؛ المُجَسَّمُ الحَقِيقِيُّ نُمْسِكُهُ بِأَيْدِينَا.",
+  "wk.01": "هَذَا مُكَعَّبٌ: وُجُوهُهُ مُسَطَّحَةٌ، وَيَقِفُ ثَابِتًا.",
+  "wk.02": "هَلْ مَا زَالَ مُكَعَّبًا؟",
+  "wk.03": "مَا زَالَ يَمْلَأُ الكَفَّ، وَإِذَا أَرْسَلْنَاهُ وَقَفَ عَلَى وَجْهٍ: مَا زَالَ مُكَعَّبًا!",
+  "wk.04": "المُرَبَّعُ الوَرَقِيُّ رَقِيقٌ بِلَا سُمْكٍ. أَمَّا المُكَعَّبُ فَيَمْلَأُ الكَفَّ.",
+  "wk.05": "وَالدَّائِرَةُ الوَرَقِيَّةُ رَقِيقَةٌ بِلَا سُمْكٍ. أَمَّا الكُرَةُ فَتَمْلَأُ الكَفَّ.",
+  "wk.06": "وَالبُرْتُقَالَةُ شَبِيهَةٌ بِالكُرَةِ: تَتَدَحْرَجُ، لَكِنَّهَا لَيْسَتْ كُرَةً تَامَّةً.",
+  "pr.intro": "سِلَالُنَا: لِلْمُكَعَّبَاتِ، وَلِلْكُرَاتِ، وَ«غَيْرُ ذَلِكَ». هَيَّا نَتَمَرَّنُ.",
+  "pr.rolls": "أَيُّ هَذِهِ الأَشْيَاءِ تَتَدَحْرَجُ؟ {اِلْمَسْهَا|اِلْمَسِيهَا} كُلَّهَا، ثُمَّ «تَمَّ».",
+  "pr.odd": "ثَلَاثَةٌ مِنْ هَذِهِ شَبِيهَةٌ بِالكُرَةِ، وَوَاحِدٌ مُخْتَلِفٌ. {اِلْمَسِ|اِلْمَسِي} المُخْتَلِفَ.",
+  "game.01": "لُعْبَةُ صُنْدُوقِ اللَّمْسِ: {اِسْمَعِ|اِسْمَعِي} مَا يَقُولُهُ الشَّيْءُ عَنْ نَفْسِهِ، وَ{اِخْتَرْهُ|اِخْتَارِيهِ}.",
+  "fb.1": "أَتَدَحْرَجُ فِي كُلِّ اتِّجَاهٍ، وَلَيْسَ لِي رُؤُوسٌ. مَنْ أَنَا؟",
+  "fb.2": "أَقِفُ ثَابِتًا، وَوُجُوهِي كُلُّهَا مُسَطَّحَةٌ. مَنْ أَنَا؟",
+  "fb.3": "إِذَا {دَفَعْتَنِي|دَفَعْتِنِي} انْقَلَبْتُ مَرَّةً وَوَقَفْتُ. مَنْ أَنَا؟",
+  "why.cube": "وُجُوهُهُ مُسَطَّحَةٌ، وَيَقِفُ ثَابِتًا.",
+  "why.cubeTurned": "وُجُوهُهُ مُسَطَّحَةٌ، حَتَّى وَهُوَ مَائِلٌ.",
+  "why.sphere": "سَطْحُهُ مُنْحَنٍ كُلُّهُ، وَيَتَدَحْرَجُ.",
+  "why.flat": "رَقِيقٌ بِلَا سُمْكٍ: لَيْسَ مُجَسَّمًا.",
+  "why.box": "لَهُ وُجُوهٌ مُسَطَّحَةٌ، لَكِنَّهَا لَيْسَتْ كُلُّهَا مُرَبَّعَاتٍ: لَيْسَ مُكَعَّبًا.",
+  "why.other": "لَيْسَ مُكَعَّبًا وَلَا كُرَةً.",
+  "ch.after": "صَارَ خَطًّا رَقِيقًا: مُرَبَّعٌ مِنْ وَرَقٍ. مَكَانُهُ «غَيْرُ ذَلِكَ».",
+  "ch.right": "المُرَبَّعُ الوَرَقِيُّ رَقِيقٌ بِلَا سُمْكٍ، وَالمُكَعَّبُ يَمْلَأُ الكَفَّ.",
+  "ch.wrong": [
+   "chaos",
+   "المُرَبَّعُ وَالمُكَعَّبُ شَيْءٌ وَاحِدٌ."
+  ],
+  "ms.recall6": "المُكَعَّبُ وُجُوهُهُ مُسَطَّحَةٌ، مَهْمَا أَدَرْنَاهُ. وَالكُرَةُ سَطْحُهَا مُنْحَنٍ. وَالوَرَقُ رَقِيقٌ بِلَا سُمْكٍ.",
+  "ms.recall9": "مَا لَهُ سَطْحٌ مُنْحَنٍ يَتَدَحْرَجُ، وَمَا لَهُ وُجُوهٌ مُسَطَّحَةٌ يَقِفُ.",
+  "ms.ok": "رَائِعٌ! {أَتْقَنْتَ|أَتْقَنْتِ} المُكَعَّبَ وَالكُرَةَ. {هَذِهِ نَجْمَتُكَ|هَذِهِ نَجْمَتُكِ}.",
+  "wrap.01": "فِي الوَاحَةِ الآنَ بُرْجٌ مِنَ المُكَعَّبَاتِ، وَكُرَةٌ تَتَدَحْرَجُ!",
+  "wrap.home": [
+   "chaos",
+   "مُهِمَّةُ البَيْتِ: {دَحْرِجْ|دَحْرِجِي} مَعَ الكِبَارِ كُرَةً وَعُلْبَةً عَلَى الأَرْضِ: أَيُّهُمَا تَتَدَحْرَجُ؟ وَلِمَاذَا تَقِفُ الأُخْرَى؟"
+  ]
+ },
+ "flow": [
+  {
+   "s": "hook",
+   "scene": "bagFeel",
+   "lines": [
+    "hook.01"
+   ],
+   "feel": {
+    "sphere": "feel.sphere",
+    "cube": "feel.cube"
+   },
+   "ask": "hook.ask",
+   "is": {
+    "sphere": "is.sphere",
+    "cube": "is.cube"
+   },
+   "after": "hook.03"
+  },
+  {
+   "s": "explore",
+   "scene": "pushLab",
+   "mat": {
+    "prompt": "mat.01",
+    "show": [
+     "ball",
+     "die"
+    ],
+    "after": "mat.02"
+   },
+   "rounds": [
+    {
+     "mk": {
+      "solid": "sphere",
+      "kind": "sphere",
+      "size": 92,
+      "color": "$solid.sphere"
+     },
+     "behave": "roll",
+     "ok": "roll",
+     "k": "f",
+     "ask": "push.sphere",
+     "after": "push.sphere.after"
+    },
+    {
+     "mk": {
+      "solid": "cube",
+      "kind": "cube",
+      "size": 96,
+      "color": "$solid.cube"
+     },
+     "behave": "tip",
+     "ok": "stay",
+     "ask": "push.cube",
+     "after": "push.cube.after"
+    }
+   ]
+  },
+  {
+   "s": "explore",
+   "scene": "poses",
+   "show": [
+    {
+     "solid": "cube",
+     "kind": "cube",
+     "size": 110,
+     "color": "$solid.cube"
+    },
+    {
+     "solid": "cube",
+     "kind": "cube",
+     "size": 110,
+     "color": "$solid.cube",
+     "pose": "tilt"
+    },
+    {
+     "solid": "sphere",
+     "kind": "sphere",
+     "size": 110,
+     "color": "$solid.sphere"
+    }
+   ],
+   "lines": [
+    "pose.01",
+    "pose.02",
+    "pose.03"
+   ]
+  },
+  {
+   "s": "worked",
+   "scene": "steps",
+   "steps": [
+    [
+     {
+      "show": {
+       "solid": "cube",
+       "kind": "cube",
+       "size": 130,
+       "color": "$solid.cube"
+      },
+      "at": [
+       180,
+       140
+      ],
+      "id": "a"
+     },
+     {
+      "say": "wk.01"
+     }
+    ],
+    [
+     {
+      "chaosIn": [
+       320,
+       60
+      ]
+     },
+     {
+      "swap": "a",
+      "to": {
+       "solid": "cube",
+       "kind": "cube",
+       "size": 130,
+       "color": "$solid.cube",
+       "pose": "tilt"
+      },
+      "from": -28
+     },
+     {
+      "chaosOut": true
+     },
+     {
+      "say": "wk.02"
+     },
+     {
+      "say": "wk.03"
+     }
+    ],
+    [
+     {
+      "clear": true
+     },
+     {
+      "show": {
+       "type": "square",
+       "kind": "flat",
+       "size": 100,
+       "color": "$id.square"
+      },
+      "at": [
+       268,
+       130
+      ],
+      "id": "p",
+      "label": "paperSq"
+     },
+     {
+      "show": {
+       "solid": "cube",
+       "kind": "cube",
+       "size": 120,
+       "color": "$solid.cube"
+      },
+      "at": [
+       92,
+       130
+      ],
+      "id": "c",
+      "label": "cubeName"
+     },
+     {
+      "say": "wk.04"
+     }
+    ],
+    [
+     {
+      "clear": true
+     },
+     {
+      "show": {
+       "type": "circle",
+       "kind": "flat",
+       "size": 104,
+       "color": "$id.circle"
+      },
+      "at": [
+       268,
+       130
+      ],
+      "id": "p",
+      "label": "paperCi"
+     },
+     {
+      "show": {
+       "solid": "sphere",
+       "kind": "sphere",
+       "size": 120,
+       "color": "$solid.sphere"
+      },
+      "at": [
+       92,
+       130
+      ],
+      "id": "c",
+      "label": "sphereName"
+     },
+     {
+      "say": "wk.05"
+     }
+    ],
+    [
+     {
+      "clear": true
+     },
+     {
+      "show": "ball",
+      "at": [
+       268,
+       130
+      ],
+      "id": "b",
+      "label": "ballName"
+     },
+     {
+      "show": "orange",
+      "at": [
+       92,
+       130
+      ],
+      "id": "o",
+      "label": "orangeName"
+     },
+     {
+      "say": "wk.06"
+     }
+    ]
+   ]
+  },
+  {
+   "s": "practice"
+  },
+  {
+   "s": "game",
+   "scene": "feelBox",
+   "intro": "game.01",
+   "opts": [
     "cube",
     "sphere"
-  ],
-  "sort": {
-    "bins": [
-      "cube",
-      "sphere",
-      "other"
-    ],
-    "intro": [
-      "pr.01",
-      "إِلَى أَيِّ سَلَّةٍ يَذْهَبُ كُلُّ شَيْءٍ؟ {اِسْأَلْ نَفْسَكَ|اِسْأَلِي نَفْسَكِ}: هَلْ يَتَدَحْرَجُ؟ هَلْ لَهُ وُجُوهٌ مُسَطَّحَةٌ؟"
-    ],
-    "praise": "PRAISE2",
-    "practice": [
-      "die",
-      "ball",
-      "cubeTurned",
-      "flatCircle",
-      "marble",
-      "flatSquare"
-    ],
-    "sets": [
-      [
-        "ice",
-        "sphere",
-        "flatSquare"
-      ],
-      [
-        "cubeTilt",
-        "ball",
-        "cyl"
-      ]
-    ],
-    "remedial": [
-      "cubeTurned",
-      "flatCircle"
-    ],
-    "errors": [
-      "flatAsCube",
-      "flatAsSphere",
-      "cubeTurned",
-      "cubeNotRoll",
-      "sphereNoFace",
-      "newSolid",
-      [
-        "generic",
-        "gen.err.generic.04"
-      ]
-    ],
-    "reasons": {
-      "why.cubeTurned": "مُكَعَّبٌ مَهْمَا أَدَرْنَاهُ: وُجُوهُهُ مُسَطَّحَةٌ.",
-      "why.cube": "وُجُوهُهُ كُلُّهَا مُسَطَّحَةٌ، وَيَقِفُ ثَابِتًا.",
-      "why.sphere": "سَطْحُهَا مُنْحَنٍ كُلُّهُ، وَتَتَدَحْرَجُ فِي كُلِّ اتِّجَاهٍ.",
-      "why.newSolid": "مُجَسَّمٌ آخَرُ، لَيْسَ مُكَعَّبًا وَلَا كُرَةً.",
-      "why.flat": "مِنْ وَرَقٍ، رَقِيقٌ بِلَا سُمْكٍ: لَيْسَ مُجَسَّمًا."
+   ],
+   "rounds": [
+    {
+     "line": "fb.1",
+     "ok": "sphere"
     },
-    "msOk": [
-      "ms.ok",
-      "رَائِعٌ! {أَتْقَنْتَ|أَتْقَنْتِ} المُكَعَّبَ وَالكُرَةَ."
-    ]
+    {
+     "line": "fb.2",
+     "ok": "cube"
+    },
+    {
+     "line": "fb.3",
+     "ok": "cube"
+    }
+   ]
   },
-  "chaos": {
-    "bins": [
-      "cube",
-      "sphere",
-      "other"
-    ],
-    "boast": [
-      "chaos",
-      "chaos.boast",
-      "وَضَعْتُ الكُرَاتِ كُلَّهَا فِي سَلَّتِهَا! وَهَذِهِ الدَّائِرَةُ كُرَةٌ أَيْضًا… صَحِيحٌ؟"
-    ],
-    "placed": [
-      {
-        "s": {
-          "solid": "cube",
-          "object": "die",
-          "size": 74,
-          "color": "#f3eee2"
-        },
-        "bin": "cube",
-        "y": 92
-      },
-      {
-        "s": {
-          "solid": "cube",
-          "pose": "turned",
-          "size": 70,
-          "color": "$neutral.1"
-        },
-        "bin": "cube",
-        "y": 196
-      },
-      {
-        "s": {
-          "solid": "sphere",
-          "object": "ball",
-          "size": 74,
-          "color": "#f3f3f3"
-        },
-        "bin": "sphere",
-        "y": 92
-      },
-      {
-        "s": {
-          "type": "circle",
-          "size": 70,
-          "color": "$neutral.3"
-        },
-        "bin": "sphere",
-        "y": 196,
-        "wrong": true
-      },
-      {
-        "s": {
-          "solid": "cylinder",
-          "size": 76,
-          "color": "$neutral.4"
-        },
-        "bin": "other",
-        "y": 140
-      }
-    ],
-    "fixTo": "other",
-    "hint": [
-      "compass",
-      "chaos.hint",
-      "{اُنْظُرْ|اُنْظُرِي} إِلَى سَلَّةِ الكُرَاتِ: هَلْ كُلُّ مَا فِيهَا يَمْلَأُ الكَفَّ؟"
-    ],
-    "reasons": [
-      {
-        "id": "chaos.r1",
-        "t": "الدَّائِرَةُ الوَرَقِيَّةُ رَقِيقَةٌ بِلَا سُمْكٍ، أَمَّا الكُرَةُ فَتَمْلَأُ الكَفَّ.",
-        "ok": true
-      },
-      {
-        "id": "chaos.r2",
-        "t": "لِأَنَّ الدَّائِرَةَ أَصْغَرُ مِنَ الكُرَةِ.",
-        "ok": false
-      }
-    ],
-    "whyNo": [
-      "compass",
-      "chaos.whyNo",
-      "لَيْسَ الأَمْرُ فِي الكِبَرِ وَالصِّغَرِ. هَلْ لِلدَّائِرَةِ الوَرَقِيَّةِ سُمْكٌ؟"
-    ],
-    "thanks": [
-      "chaos",
-      "chaos.thanks",
-      "أُوه! حَاوَلْتُ أَنْ أُدَحْرِجَ الدَّائِرَةَ فَلَمْ تَتَدَحْرَجْ! شُكْرًا يَا {مُهَنْدِسُ|مُهَنْدِسَةُ}!"
-    ]
+  {
+   "s": "chaos"
   },
-  "wrapLines": [
-    [
-      "compass",
-      "wrap.01",
-      "{بَنَيْتَ|بَنَيْتِ} لِلْمَدِينَةِ مَلْعَبًا: مُكَعَّبَاتٌ لِلْبِنَاءِ، وَكُرَةٌ لِلَّعِبِ!"
-    ],
-    [
-      "compass",
-      "wrap.02",
-      "اليَوْمَ عَرَفْنَا: المُكَعَّبُ وُجُوهُهُ مُسَطَّحَةٌ وَيَقِفُ ثَابِتًا، وَالكُرَةُ سَطْحُهَا مُنْحَنٍ وَتَتَدَحْرَجُ فِي كُلِّ اتِّجَاهٍ."
-    ],
-    [
-      "chaos",
-      "wrap.03",
-      "مُهِمَّةُ البَيْتِ: {اِبْحَثْ|اِبْحَثِي} عَنْ شَيْءٍ يُشْبِهُ المُكَعَّبَ، وَشَيْءٍ يُشْبِهُ الكُرَةَ، {وَدَحْرِجْهُمَا|وَدَحْرِجِيهِمَا}!"
-    ]
+  {
+   "s": "mastery"
+  },
+  {
+   "s": "wrap"
+  }
+ ],
+ "sort": {
+  "bins": [
+   "cube",
+   "sphere",
+   "other"
   ],
-  "homeTask": "wrap.03",
-  "talk": "دحرجوا معاً كرة وعلبة مكعبة على الأرض، واسألوا: «أيّهما يتدحرج؟ ولماذا يقف الآخر؟»"
+  "praise": "praiseSolid",
+  "errors": [
+   {
+    "when": {
+     "tag": "flatSquare",
+     "bin": "cube"
+    },
+    "err": "flatAsCube"
+   },
+   {
+    "when": {
+     "tag": "flatCircle",
+     "bin": "sphere"
+    },
+    "err": "flatAsSphere"
+   },
+   {
+    "when": {
+     "tag": "box"
+    },
+    "err": "boxAsCube"
+   },
+   {
+    "when": {
+     "kind": "cube",
+     "bin": "sphere"
+    },
+    "err": "cubeNotRoll"
+   },
+   {
+    "when": {
+     "kind": "cube"
+    },
+    "err": "cubeTurned"
+   },
+   {
+    "when": {
+     "kind": "sphere"
+    },
+    "err": "sphereNoFace"
+   },
+   {
+    "when": {
+     "solid": true
+    },
+    "err": "newSolid"
+   },
+   {
+    "err": "generic"
+   }
+  ],
+  "reasons": [
+   {
+    "when": {
+     "kind": "cube",
+     "tag": "cubeTurned"
+    },
+    "id": "why.cubeTurned"
+   },
+   {
+    "when": {
+     "kind": "cube"
+    },
+    "id": "why.cube"
+   },
+   {
+    "when": {
+     "kind": "sphere"
+    },
+    "id": "why.sphere"
+   },
+   {
+    "when": {
+     "tag": "box"
+    },
+    "id": "why.box"
+   },
+   {
+    "when": {
+     "solid": false
+    },
+    "id": "why.flat"
+   },
+   {
+    "id": "why.other"
+   }
+  ],
+  "twins": {
+   "cube": {
+    "t": "sort",
+    "mk": "cubeTilt"
+   },
+   "cubeTurned": {
+    "t": "sort",
+    "mk": "cubeTurned"
+   },
+   "sphere": {
+    "t": "sort",
+    "mk": "sphere"
+   },
+   "flatSquare": {
+    "t": "sort",
+    "mk": "flatSquare"
+   },
+   "*": {
+    "t": "sort",
+    "mk": "die"
+   }
+  }
+ },
+ "practice": {
+  "intro": "pr.intro",
+  "normal": [
+   {
+    "t": "sort",
+    "mk": "die"
+   },
+   {
+    "t": "sort",
+    "mk": "sphere"
+   },
+   {
+    "t": "sort",
+    "mk": "flatSquare"
+   },
+   {
+    "t": "pickAll",
+    "q": "pr.rolls",
+    "rolls": true,
+    "objs": [
+     "sphere",
+     "die",
+     "cube",
+     "orange"
+    ],
+    "names": true,
+    "errs": {
+     "miss": "rollMissed",
+     "extra": "cubeNotRoll"
+    }
+   },
+   {
+    "t": "pick",
+    "q": [
+     "pr.odd"
+    ],
+    "opts": [
+     "sphere",
+     "orange",
+     "die",
+     "beadBall"
+    ],
+    "ans": 2,
+    "err": "newSolid"
+   }
+  ],
+  "challenge": [
+   {
+    "t": "sort",
+    "mk": "cubeTilt"
+   },
+   {
+    "t": "sort",
+    "mk": "cubeTurned"
+   },
+   {
+    "t": "sort",
+    "mk": "orange"
+   },
+   {
+    "t": "pickAll",
+    "q": "pr.rolls",
+    "rolls": true,
+    "objs": [
+     "sphere",
+     "cubeTilt",
+     "orange",
+     "die",
+     "cube",
+     "beadBall"
+    ],
+    "names": true,
+    "errs": {
+     "miss": "rollMissed",
+     "extra": "cubeNotRoll"
+    }
+   },
+   {
+    "t": "pick",
+    "q": [
+     "pr.odd"
+    ],
+    "opts": [
+     "beadBall",
+     "orange",
+     "cubeTurned",
+     "sphere"
+    ],
+    "ans": 2,
+    "err": "newSolid"
+   }
+  ]
+ },
+ "chaos": {
+  "kind": "bins",
+  "bins": [
+   "cube",
+   "sphere",
+   "other"
+  ],
+  "check": "thin",
+  "after": "ch.after",
+  "right": "ch.right",
+  "wrong": "ch.wrong",
+  "placed": [
+   {
+    "mk": {
+     "solid": "cube",
+     "kind": "cube",
+     "size": 64,
+     "color": "$solid.cube"
+    },
+    "bin": "cube"
+   },
+   {
+    "mk": {
+     "type": "square",
+     "kind": "flat",
+     "size": 110,
+     "color": "$neutral.1"
+    },
+    "bin": "cube",
+    "wrong": true
+   },
+   {
+    "mk": {
+     "solid": "sphere",
+     "kind": "sphere",
+     "size": 62,
+     "color": "$solid.sphere"
+    },
+    "bin": "sphere"
+   },
+   {
+    "mk": {
+     "solid": "sphere",
+     "kind": "sphere",
+     "size": 50,
+     "color": "$solid.sphere"
+    },
+    "bin": "sphere"
+   },
+   {
+    "mk": {
+     "type": "triangle",
+     "kind": "flat",
+     "size": 64,
+     "color": "$neutral.4"
+    },
+    "bin": "other"
+   }
+  ]
+ },
+ "mastery": {
+  "concepts": {
+   "C006": [
+    {
+     "t": "sort",
+     "mk": "dieTilt"
+    },
+    {
+     "t": "sort",
+     "mk": "flatCircle"
+    },
+    {
+     "t": "sort",
+     "mk": "marble"
+    }
+   ],
+   "C009": [
+    {
+     "t": "property",
+     "mk": "ball"
+    },
+    {
+     "t": "property",
+     "mk": "ice"
+    },
+    {
+     "t": "property",
+     "mk": "teaBox"
+    }
+   ]
+  },
+  "recall": {
+   "C006": {
+    "auto": true,
+    "h": 280,
+    "steps": [
+     [
+      {
+       "show": {
+        "solid": "cube",
+        "kind": "cube",
+        "size": 120,
+        "color": "$solid.cube",
+        "pose": "tilt"
+       },
+       "at": [
+        262,
+        140
+       ],
+       "id": "a"
+      },
+      {
+       "show": {
+        "solid": "sphere",
+        "kind": "sphere",
+        "size": 120,
+        "color": "$solid.sphere"
+       },
+       "at": [
+        100,
+        140
+       ],
+       "id": "b"
+      },
+      {
+       "say": "ms.recall6"
+      }
+     ]
+    ]
+   },
+   "C009": {
+    "auto": true,
+    "h": 280,
+    "steps": [
+     [
+      {
+       "say": "ms.recall9"
+      }
+     ]
+    ]
+   }
+  },
+  "remedial": {
+   "C006": [
+    {
+     "t": "sort",
+     "mk": "cubeTurned"
+    },
+    {
+     "t": "sort",
+     "mk": "flatSquare"
+    }
+   ],
+   "C009": [
+    {
+     "t": "property",
+     "mk": "sphere"
+    },
+    {
+     "t": "property",
+     "mk": "cube"
+    }
+   ]
+  },
+  "mixed": {
+   "lesson": "m1.u1.d1",
+   "item": {
+    "t": "sort",
+    "mk": "napkin",
+    "bins": [
+     "cube",
+     "sphere",
+     "other"
+    ]
+   }
+  },
+  "ok": "ms.ok"
+ },
+ "review": [
+  {
+   "t": "sort",
+   "mk": "gift"
+  },
+  {
+   "t": "sort",
+   "mk": "ball"
+  },
+  {
+   "t": "property",
+   "mk": "dieTilt"
+  }
+ ],
+ "wrap": {
+  "art": "cubes",
+  "lines": [
+   "wrap.01"
+  ],
+  "home": "wrap.home"
+ },
+ "talk": "دحرجوا معاً كرة وعلبة مكعبة على الأرض، واسألوا: «أيّهما يتدحرج؟ ولماذا يقف الآخر؟» واطلبوا أن يمسك كلاً منهما: «أيّهما يملأ الكفّ؟»"
 }

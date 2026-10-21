@@ -1,170 +1,159 @@
 {
-  "id": "m1.u2",
-  "title": "عَالَمُ المُجَسَّمَاتِ",
-  "sub": "الوَحْدَةُ الثَّانِيَةُ",
-  "hosts": [
-    "cube",
-    "sphere",
-    "cylinder",
-    "cone"
+ "id": "m1.u2",
+ "title": "عَالَمُ المُجَسَّمَاتِ",
+ "sub": "الوَحْدَةُ الثَّانِيَةُ",
+ "district": "وَرْشَةُ المُجَسَّمَاتِ",
+ "hosts": [
+  "cube",
+  "sphere",
+  "cylinder",
+  "cone"
+ ],
+ "hunt": [
+  [
+   "cube",
+   "m1.u2.d1"
   ],
-  "hunt": [
-    [
-      "cube",
-      "m1.u2.d1"
-    ],
-    [
-      "sphere",
-      "m1.u2.d1"
-    ],
-    [
-      "cylinder",
-      "m1.u2.d2"
-    ],
-    [
-      "cone",
-      "m1.u2.d2"
-    ]
+  [
+   "sphere",
+   "m1.u2.d1"
   ],
-  "workshop": {
-    "pieces": [
-      {
-        "k": "cube",
-        "size": 70
-      },
-      {
-        "k": "sphere",
-        "size": 70
-      },
-      {
-        "k": "cylinder",
-        "size": 70
-      },
-      {
-        "k": "cone",
-        "size": 70
-      }
+  [
+   "cylinder",
+   "m1.u2.d2"
+  ],
+  [
+   "cone",
+   "m1.u2.d2"
+  ]
+ ],
+ "workshop": {
+  "pieces": [
+   {
+    "k": "cube",
+    "size": 70
+   },
+   {
+    "k": "sphere",
+    "size": 70
+   },
+   {
+    "k": "cylinder",
+    "size": 70
+   },
+   {
+    "k": "cone",
+    "size": 70
+   }
+  ],
+  "puzzles": [
+   {
+    "id": "ice",
+    "name": "gen.ws.p.ice",
+    "slots": [
+     {
+      "k": "cone",
+      "x": 180,
+      "y": 178,
+      "size": 104,
+      "pose": "tipdown"
+     },
+     {
+      "k": "sphere",
+      "x": 180,
+      "y": 112,
+      "size": 84
+     }
     ],
-    "puzzles": [
-      {
-        "id": "ice",
-        "name": [
-          "gen.ws.p.ice",
-          "لُغْزُ البُوظَةِ"
-        ],
-        "slots": [
-          {
-            "k": "cone",
-            "x": 180,
-            "y": 178,
-            "size": 104,
-            "pose": "tipdown"
-          },
-          {
-            "k": "sphere",
-            "x": 180,
-            "y": 112,
-            "size": 84
-          }
-        ],
-        "extra": {
-          "k": "cube",
-          "size": 60
-        }
-      },
-      {
-        "id": "rocket2",
-        "name": [
-          "gen.ws.p.rocket",
-          "لُغْزُ الصَّارُوخِ"
-        ],
-        "slots": [
-          {
-            "k": "cylinder",
-            "x": 180,
-            "y": 168,
-            "size": 104
-          },
-          {
-            "k": "cone",
-            "x": 180,
-            "y": 86,
-            "size": 84
-          }
-        ],
-        "extra": {
-          "k": "sphere",
-          "size": 60
-        }
-      },
-      {
-        "id": "snow",
-        "name": [
-          "gen.ws.p.snow",
-          "لُغْزُ رَجُلِ الثَّلْجِ"
-        ],
-        "slots": [
-          {
-            "k": "sphere",
-            "x": 180,
-            "y": 178,
-            "size": 112
-          },
-          {
-            "k": "sphere",
-            "x": 180,
-            "y": 104,
-            "size": 76
-          },
-          {
-            "k": "cone",
-            "x": 180,
-            "y": 58,
-            "size": 52
-          }
-        ],
-        "extra": {
-          "k": "cube",
-          "size": 56
-        }
-      },
-      {
-        "id": "castle",
-        "name": [
-          "gen.ws.p.castle",
-          "لُغْزُ القَلْعَةِ"
-        ],
-        "slots": [
-          {
-            "k": "cube",
-            "x": 120,
-            "y": 186,
-            "size": 84
-          },
-          {
-            "k": "cube",
-            "x": 240,
-            "y": 186,
-            "size": 84
-          },
-          {
-            "k": "cylinder",
-            "x": 180,
-            "y": 176,
-            "size": 96
-          },
-          {
-            "k": "cone",
-            "x": 180,
-            "y": 108,
-            "size": 70
-          }
-        ],
-        "extra": {
-          "k": "sphere",
-          "size": 56
-        }
-      }
-    ]
-  }
+    "extra": {
+     "k": "cube",
+     "size": 60
+    }
+   },
+   {
+    "id": "rocket2",
+    "name": "gen.ws.p.rocket",
+    "slots": [
+     {
+      "k": "cylinder",
+      "x": 180,
+      "y": 168,
+      "size": 104
+     },
+     {
+      "k": "cone",
+      "x": 180,
+      "y": 86,
+      "size": 84
+     }
+    ],
+    "extra": {
+     "k": "sphere",
+     "size": 60
+    }
+   },
+   {
+    "id": "snow",
+    "name": "gen.ws.p.snow",
+    "slots": [
+     {
+      "k": "sphere",
+      "x": 180,
+      "y": 178,
+      "size": 112
+     },
+     {
+      "k": "sphere",
+      "x": 180,
+      "y": 104,
+      "size": 76
+     },
+     {
+      "k": "cone",
+      "x": 180,
+      "y": 58,
+      "size": 52
+     }
+    ],
+    "extra": {
+     "k": "cube",
+     "size": 56
+    }
+   },
+   {
+    "id": "castle",
+    "name": "gen.ws.p.castle",
+    "slots": [
+     {
+      "k": "cube",
+      "x": 120,
+      "y": 186,
+      "size": 84
+     },
+     {
+      "k": "cube",
+      "x": 240,
+      "y": 186,
+      "size": 84
+     },
+     {
+      "k": "cylinder",
+      "x": 180,
+      "y": 176,
+      "size": 96
+     },
+     {
+      "k": "cone",
+      "x": 180,
+      "y": 108,
+      "size": 70
+     }
+    ],
+    "extra": {
+     "k": "sphere",
+     "size": 56
+    }
+   }
+  ]
+ }
 }

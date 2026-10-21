@@ -1,241 +1,884 @@
 {
-  "id": "m1.u2.d2",
-  "title": "الأُسْطُوَانَةُ وَالمَخْرُوطُ",
-  "icon": [
+ "id": "m1.u2.d2",
+ "title": "الأُسْطُوَانَةُ وَالمَخْرُوطُ",
+ "icon": [
+  "cylinder",
+  "cone"
+ ],
+ "concepts": {
+  "C007": "تعرّف الأسطوانة والمخروط",
+  "C009": "خصائص المجسّم: الوجوه المسطّحة"
+ },
+ "bag": {
+  "items": [
+   {
+    "icon": "tube",
+    "label": "bagTube"
+   },
+   {
+    "icon": "hat",
+    "label": "bagHat"
+   }
+  ],
+  "ask": "bag.ask",
+  "adult": "أسطوانة كرتونية (لفّة مناديل)، وقبعة حفلة أو قمع ورقي.",
+  "screenPath": "على الشاشة الدحرجة من الأعلى ولمس الوجوه، ويُوسم «مدخل» حتى تُدحرَج الأسطوانة والقبعة الحقيقيتان."
+ },
+ "labels": {
+  "bagTube": "لَفَّةُ مَنَادِيلَ",
+  "bagHat": "قُبَّعَةُ حَفْلَةٍ",
+  "drumName": "طَبْلَة",
+  "hatName": "قُبَّعَةُ حَفْلَةٍ",
+  "waffleName": "قِمْعُ بُوظَةٍ"
+ },
+ "riddles": {
+  "u2r1": {
+   "riddle": [
+    "shop.r1"
+   ],
+   "kind": "cylinder",
+   "opts": [
+    "cylinder",
+    "cone",
+    "sphere"
+   ],
+   "tag": "riddle"
+  },
+  "u2r2": {
+   "riddle": [
+    "shop.r2"
+   ],
+   "kind": "cone",
+   "opts": [
+    "cone",
+    "cylinder",
+    "cube"
+   ],
+   "tag": "riddle"
+  },
+  "u2r3": {
+   "riddle": [
+    "shop.r3"
+   ],
+   "kind": "sphere",
+   "opts": [
+    "sphere",
     "cylinder",
     "cone"
-  ],
-  "sort": {
-    "bins": [
-      "cylinder",
-      "cone",
-      "other"
-    ],
-    "intro": [
-      "pr.01",
-      "هَيَّا نَعْمَلُ فِي مَتْجَرِ المُجَسَّمَاتِ: نَضَعُ كُلَّ شَيْءٍ فِي سَلَّتِهِ، وَنُلَبِّي طَلَبَاتِ الزَّبَائِنِ."
-    ],
-    "praise": "PRAISE2",
-    "practice": [
-      "cyl",
-      "hat",
-      "tube",
-      "r1",
-      "coneLying",
-      "r2"
-    ],
-    "sets": [
-      [
-        "drum",
-        "waffle",
-        "r4"
-      ],
-      [
-        "cylLying",
-        "cone",
-        "r5"
-      ]
-    ],
-    "remedial": [
-      "cylLying",
-      "r3"
-    ],
-    "errors": [
-      "riddle",
-      "cylAsCone",
-      "coneAsCyl",
-      "lyingCyl",
-      "cylOther",
-      "coneTurned",
-      "otherSolid"
-    ],
-    "reasons": {
-      "why.cylLying": "أُسْطُوَانَةٌ نَائِمَةٌ: وَجْهَانِ دَائِرِيَّانِ، وَتَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ.",
-      "why.cyl": "وَجْهَانِ دَائِرِيَّانِ مُسَطَّحَانِ، وَسَطْحٌ مُنْحَنٍ يَتَدَحْرَجُ عَلَيْهِ.",
-      "why.cone": "رَأْسٌ مُدَبَّبٌ، وَقَاعِدَةٌ دَائِرِيَّةٌ وَاحِدَةٌ.",
-      "why.sphere2": "الكُرَةُ تَتَدَحْرَجُ فِي كُلِّ اتِّجَاهٍ، وَلَيْسَ لَهَا وَجْهٌ مُسَطَّحٌ.",
-      "why.other2": "لَيْسَ أُسْطُوَانَةً وَلَا مَخْرُوطًا."
-    },
-    "msOk": [
-      "ms.ok",
-      "رَائِعٌ! {أَتْقَنْتَ|أَتْقَنْتِ} الأُسْطُوَانَةَ وَالمَخْرُوطَ."
-    ]
+   ],
+   "tag": "riddle"
   },
-  "riddles": {
-    "r1": {
-      "riddle": [
-        "shop.r1",
-        "زَبُونٌ يَطْلُبُ شَيْئًا يَقِفُ، وَيَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ."
-      ],
+  "u2r4": {
+   "riddle": [
+    "shop.r4"
+   ],
+   "kind": "cylinder",
+   "opts": [
+    "cylinder",
+    "cone",
+    "cube"
+   ],
+   "tag": "riddle"
+  },
+  "u2r5": {
+   "riddle": [
+    "shop.r5"
+   ],
+   "kind": "cone",
+   "opts": [
+    "cone",
+    "cylinder",
+    "sphere"
+   ],
+   "tag": "riddle"
+  },
+  "u2r6": {
+   "riddle": [
+    "shop.r6"
+   ],
+   "kind": "cylinder",
+   "opts": [
+    "sphere",
+    "cylinder",
+    "cone"
+   ],
+   "tag": "riddle"
+  }
+ },
+ "lines": {
+  "bag.ask": "هَلْ {مَعَكَ|مَعَكِ} لَفَّةُ مَنَادِيلَ، وَقُبَّعَةُ حَفْلَةٍ؟ أَمْ نَلْعَبُ عَلَى الشَّاشَةِ؟",
+  "hook.01": "فَوْضَى أَنَامَتِ المَخْرُوطَ، وَسَتَدْفَعُهُ نَحْوَ بَابِ الوَاحَةِ. هَلْ يَسِيرُ فِي خَطٍّ مُسْتَقِيمٍ، أَمْ يَدُورُ؟ {تَوَقَّعْ|تَوَقَّعِي}.",
+  "hook.02": "نَنْظُرُ إِلَيْهِ مِنْ فَوْقُ.",
+  "hook.03": "دَارَ حَوْلَ رَأْسِهِ! رَأْسُهُ يَبْقَى فِي مَكَانِهِ، وَقَاعِدَتُهُ تَدُورُ حَوْلَهُ.",
+  "hook.04": [
+   "chaos",
+   "إِذَنْ، مَنْ يَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ؟"
+  ],
+  "mat.01": "{أَنِمْ|أَنِيمِي} لَفَّةَ المَنَادِيلِ وَ{دَحْرِجْهَا|دَحْرِجِيهَا}، ثُمَّ {أَنِمِ|أَنِيمِي} القُبَّعَةَ وَ{دَحْرِجْهَا|دَحْرِجِيهَا}. مَاذَا {رَأَيْتَ|رَأَيْتِ}؟ ثُمَّ {اِلْمَسْ|اِلْمَسِي} «تَمَّ».",
+  "mat.02": "هَيَّا نَرَى ذَلِكَ عَلَى الشَّاشَةِ أَيْضًا.",
+  "cyl.01": "هَذِهِ أُسْطُوَانَةٌ نَائِمَةٌ، نَنْظُرُ إِلَيْهَا مِنْ فَوْقُ. {اِلْمَسْهَا|اِلْمَسِيهَا} لِنُدَحْرِجَهَا.",
+  "cyl.02": "تَدَحْرَجَتِ الأُسْطُوَانَةُ فِي خَطٍّ مُسْتَقِيمٍ.",
+  "push.cyl": "وَإِذَا كَانَتِ الأُسْطُوَانَةُ وَاقِفَةً، هَلْ تَتَدَحْرَجُ إِذَا دَفَعْنَاهَا؟",
+  "push.cyl.after": "بَقِيَتْ وَاقِفَةً عَلَى طَرَفِهَا الدَّائِرِيِّ المُسَطَّحِ.",
+  "push.end": "وَإِذَا نَامَتْ عَلَى جَانِبِهَا؟",
+  "push.end.after": "تَدَحْرَجَتْ عَلَى سَطْحِهَا المُنْحَنِي. الأُسْطُوَانَةُ تَقِفُ، وَتَتَدَحْرَجُ.",
+  "cone.01": "وَقُبَّعَةُ الحَفْلَةِ مَخْرُوطٌ: قَاعِدَتُهُ دَائِرِيَّةٌ مُسَطَّحَةٌ، وَرَأْسُهُ مُدَبَّبٌ. وَلِسَطْحِهِ المُنْحَنِي يَتَدَحْرَجُ حَوْلَ رَأْسِهِ.",
+  "face.cube": "السَّطْحُ المُسَطَّحُ مِنَ المُجَسَّمِ اسْمُهُ: وَجْهٌ، نَلْمَسُهُ بِكَفِّنَا. {اِلْمَسِ|اِلْمَسِي} وُجُوهَ المُكَعَّبِ.",
+  "face.cube.after": "كُلُّ وُجُوهِ المُكَعَّبِ مُسَطَّحَةٌ.",
+  "face.cyl": "{اِلْمَسِ|اِلْمَسِي} وَجْهَ الأُسْطُوَانَةِ المُسَطَّحَ.",
+  "face.cyl.flip": "نَقْلِبُهَا… وَهُنَاكَ وَجْهٌ آخَرُ. {اِلْمَسْهُ|اِلْمَسِيهِ}.",
+  "face.cyl.after": "لِلْأُسْطُوَانَةِ وَجْهَانِ دَائِرِيَّانِ مُسَطَّحَانِ، وَبَيْنَهُمَا سَطْحٌ مُنْحَنٍ.",
+  "face.cone": "وَالمَخْرُوطُ؟ قَلَبْنَاهُ لِنَرَى قَاعِدَتَهُ. {اِلْمَسِ|اِلْمَسِي} وَجْهَهُ المُسَطَّحَ.",
+  "face.cone.after": "لِلْمَخْرُوطِ وَجْهٌ دَائِرِيٌّ وَاحِدٌ، وَرَأْسٌ مُدَبَّبٌ.",
+  "face.sphere": "وَالكُرَةُ؟ {اِلْمَسْهَا|اِلْمَسِيهَا}.",
+  "face.sphere.after": "سَطْحُ الكُرَةِ مُنْحَنٍ كُلُّهُ: لَيْسَ لَهَا وَجْهٌ مُسَطَّحٌ.",
+  "wk.01": "هَذِهِ طَبْلَةٌ: وَجْهَانِ دَائِرِيَّانِ مُسَطَّحَانِ، وَسَطْحٌ مُنْحَنٍ. إِنَّهَا أُسْطُوَانَةٌ.",
+  "wk.02": "هَلْ مَا زَالَتْ أُسْطُوَانَةً؟",
+  "wk.03": "مَا زَالَ لَهَا الوَجْهَانِ الدَّائِرِيَّانِ: أُسْطُوَانَةٌ نَائِمَةٌ.",
+  "wk.04": "قُبَّعَةُ الحَفْلَةِ وَقِمْعُ البُوظَةِ مَخْرُوطَانِ: رَأْسٌ مُدَبَّبٌ وَقَاعِدَةٌ دَائِرِيَّةٌ، حَتَّى لَوْ كَانَ الرَّأْسُ إِلَى الأَسْفَلِ.",
+  "pr.intro": "سِلَالُنَا: لِلْأُسْطُوَانَاتِ، وَلِلْمَخَارِيطِ، وَ«غَيْرُ ذَلِكَ». هَيَّا نَتَمَرَّنُ.",
+  "pr.who": "مَنْ أَنَا؟ أَقِفُ وَأَتَدَحْرَجُ، وَلِي وَجْهَانِ دَائِرِيَّانِ.",
+  "pr.coneRoll": "هَلْ يَتَدَحْرَجُ المَخْرُوطُ فِي خَطٍّ مُسْتَقِيمٍ؟",
+  "pr.coneWhy": "يَدُورُ حَوْلَ رَأْسِهِ، لِأَنَّ رَأْسَهُ يَبْقَى فِي مَكَانِهِ.",
+  "game.01": "مَتْجَرُ المُجَسَّمَاتِ: {اِسْمَعْ|اِسْمَعِي} طَلَبَ كُلِّ زَبُونٍ، وَ{أَعْطِهِ|أَعْطِيهِ} مَا يَطْلُبُ.",
+  "shop.r1": "زَبُونٌ يَطْلُبُ شَيْئًا يَقِفُ، وَيَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ.",
+  "shop.r2": "زَبُونَةٌ تَطْلُبُ شَيْئًا رَأْسُهُ مُدَبَّبٌ، وَقَاعِدَتُهُ دَائِرِيَّةٌ.",
+  "shop.r3": "زَبُونٌ يَطْلُبُ شَيْئًا يَتَدَحْرَجُ فِي كُلِّ اتِّجَاهٍ، وَلَيْسَ لَهُ وَجْهٌ مُسَطَّحٌ.",
+  "shop.r4": "زَبُونَةٌ تَطْلُبُ شَيْئًا لَهُ وَجْهَانِ دَائِرِيَّانِ مُسَطَّحَانِ.",
+  "shop.r5": "زَبُونٌ يَطْلُبُ شَيْئًا يَدُورُ حَوْلَ رَأْسِهِ إِذَا دَحْرَجْنَاهُ.",
+  "shop.r6": "زَبُونَةٌ تَطْلُبُ شَيْئًا تُوقِفُهُ فَيَقِفُ، وَإِذَا أَنَامَتْهُ تَدَحْرَجَ فِي خَطٍّ مُسْتَقِيمٍ.",
+  "why.cyl": "وَجْهَانِ دَائِرِيَّانِ، وَسَطْحٌ مُنْحَنٍ بَيْنَهُمَا.",
+  "why.cylLying": "نَائِمَةٌ فَقَطْ: مَا زَالَ لَهَا وَجْهَانِ دَائِرِيَّانِ.",
+  "why.cone": "رَأْسٌ مُدَبَّبٌ، وَقَاعِدَةٌ دَائِرِيَّةٌ، مَهْمَا قَلَبْنَاهُ.",
+  "why.other": "لَيْسَ لَهُ وَجْهٌ دَائِرِيٌّ وَرَأْسٌ مُدَبَّبٌ، وَلَا وَجْهَانِ دَائِرِيَّانِ.",
+  "ch.after": "لَهَا وَجْهَانِ دَائِرِيَّانِ: إِنَّهَا أُسْطُوَانَةٌ نَائِمَةٌ. مَكَانُهَا سَلَّةُ الأُسْطُوَانَاتِ.",
+  "ch.right": "الأُسْطُوَانَةُ النَّائِمَةُ مَا زَالَتْ أُسْطُوَانَةً: لَهَا وَجْهَانِ دَائِرِيَّانِ.",
+  "ch.wrong": [
+   "chaos",
+   "النَّائِمَةُ لَيْسَتْ أُسْطُوَانَةً."
+  ],
+  "ms.cylCone": "لِلْأُسْطُوَانَةِ وَجْهَانِ دَائِرِيَّانِ، وَاقِفَةً أَوْ نَائِمَةً. وَلِلْمَخْرُوطِ رَأْسٌ مُدَبَّبٌ وَقَاعِدَةٌ دَائِرِيَّةٌ.",
+  "ms.faces": "الوَجْهُ سَطْحٌ مُسَطَّحٌ نَلْمَسُهُ بِكَفِّنَا، وَالكُرَةُ لَيْسَ لَهَا وَجْهٌ مُسَطَّحٌ.",
+  "ms.sphereFace": "هَلْ لِلْكُرَةِ وَجْهٌ مُسَطَّحٌ؟",
+  "ms.cylFace": "{اِلْمَسِ|اِلْمَسِي} أَحَدَ وَجْهَيِ الأُسْطُوَانَةِ.",
+  "ms.ok": "رَائِعٌ! {أَتْقَنْتَ|أَتْقَنْتِ} الأُسْطُوَانَةَ وَالمَخْرُوطَ وَالوُجُوهَ. {هَذِهِ نَجْمَتُكَ|هَذِهِ نَجْمَتُكِ}.",
+  "wrap.01": "فِي الوَاحَةِ الآنَ بُرْجُ مَاءٍ: أُسْطُوَانَةٌ فَوْقَهَا مَخْرُوطٌ!",
+  "wrap.home": [
+   "chaos",
+   "مُهِمَّةُ البَيْتِ: {اِبْحَثْ|اِبْحَثِي} فِي البَيْتِ عَنْ أُسْطُوَانَةٍ وَمَخْرُوطٍ، وَ{دَحْرِجْهُمَا|دَحْرِجِيهِمَا}: أَيُّهُمَا يَسِيرُ فِي خَطٍّ مُسْتَقِيمٍ؟"
+  ]
+ },
+ "flow": [
+  {
+   "s": "hook",
+   "scene": "coneRoll",
+   "lines": [
+    "hook.01",
+    "hook.02",
+    "hook.03",
+    "hook.04"
+   ]
+  },
+  {
+   "s": "explore",
+   "scene": "cylRoll",
+   "mat": {
+    "prompt": "mat.01",
+    "icon": true,
+    "show": [],
+    "after": "mat.02"
+   },
+   "lines": [
+    "cyl.01",
+    "cyl.02"
+   ]
+  },
+  {
+   "s": "explore",
+   "scene": "pushLab",
+   "rounds": [
+    {
+     "mk": {
+      "solid": "cylinder",
       "kind": "cylinder",
-      "opts": [
-        "cylinder",
-        "cone",
-        "sphere"
-      ],
-      "tag": "riddle"
+      "size": 110,
+      "color": "$solid.cylinder"
+     },
+     "behave": "stay",
+     "ok": "stay",
+     "k": "f",
+     "ask": "push.cyl",
+     "after": "push.cyl.after"
     },
-    "r2": {
-      "riddle": [
-        "shop.r2",
-        "زَبُونَةٌ تَطْلُبُ شَيْئًا رَأْسُهُ مُدَبَّبٌ، وَقَاعِدَتُهُ دَائِرِيَّةٌ."
-      ],
-      "kind": "cone",
-      "opts": [
-        "cone",
-        "cylinder",
-        "cube"
-      ],
-      "tag": "riddle"
-    },
-    "r3": {
-      "riddle": [
-        "shop.r3",
-        "زَبُونٌ يَطْلُبُ شَيْئًا يَتَدَحْرَجُ فِي كُلِّ اتِّجَاهٍ، وَلَيْسَ لَهُ وَجْهٌ مُسَطَّحٌ."
-      ],
-      "kind": "sphere",
-      "opts": [
-        "sphere",
-        "cylinder",
-        "cone"
-      ],
-      "tag": "riddle"
-    },
-    "r4": {
-      "riddle": [
-        "shop.r4",
-        "زَبُونَةٌ تَطْلُبُ شَيْئًا لَهُ وَجْهَانِ دَائِرِيَّانِ مُسَطَّحَانِ."
-      ],
+    {
+     "mk": {
+      "solid": "cylinder",
       "kind": "cylinder",
-      "opts": [
-        "cylinder",
-        "cone",
-        "cube"
-      ],
-      "tag": "riddle"
-    },
-    "r5": {
-      "riddle": [
-        "shop.r5",
-        "زَبُونٌ يَطْلُبُ شَيْئًا يَدُورُ حَوْلَ رَأْسِهِ إِذَا دَحْرَجْنَاهُ."
-      ],
-      "kind": "cone",
-      "opts": [
-        "cone",
-        "cylinder",
-        "sphere"
-      ],
-      "tag": "riddle"
+      "size": 104,
+      "color": "$solid.cylinder",
+      "pose": "end"
+     },
+     "behave": "roll",
+     "ok": "roll",
+     "k": "f",
+     "ask": "push.end",
+     "after": "push.end.after"
     }
+   ]
   },
-  "chaos": {
-    "bins": [
-      "cylinder",
-      "cone",
-      "other"
-    ],
-    "boast": [
-      "chaos",
-      "chaos.boast",
-      "الأُسْطُوَانَةُ تَقِفُ دَائِمًا! وَهَذِهِ النَّائِمَةُ لَيْسَتْ أُسْطُوَانَةً!"
-    ],
-    "placed": [
-      {
-        "s": {
-          "solid": "cylinder",
-          "object": "drum",
-          "size": 70,
-          "color": "#d9483b"
-        },
-        "bin": "cylinder",
-        "y": 120
-      },
-      {
-        "s": {
-          "solid": "cone",
-          "object": "hat",
-          "size": 74,
-          "color": "#8e6bbf"
-        },
-        "bin": "cone",
-        "y": 92
-      },
-      {
-        "s": {
-          "solid": "cone",
-          "size": 70,
-          "color": "$neutral.0"
-        },
-        "bin": "cone",
-        "y": 196
-      },
-      {
-        "s": {
-          "solid": "cylinder",
-          "pose": "lying",
-          "size": 78,
-          "color": "$neutral.1"
-        },
-        "bin": "other",
-        "y": 92,
-        "wrong": true
-      },
-      {
-        "s": {
-          "solid": "cube",
-          "size": 70,
-          "color": "$neutral.4"
-        },
-        "bin": "other",
-        "y": 196
-      }
-    ],
-    "fixTo": "cylinder",
-    "hint": [
-      "compass",
-      "chaos.hint",
-      "{اُنْظُرْ|اُنْظُرِي} إِلَى سَلَّةِ «غَيْرُ ذَلِكَ»: هَلْ فِيهَا شَيْءٌ لَهُ وَجْهَانِ دَائِرِيَّانِ؟"
-    ],
-    "reasons": [
-      {
-        "id": "chaos.r1",
-        "t": "الأُسْطُوَانَةُ النَّائِمَةُ مَا زَالَ لَهَا وَجْهَانِ دَائِرِيَّانِ: هِيَ أُسْطُوَانَةٌ.",
-        "ok": true
-      },
-      {
-        "id": "chaos.r2",
-        "t": "لِأَنَّ الأُسْطُوَانَةَ لَا تَنَامُ أَبَدًا.",
-        "ok": false
-      }
-    ],
-    "whyNo": [
-      "compass",
-      "chaos.whyNo",
-      "{جَرِّبْ بِنَفْسِكَ|جَرِّبِي بِنَفْسِكِ}: الأُسْطُوَانَةُ تَقِفُ، وَتَنَامُ أَيْضًا."
-    ],
-    "thanks": [
-      "chaos",
-      "chaos.thanks",
-      "أُوه! نَامَتْ وَمَا زَالَتْ أُسْطُوَانَةً! شُكْرًا يَا {مُهَنْدِسُ|مُهَنْدِسَةُ}!"
-    ]
+  {
+   "s": "explore",
+   "scene": "poses",
+   "show": [
+    {
+     "solid": "cone",
+     "kind": "cone",
+     "size": 110,
+     "color": "$solid.cone"
+    },
+    "hat",
+    {
+     "solid": "cone",
+     "kind": "cone",
+     "size": 110,
+     "color": "$solid.cone",
+     "pose": "lying"
+    }
+   ],
+   "lines": [
+    "cone.01"
+   ]
   },
-  "wrapLines": [
+  {
+   "s": "explore",
+   "scene": "faceLab",
+   "rounds": [
+    {
+     "mk": {
+      "solid": "cube",
+      "kind": "cube",
+      "size": 130,
+      "color": "$solid.cube",
+      "pose": "turned"
+     },
+     "faces": [
+      "front",
+      "top",
+      "right",
+      "left",
+      "back"
+     ],
+     "ask": "face.cube",
+     "after": "face.cube.after"
+    },
+    {
+     "mk": {
+      "solid": "cylinder",
+      "kind": "cylinder",
+      "size": 130,
+      "color": "$solid.cylinder"
+     },
+     "faces": [
+      "top"
+     ],
+     "need": 1,
+     "ask": "face.cyl",
+     "flip": "face.cyl.flip",
+     "after": "face.cyl.after"
+    },
+    {
+     "mk": {
+      "solid": "cone",
+      "kind": "cone",
+      "size": 130,
+      "color": "$solid.cone",
+      "pose": "tipdown"
+     },
+     "faces": [
+      "base"
+     ],
+     "need": 1,
+     "ask": "face.cone",
+     "after": "face.cone.after"
+    },
+    {
+     "mk": {
+      "solid": "sphere",
+      "kind": "sphere",
+      "size": 130,
+      "color": "$solid.sphere"
+     },
+     "faces": [
+      "curved"
+     ],
+     "need": 1,
+     "ask": "face.sphere",
+     "after": "face.sphere.after"
+    }
+   ]
+  },
+  {
+   "s": "worked",
+   "scene": "steps",
+   "steps": [
     [
-      "compass",
-      "wrap.01",
-      "{بَنَيْتَ|بَنَيْتِ} لِلْمَدِينَةِ خَزَّانَ مَاءٍ: أُسْطُوَانَةٌ، وَفَوْقَهَا سَقْفٌ مَخْرُوطٌ!"
+     {
+      "show": "drum",
+      "at": [
+       180,
+       140
+      ],
+      "id": "a",
+      "label": "drumName",
+      "ly": 96
+     },
+     {
+      "say": "wk.01"
+     }
     ],
     [
-      "compass",
-      "wrap.02",
-      "اليَوْمَ عَرَفْنَا: الأُسْطُوَانَةُ تَقِفُ عَلَى وَجْهٍ دَائِرِيٍّ، وَتَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ. وَالمَخْرُوطُ رَأْسُهُ مُدَبَّبٌ، وَيَدُورُ حَوْلَ رَأْسِهِ."
+     {
+      "chaosIn": [
+       320,
+       60
+      ]
+     },
+     {
+      "swap": "a",
+      "to": {
+       "solid": "cylinder",
+       "kind": "cylinder",
+       "object": "drum",
+       "pose": "lying",
+       "size": 118,
+       "color": "#3f7fbf"
+      },
+      "from": -90
+     },
+     {
+      "chaosOut": true
+     },
+     {
+      "say": "wk.02"
+     },
+     {
+      "say": "wk.03"
+     }
     ],
     [
-      "chaos",
-      "wrap.03",
-      "مُهِمَّةُ البَيْتِ: {اِبْحَثْ|اِبْحَثِي} عَنْ أُسْطُوَانَةٍ فِي المَطْبَخِ، وَعَنْ قُبَّعَةِ حَفْلَةٍ… أَنَا أُرِيدُ القُبَّعَةَ!"
+     {
+      "clear": true
+     },
+     {
+      "show": "hat",
+      "at": [
+       262,
+       140
+      ],
+      "id": "h",
+      "label": "hatName"
+     },
+     {
+      "show": "waffle",
+      "at": [
+       100,
+       130
+      ],
+      "id": "w",
+      "label": "waffleName"
+     },
+     {
+      "say": "wk.04"
+     }
     ]
+   ]
+  },
+  {
+   "s": "practice"
+  },
+  {
+   "s": "game",
+   "scene": "items",
+   "mode": "practice",
+   "intro": "game.01",
+   "items": [
+    {
+     "t": "sort",
+     "mk": "u2r1"
+    },
+    {
+     "t": "sort",
+     "mk": "u2r2"
+    },
+    {
+     "t": "sort",
+     "mk": "u2r3"
+    },
+    {
+     "t": "sort",
+     "mk": "u2r4"
+    },
+    {
+     "t": "sort",
+     "mk": "u2r5"
+    }
+   ]
+  },
+  {
+   "s": "chaos"
+  },
+  {
+   "s": "mastery"
+  },
+  {
+   "s": "wrap"
+  }
+ ],
+ "sort": {
+  "bins": [
+   "cylinder",
+   "cone",
+   "other"
   ],
-  "homeTask": "wrap.03",
-  "talk": "اسألوا: «أين {ترى|ترين} أسطوانة في البيت؟ وأين {ترى|ترين} مخروطاً؟» وجرّبوا دحرجة كوب ورقي."
+  "praise": "praiseSolid",
+  "errors": [
+   {
+    "when": {
+     "tag": "riddle"
+    },
+    "err": "riddle"
+   },
+   {
+    "when": {
+     "kind": "cylinder",
+     "bin": "cone"
+    },
+    "err": "cylAsCone"
+   },
+   {
+    "when": {
+     "kind": "cone",
+     "bin": "cylinder"
+    },
+    "err": "coneAsCyl"
+   },
+   {
+    "when": {
+     "tag": "cylLying"
+    },
+    "err": "lyingCyl"
+   },
+   {
+    "when": {
+     "kind": "cylinder"
+    },
+    "err": "cylOther"
+   },
+   {
+    "when": {
+     "kind": "cone"
+    },
+    "err": "coneTurned"
+   },
+   {
+    "err": "otherSolid"
+   }
+  ],
+  "reasons": [
+   {
+    "when": {
+     "tag": "cylLying"
+    },
+    "id": "why.cylLying"
+   },
+   {
+    "when": {
+     "kind": "cylinder"
+    },
+    "id": "why.cyl"
+   },
+   {
+    "when": {
+     "kind": "cone"
+    },
+    "id": "why.cone"
+   },
+   {
+    "id": "why.other"
+   }
+  ],
+  "twins": {
+   "cylinder": {
+    "t": "sort",
+    "mk": "cyl"
+   },
+   "cylLying": {
+    "t": "sort",
+    "mk": "tube"
+   },
+   "cone": {
+    "t": "sort",
+    "mk": "coneLying"
+   },
+   "coneTurned": {
+    "t": "sort",
+    "mk": "cone"
+   },
+   "riddle": {
+    "t": "sort",
+    "mk": "u2r4"
+   },
+   "*": {
+    "t": "sort",
+    "mk": "cyl"
+   }
+  }
+ },
+ "practice": {
+  "intro": "pr.intro",
+  "normal": [
+   {
+    "t": "sort",
+    "mk": "cyl"
+   },
+   {
+    "t": "sort",
+    "mk": "cone"
+   },
+   {
+    "t": "sort",
+    "mk": "tube"
+   },
+   {
+    "t": "sort",
+    "mk": "coneLying"
+   },
+   {
+    "t": "sort",
+    "mk": "u2r4"
+   },
+   {
+    "t": "faceTap",
+    "mk": {
+     "solid": "cone",
+     "kind": "cone",
+     "object": "hat",
+     "pose": "tipdown",
+     "size": 118,
+     "color": "#6c7fa8"
+    }
+   },
+   {
+    "t": "yesno",
+    "show": {
+     "solid": "cone",
+     "kind": "cone",
+     "size": 130,
+     "color": "$solid.cone",
+     "pose": "lying"
+    },
+    "q": "pr.coneRoll",
+    "ans": false,
+    "vis": "coneRoll",
+    "err": "coneTurned",
+    "why": "pr.coneWhy"
+   }
+  ],
+  "challenge": [
+   {
+    "t": "sort",
+    "mk": "tube"
+   },
+   {
+    "t": "sort",
+    "mk": "coneLying"
+   },
+   {
+    "t": "sort",
+    "mk": "cube"
+   },
+   {
+    "t": "sort",
+    "mk": "u2r5"
+   },
+   {
+    "t": "faceTap",
+    "mk": {
+     "solid": "cone",
+     "kind": "cone",
+     "object": "hat",
+     "pose": "tipdown",
+     "size": 118,
+     "color": "#6c7fa8"
+    }
+   },
+   {
+    "t": "yesno",
+    "show": {
+     "solid": "cone",
+     "kind": "cone",
+     "size": 130,
+     "color": "$solid.cone",
+     "pose": "lying"
+    },
+    "q": "pr.coneRoll",
+    "ans": false,
+    "vis": "coneRoll",
+    "err": "coneTurned",
+    "why": "pr.coneWhy"
+   }
+  ]
+ },
+ "chaos": {
+  "kind": "bins",
+  "bins": [
+   "cylinder",
+   "cone",
+   "other"
+  ],
+  "check": "faces",
+  "after": "ch.after",
+  "right": "ch.right",
+  "wrong": "ch.wrong",
+  "placed": [
+   {
+    "mk": {
+     "solid": "cylinder",
+     "kind": "cylinder",
+     "size": 64,
+     "color": "$solid.cylinder"
+    },
+    "bin": "cylinder"
+   },
+   {
+    "mk": {
+     "solid": "cone",
+     "kind": "cone",
+     "size": 64,
+     "color": "$solid.cone"
+    },
+    "bin": "cone"
+   },
+   {
+    "mk": {
+     "solid": "cone",
+     "kind": "cone",
+     "size": 58,
+     "color": "$solid.cone",
+     "pose": "tipdown"
+    },
+    "bin": "cone"
+   },
+   {
+    "mk": {
+     "solid": "cylinder",
+     "kind": "cylinder",
+     "size": 130,
+     "color": "$solid.cylinder",
+     "pose": "lying",
+     "tag": "cylLying"
+    },
+    "bin": "other",
+    "wrong": true
+   },
+   {
+    "mk": {
+     "solid": "cube",
+     "kind": "cube",
+     "size": 56,
+     "color": "$solid.cube"
+    },
+    "bin": "other"
+   }
+  ]
+ },
+ "mastery": {
+  "concepts": {
+   "C007": [
+    {
+     "t": "sort",
+     "mk": "cylLying"
+    },
+    {
+     "t": "sort",
+     "mk": "waffle"
+    },
+    {
+     "t": "sort",
+     "mk": "cubeTilt"
+    },
+    {
+     "t": "sort",
+     "mk": "u2r6"
+    }
+   ],
+   "C009": [
+    {
+     "t": "faceTap",
+     "mk": {
+      "solid": "cone",
+      "kind": "cone",
+      "size": 124,
+      "color": "$solid.cone",
+      "pose": "lying"
+     }
+    },
+    {
+     "t": "faceTap",
+     "mk": {
+      "solid": "cylinder",
+      "kind": "cylinder",
+      "size": 120,
+      "color": "$solid.cylinder"
+     },
+     "prompt": "ms.cylFace"
+    },
+    {
+     "t": "yesno",
+     "show": "marble",
+     "q": "ms.sphereFace",
+     "ans": false,
+     "vis": "faces",
+     "err": "sphereNoFace"
+    }
+   ]
+  },
+  "recall": {
+   "C007": {
+    "auto": true,
+    "h": 280,
+    "steps": [
+     [
+      {
+       "show": {
+        "solid": "cylinder",
+        "kind": "cylinder",
+        "size": 120,
+        "color": "$solid.cylinder",
+        "pose": "lying"
+       },
+       "at": [
+        100,
+        150
+       ],
+       "id": "a"
+      },
+      {
+       "show": {
+        "solid": "cone",
+        "kind": "cone",
+        "size": 120,
+        "color": "$solid.cone"
+       },
+       "at": [
+        262,
+        140
+       ],
+       "id": "b"
+      },
+      {
+       "say": "ms.cylCone"
+      }
+     ]
+    ]
+   },
+   "C009": {
+    "auto": true,
+    "h": 280,
+    "steps": [
+     [
+      {
+       "show": {
+        "solid": "cylinder",
+        "kind": "cylinder",
+        "size": 110,
+        "color": "$solid.cylinder"
+       },
+       "at": [
+        262,
+        140
+       ],
+       "id": "a"
+      },
+      {
+       "show": {
+        "solid": "sphere",
+        "kind": "sphere",
+        "size": 110,
+        "color": "$solid.sphere"
+       },
+       "at": [
+        100,
+        140
+       ],
+       "id": "b"
+      },
+      {
+       "say": "ms.faces"
+      }
+     ]
+    ]
+   }
+  },
+  "remedial": {
+   "C007": [
+    {
+     "t": "sort",
+     "mk": "tube"
+    },
+    {
+     "t": "sort",
+     "mk": "cone"
+    }
+   ],
+   "C009": [
+    {
+     "t": "faceTap",
+     "mk": {
+      "solid": "cone",
+      "kind": "cone",
+      "object": "hat",
+      "pose": "tipdown",
+      "size": 118,
+      "color": "#6c7fa8"
+     }
+    }
+   ]
+  },
+  "mixed": {
+   "lesson": "m1.u2.d1",
+   "item": {
+    "t": "sort",
+    "mk": "dieTilt",
+    "bins": [
+     "cylinder",
+     "cone",
+     "other"
+    ]
+   }
+  },
+  "ok": "ms.ok"
+ },
+ "review": [
+  {
+   "t": "sort",
+   "mk": "candle"
+  },
+  {
+   "t": "sort",
+   "mk": "hatTilt"
+  },
+  {
+   "t": "faceTap",
+   "mk": "drum"
+  }
+ ],
+ "wrap": {
+  "art": "tower",
+  "lines": [
+   "wrap.01"
+  ],
+  "home": "wrap.home"
+ },
+ "talk": "اسألوا: «أين {ترى|ترين} أسطوانة في البيت؟ وأين {ترى|ترين} مخروطاً؟» وجرّبوا دحرجة كوب ورقي: هل يسير مستقيماً أم يدور؟"
 }

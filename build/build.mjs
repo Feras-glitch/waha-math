@@ -22,8 +22,7 @@ const T_RX = /\/\*T\*\/([\s\S]*?)\/\*\/T\*\//g;
 export function stripHooks(js, dev) {
   if (dev) return js.replace(T_RX, '$1');
   js = js.replace(T_RX, '');
-  js = js.replace(/^const FAST = location\.hash === '#fast';.*$/m, "const FAST = false;                                      // وضع الفحص السريع يُحذف في نسخة الأطفال (ابنِ بـ --dev لتفعيله)");
-  js = js.replace(/^const TESTHOOK = FAST \|\| location\.hash === '#test';.*\n/m, '');
+  js = js.replace(/^const TESTHOOK = +false;.*\n/m, '');                                // كل استعمالاته داخل خطافات حُذفت، فيُحذف تعريفه
   js = js.replace(/FAST \? ([\d.]+) : ([\d.]+)/g, '$2');                                  // مدد الحركة: نبقي القيمة الحقيقية فقط
   js = js.replace("location.hash = FAST ? '#fast' : '';", "location.hash = '';");
   const left = js.match(/window\.__\w+|TESTHOOK|#fast|#test|__gateAns|dataset\.ok|data-ok/g);
