@@ -91,7 +91,7 @@ const MS_AGAIN = ['gen.ms.again', 'لِنَعُدْ إِلَى الفِكْرَ�
 const MS_LATER = ['gen.ms.later', 'أَحْسَنْتَ المُحَاوَلَةَ! سَنَعُودُ إِلَى هَذِهِ الفِكْرَةِ فِي مُرَاجَعَةِ اليَوْمِ. هَيَّا نُكْمِلُ.'];
 /* سؤال سلال كامل: محاولة أولى ← تفسير خاص بالخطأ ← محاولة ثانية ← حل مشترك ← مسألة توأم */
 async function sortItem(make, cfg, scene, allowHelp = true) {
-  const item = make(); let tries = 0;
+  const item = make(); let tries = 0; window.__sortScene = scene;   // TESTHOOK
   if (cfg.kindOf) item.kind = cfg.kindOf(item);
   if (!item.riddle && !cfg.bins.includes(item.kind)) item.kind = 'other';   // شكل لا سلّة له في هذا الدرس يذهب إلى «غير ذلك»
   while (true) {
