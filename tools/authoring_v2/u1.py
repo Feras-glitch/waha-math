@@ -11,6 +11,9 @@ WITHYOU = G('مَعَكَ', 'مَعَكِ'); COUNT = G('عُدَّ', 'عُدِّ
 SHAPE_ERR = []  # تُملأ لكل درس
 
 # ======================= الدرس 1: الدائرة والمربع =======================
+# التوأم بعد الحلّ المشترك أو الكشف (المبدأ 5): بنود «المس» في التمرين واللعب لم يكن لها توأم (كشفه فحص التوأم في بوابة S1-U3)؛
+# والتوأم بأشياء عُرضت في الدرس نفسه، فلا يُعرض به شيء يقيسه التقييم (D240)
+ODD_TWIN = {'t': 'pick', 'q': ['pr.odd'], 'opts': ['wheel', ['ovalWide', 30], 'plate', 'circleS'], 'ans': 1, 'err': 'ovalAsCircle', 'why': 'why.oval'}   # البيضيّ مائلاً: «oval» القائم للإتقان
 d1 = {
  'id': 'm1.u1.d1', 'title': 'الدَّائِرَةُ وَالمُرَبَّعُ', 'icon': ['circle', 'square'],
  'concepts': {'C001': 'تعرّف الدائرة والمربع', 'C004': 'وصف الشكل: الحافة والرأس (مدخل)'},
@@ -67,10 +70,10 @@ d1 = {
  'practice': {'intro': 'pr.intro',
   'normal': [sort('squareUp'), sort('plate'), {'t': 'paint', 'q': 'pr.paint', 'shapes': ['circleS', 'window4', 'circle', 'squareUp'], 'pots': ['circle', 'square']},
              {'t': 'pickAll', 'q': 'pr.which', 'want': 'circle', 'objs': ['plate', 'window4', 'circle', 'squareUp', 'circleS'], 'names': True, 'errs': {'miss': 'curvedEdge', 'extra': 'countCorners'}},
-             {'t': 'pick', 'q': ['pr.odd'], 'opts': ['circle', 'circleS', 'plate', 'ovalWide'], 'ans': 3, 'err': 'ovalAsCircle', 'why': 'why.oval'}],
+             {'t': 'pick', 'q': ['pr.odd'], 'opts': ['circle', 'circleS', 'plate', 'ovalWide'], 'ans': 3, 'err': 'ovalAsCircle', 'why': 'why.oval', 'twin': ODD_TWIN}],
   'challenge': [sort('windowTilt'), sort('ovalWide'), {'t': 'paint', 'q': 'pr.paint', 'shapes': ['windowTilt', 'circleS', ['windowTilt'], 'circle'], 'pots': ['circle', 'square']},
              {'t': 'pickAll', 'q': 'pr.which', 'want': 'circle', 'objs': ['plate', 'windowTilt', 'circleS', 'ovalWide', 'circle', 'window4'], 'names': True, 'errs': {'miss': 'curvedEdge', 'oval': 'ovalAsCircle', 'extra': 'countCorners'}},
-             {'t': 'pick', 'q': ['pr.odd'], 'opts': ['circleS', 'plate', 'circle', 'ovalWide'], 'ans': 3, 'err': 'ovalAsCircle', 'why': 'why.oval'}]},
+             {'t': 'pick', 'q': ['pr.odd'], 'opts': ['circleS', 'plate', 'circle', 'ovalWide'], 'ans': 3, 'err': 'ovalAsCircle', 'why': 'why.oval', 'twin': ODD_TWIN}]},
  'chaos': {'kind': 'bins', 'bins': ['circle', 'square', 'other'], 'check': 'countVertices', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong',
   'placed': [{'mk': N(0, type='circle', kind='circle', size=76), 'bin': 'circle'}, {'mk': N(2, type='circle', kind='circle', size=64), 'bin': 'circle'}, {'mk': N(1, type='square', kind='square', size=70), 'bin': 'square'},
              {'mk': N(3, type='square', kind='square', size=110, rot=40), 'bin': 'other', 'wrong': True}, {'mk': N(4, type='triangle', kind='triangle', size=78), 'bin': 'other'}]},
@@ -240,9 +243,12 @@ d3 = {
     [{'corners': 'a'}, {'say': 'wk.05'}]]},
   {'s': 'practice'},
   {'s': 'game', 'scene': 'items', 'mode': 'practice', 'intro': 'g.intro', 'items': [
-    {'t': 'pick', 'q': ['g.r1', 'g.r2', 'g.r3'], 'opts': ['rectH', 'squareUp', 'triUp', 'circleS'], 'ans': 0, 'err': 'rectAsSquare', 'why': 'g.why'},
-    {'t': 'pick', 'q': ['g.t1', 'g.t2'], 'opts': ['squareUp', 'triWide', 'circleS', 'rectV'], 'ans': 1, 'err': 'fourCorners'},
-    {'t': 'pick', 'q': ['g.c1', 'g.c2'], 'opts': ['ovalWide', 'circleS', 'squareUp', 'triUp'], 'ans': 1, 'err': 'ovalAsCircle'}]},
+    {'t': 'pick', 'q': ['g.r1', 'g.r2', 'g.r3'], 'opts': ['rectH', 'squareUp', 'triUp', 'circleS'], 'ans': 0, 'err': 'rectAsSquare', 'why': 'g.why',
+     'twin': {'t': 'pick', 'q': ['g.r1', 'g.r2', 'g.r3'], 'opts': ['squareUp', 'rectV', 'ovalWide', 'triWide'], 'ans': 1, 'err': 'rectAsSquare'}},
+    {'t': 'pick', 'q': ['g.t1', 'g.t2'], 'opts': ['squareUp', 'triWide', 'circleS', 'rectV'], 'ans': 1, 'err': 'fourCorners',
+     'twin': {'t': 'pick', 'q': ['g.t1', 'g.t2'], 'opts': ['rectH', 'ovalWide', 'triThin', 'squareUp'], 'ans': 2, 'err': 'fourCorners'}},
+    {'t': 'pick', 'q': ['g.c1', 'g.c2'], 'opts': ['ovalWide', 'circleS', 'squareUp', 'triUp'], 'ans': 1, 'err': 'ovalAsCircle',
+     'twin': {'t': 'pick', 'q': ['g.c1', 'g.c2'], 'opts': ['triWide', 'rectH', 'circle', 'ovalWide'], 'ans': 2, 'err': 'ovalAsCircle'}}]},
   {'s': 'chaos'}, {'s': 'mastery'}, {'s': 'wrap'}],
  'sort': RS,
  'practice': {'intro': 'pr.intro',
@@ -381,6 +387,8 @@ d5 = {
 }
 
 # ======================= الدرس 6: مراجعة وتحدٍّ، وروبوت الأشكال =======================
+TRI_TWIN = {'t': 'pick', 'q': ['gm.q1'], 'opts': ['openTri', 'squareUp', 'triFlip'], 'ans': 2, 'err': 'open'}
+SQ_TWIN = {'t': 'pick', 'q': ['gm.r1', 'gm.r2'], 'opts': ['rectV', 'quadLean', 'squareUp'], 'ans': 2, 'err': 'equalSides'}
 d6 = {
  'id': 'm1.u1.d6', 'title': 'أَسْئِلَةُ الوَاحَةِ وَرُوبُوتُ الأَشْكَالِ', 'icon': ['stone'],
  'concepts': {'C163': 'تركيب الأشكال (مدخل)'},
@@ -421,10 +429,10 @@ d6 = {
   {'s': 'practice'},   # D239: «سباق الأشكال» بتمرين عادي أو تحدٍّ قبل الأسئلة
   {'s': 'test'}, {'s': 'wrap'}],
  'practice': {'intro': 'gm.intro',
-  'normal': [{'t': 'pick', 'q': ['gm.q1'], 'opts': ['triWide', 'openTri', 'squareRot'], 'ans': 0, 'err': 'open'},
-             sort('rectV'), {'t': 'pick', 'q': ['gm.r1', 'gm.r2'], 'opts': ['rectH', 'squareRot', 'quadLean'], 'ans': 1, 'err': 'equalSides'}],
-  'challenge': [{'t': 'pick', 'q': ['gm.q1'], 'opts': [N(2, type='triangle', kind='triangle', w=70, h=160, rot=-30), 'openTri', 'curvedTri'], 'ans': 0, 'err': 'open'},
-             sort('rectRot'), {'t': 'pick', 'q': ['gm.r1', 'gm.r2'], 'opts': ['rectV', ['squareRot', 20], 'quadOdd'], 'ans': 1, 'err': 'equalSides'}]},
+  'normal': [{'t': 'pick', 'q': ['gm.q1'], 'opts': ['triWide', 'openTri', 'squareRot'], 'ans': 0, 'err': 'open', 'twin': TRI_TWIN},
+             sort('rectV'), {'t': 'pick', 'q': ['gm.r1', 'gm.r2'], 'opts': ['rectH', 'squareRot', 'quadLean'], 'ans': 1, 'err': 'equalSides', 'twin': SQ_TWIN}],
+  'challenge': [{'t': 'pick', 'q': ['gm.q1'], 'opts': [N(2, type='triangle', kind='triangle', w=70, h=160, rot=-30), 'openTri', 'curvedTri'], 'ans': 0, 'err': 'open', 'twin': TRI_TWIN},
+             sort('rectRot'), {'t': 'pick', 'q': ['gm.r1', 'gm.r2'], 'opts': ['rectV', ['squareRot', 20], 'quadOdd'], 'ans': 1, 'err': 'equalSides', 'twin': SQ_TWIN}]},
  'sort': {'bins': ['circle', 'square', 'triangle', 'rect'], 'praise': 'praiseShape', 'accept': {'square': ['rect']}, 'acceptLine': {'square': 'acc.sq'},
   'errors': [{'when': {'kind': 'rect', 'bin': 'square'}, 'err': 'rectAsSquare'}, {'when': {'rot': True}, 'err': 'rotated'}, {'err': 'byShape'}],
   'reasons': [{'when': {'kind': 'circle'}, 'id': 'why.c'}, {'when': {'kind': 'square'}, 'id': 'why.sq'}, {'when': {'kind': 'triangle'}, 'id': 'why.t'}, {'when': {'kind': 'rect'}, 'id': 'why.r'}],

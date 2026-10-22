@@ -356,7 +356,7 @@ ITEM.unknownStart = { ...numItem,
   async together(item, r) { const { svg, L } = r.ctx; await unknownReturn(item, r.ctx); await S('gen.count.together'); const pts = [];
     for (let i = 0; i < item.want; i++) pts.push({ x: L.x + 26, y: L.baseY - L.size * .62 - i * L.step });
     await badgeCount(svg, pts.slice(0, item.want - 1)); },
-  async reveal(item, r) { markNum(r, item.want, 'ok'); await S(numw(item.want)); }, twin: () => null,
+  async reveal(item, r) { markNum(r, item.want, 'ok'); await S(numw(item.want)); }, twin(item) { return item.twin || null; },
 };
 /* ما أخذته فوضى يعود فوق البرج (أبيض ليُرى أنه العائد) */
 async function unknownReturn(item, c) { if (c.tk) c.tk.g.remove(); const back = towerAt(c.svg, 300, 150, item.took, { size: 24, color: CUBE.white });
@@ -376,7 +376,7 @@ ITEM.fact = { ...numItem,
     else for (const f of H[0].fingers.slice(item.a - item.b)) { f.setAttribute('opacity', .25); SFX.tick(); await sleep(FAST ? 20 : 420); } },
   async together(item, r) { const H = r.ctx.hands; const tips = item.op === '+' ? [...H[0].tips, ...H[1].tips] : H[0].tips.slice(0, item.a - item.b);
     if (item.op === '-') H[0].fingers.slice(item.a - item.b).forEach(f => f.setAttribute('opacity', .25)); await S('gen.count.together'); await badgeCount(r.ctx.svg, tips.slice(0, item.want - 1)); },
-  async reveal(item, r) { markNum(r, item.want, 'ok'); await readSentence(item.a, item.op, item.b, item.want); }, twin: () => null,
+  async reveal(item, r) { markNum(r, item.want, 'ok'); await readSentence(item.a, item.op, item.b, item.want); }, twin(item) { return item.twin || null; },
 };
 /* ⑩ قصص الواحة (مراجعة اليوم): القصة مسموعة، ويمثّلها الطفل بالمكعبات، ثم «كم؟» والجملة العددية */
 ITEM.story = { ...numItem,
@@ -389,7 +389,7 @@ ITEM.story = { ...numItem,
   judge(item, ans) { return ans === item.want ? { ok: true } : { ok: false, err: item.op === '+' ? 'joinCount' : 'removeCount' }; },
   async onOk(item, r) { SFX.good(); markNum(r, r.ans, 'ok'); sentenceAt(r.ctx.svg, 180, 40, item.a, item.op, item.b, item.want); await readSentence(item.a, item.op, item.b, item.want); },
   async hint2(item) { await S(item.op === '+' ? 'gen.story.hintAdd' : 'gen.story.hintRemove'); }, async together() {},
-  async reveal(item, r) { markNum(r, item.want, 'ok'); sentenceAt(r.ctx.svg, 180, 40, item.a, item.op, item.b, item.want); await readSentence(item.a, item.op, item.b, item.want); }, twin: () => null,
+  async reveal(item, r) { markNum(r, item.want, 'ok'); sentenceAt(r.ctx.svg, 180, 40, item.a, item.op, item.b, item.want); await readSentence(item.a, item.op, item.b, item.want); }, twin(item) { return item.twin || null; },
 };
 /* مجموعتان، إحداهما متباعدة (N002): أيّهما أكثر؟ أم متساويتان؟ */
 ITEM.groups = {

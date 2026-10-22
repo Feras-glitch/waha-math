@@ -2,10 +2,11 @@
    «صحّح لفوضى» (D236): فوضى فعلت شيئاً في غير مكانه، فيجده الطفل ويتحقّق بيده،
    ثم بطاقتان مسموعتان: الصحيحة، والخاطئة تسبقها النغمة الثابتة و«فوضى تظنّ…» ولا تُعرض نصاً.
    يختار الطفل الصحيحة فيعيدها فرجار، وتكون جملة الختام (فالصحيحة تُسمع ثلاثة أضعاف الخاطئة).
-   البيانات: chaos = {kind:'bins'|'flag'|'card', ...، right, wrong}
+   البيانات: chaos = {kind:'bins'|'flag'|'card'|'scene', ...، right, wrong}؛ و'scene' يسمّي مشهد «صحّح لفوضى» من الكتالوج (S1-U3)
    ===================================================================== */
 async function chaosStage(C) {
-  if (C.kind === 'flag') await chaosFlag(C); else if (C.kind === 'card') await chaosCard(C); else await chaosBins(C);
+  if (C.kind === 'scene') { const f = SCENES[C.scene]; if (!f) throw new Error('مشهد فوضى غير معروف: ' + C.scene); await f(C, CUR); }
+  else if (C.kind === 'flag') await chaosFlag(C); else if (C.kind === 'card') await chaosCard(C); else await chaosBins(C);
   await chaosCards(C);
 }
 /* السلال: أشياء في سلالها وواحد في غير سلّته */

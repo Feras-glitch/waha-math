@@ -36,18 +36,24 @@ function say(who, id, text, opt = {}) {
   return opt.free ? p : gate(p);
 }
 function speakNow(who, id, text, opt = {}) {
-  if (!opt.keep) lastLine = { who, id, text, lesson: CUR ? CUR.id : null, hideText: !!opt.hideText };   /* keep: خيار يُقرأ بعد السؤال، لا يصير «آخر جملة» ولا يغيّر نصّ الفقاعة (readChoices) */
+  /* keep: خيار يُقرأ بعد السؤال، لا يصير «آخر جملة» ولا يغيّر نصّ الفقاعة (readChoices).
+     num: عدد أو ترتيب يُقال وهو يعدّ أو يلمس، وaside: جملة جانبية (عرض المساعدة): لا تصير «آخر جملة»، فـ«أعد» يعيد السؤال (الفحص المستقل B: كان يعيد آخر رقم أو «هل نفكّر معاً؟»)؛
+     والعدد لا يمحو السؤال من الفقاعة أيضاً، والجملة الجانبية تظهر فيها */
+  if (!opt.keep && !opt.num && !opt.aside) lastLine = { who, id, text, lesson: CUR ? CUR.id : null, hideText: !!opt.hideText };
   if (opt.onStart) try { opt.onStart(); } catch (e) {}
   const raw = text; text = G(text);
   const bubble = opt.cover ? opt.cover.querySelector('.coversay') : $('#say');
   if (!opt.cover) { $('#who').innerHTML = CHAR[who](); $('#bubble').classList.toggle('chaos', who === 'chaos'); $('#bubble').classList.toggle('hidetext', !!opt.hideText); }
-  if (bubble && !opt.keep) bubble.textContent = opt.hideText ? '؟' : opt.append && bubble.textContent ? bubble.textContent + ' ' + text : text;   /* append: تتمة السؤال (العدد بعد «حتى يصير:») تُضاف إلى نصّه */
+  if (bubble && !opt.keep && !opt.num) bubble.textContent = opt.hideText ? '؟' : opt.append && bubble.textContent ? bubble.textContent + ' ' + text : text;   /* append: تتمة السؤال (العدد بعد «حتى يصير:») تُضاف إلى نصّه */
+  if (!opt.cover && !opt.keep && !opt.num) { const sy = $('#say'); if (sy) { sy.scrollTop = 0; bubbleMore(); } }
   const talk = $('#talk'); talk.classList.add('speaking');
   const full = (id.startsWith('gen.') ? id : (CUR ? CUR.id : 'm1.u1') + '.' + id) + gSuffix(raw);
-  /*T*/if (TESTHOOK) (window.__clips = window.__clips || []).push(full);/*/T*/   // للفحص: مطابقة الجمل المنطوقة مع جدول التسجيل
+  /*T*/if (TESTHOOK) { (window.__clips = window.__clips || []).push(full); (window.__voiceSrc = window.__voiceSrc || []).push([full, CLIPS[full] ? 'human' : 'device']); }/*/T*/   // للفحص: مطابقة الجمل المنطوقة مع جدول التسجيل، ومصدر كل جملة (حزمة الصوت أو صوت الجهاز)
   return new Promise(resolve => {
     speaking = true; let done = false, poll = null, safety = null, silent = null;
-    const finish = () => { if (done) return; done = true; clearInterval(poll); clearTimeout(safety); clearTimeout(silent); speaking = false; currentFinish = null; talk.classList.remove('speaking'); resolve(); };
+    const finish = () => { if (done) return; done = true; clearInterval(poll); clearTimeout(safety); clearTimeout(silent); speaking = false; currentFinish = null; talk.classList.remove('speaking');
+      if (!opt.cover && !opt.keep && !opt.num) { const sy = $('#say'); if (sy && sy.scrollHeight > sy.clientHeight + 8) try { sy.scrollTo({ top: sy.scrollHeight, behavior: RM ? 'auto' : 'smooth' }); } catch (e) { sy.scrollTop = sy.scrollHeight; } }   /* آخر الجملة (المطلوب غالباً) يبقى ظاهراً */
+      resolve(); };
     currentFinish = finish;
     const readSilently = () => { clearTimeout(safety); clearInterval(poll); silent = setTimeout(finish, readTime(text)); };
     if (SET.muted) { readSilently(); return; }
@@ -72,6 +78,9 @@ function speakNow(who, id, text, opt = {}) {
     safety = setTimeout(finish, Math.max(12000, plain(text).length * 260));
   });
 }
+/* هل بقي من نصّ الفقاعة ما لا يُرى؟ (الشاشة القصيرة: ثلاثة أسطر تُمرَّر) */
+function bubbleMore() { const sy = $('#say'), b = $('#bubble'); if (!sy || !b) return; requestAnimationFrame(() => b.classList.toggle('saymore', sy.scrollHeight > sy.clientHeight + 8 && sy.scrollTop + sy.clientHeight < sy.scrollHeight - 8)); }   /* «saymore» لا «more»: ‎.more‎ صنف زرّ في الأنماط */
+{ const on = () => { const sy = $('#say'); if (sy) sy.addEventListener('scroll', bubbleMore, { passive: true }); }; if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', on); else on(); }
 /* «أعد الجملة» (M16): تقطع الجارية وتبدؤها من أولها، مع وميض الفقاعة */
 function replayLine(cover) {
   if (REPLAY_HOOK && !REPLAY_HOOK.live()) REPLAY_HOOK = null;   /* خطّاف بطاقات غادرها الطفل لا يُعاد */

@@ -20,17 +20,18 @@ async function praiseFor(item, tries) {
 }
 /* mode: practice | explore | remedial (بمساعدة) · mastery | review | test (بلا مساعدة، من المحاولة الأولى) */
 async function runItem(spec, mode = 'practice', ctx = {}) {
-  /*T*/const outer = { item: window.__item, mode: window.__itemMode };/*/T*/
-  try { return await runItem0(spec, mode, ctx); } finally { /*T*/window.__item = outer.item; window.__itemMode = outer.mode || '';/*/T*/ }   /* وضع الفحص: نمط البند الجاري لا يبقى بعد انتهائه */
+  /*T*/const outer = { item: window.__item, mode: window.__itemMode, twin: window.__itemTwin };/*/T*/
+  try { return await runItem0(spec, mode, ctx); } finally { /*T*/window.__item = outer.item; window.__itemMode = outer.mode || ''; window.__itemTwin = !!outer.twin;/*/T*/ }   /* وضع الفحص: نمط البند الجاري لا يبقى بعد انتهائه */
 }
 async function runItem0(spec, mode, ctx) {
   const type = itemType(spec); const T = ITEM[type]; if (!T) throw new Error('نوع بند غير معروف: ' + type);
   const item = T.make(spec); item.itype = type; item.spec = spec;   // itype لا type: البند قد يكون شكلاً له type
   const help = mode === 'practice' || mode === 'explore' || mode === 'remedial';
   const scene = ctx.scene || mode; let tries = 0, together = false;
-  /*T*/window.__item = item; window.__itemMode = mode;/*/T*/
+  /*T*/window.__item = item; window.__itemMode = mode; window.__itemTwin = !!ctx.isTwin;/*/T*/
   while (true) {
-    if (help) armIdle(async () => { await S(T.idleLine ? T.idleLine(item) : 'gen.hint.look'); if (T.idle) await T.idle(item); }, { first: firstTime('item:' + type) });
+    /* المساعدة عند السكوت أو بالفانوس: «لاحظ جيداً» ثم ما يريه نوع البند، أو السؤال من جديد (الفحص المستقل B: كان «لاحظ جيداً» وحدها) */
+    if (help) armIdle(async () => { await S(T.idleLine ? T.idleLine(item) : 'gen.hint.look', { aside: true }); if (T.idle) await T.idle(item); else replayLine(); }, { first: firstTime('item:' + type) });
     const t0 = Date.now(); const r = await T.ask(item, mode, tries); disarmIdle();
     const j = T.judge(item, r.ans); tries++;
     logAttempt({ scene, type, tag: item.tag, ans: r.ans, ok: j.ok, firstTry: tries === 1, err: j.ok ? null : (j.err || 'generic'), ms: Date.now() - t0 });
@@ -39,7 +40,7 @@ async function runItem0(spec, mode, ctx) {
       if (mode === 'test') return { firstTry: tries === 1, ok: true, item };
       if (mode !== 'mastery') { await praiseFor(item, tries); if (j.alt && T.altLine) await S(T.altLine(item, r, j)); const why = T.reason && T.reason(item); if (why) await S(why); }
       else { const why = T.reason && T.reason(item); if (why) await S(why); }
-      if (together && help && mode !== 'explore' && T.twin) { const tw = T.twin(item); if (tw) { await S('gen.twin.01'); await runItem(tw, mode, { scene: scene + '-twin' }); } }
+      if (together && help && mode !== 'explore' && T.twin && !ctx.isTwin) { const tw = T.twin(item); if (tw) { await S('gen.twin.01'); await runItem(tw, mode, { scene: scene + '-twin', isTwin: true }); } }
       return { firstTry: tries === 1, ok: true, item };
     }
     if (T.onWrong) await T.onWrong(item, r, j);
@@ -50,7 +51,8 @@ async function runItem0(spec, mode, ctx) {
     if (tries === 2) { await S(bank('look') || 'gen.hint2.01'); await T.hint2(item, r, j.err); await sleep(300); continue; }   // المستوى 2: حركة الأداة
     if (tries === 3) { together = true; await T.together(item, r, j.err); continue; }                  // المستوى 3: حلّ مشترك، والخطوة الأخيرة للطفل
     await T.reveal(item, r); { const why = T.reason && T.reason(item); if (why) await S(why); }
-    if (help && mode !== 'explore' && T.twin) { const tw = T.twin(item); if (tw) { await S('gen.twin.01'); await runItem(tw, mode, { scene: scene + '-twin' }); } }
+    /* توأم واحد للبند: لا توأم للتوأم، فلا تتسلسل البنود على طفل يخطئ (الفحص المستقل B) */
+    if (help && mode !== 'explore' && T.twin && !ctx.isTwin) { const tw = T.twin(item); if (tw) { await S('gen.twin.01'); await runItem(tw, mode, { scene: scene + '-twin', isTwin: true }); } }
     return { firstTry: false, ok: false, item };
   }
 }

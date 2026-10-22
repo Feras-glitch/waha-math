@@ -30,7 +30,7 @@ async def main():
     fonts['profile bubble'] = await used(cdp, '#profileCover .coversay')
     ok['profile: avatars'] = await pg.evaluate("document.querySelectorAll('.av[data-av]').length >= 8")
     await pg.click('.av[data-av="f3"]'); await pg.click('#pSave'); await pg.wait_for_timeout(800)
-    ok['home: 12 lessons + workshops'] = await pg.evaluate("!document.getElementById('home').hidden && document.querySelectorAll('.stop[data-lesson]').length === 12 && document.querySelectorAll('.stop.ws').length === 2")
+    ok['home: 19 lessons + 3 workshops'] = await pg.evaluate("!document.getElementById('home').hidden && document.querySelectorAll('.stop[data-lesson]').length === 19 && document.querySelectorAll('.stop.ws').length === 3")
     fonts['home h1'] = await used(cdp, '.banner h1'); fonts['home stop title'] = await used(cdp, '.stop[data-lesson]'); fonts['home stop small'] = await used(cdp, '.stop small', True)
     fonts['home unit title'] = await used(cdp, '.unithead .ut'); fonts['home unit small'] = await used(cdp, '.unithead small', True)
     ok['no test hooks'] = await pg.evaluate("Object.keys(window).every(k => !k.startsWith('__')) && typeof TESTHOOK === 'undefined' && FAST === false && !document.querySelector('[data-ok]')")

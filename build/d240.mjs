@@ -11,9 +11,10 @@
 // «تأسيس» في الدرس فحص إتقان (إلا «المدخل»)، ولكل درس اختيار حقيقي للطفل (D239).
 
 const PROD = new Set(['reason', 'connect', 'completeRect', 'vertices', 'count', 'produce', 'fill', 'trace', 'buildTower', 'splitMake', 'buildTo', 'faceTap',
-  'split', 'join', 'remove', 'eqPair', 'unknownStart', 'fact', 'story']);
+  'split', 'join', 'remove', 'eqPair', 'unknownStart', 'fact', 'story',
+  'place', 'lineTap', 'lrTap', 'robot', 'mapPut', 'roadHop']);   /* S1-U3: يضع الطفل الشيء، ويلمس العربة، ويلمس اليد، ويبرمج الروبوت، ويضع قطعة الخريطة، ويقفز */
 const TASK = { sort: 'cls', pick: 'cls', pickAll: 'cls', paint: 'cls', yesno: 'cls', reason: 'cls', count: 'cnt', vertices: 'cnt', faceTap: 'face', property: 'push' };
-const FMT = new Set(['how', 'q', 'line', 'prompt', 'why', 'err', 'errs', 'names', 'tag', 'x240', 'c']);   // مفاتيح الصياغة لا الجوهر
+const FMT = new Set(['how', 'q', 'line', 'prompt', 'why', 'err', 'errs', 'names', 'tag', 'x240', 'c', 'twin']);   // مفاتيح الصياغة لا الجوهر (والتوأم بند آخر يُفحص وحده)
 
 const num = s => { const m = String(s).match(/^R\((-?[\d.]+),\s*(-?[\d.]+)\)$/); if (m) { const a = +m[1], b = +m[2]; return Math.max(Math.abs(a), Math.abs(b)) < 20 ? 0 : (a + b) / 2; } return s !== '' && s != null && isFinite(+s) ? +s : null; };
 function rotClass(base, r) {
@@ -88,6 +89,8 @@ export function d240(lessons, code, MAKERS) {
      والعدّ (count) بعدده بين التقييمات وحدها (الإتقان والمراجعة والاختبار): عدُّ أشياء أخرى في الاكتشاف أداءٌ جديد للعدّ، أما الجواب نفسه في تقييمين فيمرّ بالتذكّر */
   const s2 = (a, b) => [a, b].sort((x, y) => x - y).join(',');
   const opFact = (op, a, b) => op === '+' ? `add|${s2(a, b)}` : (op === '-' || op === '−') ? `sub|${a}|${b}` : null;
+  /* خانة جواب «أين هو في الخريطة؟»: خانة الشيء المرسوم في الغرفة (mark.cell)، أو خانة القطعة التي عليه أو تحته (mark.on) */
+  const mapCell = it => { const m = it.mark || {}; if (m.cell) return m.cell.join(','); const W = it.lay.items.find(i => (i.id || i.k) === (m.on || it.want)) || {}; return `${W.col},${W.row}`; };
   const fact = it => { const t = it.t;
     if (t === 'split') return `part|${it.n}|${s2(it.k, it.n - it.k)}`;
     if (t === 'eqPair') return `part|${it.n}|${s2(...(it.parts || []))}`;
@@ -102,6 +105,24 @@ export function d240(lessons, code, MAKERS) {
     if (t === 'same') return `same|${it.n}|${it.add || 0}`;
     if (t === 'fill') return `fill|${it.n}`;
     if (t === 'digitMatch' || t === 'digitPick' || t === 'trace' || t === 'produce') return `${t}|${it.n}`;   /* «المس ٠» أو «ضع 7» بالعدد نفسه سؤال واحد */
+    /* S1-U3 (الفحص المستقل A للبوابة، الدرس 112: «الاسم ليس الشيء»): المسألة المكانية هيئة الصورة وجوابها، لا الشيء الذي فيها. فالموضع بمهمته
+       (اختيار الكلمة where، ووضع الشيء place، وما الذي في الموضع thing) ومرجعه وموضعه، بلا الشيء: «الدمية فوق الطاولة» و«الدب فوق الطاولة» مسألة واحدة؛
+       والطابور بعدده وسؤاله ومواضعه بلا ألوانه؛ والترتيب بمهمته (لمس أو اختيار) وعدده الترتيبي بلا طول القطار؛ واليمين واليسار بمهمته وجهته
+       ويده المرفوعة والشريط، بلا الشيء؛ والروبوت ببرنامجه، والخريطة بغرفتها وخانة الجواب، والطريق بقفزته (التوقّع والقفز والعدّ: jump) */
+    const pk = a => /^beside/.test(a || '') ? 'beside' : a;   /* بجانب يميناً أو يساراً موضع واحد */
+    if (t === 'where' || t === 'place') { const p = it.pic || {};
+      if (t === 'place') return it.ref === 'queue' ? `pos|place|queue|${it.at}|${(it.members || []).length}` : `pos|place|${it.ref}|${pk(it.at)}`;
+      return it.ask === 'thing' ? `pos|thing|${p.ref}|${pk(it.want)}` : `pos|where|${p.ref}|${pk(p.at)}`; }
+    if ((t === 'lineTap' || t === 'linePick') && it.row && it.row.kind === 'train') return it.ask === 'kamAyn' ? `kamAyn|${it.k}` : `ord|${t === 'linePick' ? 'pick' : 'tap'}|${it.k}`;
+    if (t === 'lineTap' && it.ask === 'ord') return `ordm|tap|${it.k}`;   /* الترتيب في الطابور (الأول… العاشر) */
+    if (t === 'lineTap') return `line|${(it.row.members || []).length}|${it.ask}|${[it.ref, it.a, it.b, it.ans].filter(x => x != null).join(',')}`;
+    if (t === 'lrTap' || t === 'lrPick') return `lr|${t === 'lrPick' ? 'side' : it.ask || 'hand'}|${it.side}|${it.raise || ''}|${it.ribbon === false ? 0 : 1}`;
+    if (t === 'robot' || t === 'robotWatch') return `robot|${it.prog.join('')}|${it.start ? JSON.stringify(it.start) : '{}'}`;
+    if (t === 'mapFind') return `map|find|${JSON.stringify(it.lay)}|${mapCell(it)}`;
+    if (t === 'mapPut') return `map|put|${JSON.stringify(it.lay)}|${it.want}`;
+    if (t === 'routePick') return `route|${JSON.stringify(it.lay)}`;
+    if (t === 'roadHop') return it.b != null ? `walk|${it.a}|${it.b}` : `jump|${it.a}|${(it.dir || 1) * it.n}`;
+    if (t === 'roadPick') return it.ask === 'land' ? `jump|${it.n}|${(it.dir || 1) * it.k}` : it.ask === 'hops' ? `jump|${it.n}|${it.b - it.n}` : `${['next', 'more'].includes(it.ask) ? 'succ' : 'pred'}|${it.n}`;
     return null; };
   /* وما يعرضه المشهد بجوابه من مسائل عددية (الفحص المستقل الثالث): لكل مشهد عددي سطر هنا، ولخطوات المثال المحلول STEP_FACTS */
   const SCENE_FACTS = {
@@ -112,6 +133,23 @@ export function d240(lessons, code, MAKERS) {
     spread: s => [`same|${s.n || 5}|0`],
     towerBuild: s => [`buildTo|${s.goal}|0`],
     traceIntro: s => (s.digits || []).map(d => `trace|${d}`),   /* تتبّع الرقمين في الاكتشاف (الفحص المستقل الرابع) */
+    /* S1-U3: ما يعرضه المشهد بجوابه على الطريق، والطابور الذي تُنقل فيه الشارة */
+    roadChaosHook: s => [`walk|${s.a}|${s.b}`], chaosSkipBack: s => [`walk|${s.a}|${s.b}`], jumpChaosHook: s => [`jump|${s.a}|${s.n}`], chaosSubForward: s => [`jump|${s.a}|${-s.n}`],
+    roadCountChaos: s => (s.legs || [[s.from, s.to]]).flatMap(([from, to]) => { const d = Math.sign(to - from), o = [`walk|${from}|${to}`]; for (let n = from; n !== to; n += d) o.push(`${d > 0 ? 'succ' : 'pred'}|${n}`); return o; }),
+    queueBadge: s => [`line|${(s.members || []).length + 1}|last|`],
+    /* ما يعرضه المشهد من مواضع بجوابها: أوامر «فرجار يقول»، والغطاء ينغلق أو لا، والكرة التي وضعتها فوضى فوق الصندوق ثم وضعها الطفل داخله */
+    simonSays: s => (s.rounds || []).filter(r => r.want).map(r => `pos|place|chest|${r.want}`),
+    lidCheck: () => ['pos|where|chest|in', 'pos|where|chest|on', 'pos|where|chest|beside'],
+    chaosLid: () => ['pos|where|chest|on', 'pos|place|chest|in'],
+    chaosTrainBadge: () => ['ord|tap|1'],
+    mapChaosHook: s => [`map|put|${JSON.stringify(s.lay)}|bed`],
+    birdView: s => s.lay.items.map(i => `map|put|${JSON.stringify(s.lay)}|${i.id || i.k}`),
+    chaosSideDraw: s => [`map|put|${JSON.stringify(s.lay)}|table`],
+    roadRace: s => { let n = s.start || 0; return (s.rolls || [2, 3, 1]).map(k => { const f = `jump|${n}|${k}`; n += k; return f; }); },
+    recallPic: s => { const P = s.pic || {}; const pk = a => /^beside/.test(a || '') ? 'beside' : a;
+      if (P.kind === 'pos') return (P.put || []).map(([th, at]) => `pos|where|${P.ref}|${pk(at)}`); if (P.kind === 'road') return [`jump|${P.a}|${P.n}`];
+      if (P.kind === 'train') return [`ord|tap|${P.k}`];
+      if (P.kind === 'robot') return [`robot|${P.prog.join('')}|{}`]; if (P.kind === 'map') return P.lay.items.map(i => `map|put|${JSON.stringify(P.lay)}|${i.id || i.k}`); return []; },
   };
   const STEP_FACTS = grp => { const out = []; const T = [];
     for (const s of grp) { if (!s || typeof s !== 'object') continue;
@@ -124,7 +162,9 @@ export function d240(lessons, code, MAKERS) {
   /* ما يرسمه المشهد بنفسه (لا من بياناته) من أشياء لها مولّد: عجلات العربتين في الإشعال، وبابا الزرافة. لكل مشهد في الكود سطر هنا (ولو فارغاً)، فلا يُضاف مشهد يرسم شيئاً دون أن يراه الفحص */
   const SCENE_DRAWS = { cartsRace: [['wheel', 'cls']], giraffeDoors: [['door', 'cls']] };
   const SCENE_NONE = ['items', 'material', 'lines', 'steps', 'trace', 'roofFit', 'countModel', 'chaosDouble', 'houseMatch', 'compareAlign', 'scatterHook', 'huntSort', 'spread', 'mailHook', 'mailExplore', 'digitCards', 'traceIntro', 'robot', 'reviewCards', 'stoneHook',
-    'bagFeel', 'pushLab', 'poses', 'faceLab', 'coneRoll', 'cylRoll', 'towersPredict', 'paperPush', 'stampLab', 'towerBuild', 'mosque', 'takeHook', 'facesCount', 'roomHunt', 'feelBox', 'shelvesWalk'];
+    'bagFeel', 'pushLab', 'poses', 'faceLab', 'coneRoll', 'cylRoll', 'towersPredict', 'paperPush', 'stampLab', 'towerBuild', 'mosque', 'takeHook', 'facesCount', 'roomHunt', 'feelBox', 'shelvesWalk',
+    'simonSays', 'lidCheck', 'chaosLid', 'queueBadge', 'queueSwap', 'trainOrdinals', 'chaosTrainBadge', 'ribbonHook', 'bodyMoves', 'robotIntro', 'chaosTurn', 'mapChaosHook', 'birdView', 'chaosSideDraw',
+    'roadChaosHook', 'roadListen', 'roadCountChaos', 'chaosSkipBack', 'jumpChaosHook', 'roadRace', 'chaosSubForward', 'recallPic', 'queueOrdinals'];   /* S1-U3: أشياؤها رسوم المواضع لا مولّدات */
   for (const m of code.matchAll(/^SCENES\.(\w+) = /gm)) if (!SCENE_DRAWS[m[1]] && !SCENE_NONE.includes(m[1])) errors.push(`المشهد ${m[1]} غير مسجَّل في SCENE_DRAWS أو SCENE_NONE في build/d240.mjs: هل يرسم شيئاً له مولّد؟ (D253 (1))`);
   /* ما رآه الطفل أو حلّه في درس: أسماء، وهيئات لكل مهمة، ونصوص البنود */
   const SKIPK = new Set(['lines', 'labels', 'talk', 'adultCard', 'bag', 'mat', 'concepts', 'riddles', 'title', 'icon', 'id', 'unit']);
@@ -144,7 +184,7 @@ export function d240(lessons, code, MAKERS) {
       if (!v || typeof v !== 'object') return;
       if (v.solid || v.type || v.sheet) put(v, tasks, where);
       let T = tasks;
-      if (typeof v.t === 'string') { items.set(norm(v), where); const f = fact(v); if (f && !facts.has(f) && !(nameOK && f.startsWith('count|'))) facts.set(f, where); T = [TASK[v.t] || 'cls']; for (const s of subjects(v)) { if (nameOK && s.name) names.set(s.name, where); if (s.sig) sigs[T[0]].set(s.sig, where); } }
+      if (typeof v.t === 'string') { items.set(norm(v), where); const f = fact(v); if (f && !facts.has(f) && !(nameOK && f.startsWith('count|'))) facts.set(f, where);   /* والترتيب في القطار ليس كالعدّ (الفحص المستقل A): «المس الخامسة» في التمرين ثم في المراجعة جوابه واحد؛ والمشهد الذي يعدّ القطار كله في الاكتشاف لا يسجّل مسائل */ T = [TASK[v.t] || 'cls']; for (const s of subjects(v)) { if (nameOK && s.name) names.set(s.name, where); if (s.sig) sigs[T[0]].set(s.sig, where); } }
       if (typeof v.scene === 'string') { T = SCENE_T[v.scene] || ['cls']; for (const [m, ts] of SCENE_DRAWS[v.scene] || []) put(m, [ts], where + ' (يرسمه المشهد)');
         const addF = f => { if (f && !facts.has(f)) facts.set(f, where + ' (يعرضه المشهد)'); };
         if (SCENE_FACTS[v.scene]) SCENE_FACTS[v.scene](v).forEach(addF);
@@ -174,7 +214,7 @@ export function d240(lessons, code, MAKERS) {
         else if (s.sig && sh.sigs[t].has(s.sig)) out.push(`${where}: هيئة «${s.name || s.sig}» نفسها في المهمة نفسها في ${sh.sigs[t].get(s.sig)}${tag}`);
       }
       if (sh.items.has(norm(it))) out.push(`${where}: البند نفسه في ${sh.items.get(norm(it))}${tag}`);
-      else if (fact(it) && sh.facts.has(fact(it))) out.push(`${where}: المسألة العددية نفسها (${fact(it)}) في ${sh.facts.get(fact(it))}${tag}`);
+      else if (fact(it) && sh.facts.has(fact(it))) out.push(`${where}: المسألة نفسها (${fact(it)}) في ${sh.facts.get(fact(it))}${tag}`);
     }
     for (const o of out) (it.x240 ? notes : errors).push(`${L.id}: ${o}${it.x240 ? ' — مستثنى: ' + it.x240 : ''} (D240)`);
   }
@@ -205,6 +245,12 @@ export function d240(lessons, code, MAKERS) {
     for (const [i, it] of (L.review || []).entries()) for (const s of subjects(it)) { if (!s.name) continue; const obj = MS[s.name] && MS[s.name].object; const base = MS[s.name] && MS[s.name].base;
       const same = n => n === s.name || (obj && MS[n] && MS[n].object === obj && MS[n].base === base);
       for (const O of Object.values(lessons)) { if (O.unit !== L.unit || O.id === L.id) continue;   /* في درسه نفسه يكفي فحص الهيئة في المهمة (التقييم بعد الإتقان) */ const where = usesMaker(O, same, O.id === L.id ? it : null); if (where) errors.push(`${L.id}: مولّد المراجعة[${i}] «${s.name}» (${obj ? 'الشيء ' + obj : 'بالاسم'}) يظهر في ${O.id === L.id ? 'درسه' : O.id}: ${where} (D253 (1)، المراجعة محجوزة في الوحدة)`); } }
+    /* وبالمسألة نفسها (S1-U3، بنود بلا مولّد): مسألة بند المراجعة لا تُعرض ولا تُحلّ في درس آخر من الوحدة، فلا يمرّ بها الطفل بين موعدَي مراجعتها */
+    for (const [i, it] of (L.review || []).entries()) { const f = fact(it); if (!f) continue;
+      for (const O of Object.values(lessons)) { if (O.unit !== L.unit || O.id === L.id) continue; const sh = SHA[O.id]; const allF = new Map([...sh.facts]);
+        const tf = O.test ? O.test.items.map(q => fact(q.item)).filter(Boolean) : []; const mx = O.mastery && O.mastery.mixed ? [fact(O.mastery.mixed.item)].filter(Boolean) : [];
+        const shownOrd = allF.get(f) || (tf.includes(f) ? 'الاختبار' : mx.includes(f) ? 'البند المشتبك' : null);
+        if (shownOrd) errors.push(`${L.id}: مسألة المراجعة[${i}] (${f}) تظهر في ${O.id}: ${shownOrd} (D253 (1)، المراجعة محجوزة في الوحدة)`); } }
     // المبدأ 14: كل بند مراجعة يسمّي مفهومه، ولكل مفهوم يُراجَع بندان على الأقل، فيكون البند الثاني الفوري بعد الخطأ من المفهوم نفسه
     if (L.review && L.review.length) { const per = {};
       L.review.forEach((it, i) => { if (!it.c || !(L.concepts || {})[it.c]) errors.push(`${L.id}: بند المراجعة[${i}] بلا مفهوم من مفاهيم الدرس (c) (المبدأ 14)`); else per[it.c] = (per[it.c] || 0) + 1; });
@@ -212,6 +258,13 @@ export function d240(lessons, code, MAKERS) {
     // D239: اختيار حقيقي في كل درس
     if (!(L.practice && L.practice.challenge && L.practice.challenge.length && L.flow.some(s => s.s === 'practice'))) errors.push(`${L.id}: لا اختيار «تمرين عادي أم تحدٍّ» في الدرس (D239)`);
   }
+  /* التوأم (الفحص المستقل B): بند آخر بعد الحلّ المشترك أو الكشف، فمسألته غير مسألة أصله، وإلا كان جوابه ما كُشف للتوّ.
+     ومسائل التوأم «معروضة» في الدرس (shownOf يزور كل ما في بيانات التمرين والعلاج واللعب)، فلا يقيسها إتقان ولا مراجعة ولا اختبار */
+  { const walkT = (v, L) => { if (Array.isArray(v)) return v.forEach(x => walkT(x, L)); if (!v || typeof v !== 'object') return;
+      if (typeof v.t === 'string' && v.twin && typeof v.twin === 'object') { const a = fact(v), b = fact(v.twin);
+        if ((a && a === b) || norm(v) === norm(v.twin)) errors.push(`${L.id}: توأم البند «${v.q}» مسألته مسألة أصله${a ? ' (' + a + ')' : ''} (الفحص المستقل B)`); }
+      for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkT(x, L); };
+    for (const L of Object.values(lessons)) walkT(L, L); }
   /* D253 (3) بالألوان الحرفية: كل مولّد له شيء ولون ثابت (لا من الألوان المحايدة) يبتعد عن لون هوية نوعه ΔE2000 ≥ 12؛ ألوان الهوية من الكود نفسه */
   { const ID = {}; for (const m of code.matchAll(/--(circle|square|triangle|rect): (#[0-9a-fA-F]{6})/g)) ID[m[1]] ??= m[2];
     const sc = code.match(/const SOLIDC = \{([^}]*)\}/); if (sc) for (const m of sc[1].matchAll(/(\w+): '(#[0-9a-fA-F]{6})'/g)) ID[m[1]] = m[2];

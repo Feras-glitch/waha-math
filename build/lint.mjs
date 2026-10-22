@@ -86,6 +86,7 @@ export function lint(content, js) {
       if (!st.scene && ['hook', 'explore', 'worked', 'game'].includes(st.s) && !st.items) errors.push(`${L.id}: مرحلة ${st.s} بلا مشهد`);
       if (st.s === 'practice' && !(L.practice && L.practice.normal && L.practice.normal.length)) errors.push(`${L.id}: مرحلة التمرين بلا practice.normal`);
       if (st.s === 'chaos' && !(L.chaos && L.chaos.right && L.chaos.wrong)) errors.push(`${L.id}: مرحلة فوضى بلا جملتين`);
+      if (st.s === 'chaos' && L.chaos && L.chaos.kind === 'scene' && !SCENES.has(L.chaos.scene)) errors.push(`${L.id}: مشهد فوضى غير معروف «${L.chaos.scene}»`);
       if (st.s === 'mastery' && !(L.mastery && L.mastery.concepts)) errors.push(`${L.id}: مرحلة الإتقان بلا مفاهيم`);
       if (st.s === 'test' && !(L.test && L.test.items && L.test.items.length >= 8)) errors.push(`${L.id}: اختبار الوحدة أقل من ثمانية بنود`);
       if (st.s === 'wrap' && !(L.wrap && L.wrap.lines)) errors.push(`${L.id}: الختام بلا جمل`);
@@ -125,14 +126,24 @@ export function lint(content, js) {
   { const used = {}; const grab = (v, out, top) => { if (typeof v === 'string') out.add(v); else if (Array.isArray(v)) v.forEach(x => grab(x, out)); else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) if (!(top && ['lines', 'labels', 'talk', 'adultCard'].includes(k))) grab(x, out); };
     for (const L of Object.values(lessons)) { used[L.id] = used[L.id] || new Set(); grab(L, used[L.id], true); const mx = L.mastery && L.mastery.mixed; if (mx && lessons[mx.lesson]) { used[mx.lesson] = used[mx.lesson] || new Set(); grab(mx.item, used[mx.lesson]); } }
     for (const L of Object.values(lessons)) for (const id of Object.keys(L.lines || {})) if (!used[L.id].has(id)) errors.push(`${L.id}: جملة لا يستعملها شيء «${id}»`); }
+  /* وسوم الأخطاء في بيانات الدروس (err وerrs في البنود والخيارات) موجودة في errors.json، كما في الكود: وسم غير مسجَّل يُسجَّل في السجل بلا اسم للكبار ولا سؤال */
+  { const walkE = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkE(x, where)); if (!v || typeof v !== 'object') return;
+      if (typeof v.err === 'string' && !ERR[v.err]) errors.push(`${where}: وسم خطأ في البيانات غير موجود في errors.json «${v.err}»`);
+      if (v.errs && typeof v.errs === 'object' && !Array.isArray(v.errs)) for (const t of Object.values(v.errs)) if (typeof t === 'string' && !ERR[t]) errors.push(`${where}: وسم خطأ في البيانات غير موجود في errors.json «${t}»`);
+      for (const [k, x] of Object.entries(v)) if (!['lines', 'labels', 'sort'].includes(k)) walkE(x, where); };
+    for (const L of Object.values(lessons)) { walkE(L, L.id); for (const r of (L.sort && L.sort.errors) || []) if (r.err && !ERR[r.err]) errors.push(`${L.id}: وسم خطأ في قواعد الفرز غير موجود «${r.err}»`); } }
   for (const u of content.units) { if (u.workshop) for (const p of u.workshop.puzzles) if (!LINES.has(p.name)) errors.push(`${u.id}: اسم لغز بلا جملة ${p.name}`);
     for (const [, lid] of u.hunt) if (!lessons[lid]) errors.push(`${u.id}: الصيد يشير إلى درس غير موجود ${lid}`); }
   for (const [name, ids] of Object.entries(content.gen.banks || {})) { if (!ids.length) errors.push('بنك فارغ: ' + name); for (const id of ids) if (!LINES.has(id)) errors.push(`بنك ${name}: جملة غير موجودة ${id}`); }
   for (const m of code.matchAll(/bank\('(\w+)'\)|praise: \(\) => '(\w+)'/g)) { const b = m[1] || m[2]; if (!(content.gen.banks || {})[b]) errors.push('بنك غير موجود: ' + b); }
   for (const L of Object.values(lessons)) if (L.sort && L.sort.praise && !(content.gen.banks || {})[L.sort.praise]) errors.push(`${L.id}: بنك المدح ${L.sort.praise} غير موجود`);
   for (const s of content.gen.stories || []) if (!LINES.has(s.line)) errors.push('قصة بلا جملة: ' + s.line);
-  // 4ب) كل عدد يُقال كلمةً له جملة (gen.numw.00–10)، في البنود وفي المشاهد: الأعداد المعطاة، والجواب، وبديل جملة الطرح (الجمع يُقرأ أيضاً)، والبرج الأكثر بواحد (الفحص المستقل الرابع)
-  const NUMK = ['n', 'a', 'b', 'k', 'target', 'start', 'ref', 'took', 'left', 'goal'];
+  // 4ب) كل عدد يُقال كلمةً له جملة (gen.numw.NN)، في البنود وفي المشاهد: الأعداد المعطاة، والجواب، وبديل جملة الطرح (الجمع يُقرأ أيضاً)، والبرج الأكثر بواحد (الفحص المستقل الرابع)
+  //     والأعداد فوق العشرة لا تُقال إلا من درس طريق الأعداد (N009، S1-U3 د5) فصاعداً؛ وحدّها ما له كلمة في gen.numw (حتى 20)
+  const NUMK = ['n', 'a', 'b', 'k', 'target', 'start', 'ref', 'took', 'left', 'goal', 'from', 'to'];
+  const ORDER = content.units.flatMap(u => u.lessons.map(l => l.id)), BIG_FROM = ORDER.indexOf('m1.u3.d5');
+  const ORD_MAX = Math.max(0, ...[...LINES.keys()].filter(k => /^gen\.ord\.f\.\d+$/.test(k)).map(k => +k.slice(10)));
+  const maxN = id => (BIG_FROM >= 0 && ORDER.indexOf(id) >= BIG_FROM) ? Math.max(...[...LINES.keys()].filter(k => /^gen\.numw\.\d+$/.test(k)).map(k => +k.slice(9))) : 10;
   const derived = v => { const o = [];
     if (['join', 'story', 'fact', 'sentence'].includes(v.t) && v.a != null && v.b != null) o.push(['المجموع', v.a + v.b]);
     if (['remove', 'fact', 'sentence', 'story'].includes(v.t) && v.op !== '+' && v.a != null && v.b != null) o.push(['الفرق', v.a - v.b]);
@@ -141,18 +152,65 @@ export function lint(content, js) {
     if (v.t === 'buildTower' && v.want === 'more') o.push(['الأكثر بواحد', v.ref + 1]);
     if (v.t === 'same' && v.add) o.push(['بعد الإضافة', v.n + v.add]);
     if (v.scene === 'takeHook') o.push(['الباقي', v.a - v.b]);
+    if (v.t === 'roadHop' && v.n != null) o.push(['الوصول', v.a + (v.dir || 1) * v.n]);
+    if (v.t === 'roadPick') o.push(['الجواب', v.ask === 'land' ? v.n + (v.dir || 1) * v.k : v.ask === 'hops' ? v.b - v.n : v.n + (['next', 'more'].includes(v.ask) ? 1 : -1)]);
+    if (v.scene === 'jumpChaosHook' || v.scene === 'chaosSubForward') o.push(['الوصول', v.a + (v.scene === 'chaosSubForward' ? -1 : 1) * v.n]);
     return o; };
-  const walkNum = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkNum(x, where)); if (!v || typeof v !== 'object') return;
-    if (typeof v.t === 'string' || typeof v.scene === 'string') {
-      for (const k of NUMK) if (typeof v[k] === 'number' && (v[k] < 0 || v[k] > 10)) errors.push(`${where}: ${v.t || v.scene}.${k} = ${v[k]} خارج 0–10، ولا كلمة له`);
-      for (const [nm, x] of derived(v)) if (x < 0 || x > 10) errors.push(`${where}: ${v.t || v.scene} ${nm} = ${x} خارج 0–10، يُقرأ ولا كلمة له`); }
-    for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkNum(x, where); };
-  for (const L of Object.values(lessons)) walkNum(L, L.id);
-  // 4ج) في بند التعليل لا يكون الصحيح أطول الأسباب بفرق ظاهر (الفحص المستقل الثالث، ن3): طوله بلا تشكيل ≤ 1.2 × أطول المشتّتين
+  const walkNum = (v, where, top) => { if (Array.isArray(v)) return v.forEach(x => walkNum(x, where, top)); if (!v || typeof v !== 'object') return;
+    if (typeof v.t === 'string' || typeof v.scene === 'string') { const mx = maxN(top);
+      for (const k of NUMK) if (typeof v[k] === 'number' && (v[k] < 0 || v[k] > mx)) errors.push(`${where}: ${v.t || v.scene}.${k} = ${v[k]} خارج 0–${mx}` + (mx < 20 ? '، ولا كلمة له قبل طريق الأعداد' : '، ولا كلمة له'));
+      for (const [nm, x] of derived(v)) if (x < 0 || x > mx) errors.push(`${where}: ${v.t || v.scene} ${nm} = ${x} خارج 0–${mx}، يُقرأ ولا كلمة له`);
+      for (const k of ['said', 'rolls', 'chaos']) if (Array.isArray(v[k])) for (const x of v[k]) if (typeof x === 'number' && (x < 0 || x > mx)) errors.push(`${where}: ${v.t || v.scene}.${k} فيه ${x} خارج 0–${mx}`);
+      if (Array.isArray(v.legs)) for (const x of v.legs.flat()) if (typeof x !== 'number' || x < 0 || x > mx) errors.push(`${where}: ${v.t || v.scene}.legs فيه ${x} خارج 0–${mx}`);
+      /* القطار (N008، S1-U3): طوله داخل row فلا يبلغه الفحص أعلاه (طفرة mutants_run)؛ والعربات تُعدّ بأعداد ترتيبية مسموعة (gen.ord.f.NN) فلا يزيد القطار عليها،
+         ولا تكون العربة المطلوبة ولا خيارات «أيّ عربة؟» خارجه */
+      const train = (v.t === 'lineTap' || v.t === 'linePick') && v.row && v.row.kind === 'train' ? (v.row.n ?? 10) : (v.scene === 'trainOrdinals' || v.scene === 'chaosTrainBadge') ? (v.n ?? (v.scene === 'trainOrdinals' ? 10 : 6)) : null;
+      if (train != null) { if (train > Math.min(ORD_MAX, mx) || train < 1) errors.push(`${where}: ${v.t || v.scene}: قطار من ${train} عربة، والأعداد الترتيبية المسموعة حتى ${ORD_MAX}`);
+        if (v.t && typeof v.k === 'number' && (v.k < 1 || v.k > train)) errors.push(`${where}: ${v.t}: العربة ${v.k} خارج قطار من ${train}`);
+        if (v.t === 'linePick') for (const o of v.opts || []) if (typeof o !== 'number' || o < 1 || o > train) errors.push(`${where}: linePick: الخيار ${o} خارج قطار من ${train}`); } }
+    for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkNum(x, where, top); };
+  for (const L of Object.values(lessons)) walkNum(L, L.id, L.id);
+  // 4ب2) «أين هو في الخريطة؟» (S1-U3): الشيء على الأرض في خانة فارغة، أو فوق قطعة موجودة، أو تحت طاولة قريبة منا (فيُرى ما تحتها)
+  const walkMap = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkMap(x, where)); if (!v || typeof v !== 'object') return;
+    if (v.t === 'mapFind') { const m = v.mark || {}, items = (v.lay && v.lay.items) || [], key = i => i.col + ',' + i.row;
+      if (m.cell) { if (items.some(i => key(i) === m.cell.join(','))) errors.push(`${where}: mapFind «${v.q}»: الخانة ${m.cell} فيها قطعة، والشيء «على الأرض» يكون في خانة فارغة`);
+        /* وفي الصورة من الجانب يحجب السرير أو الطاولة القريبان منا ما خلفهما في عمودهما، فيبدو الشيء فوقهما أو تحتهما (لقطة الإتقان ms.1) */
+        if (m.cell[1] === 'back' && items.some(i => i.col === m.cell[0] && i.row === 'front' && i.k !== 'rug')) errors.push(`${where}: mapFind «${v.q}»: الخانة ${m.cell} خلف ${items.find(i => i.col === m.cell[0] && i.row === 'front').k} قريب منا فيحجبها`); }
+      else { const it = items.find(i => (i.id || i.k) === m.on); if (!it) errors.push(`${where}: mapFind «${v.q}»: لا قطعة «${m.on}» في الغرفة`);
+        else if (m.rel === 'under' && (it.k !== 'table' || it.row !== 'front')) errors.push(`${where}: mapFind «${v.q}»: «تحت» لطاولة قريبة منا وحدها (ما تحت غيرها لا يُرى)`); }
+      if (new Set(items.map(key)).size !== items.length) errors.push(`${where}: mapFind «${v.q}»: قطعتان في خانة واحدة`); }
+    for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkMap(x, where); };
+  for (const L of Object.values(lessons)) walkMap(L, L.id);
+  // 4ب3) التوأم (الفحص المستقل B، المبدأ 5): كل بند يُشغَّل بالمساعدة (التمرين، والعلاج، ومراحل البنود بوضع التمرين أو العلاج) من نوعٍ توأمُه في بياناته
+  //      (دالة twin في الكود تعيد item.twin) له توأم؛ ولا توأم للتوأم (يُشغَّل مرة واحدة)، ولا توأم في بند لا يُشغَّل توأمه (التقييم والاكتشاف)
+  { const TWIN_DATA = new Set(), starts = [...code.matchAll(/^ITEM\.(\w+) = \{/gm)];
+    starts.forEach((m, i) => { const body = code.slice(m.index, i + 1 < starts.length ? starts[i + 1].index : undefined); if (/twin\(item\) \{ return item\.twin \|\| null; \}/.test(body)) TWIN_DATA.add(m[1]);
+      /* ولكل نوع بند توأم (من الكود أو من بياناته): «twin: () => null» كان يُسقط التوأم صامتاً في ثمانية أنواع (الفحص المستقل B) */
+      if (!/\btwin[(:]/.test(body) || /twin: \(\) => null/.test(body)) errors.push(`نوع البند ${m[1]} بلا توأم: twin من الكود أو twin(item) { return item.twin || null; } مع توأم في البيانات (المبدأ 5)`); });
+    if (!TWIN_DATA.size) errors.push('فحص التوأم: لم يُعثر على نوع بند توأمه في بياناته (تغيّرت صيغة twin في الكود؟)');
+    const items = (L, help) => { const st = L.flow.filter(s => s.scene === 'items'); const P = L.practice || {}, M = L.mastery || {};
+      return help ? [...(P.normal || []), ...(P.challenge || []), ...Object.values(M.remedial || {}).flat(), ...st.filter(s => ['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])]
+        : [...Object.values(M.concepts || {}).flat(), ...(M.mixed ? [M.mixed.item] : []), ...(L.review || []), ...((L.test && L.test.items) || []).map(q => q.item), ...st.filter(s => !['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])]; };
+    for (const L of Object.values(lessons)) {
+      for (const it of items(L, true)) if (TWIN_DATA.has(it.t)) { if (!it.twin || typeof it.twin !== 'object' || typeof it.twin.t !== 'string') errors.push(`${L.id}: البند «${it.q}» (${it.t}) يُشغَّل بالمساعدة بلا توأم (المبدأ 5، الفحص المستقل B)`);
+        else if (it.twin.twin) errors.push(`${L.id}: توأم البند «${it.q}» له توأم، والتوأم يُشغَّل مرة واحدة`); }
+      for (const it of items(L, false)) if (it && it.twin) errors.push(`${L.id}: البند «${it.q}» في تقييم أو اكتشاف وله توأم لا يُشغَّل`); } }
+  // 4ب4) كل موضع يُطلب له جملة حلّه (المستوى 3) وكلمته (الكشف): وفراغات الطابور g0…gN كلمتها أمام وبين وخلف (الفحص المستقل B: «gen.solve.pos.g1» غير موجودة فتوقّف الدرس)
+  { const pkw = a => /^beside/.test(a || '') ? 'beside' : a;
+    const walkP = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkP(x, where)); if (!v || typeof v !== 'object') return;
+      if (v.t === 'place') { let w = pkw(v.at);
+        if (v.ref === 'queue') { const n = (v.members || []).length, m = /^g(\d+)$/.exec(v.at || ''); if (!m || +m[1] > n) errors.push(`${where}: place «${v.q}»: فراغ الطابور «${v.at}» ليس من g0 إلى g${n}`); w = !m ? null : +m[1] === 0 ? 'front' : +m[1] === n ? 'behind' : 'between'; }
+        if (w && !LINES.has('gen.solve.pos.' + w)) errors.push(`${where}: place «${v.q}»: لا جملة حلّ لموضعه gen.solve.pos.${w}`); }
+      if (v.t === 'where') { const w = pkw(v.want || (v.pic && v.pic.at));
+        for (const id of ['gen.solve.pos.' + w, 'gen.pos.' + w, ...(v.ask === 'thing' ? [] : (v.words || []).map(o => 'gen.pos.' + o))]) if (!LINES.has(id)) errors.push(`${where}: where «${v.q}»: جملة غير موجودة ${id}`); }
+      for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkP(x, where); };
+    for (const L of Object.values(lessons)) walkP(L, L.id); }
+  // 4ج) في بند التعليل لا يكون الصحيح أطول الأسباب بفرق ظاهر (الفحص المستقل الثالث، ن3): طوله بلا تشكيل ≤ 1.2 × أطول المشتّتين؛
+  //     وكذلك بطاقتا «أيّ أمر نفّذ الروبوت؟» و«أيّ وصف يناسب الطريق؟» (S1-U3): نصّهما ظاهر كأسباب التعليل، فلا يدلّ الطول على الصحيحة
   const bare = t => String(t || '').replace(/\{([^|{}]*)\|[^{}]*\}/g, '$1').replace(/[\u064B-\u0652\u0670]/g, '').replace(/\s+/g, ' ').trim().length;
   const walkWhy = (v, where, L) => { if (Array.isArray(v)) return v.forEach(x => walkWhy(x, where, L)); if (!v || typeof v !== 'object') return;
-    if (v.t === 'reason' && Array.isArray(v.opts)) { const txt = id => (L.lines && L.lines[id]) || (content.gen.lines || {})[id] || ''; const ok = v.opts.filter(o => o.ok).map(o => bare(txt(o.id))), bad = v.opts.filter(o => !o.ok).map(o => bare(txt(o.id)));
-      if (ok.length && bad.length && Math.max(...ok) > 1.2 * Math.max(...bad)) errors.push(`${where}: في بند التعليل «${v.q}» الصحيح ${Math.max(...ok)} حرفاً وأطول المشتّتين ${Math.max(...bad)}: الطول قرينة`); }
+    if (['reason', 'robotWatch', 'routePick'].includes(v.t) && Array.isArray(v.opts)) { const txt = id => (L.lines && L.lines[id]) || (content.gen.lines || {})[id] || ''; const ok = v.opts.filter(o => o.ok).map(o => bare(txt(o.id))), bad = v.opts.filter(o => !o.ok).map(o => bare(txt(o.id)));
+      if (ok.length && bad.length && Math.max(...ok) > 1.2 * Math.max(...bad)) errors.push(`${where}: في بند ${v.t === 'reason' ? 'التعليل' : 'البطاقتين'} «${v.q}» الصحيح ${Math.max(...ok)} حرفاً وأطول المشتّتين ${Math.max(...bad)}: الطول قرينة`); }
     for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkWhy(x, where, L); };
   for (const L of Object.values(lessons)) walkWhy(L, L.id, L);
   // 4د) «ابحث في الغرفة» (D255): الغرفة تسع ستة أشياء في صفّين مبعثرين، وتُختار من قائمة أطول منها، ولكل نوع يُسأل عنه شيء في القائمة

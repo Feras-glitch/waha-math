@@ -45,7 +45,7 @@ function armIdle(h, opt = {}) { idleHandler = h; help.hidden = false; help.class
   resetIdle(opt); }
 function resetIdle(opt = {}) { clearTimeout(idleTimer); if (!idleHandler) return;
   const wait = FAST ? 1500 : (opt.first ? 10000 : 20000);   // T9: أقصر في أول لقاء بالأداة
-  idleTimer = setTimeout(async () => { if (speechBusy()) { resetIdle(opt); return; } help.classList.add('glow'); await S('gen.hintOffer.01', { ifIdle: true, free: true }); }, wait); }
+  idleTimer = setTimeout(async () => { if (speechBusy()) { resetIdle(opt); return; } help.classList.add('glow'); await S('gen.hintOffer.01', { ifIdle: true, free: true, aside: true }); }, wait); }
 function disarmIdle() { idleHandler = null; clearTimeout(idleTimer); help.hidden = true; help.classList.remove('glow'); }
 document.addEventListener('pointerdown', e => { if (idleHandler && !help.contains(e.target)) { help.classList.remove('glow'); resetIdle(); } }, true);
 /* أول لقاء بأداة (M4): عرض تلقائي قصير، ثم يبدأ الطفل. يُحفظ لكل طفل */
@@ -95,7 +95,7 @@ function cardPick(cards, opt = {}) {   // cards: [{id(line), k, ok, icon, hide, 
   const readAll = async withIntro => { const me = ++run; btns.forEach(x => x.classList.remove('reading'));
     if (withIntro && intro) { await say(...intro, { free: true }); if (answered || me !== run) return; }
     for (const [i, b] of btns.entries()) { if (answered || me !== run) break; b.classList.add('reading'); const c = list[i]; if (c.pre) await c.pre(); if (answered || me !== run) break;
-      await say(...lines[i], { hideText: c.hide, free: true }); b.classList.remove('reading'); } };
+      await say(...lines[i], { hideText: c.hide && !opt.keepQ, keep: !!opt.keepQ, free: true }); b.classList.remove('reading'); } };   /* keepQ: بطاقات الأعداد المسموعة تُقرأ والسؤال باقٍ في الفقاعة (S1-U3) */
   /* الخطّاف حيّ ما دامت البطاقات على الشاشة في المسار نفسه: الخروج إلى الخريطة أو مسرح جديد يُسقطه (الدرس الآخر لا يسمع بطاقات هذا) */
   REPLAY_HOOK = () => readAll(true); REPLAY_HOOK.live = () => !answered && !box.dataset.done && flow === FLOW && box.isConnected;
   readAll(false);

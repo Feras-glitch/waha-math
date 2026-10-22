@@ -16,7 +16,15 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     towers: () => { towerAt(s, 26, 52, 4, { size: 10, color: CUBE.lemon }); towerAt(s, 48, 52, 6, { size: 10, color: CUBE.white }); },
     plus: () => { towerAt(s, 22, 52, 3, { size: 10, color: CUBE.lemon }); towerAt(s, 50, 52, 2, { size: 10, color: CUBE.white }); el('path', { d: 'M30 30h12M36 24v12', stroke: css('--compass'), 'stroke-width': 4, 'stroke-linecap': 'round' }, s); },
     hunt: () => { [['circle', 18], ['triangle', 36], ['rect', 54]].forEach(([k, x]) => shapeAt(s, { type: k, size: 20, w: k === 'rect' ? 24 : k === 'triangle' ? 22 : undefined, h: k === 'rect' ? 14 : k === 'triangle' ? 20 : undefined, color: css(IDC[k]) }, x, 28)); },
-    flat: () => { shapeAt(s, { type: 'square', size: 24, color: css('--square') }, 22, 28); thingAt(s, { solid: 'cube', size: 36 }, 50, 28); } };
+    flat: () => { shapeAt(s, { type: 'square', size: 24, color: css('--square') }, 22, 28); thingAt(s, { solid: 'cube', size: 36 }, 50, 28); },
+    /* S1-U3 */
+    place: () => { const C = chestAt(s, 36, 54, { w: 34, h: 16, legs: 14, open: false }); placeThingAt(s, 'ball', C.spots.on.x, C.spots.on.y, { scale: .32 }); placeThingAt(s, 'teddy', 36, 54, { scale: .2 }); },
+    train: () => { locoAt(s, 54, 44).setAttribute('transform', 'translate(54 44) scale(.42)'); for (const [i, x] of [26, 8].entries()) carAt(s, x, 44, i + 1, { w: 22 }).g.setAttribute('transform', `translate(${x} 44) scale(.6)`); },
+    hands: () => { kidBackAt(s, 36, 56, { ribbon: 'R', raise: 'R', s: .3 }); },
+    map: () => { el('rect', { x: 10, y: 8, width: 52, height: 40, rx: 3, fill: '#fffdf6', stroke: css('--ink'), 'stroke-width': 2 }, s); shapeAt(s, { type: 'rect', w: 18, h: 11, color: css('--rect') }, 48, 18); shapeAt(s, { type: 'circle', size: 14, color: css('--circle') }, 34, 36); shapeAt(s, { type: 'square', size: 11, color: css('--square') }, 20, 18); },
+    road: () => { for (let i = 0; i < 3; i++) { el('rect', { x: 8 + i * 20, y: 30, width: 17, height: 17, rx: 3, fill: i % 2 ? '#e9dcc3' : '#dccaa8', stroke: '#fff', 'stroke-width': 1.5 }, s); if (digitsKnown()) el('text', { x: 16.5 + i * 20, y: 43, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 800, fill: '#33454c', 'font-family': css('--f'), direction: 'ltr' }, s).textContent = DG(i + 1); } },
+    jump: () => { for (let i = 0; i < 3; i++) el('rect', { x: 8 + i * 20, y: 34, width: 17, height: 14, rx: 3, fill: i % 2 ? '#e9dcc3' : '#dccaa8', stroke: '#fff', 'stroke-width': 1.5 }, s); el('path', { d: 'M16 30 Q26 8 36 30 M36 30 Q46 8 56 30', fill: 'none', stroke: css('--compass'), 'stroke-width': 2.5, 'stroke-dasharray': '3 3' }, s); },
+    treasure: () => { treasureAt(s, 36, 46, .9); } };
   if (special[ic[0]]) special[ic[0]]();
   else ic.forEach((k, i) => { const x = 36 + (i - (ic.length - 1) / 2) * (SOLIDC[k] ? 28 : 24);
     if (SOLIDC[k]) thingAt(s, { solid: k, size: 44 }, x, 28); else shapeAt(s, { type: k, size: 28, w: k === 'rect' ? 36 : k === 'triangle' ? 32 : undefined, h: k === 'rect' ? 22 : k === 'triangle' ? 28 : undefined, color: css(IDC[k]) }, x, 28); });
@@ -67,7 +75,7 @@ function showHome() {
 function wsStop(U, uOpen) { const open = uOpen && wsOpen(U); const solved = wsSolved(U.id), total = WS[U.id].puzzles.length;
   const wb = document.createElement('button'); wb.className = 'stop ws' + (open && solved < 1 ? ' must' : ''); wb.dataset.workshop = U.id; wb.setAttribute('aria-disabled', !open);
   wb.innerHTML = `<svg viewBox="0 0 72 56" aria-hidden="true">${hostsSVG(U.id).replace(/^<svg[^>]*>/, '<g transform="translate(-14 -10) scale(.5)">').replace(/<\/svg>$/, '</g>')}<path d="M8 50 h56" stroke="${css('--basket-dk')}" stroke-width="4" stroke-linecap="round"/></svg>`
-    + `<span>${esc(G(labelText('workshop')))}<small aria-label="${solved} / ${total}">${esc(G(labelText('wsShadows')))} <span class="dots" aria-hidden="true">${'<i class="on"></i>'.repeat(solved)}${'<i></i>'.repeat(Math.max(0, total - solved))}</span></small></span>` + (open ? (solved ? ST_ICON.done(css('--good')) : '') : ST_ICON.lock(css('--muted')));
+    + `<span>${esc(G(labelText('workshop')))}<small aria-label="${solved} / ${total}">${esc(G(labelText(wsRoom(U.id) ? 'wsShadowsRoom' : 'wsShadows')))} <span class="dots" aria-hidden="true">${'<i class="on"></i>'.repeat(solved)}${'<i></i>'.repeat(Math.max(0, total - solved))}</span></small></span>` + (open ? (solved ? ST_ICON.done(css('--good')) : '') : ST_ICON.lock(css('--muted')));
   wb.onclick = () => { if (!open) { SFX.soft(); return; } SFX.tick(); runWorkshop(U); }; return wb; }
 /* بدء الدرس: الراحة أولاً إن بلغت الجلسة حدّها، ثم سؤال الاستئناف إن خرج الطفل في منتصفه */
 function startLesson(id) {
@@ -84,8 +92,8 @@ $('#mapBtn').onclick = () => { if (!CUR) { FLOW++; hush(); showHome(); return; }
   const c = cover('exitCover', `<div class="breakbox">${coverHead()}<div class="choices icons big">
     <button class="pick" id="exStay">${ICON.play.replace('<svg', '<svg width="40" height="40"')}<span>${esc(G(labelText('stay')))}</span></button>
     <button class="pick" id="exLeave">${ICON.map.replace('<svg', '<svg width="40" height="40"')}<span>${esc(G(labelText('toMap')))}</span></button></div></div>`);
-  coverSay(c, 'gen.exit.ask');
-  $('#exStay').onclick = () => { hush(); c.hidden = true; replayLine(); };
+  const prev = lastLine; coverSay(c, 'gen.exit.ask');   /* «نبقى» يعيد ما كان قبل السؤال، لا سؤال الخروج (الفحص المستقل B) */
+  $('#exStay').onclick = () => { hush(); c.hidden = true; lastLine = prev; replayLine(); };
   $('#exLeave').onclick = () => { hush(); c.hidden = true; logAttempt({ scene: 'exit', tag: SCENE_NOW, ok: true }); showHome(); }; };
 $('#meBtn').onclick = () => { stopVoice(); openKids(false); };
 $('#galBtn').onclick = () => { SFX.tick(); openGallery(); };

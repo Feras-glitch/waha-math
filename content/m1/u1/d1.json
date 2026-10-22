@@ -472,7 +472,25 @@
     ],
     "ans": 3,
     "err": "ovalAsCircle",
-    "why": "why.oval"
+    "why": "why.oval",
+    "twin": {
+     "t": "pick",
+     "q": [
+      "pr.odd"
+     ],
+     "opts": [
+      "wheel",
+      [
+       "ovalWide",
+       30
+      ],
+      "plate",
+      "circleS"
+     ],
+     "ans": 1,
+     "err": "ovalAsCircle",
+     "why": "why.oval"
+    }
    }
   ],
   "challenge": [
@@ -532,7 +550,25 @@
     ],
     "ans": 3,
     "err": "ovalAsCircle",
-    "why": "why.oval"
+    "why": "why.oval",
+    "twin": {
+     "t": "pick",
+     "q": [
+      "pr.odd"
+     ],
+     "opts": [
+      "wheel",
+      [
+       "ovalWide",
+       30
+      ],
+      "plate",
+      "circleS"
+     ],
+     "ans": 1,
+     "err": "ovalAsCircle",
+     "why": "why.oval"
+    }
    }
   ]
  },

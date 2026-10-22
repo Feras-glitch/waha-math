@@ -12,6 +12,8 @@ SN = lambda k, i, **x: {'solid': k, 'kind': k, 'size': 130, 'color': '$neutral.%
 def why3(q, ok, *bad, err='byLook', show=None): return {'t': 'reason', 'show': show, 'q': q, 'opts': [{'id': ok, 'ok': True}] + [{'id': b} for b in bad], 'err': err}
 
 # ======================= الدرس 1: المكعب والكرة =======================
+# التوأم بعد الحلّ المشترك أو الكشف (المبدأ 5) لبند «المس المختلف»، بأشياء عُرضت في الدرس نفسه (D240)
+ODD_TWIN = {'t': 'pick', 'q': ['pr.odd'], 'opts': ['ball', 'cubeTilt', 'orange', 'sphere'], 'ans': 1, 'err': 'newSolid'}
 d1 = {
  'id': 'm1.u2.d1', 'title': 'المُكَعَّبُ وَالكُرَةُ', 'icon': ['cube', 'sphere'],
  'concepts': {'C006': 'تعرّف المكعب والكرة', 'C009': 'خصائص المجسّم: يتدحرج أم يقف'},
@@ -73,16 +75,16 @@ d1 = {
   'twins': {'cube': sort('cubeTilt'), 'cubeTurned': sort('cubeTurned'), 'sphere': sort('sphere'), 'flatSquare': sort('flatSquare'), '*': sort('die')}},
  'practice': {'intro': 'pr.intro',
   'normal': [sort('die'), sort('sphere'), sort('flatSquare'), {'t': 'pickAll', 'q': 'pr.rolls', 'rolls': True, 'objs': ['sphere', 'die', 'cube', 'orange'], 'names': True, 'errs': {'miss': 'rollMissed', 'extra': 'cubeNotRoll'}},
-             {'t': 'pick', 'q': ['pr.odd'], 'opts': ['sphere', 'orange', 'die', 'beadBall'], 'ans': 2, 'err': 'newSolid'}],
+             {'t': 'pick', 'q': ['pr.odd'], 'opts': ['sphere', 'orange', 'die', 'beadBall'], 'ans': 2, 'err': 'newSolid', 'twin': ODD_TWIN}],
   'challenge': [sort('cubeTilt'), sort('cubeTurned'), sort('orange'), {'t': 'pickAll', 'q': 'pr.rolls', 'rolls': True, 'objs': ['sphere', 'cubeTilt', 'orange', 'die', 'cube', 'beadBall'], 'names': True, 'errs': {'miss': 'rollMissed', 'extra': 'cubeNotRoll'}},
-             {'t': 'pick', 'q': ['pr.odd'], 'opts': ['beadBall', 'orange', 'cubeTurned', 'sphere'], 'ans': 2, 'err': 'newSolid'}]},
+             {'t': 'pick', 'q': ['pr.odd'], 'opts': ['beadBall', 'orange', 'cubeTurned', 'sphere'], 'ans': 2, 'err': 'newSolid', 'twin': ODD_TWIN}]},
  'chaos': {'kind': 'bins', 'bins': ['cube', 'sphere', 'other'], 'check': 'thin', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong',
   'placed': [{'mk': SN('cube', 0, size=64), 'bin': 'cube'}, {'mk': {'type': 'square', 'kind': 'flat', 'size': 110, 'color': '$neutral.1'}, 'bin': 'cube', 'wrong': True}, {'mk': SN('sphere', 2, size=62), 'bin': 'sphere'}, {'mk': SN('sphere', 5, size=50), 'bin': 'sphere'}, {'mk': {'type': 'triangle', 'kind': 'flat', 'size': 64, 'color': '$neutral.4'}, 'bin': 'other'}]},
  'mastery': {'concepts': {'C006': [sort('dieTilt'), sort('flatCircle'), why3('ms.whyS', 'ms.whyS1', 'ms.whyS2', 'ms.whyS3', show='marble')],
                           'C009': [prop('tennis'), prop('ice'), why3('ms.whyC', 'ms.whyC1', 'ms.whyC2', 'ms.whyC3', show=SN('cube', 2, size=120))]},
   'recall': {'C006': {'auto': True, 'h': 280, 'steps': [[{'show': SOL('cube', pose='tilt', size=120), 'at': [262, 140], 'id': 'a'}, {'show': SOL('sphere', size=120), 'at': [100, 140], 'id': 'b'}, {'say': 'ms.recall6'}]]},
              'C009': {'auto': True, 'h': 280, 'steps': [[{'say': 'ms.recall9'}]]}},
-  'remedial': {'C006': [sort('cubeTurned'), sort('flatSquare')], 'C009': [prop('sphere'), prop('cube')]},
+  'remedial': {'C006': [sort('cubeTurned'), sort('flatSquare')], 'C009': [dict(prop('sphere'), twin=prop('orange')), dict(prop('cube'), twin=prop('die'))]},   # التوأم بشيء عُرض في الدرس (المبدأ 5)
   'mixed': {'lesson': 'm1.u1.d1', 'item': sort('coin', bins=['cube', 'sphere', 'other'])}, 'ok': 'ms.ok'},
  'review': [sort('gift', c='C006'), sort('beachBall', c='C006'), prop('block', c='C009'), prop('apple', c='C009')],   # القمع بدل القبعة (في تمرين d6 وصيد المجسّمات)، والمكعب اللعبة بدل النرد (في حقيبة d6 واختباره)
  'wrap': {'art': 'cubes', 'lines': ['wrap.01'], 'home': 'wrap.home'},
@@ -94,6 +96,8 @@ d1['labels'].update({'paperSq': 'مُرَبَّعٌ مِنْ وَرَقٍ', 'cub
 # ======================= الدرس 2: الأسطوانة والمخروط والوجه =======================
 SHOP = {'shop.r1': ('cylinder', ['cylinder', 'cone', 'sphere']), 'shop.r2': ('cone', ['cone', 'cylinder', 'cube']), 'shop.r3': ('sphere', ['sphere', 'cylinder', 'cone']),
         'shop.r4': ('cylinder', ['cylinder', 'cone', 'cube']), 'shop.r5': ('cone', ['cone', 'cylinder', 'sphere'])}
+# توأم «هل يتدحرج المخروط في خط مستقيم؟» بعد الكشف (المبدأ 5): الأسطوانة النائمة تتدحرج في خط مستقيم
+CYL_TWIN = {'t': 'yesno', 'show': SOL('cylinder', pose='lying'), 'q': 'pr.cylRoll', 'ans': True, 'vis': 'roll', 'err': 'rollMissed', 'why': 'cyl.02'}
 d2 = {
  'id': 'm1.u2.d2', 'title': 'الأُسْطُوَانَةُ وَالمَخْرُوطُ', 'icon': ['cylinder', 'cone'],
  'concepts': {'C007': 'تعرّف الأسطوانة والمخروط', 'C009': 'خصائص المجسّم: الوجوه المسطّحة'},
@@ -123,6 +127,7 @@ d2 = {
   'pr.intro': 'سِلَالُنَا: لِلْأُسْطُوَانَاتِ، وَلِلْمَخَارِيطِ، وَ«غَيْرُ ذَلِكَ». هَيَّا نَتَمَرَّنُ.',
   'pr.coneRoll': 'هَلْ يَتَدَحْرَجُ المَخْرُوطُ فِي خَطٍّ مُسْتَقِيمٍ؟',
   'pr.coneWhy': 'يَدُورُ حَوْلَ رَأْسِهِ، لِأَنَّ رَأْسَهُ يَبْقَى فِي مَكَانِهِ.',
+  'pr.cylRoll': 'وَالأُسْطُوَانَةُ النَّائِمَةُ: هَلْ تَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ؟',
   'game.01': 'مَتْجَرُ المُجَسَّمَاتِ: ' + G('اِسْمَعْ', 'اِسْمَعِي') + ' طَلَبَ كُلِّ زَبُونٍ، وَ' + G('أَعْطِهِ', 'أَعْطِيهِ') + ' مَا يَطْلُبُ.',
   'shop.r1': 'زَبُونٌ يَطْلُبُ شَيْئًا يَقِفُ، وَيَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ.', 'shop.r2': 'زَبُونَةٌ تَطْلُبُ شَيْئًا رَأْسُهُ مُدَبَّبٌ، وَقَاعِدَتُهُ دَائِرِيَّةٌ.',
   'shop.r3': 'زَبُونٌ يَطْلُبُ شَيْئًا يَتَدَحْرَجُ فِي كُلِّ اتِّجَاهٍ، وَلَيْسَ لَهُ وَجْهٌ مُسَطَّحٌ.', 'shop.r4': 'زَبُونَةٌ تَطْلُبُ شَيْئًا لَهُ وَجْهَانِ دَائِرِيَّانِ مُسَطَّحَانِ.',
@@ -164,8 +169,8 @@ d2 = {
   'reasons': [{'when': {'tag': 'riddle'}, 'id': None}, {'when': {'tag': 'cylLying'}, 'id': 'why.cylLying'}, {'when': {'kind': 'cylinder'}, 'id': 'why.cyl'}, {'when': {'kind': 'cone'}, 'id': 'why.cone'}, {'id': 'why.other'}],
   'twins': {'cylinder': sort('cyl'), 'cylLying': sort('tube'), 'cone': sort('coneLying'), 'coneTurned': sort('cone'), 'riddle': sort('u2r4'), '*': sort('cyl')}},
  'practice': {'intro': 'pr.intro',
-  'normal': [sort('cyl'), sort('cone'), sort('tube'), sort('coneLying'), sort('u2r4', bins=None), {'t': 'faceTap', 'mk': CONEDOWN}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy'}],
-  'challenge': [sort('tube'), sort('coneLying'), sort('cube'), sort('u2r5', bins=None), {'t': 'faceTap', 'mk': {**CONEDOWN, 'color': '$neutral.5', 'size': 128}}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy'}]},
+  'normal': [sort('cyl'), sort('cone'), sort('tube'), sort('coneLying'), sort('u2r4', bins=None), {'t': 'faceTap', 'mk': CONEDOWN}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy', 'twin': CYL_TWIN}],
+  'challenge': [sort('tube'), sort('coneLying'), sort('cube'), sort('u2r5', bins=None), {'t': 'faceTap', 'mk': {**CONEDOWN, 'color': '$neutral.5', 'size': 128}}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy', 'twin': CYL_TWIN}]},
  'chaos': {'kind': 'bins', 'bins': ['cylinder', 'cone', 'other'], 'check': 'faces', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong',
   'placed': [{'mk': SN('cylinder', 0, size=64), 'bin': 'cylinder'}, {'mk': SN('cone', 2, size=64), 'bin': 'cone'}, {'mk': SN('cone', 4, size=58, pose='tipdown'), 'bin': 'cone'},
              {'mk': {**SN('cylinder', 3, size=130, pose='lying'), 'tag': 'cylLying'}, 'bin': 'other', 'wrong': True}, {'mk': SN('cube', 5, size=56), 'bin': 'other'}]},
@@ -348,6 +353,7 @@ d5 = {
   'game.01': 'وَرْشَةُ الأَبْرَاجِ: أَهْلُ الوَاحَةِ يَطْلُبُونَ أَبْرَاجًا. ' + G('أَضِفْ', 'أَضِيفِي') + ' أَوْ ' + G('أَبْعِدْ', 'أَبْعِدِي') + ' حَتَّى يُطَابِقَ البُرْجُ الطَّلَبَ.',
   'fl.01': 'لُعْبَةُ «أَصَابِعِي الخَمْسُ»: نَجْمَعُ وَنَطْرَحُ بِالأَصَابِعِ، بِلَا عَجَلَةٍ.',
   'un.1': 'كَانَ فِي البُرْجِ مُكَعَّبَاتٌ، أَخَذَتْ فَوْضَى ثَلَاثَةً، فَبَقِيَ أَرْبَعَةٌ. كَمْ كَانَ فِيهِ؟',
+  'un.2': 'كَانَ فِي البُرْجِ مُكَعَّبَاتٌ، أَخَذَتْ فَوْضَى اثْنَيْنِ، فَبَقِيَ خَمْسَةٌ. كَمْ كَانَ فِيهِ؟',
   'ch.find': 'فَوْضَى أَبْعَدَتْ مُكَعَّبَيْنِ مِنْ بُرْجٍ فِيهِ سِتَّةٌ، ثُمَّ عَلَّقَتْ عَلَيْهِ بِطَاقَةً. هَلْ هِيَ بِطَاقَتُهُ؟ ' + COUNT + ' مَا بَقِيَ: ' + TOUCH + ' كُلَّ مُكَعَّبٍ.',
   'ch.after': 'عَلَّقْنَا البِطَاقَةَ الصَّحِيحَةَ: هَذَا مَا بَقِيَ مَعَنَا.',
   'ch.right': 'نَعُدُّ مَا بَقِيَ مَعَنَا: أَرْبَعَة.', 'ch.wrong': C('البَاقِي هُوَ مَا أَخَذْتُهُ.'),
@@ -374,13 +380,13 @@ d5 = {
   {'s': 'chaos'}, {'s': 'mastery'}, {'s': 'wrap'}],
  'practice': {'intro': 'pr.intro',
   'normal': [join(3, 2), rem(5, 1), sent('+', 6, 2), {'t': 'eqPair', 'n': 7, 'parts': [4, 3]}],
-  'challenge': [join(6, 3), rem(9, 4), sent('-', 6, 2), {'t': 'eqPair', 'n': 8, 'parts': [5, 2]}, {'t': 'unknownStart', 'took': 3, 'left': 4, 'line': 'un.1'}]},
+  'challenge': [join(6, 3), rem(9, 4), sent('-', 6, 2), {'t': 'eqPair', 'n': 8, 'parts': [5, 2]}, {'t': 'unknownStart', 'took': 3, 'left': 4, 'line': 'un.1', 'twin': {'t': 'unknownStart', 'took': 2, 'left': 5, 'line': 'un.2'}}]},
  'chaos': {'kind': 'card', 'tower': True, 'n': 4, 'shown': 2, 'extra': 6, 'find': 'ch.find', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong'},
  'mastery': {'concepts': {'N006': [join(5, 3), rem(8, 3), sent('-', 7, 3), {'t': 'buildTo', 'target': 8, 'start': 5}],   # 7 − 2 في الإشعال والاكتشاف والمثال؛ وجملة الطرح بديلها جمعٌ يُقرأ، فمجموع عدديها ≤ 10
    'N007': [{'t': 'fact', 'op': '+', 'a': 1, 'b': 3}, {'t': 'fact', 'op': '-', 'a': 4, 'b': 2}, {'t': 'fact', 'op': '+', 'a': 2, 'b': 2}]},
   'recall': {'N006': {'auto': True, 'h': 250, 'steps': [[{'towers': [[4, 220, 'lemon']], 'base': 240}, {'towers2': [[3, 220, 'white', 4]]}, {'sentence': [4, '+', 3, 7], 'at': [180, 40], 'quiet': True}, {'say': 'ms.recall'}]]},
              'N007': {'auto': True, 'h': 240, 'steps': [[{'say': 'ms.recall7'}]]}},
-  'remedial': {'N006': [join(2, 3), rem(6, 2)], 'N007': [{'t': 'fact', 'op': '+', 'a': 2, 'b': 1}]},
+  'remedial': {'N006': [join(2, 3), rem(6, 2)], 'N007': [{'t': 'fact', 'op': '+', 'a': 2, 'b': 1, 'twin': {'t': 'fact', 'op': '+', 'a': 2, 'b': 3}}]},   # التوأم مسألة عُرضت في الاكتشاف (لا يقيسها تقييم)
   'mixed': {'lesson': 'm1.u2.d4', 'item': split(9, 2)}, 'ok': 'ms.ok'},   # 7 = 2 + 5 في مراجعة d4
  'review': [{**join(4, 2), 'c': 'N006'}, {**rem(6, 4), 'c': 'N006'}, {**sent('+', 5, 4), 'c': 'N006'},   # 5 + 3 ضمٌّ في الإتقان
             {'t': 'fact', 'op': '-', 'a': 5, 'b': 3, 'c': 'N007'}, {'t': 'fact', 'op': '-', 'a': 4, 'b': 1, 'c': 'N007'}],   # N007 تأسيس هنا، فله بندا مراجعة (المبدأ 14)

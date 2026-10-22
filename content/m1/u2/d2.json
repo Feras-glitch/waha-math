@@ -139,6 +139,7 @@
   "pr.intro": "سِلَالُنَا: لِلْأُسْطُوَانَاتِ، وَلِلْمَخَارِيطِ، وَ«غَيْرُ ذَلِكَ». هَيَّا نَتَمَرَّنُ.",
   "pr.coneRoll": "هَلْ يَتَدَحْرَجُ المَخْرُوطُ فِي خَطٍّ مُسْتَقِيمٍ؟",
   "pr.coneWhy": "يَدُورُ حَوْلَ رَأْسِهِ، لِأَنَّ رَأْسَهُ يَبْقَى فِي مَكَانِهِ.",
+  "pr.cylRoll": "وَالأُسْطُوَانَةُ النَّائِمَةُ: هَلْ تَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ؟",
   "game.01": "مَتْجَرُ المُجَسَّمَاتِ: {اِسْمَعْ|اِسْمَعِي} طَلَبَ كُلِّ زَبُونٍ، وَ{أَعْطِهِ|أَعْطِيهِ} مَا يَطْلُبُ.",
   "shop.r1": "زَبُونٌ يَطْلُبُ شَيْئًا يَقِفُ، وَيَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ.",
   "shop.r2": "زَبُونَةٌ تَطْلُبُ شَيْئًا رَأْسُهُ مُدَبَّبٌ، وَقَاعِدَتُهُ دَائِرِيَّةٌ.",
@@ -592,7 +593,22 @@
     "ans": false,
     "vis": "coneRoll",
     "err": "coneTurned",
-    "why": "pr.coneWhy"
+    "why": "pr.coneWhy",
+    "twin": {
+     "t": "yesno",
+     "show": {
+      "solid": "cylinder",
+      "kind": "cylinder",
+      "size": 130,
+      "color": "$solid.cylinder",
+      "pose": "lying"
+     },
+     "q": "pr.cylRoll",
+     "ans": true,
+     "vis": "roll",
+     "err": "rollMissed",
+     "why": "cyl.02"
+    }
    }
   ],
   "challenge": [
@@ -635,7 +651,22 @@
     "ans": false,
     "vis": "coneRoll",
     "err": "coneTurned",
-    "why": "pr.coneWhy"
+    "why": "pr.coneWhy",
+    "twin": {
+     "t": "yesno",
+     "show": {
+      "solid": "cylinder",
+      "kind": "cylinder",
+      "size": 130,
+      "color": "$solid.cylinder",
+      "pose": "lying"
+     },
+     "q": "pr.cylRoll",
+     "ans": true,
+     "vis": "roll",
+     "err": "rollMissed",
+     "why": "cyl.02"
+    }
    }
   ]
  },

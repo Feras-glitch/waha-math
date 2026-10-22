@@ -49,8 +49,12 @@ function openPanel() {
       <div class="seg"><button class="pick" id="slowBtn" aria-pressed="${!!SET.slow}">قراءة أبطأ: ${SET.slow ? 'تعمل' : 'متوقفة'}</button></div></div>
     <div class="card"><b>أطفال هذا الجهاز</b> (لكل طفل تقدّمه ومعرضه وإعداداته، ويختار صورته عند الدخول):
       <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID ? '' : `<button class="pick" data-del="${k.id}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div></div>
+    <div class="card"><b>الصوت:</b> <span id="vpStat">${vpStatText()}</span>
+      <p class="muted">حزمة الصوت ملف zip (أو ملفات صوتية) اسم كل تسجيل فيه معرّف جملته في جدول التسجيل، مثل <code dir="ltr">m1.u1.d2.hook.01.mp3</code>، و<code dir="ltr">…_f.mp3</code> للصيغة المؤنثة. تُستورد مرة واحدة وتبقى في هذا الجهاز، وما لم يُسجَّل يقرؤه صوت الجهاز (D181).</p>
+      <div class="seg"><button class="pick" id="vpPick">استيراد حزمة الصوت</button><button class="pick" id="vpDel"${VPACK.n ? '' : ' hidden'}>حذف الحزمة</button></div><input type="file" id="vpIn" accept=".zip,audio/*" multiple hidden><p id="vpMsg" class="muted" aria-live="polite"></p></div>
+    <div class="card"><b>نسخة احتياطية:</b> ملف فيه أطفال هذا الجهاز وتقدّمهم وإعداداتهم وتصميماتهم، يُحفظ أو يُنقل إلى جهاز آخر. الصور وحزمة الصوت لا تدخل الملف.
+      <div class="seg"><button class="pick" id="bkSave">حفظ نسخة في ملف</button><button class="pick" id="bkPick">استعادة نسخة</button></div><input type="file" id="bkIn" accept=".json,application/json" hidden><div id="bkMsg" aria-live="polite"></div></div>
     <details class="card"><summary><b>للتجربة والدعم</b></summary>
-      <p>أصوات مسجّلة: ملفات صوتية اسم كل منها معرّف الجملة، مثل <code>m1.u1.d2.hook.01.mp3</code> أو <code>…_f.mp3</code> للصيغة المؤنثة.</p><input type="file" id="clipIn" accept="audio/*" multiple><p id="clipMsg" class="muted"></p>
       <div class="seg"><button class="pick" id="unlockAll">${PROG.unlockAll ? 'إعادة قفل الدروس' : 'فتح كل الدروس للتجربة'}</button><button class="pick" id="resetAll">بدء كل الدروس من جديد</button></div>
       ${LOG.errors.length ? `<p><b>سجلّ الأعطال</b> (يُرسل عند البلاغ):</p><pre class="errlog" dir="ltr">${esc(LOG.errors.slice(-8).map(e => new Date(e.t).toISOString().slice(0, 16) + ' ' + e.scene + '\n' + e.msg.split('\n').slice(0, 3).join('\n')).join('\n\n'))}</pre>` : ''}</details>
     <div class="row"><button class="go" id="closePanel">رجوع</button></div></div>`;
@@ -71,6 +75,27 @@ function openPanel() {
   $('#unlockAll').onclick = () => { if (PROG.unlockAll) delete PROG.unlockAll; else PROG.unlockAll = true; saveProg(); $('#panel').hidden = true; showHome(); };
   $('#resetAll').onclick = () => { if ($('#resetAll').dataset.sure !== '1') { $('#resetAll').dataset.sure = '1'; $('#resetAll').textContent = 'متأكد؟ يُمحى التقدّم كله لهذا الطفل'; return; }
     for (const k of Object.keys(PROG)) delete PROG[k]; PROG.schema = SCHEMA; PROG.srs = {}; PROG.ws = {}; PROG.streams = {}; SESSION = { n: 0, t: 0 }; store.set(kk('hp_session'), SESSION); saveProg(); LOG.attempts = []; LOG.faces = []; store.set(kk('hp_log'), LOG); store.set(designsKey(), []); IDB.clear(); $('#panel').hidden = true; showHome(); };
-  $('#clipIn').onchange = e => { let n = 0; for (const f of e.target.files) { CLIPS[f.name.replace(/\.(mp3|m4a|wav|ogg)$/i, '')] = URL.createObjectURL(f); n++; } $('#clipMsg').textContent = 'أُضيف ' + DG(n) + ' ملفاً.'; };
+  /* حزمة الصوت (D181) */
+  $('#vpPick').onclick = () => $('#vpIn').click();
+  $('#vpIn').onchange = async e => { const files = [...e.target.files]; e.target.value = ''; if (!files.length) return; const m = $('#vpMsg'); m.textContent = 'يستورد…';
+    try { const r = await VPACK.importFiles(files, n => { m.textContent = 'يستورد… ' + DG(n); });
+      m.textContent = (r.imported ? `استُورد ${nw(r.imported, 'تسجيل واحد', 'تسجيلان', 'تسجيلات', 'تسجيلاً')}، فصارت الحزمة ${DG(r.have)} من ${DG(r.total)}.` : 'لم يُستورد أي تسجيل.') + (r.unknown.length === 1 ? ` وأُهمل ملف واحد لا يطابق اسمه جملة في الدروس: ${r.unknown[0]}.` : r.unknown.length ? ` وأُهمل ${nw(r.unknown.length, 'ملف واحد', 'ملفان', 'ملفات', 'ملفاً')} لا تطابق أسماؤها جملاً في الدروس، أوّلها ${r.unknown[0]}.` : '') + (r.have < r.total ? ' وما لم يُسجَّل بعد يقرؤه صوت الجهاز.' : '');
+      $('#vpStat').textContent = vpStatText(); $('#vpDel').hidden = !VPACK.n;
+    } catch (err) { m.textContent = { notZip: 'هذا ليس ملف zip.', badZip: 'ملف zip تالف.', noInflate: 'هذا المتصفح لا يفتح ملفات zip المضغوطة؛ اختر الملفات الصوتية نفسها.', noStore: 'تعذّر الحفظ في الجهاز (التصفّح الخاص؟).' }[err && err.message] || 'تعذّر الاستيراد.'; } };
+  $('#vpDel').onclick = async () => { const b = $('#vpDel'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يعود صوت الجهاز'; return; }
+    await VPACK.clear(); $('#vpStat').textContent = vpStatText(); b.hidden = true; b.dataset.sure = ''; b.textContent = 'حذف الحزمة'; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
+  /* النسخة الاحتياطية (D246) */
+  $('#bkSave').onclick = () => { backupSave(); $('#bkMsg').textContent = 'حُفظ الملف في التنزيلات.'; };
+  $('#bkPick').onclick = () => $('#bkIn').click();
+  $('#bkIn').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const box = $('#bkMsg'); let chk;
+    try { chk = backupCheck(await f.text()); } catch (x) { chk = { ok: false, why: 'notJson' }; }
+    if (!chk.ok) { box.textContent = { notJson: 'هذا ليس ملف نسخة من واحة الرياضيات.', notOurs: 'هذا ليس ملف نسخة من واحة الرياضيات.', empty: 'ملف النسخة فارغ.', noKids: 'ملف النسخة بلا أطفال.', badKey: 'في الملف بيانات لا يعرفها التطبيق، فلم يُستعمل.', badValue: 'ملف النسخة تالف، فلم يُستعمل.' }[chk.why]; return; }
+    box.innerHTML = `<p>في النسخة: ${chk.kids.map(k => esc(k.name || 'بلا اسم') + ' (' + (k.done ? 'أنجز ' + nw(k.done, 'درساً واحداً', 'درسين', 'دروس', 'درساً') : 'لم يبدأ') + ')').join('، ')}.</p>
+      <p class="muted">الاستعادة تضع ما في النسخة مكان أطفال هذا الجهاز وتقدّمهم، وتُحفظ قبلها نسخة مما على الجهاز الآن. الصور وحزمة الصوت لا تتغيّر.</p><div class="seg"><button class="pick" id="bkGo">استعادة</button><button class="pick" id="bkNo">إلغاء</button></div>`;
+    $('#bkGo').onclick = () => { const g = $('#bkGo'); if (g.dataset.sure !== '1') { g.dataset.sure = '1'; g.textContent = 'متأكد؟ يُستبدل ما على هذا الجهاز'; return; }
+      const ok = backupApply(chk); box.textContent = ok ? 'استُعيدت النسخة. يُعاد فتح التطبيق…' : 'تعذّرت كتابة بعض البيانات (المساحة ممتلئة؟)، وحُفظ ما كان على الجهاز قبلها.';
+      setTimeout(() => location.reload(), ok ? 700 : 2500); };
+    $('#bkNo').onclick = () => { box.textContent = ''; }; };
 }
+const vpStatText = () => VPACK.n ? `حزمة الصوت: ${DG(VPACK.n)} من ${DG(voiceIds().size)} تسجيلاً` : 'صوت الجهاز (لا حزمة مستوردة)';
 $('#adultBtn').onclick = () => { stopVoice(); adultGate(openPanel, () => {}); };            // الزرّ في الخريطة وحدها، فلا يقطع درساً

@@ -34,7 +34,23 @@ const WRAP_ART = {
   bridge(svg) { const g = el('g', {}, svg); for (let i = 0; i < 8; i++) { const T = towerAt(g, 330 - i * 40, 262, 1 + (i % 4), { size: 22, color: i % 2 ? CUBE.white : CUBE.lemon }); anim(T.g, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 150 + i * 120, fill: 'both' }); }
     sentenceAt(svg, 180, 60, 4, '+', 3, 7); },
   faces(svg) { const g = el('g', { transform: 'translate(120 160)' }, svg); drawBox(g, { w: 90, h: 90, d: 90, yaw: 32, pitch: 24, color: SOLIDC.cube }); const b = el('g', { transform: 'translate(260 170)' }, svg); drawBox(b, { w: 110, h: 64, d: 60, yaw: 32, pitch: 24, color: BOXC, deco: teaDeco }); },
-};
+
+  /* S1-U3: غرفة الألعاب، والقطار، والطفل يرفع يده اليمنى، والخريطة والكنز، وطريق الأعداد */
+  room(svg) { const g = el('g', { opacity: 0 }, svg); const C = chestAt(g, 180, 262, { open: true }); placeThingAt(C.mid, 'ball', 7, -110, { scale: .8 }); placeThingAt(g, 'teddy', 180, 262, { scale: .7 }); placeThingAt(g, 'doll', 70, 262, { scale: .9 }); placeThingAt(g, 'cat', 296, 262, { scale: .9 });
+    anim(g, [{ opacity: 0, transform: 'translateY(30px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 700, delay: 200, fill: 'forwards', easing: 'ease-out' }); },
+  train(svg) { const g = el('g', {}, svg); el('rect', { x: -40, y: 250, width: 520, height: 6, fill: '#8d7a62' }, g); locoAt(g, 300, 250); [1, 2, 3, 4].forEach(k => { const c = carAt(g, 300 - 48 - (k - .5) * 64 + 4, 250, k); placeThingAt(c.mid, ['teddy', 'ball', 'doll', 'cat'][k - 1], 0, -26, { scale: .62 }); });
+    anim(g, [{ transform: 'translateX(-360px)' }, { transform: 'translateX(0)' }], { duration: 1400, delay: 200, fill: 'both', easing: 'cubic-bezier(.2,.8,.3,1)' }); },
+  hands(svg) { const K = kidBackAt(svg, 180, 270, { ribbon: 'R', raise: 'R', s: 1.05 }); anim(K.g, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, delay: 200, fill: 'both' }); },
+  map(svg) { const lay = { door: 'R', win: 'L', items: [{ k: 'bed', col: 2, row: 'back' }, { k: 'rug', col: 1, row: 'front' }, { k: 'table', col: 0, row: 'back' }] };
+    const M = roomMapAt(svg, lay, { y0: 120, H: 150 }); treasureAt(svg, M.colX(1) + 50, M.rowY('front') + 14, .9);
+    el('path', { d: `M${M.door.x} ${M.door.y} Q${M.colX(1) + 70} ${M.rowY('back')} ${M.colX(1) + 50} ${M.rowY('front')}`, fill: 'none', stroke: '#c94f3d', 'stroke-width': 4, 'stroke-dasharray': '7 6' }, svg); },
+  road(svg) { const g = el('g', {}, svg); for (let n = 0; n <= 5; n++) { const t = el('g', { transform: `translate(${30 + n * 60} 240)` }, g); el('rect', { x: -25, y: -25, width: 50, height: 50, rx: 10, fill: n % 2 ? '#e9dcc3' : '#dccaa8', stroke: '#fff', 'stroke-width': 3.5 }, t);
+      el('text', { y: 9, 'text-anchor': 'middle', 'font-size': 26, 'font-weight': 800, fill: '#33454c', 'font-family': css('--f'), direction: 'ltr' }, t).textContent = DG(n + 10);
+      anim(t, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 150 + n * 140, fill: 'both' }); } },
+  race(svg) { const g = el('g', {}, svg); for (let n = 0; n <= 5; n++) { const t = el('g', { transform: `translate(${30 + n * 60} 250)` }, g); el('rect', { x: -25, y: -25, width: 50, height: 50, rx: 10, fill: n % 2 ? '#e9dcc3' : '#dccaa8', stroke: '#fff', 'stroke-width': 3.5 }, t); }
+    const k = el('g', { transform: 'translate(270 200)' }, svg); k.innerHTML = kidSVG(PROFILE ? PROFILE.gender : 'm', PROFILE && PROFILE.avatar).replace('<svg', '<svg x="-24" y="-24" width="48" height="48"'); chaosAt(svg, 214, 204, .4);
+    el('path', { d: 'M318 226 V150 L346 160 L318 170', fill: '#c94f3d', stroke: '#fff', 'stroke-width': 2.5 }, svg); anim(k, [{ transform: 'translate(30px,200px)' }, { transform: 'translate(270px,200px)' }], { duration: 1300, delay: 200, fill: 'both', easing: 'ease-out' }); },
+  treasure(svg) { const t = treasureAt(svg, 180, 250, 2.2); anim(t, [{ transform: 'translate(180px,250px) scale(.4)' }, { transform: 'translate(180px,250px) scale(2.2)' }], { duration: 900, delay: 200, fill: 'both', easing: 'cubic-bezier(.3,1.4,.6,1)' }); },};
 /* «كيف كان؟» (D239): ثلاثة وجوه بلا صواب ولا خطأ، تُحفظ للكبار */
 const FACE_ICON = {
   easy: '<svg viewBox="0 0 40 40" width="44" height="44" aria-hidden="true"><circle cx="20" cy="20" r="17" fill="#f6cf7e" stroke="#c98f55" stroke-width="2"/><circle cx="14" cy="16" r="2.4" fill="#1b3440"/><circle cx="26" cy="16" r="2.4" fill="#1b3440"/><path d="M12 24 q8 8 16 0" stroke="#1b3440" stroke-width="2.6" fill="none" stroke-linecap="round"/></svg>',

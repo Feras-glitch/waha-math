@@ -9,7 +9,9 @@
 #    «أعد الجملة» يعيد السؤال أولاً لا خياراً ولا عدداً، والفقاعة ليست نصّ خيار ولا كلمة عدد وحدها؛ والمقارنة بنصّ الجمل المقروءة نفسها لا بنصّ الأزرار (الفحص المستقل الرابع، ج7)
 # (كان:) «أعد الجملة» يعيد السؤال ثم الخيارات، لا آخر خيار وحده،
 #    والفقاعة تبقى على السؤال (اسم السلّة الأخير كان أحياناً الجواب وأحياناً الخطأ).
-# 7) الخروج من كل نوع انتظار (فرز، وبناء، واختيار، ولمس الكل، والبيت) ثم «أعد الجملة» في درس آخر: لا شيء من الأول، ولا عطل (الدرس 105).
+# 7) الخروج من كل نوع انتظار (فرز، وبناء، واختيار، ولمس الكل، والبيت؛ وفي S1-U3: ضع الشيء، ولوّن العربات، والروبوت، والطريق، والخريطة) ثم «أعد الجملة» في درس آخر: لا شيء من الأول، ولا عطل (الدرس 105).
+# وفي (6) خيارات S1-U3: كلمات الموضع، والأعداد الترتيبية، واليمين واليسار، وبطاقتا العدد قبل وبعد.
+# 8) بعد فعل الطفل (لمس بلاطة، وزرّ أمر الروبوت، وعرض المساعدة، و«نبقى» في غطاء الخروج): «أعد الجملة» يعيد السؤال والفقاعة عليه (الفحص المستقل B).
 import asyncio, os, sys
 from playwright.async_api import async_playwright
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -18,8 +20,8 @@ FAILS = []
 def check(ok, what):
   print(('ok   ' if ok else 'FAIL ') + what); (None if ok else FAILS.append(what))
 
-async def boot(p, seed=7, fast=True, settings=None):
-  b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await ctx.new_page(); errs = []
+async def boot(p, seed=7, fast=True, settings=None, dev='Pixel 5'):
+  b = await p.chromium.launch(); ctx = await b.new_context(**p.devices[dev]); pg = await ctx.new_page(); errs = []
   pg.on('pageerror', lambda e: errs.append('pageerror: ' + str(e)))
   await pg.goto('file://' + os.path.abspath(FILE) + ('#fast' if fast else '#test') + '&seed=%d' % seed); await pg.wait_for_timeout(300)
   s = {'sessionMax': 0}; s.update(settings or {})
@@ -68,8 +70,49 @@ CARDJS = """async (d) => { replayLine(); await new Promise(r => setTimeout(r, 30
   replayLine(); await new Promise(r => setTimeout(r, d)); const mark = window.__clips.length; replayLine(); await new Promise(r => setTimeout(r, 600));
   const seen = []; return { after: window.__clips.slice(mark), say: document.querySelector('#say').textContent, hide: document.querySelector('#bubble').classList.contains('hidetext') }; }"""
 
+async def section8(p):
+  # 8) السؤال يبقى ما يُعاد بعد أن يفعل الطفل (الفحص المستقل B، M6): بعد لمس بلاطة (يُقال عددها)، وبعد زرّ أمر الروبوت (يُقال الأمر)،
+  #    وبعد عرض المساعدة حين يسكت الطفل («هل نفكّر معاً؟»)، وبعد «نبقى» في غطاء الخروج: «أعد الجملة» يعيد السؤال، والفقاعة عليه
+  QTXT = "() => { const it = window.__item; return it ? [it.q, G(lineOf(it.q)[2])] : null; }"
+  async def ask_again(pg, label, act):
+    q = await pg.evaluate(QTXT); await act(); await pg.wait_for_timeout(700)
+    said = await pg.evaluate("() => (window.__clips || []).slice(-3)")
+    await pg.evaluate("() => { window.__clips = []; }"); await pg.click('#replay'); await pg.wait_for_timeout(900)
+    clips = await pg.evaluate("() => window.__clips"); say = await pg.evaluate("() => document.querySelector('#say').textContent")
+    check(bool(q) and bool(clips) and ('.' + q[0]) in clips[0] and say.strip() == q[1].strip(),
+          '%s: بعده %s، و«أعد الجملة» يعيد السؤال %s، والفقاعة «%s»' % (label, said, clips[:2], say[:40]))
+  for lid, stop, label, act in [
+      ('m1.u3.d5', lambda s: s['mode'] == 'practice' and s['itype'] == 'roadHop' and s['kind'] == 'road', 'لمس بلاطة',
+       lambda pg: pg.evaluate("() => { const it = window.__item; const n = it.a + (it.b != null ? Math.sign(it.b - it.a) : (it.dir || 1)); document.querySelector('#stage [data-n=\"' + n + '\"]').dispatchEvent(new MouseEvent('click', { bubbles: true })); }")),
+      ('m1.u3.d3', lambda s: s['mode'] == 'practice' and s['itype'] == 'robot' and s['kind'] == 'prog', 'زرّ أمر الروبوت',
+       lambda pg: pg.evaluate("() => document.querySelector('.rbbar .pick[data-k=\"F\"]').click()")),
+      ('m1.u3.d2', lambda s: s['mode'] == 'practice' and s['itype'] == 'lineTap' and s['kind'] == 'tap', 'عرض المساعدة بعد السكوت',
+       lambda pg: pg.wait_for_function("() => (window.__clips || []).some(c => c.startsWith('gen.hintOffer'))", timeout=8000)),
+      ('m1.u3.d1', lambda s: s['mode'] == 'practice' and s['itype'] == 'place' and s['kind'] == 'place', '«نبقى» في غطاء الخروج',
+       lambda pg: pg.evaluate("async () => { document.querySelector('#mapBtn').click(); await new Promise(r => setTimeout(r, 500)); document.querySelector('#exStay').click(); }"))]:
+    b, pg, errs = await boot(p)
+    await pg.evaluate("(id) => { runLesson(id); }", lid)
+    st = await drive_until(pg, stop); await pg.wait_for_timeout(1200)
+    if not stop(st): check(False, '%s (%s): لم يبلغ الموضع %s' % (label, lid, st['scene'])); await b.close(); continue
+    await ask_again(pg, '%s (%s)' % (label, lid), lambda: act(pg))
+    check(not errs, '%s: لا خطأ في الصفحة %s' % (label, errs[:2])); await b.close()
+
+  # والجملة الأطول من ثلاثة أسطر على الشاشة القصيرة (الفحص المستقل B): سهم في أسفل الفقاعة، وزرّ «أعد» يبقى فيها حين يُمرَّر النصّ، وبعد الجملة يُرى آخرها
+  for dev in ['iPhone SE', 'Galaxy S5']:
+    b, pg, errs = await boot(p, fast=False, settings={'muted': True}, dev=dev)
+    await pg.evaluate("() => { CUR = LDATA['m1.u3.d4']; show('lesson'); newStage(320, {}); window.__done = false; say(...lineOf('ex.find0')).then(() => { window.__done = true; }); }"); await pg.wait_for_timeout(500)
+    cue = await pg.evaluate("() => document.querySelector('#bubble').classList.contains('saymore')")
+    await pg.evaluate("() => { const s = document.querySelector('#say'); s.scrollTop = s.scrollHeight; }"); await pg.wait_for_timeout(200)
+    inside = await pg.evaluate("() => { const r = document.querySelector('#replay').getBoundingClientRect(), b = document.querySelector('#bubble').getBoundingClientRect(); return r.top >= b.top - 1 && r.bottom <= b.bottom + 1; }")
+    await pg.evaluate("() => { document.querySelector('#say').scrollTop = 0; }")
+    await pg.wait_for_function("() => window.__done", timeout=40000); await pg.wait_for_timeout(900)
+    end = await pg.evaluate("() => { const s = document.querySelector('#say'); return s.scrollTop + s.clientHeight >= s.scrollHeight - 2; }")
+    check(cue and inside and end and not errs, '%s: جملة أطول من ثلاثة أسطر: سهم البقية %s، و«أعد» في الفقاعة بعد التمرير %s، وآخر الجملة يُرى بعدها %s' % (dev, cue, inside, end)); await b.close()
+
+SECTION = os.environ.get('SECTION', '')   # SECTION=8: القسم الثامن وحده (لطفرات mutants_run)
 async def main():
   async with async_playwright() as p:
+    if SECTION == '8': await section8(p); print('FAILS:', len(FAILS)); return
     await exit_then_replay(p, 'm1.u1.d1', lambda s: s['scene'].endswith(':chaos') and s['kind'] == 'card', 'm1.u1.d2', 'الخروج عند البطاقتين')
     await exit_then_replay(p, 'm1.u2.d1', lambda s: s['mode'] == 'mastery' and s['itype'] == 'reason' and s['kind'] == 'card', 'm1.u1.d2', 'الخروج عند التعليل')
     # 3) أثناء جملة تُقال، بالزمن الحقيقي (صامتاً بزمن القراءة)
@@ -105,8 +148,8 @@ async def main():
     check(bool(clips) and q and q in clips[0] and len(clips) >= 4, '«أعد الجملة» عند التعليل يعيد السؤال ثم الأسباب %s' % clips[:4])
     await b.close()
     # 6) بعد قراءة الخيارات
-    OPT = lambda c: '.bin.' in c or '.opt.' in c or '.numw' in c or '.op.' in c
-    WORDS = """() => Object.keys(GL).filter(k => /^gen\.(numw2?|opt|bin|op)\./.test(k)).map(k => G(lineOf(k)[2]).trim())"""   # نصوص كل خيار وكل كلمة عدد كما تُكتب في الفقاعة
+    OPT = lambda c: '.bin.' in c or '.opt.' in c or '.numw' in c or '.op.' in c or 'gen.pos.' in c or 'gen.ord.' in c   # S1-U3: كلمات الموضع والأعداد الترتيبية خيارات مسموعة
+    WORDS = r"""() => Object.keys(GL).filter(k => /^gen\.(numw2?|opt|bin|op|pos|ord)\./.test(k)).map(k => G(lineOf(k)[2]).trim())"""   # نصوص كل خيار وكل كلمة عدد كما تُكتب في الفقاعة
     for lid, stop, label, opts in [('m1.u1.d6', lambda s: s['mode'] == 'test' and s['kind'] == 'sort', 'سلال الاختبار', True),
                              ('m1.u2.d6', lambda s: s['mode'] == 'test' and s['kind'] == 'sort', 'سلال الاختبار (المجسّمات)', True),
                              ('m1.u2.d5', lambda s: s['kind'] == 'buildTo', '«أضف/أبعد» في البناء', True),
@@ -116,7 +159,11 @@ async def main():
                              ('m1.u2.d5', lambda s: s['mode'] == 'mastery' and s['itype'] == 'fact' and s['kind'] == 'num', 'أعداد الحقيقة', True),
                              ('m1.u2.d4', lambda s: s['mode'] == 'mastery' and s['itype'] == 'split' and s['kind'] == 'num', 'أعداد التفكيك', True),
                              ('m1.u1.d4', lambda s: s['mode'] == 'mastery' and s['kind'] == 'produce', 'ضعي… وعددها', False),
-                             ('m1.u1.d5', lambda s: s['mode'] == 'mastery' and s['itype'] == 'digitPick' and s['kind'] == 'tap', 'المسي بطاقة العدد…', False)]:
+                             ('m1.u1.d5', lambda s: s['mode'] == 'mastery' and s['itype'] == 'digitPick' and s['kind'] == 'tap', 'المسي بطاقة العدد…', False),
+                             ('m1.u3.d1', lambda s: s['mode'] == 'mastery' and s['itype'] == 'where' and s['kind'] == 'pick', 'كلمات الموضع', True),
+                             ('m1.u3.d2', lambda s: s['itype'] == 'linePick' and s['kind'] == 'pick', 'العربة الأولى… العاشرة', True),
+                             ('m1.u3.d3', lambda s: s['mode'] == 'mastery' and s['itype'] == 'lrPick' and s['kind'] == 'pick', 'على يمينه أم على يساره', True),
+                             ('m1.u3.d5', lambda s: s['mode'] == 'mastery' and s['itype'] == 'roadPick' and s['kind'] == 'card', 'العدد قبل وبعد (بطاقتان مسموعتان)', True)]:
       b, pg, errs = await boot(p)
       await pg.evaluate("(id) => { runLesson(id); }", lid)
       st = await drive_until(pg, stop); await pg.wait_for_timeout(900)
@@ -130,8 +177,10 @@ async def main():
             '%s (%s): الخيارات قُرئت %s، و«أعد الجملة» يعيد السؤال ثم الخيارات %s، والفقاعة «%s»' % (label, lid, read, clips[:5], say[:40]))
       await b.close()
     # 7) الخروج من كل نوع انتظار
-    for lid, kind in [('m1.u1.d6', 'sort'), ('m1.u2.d5', 'buildTo'), ('m1.u2.d6', 'pick'), ('m1.u1.d2', 'tapAll'), ('m1.u1.d2', 'house')]:
+    for lid, kind in [('m1.u1.d6', 'sort'), ('m1.u2.d5', 'buildTo'), ('m1.u2.d6', 'pick'), ('m1.u1.d2', 'tapAll'), ('m1.u1.d2', 'house'),
+                      ('m1.u3.d1', 'place'), ('m1.u3.d2', 'paint'), ('m1.u3.d3', 'prog'), ('m1.u3.d5', 'road'), ('m1.u3.d4', 'tap')]:   # وانتظارات S1-U3
       await exit_then_replay(p, lid, lambda s, k=kind: s['kind'] == k and not s['scene'].endswith(':bag'), 'm1.u2.d1' if lid.startswith('m1.u1') else 'm1.u1.d3', 'الخروج عند ' + kind)
+    await section8(p)
   print('FAILS:', len(FAILS))
 asyncio.run(main())
 sys.exit(1 if FAILS else 0)   # إخفاق ⇒ رمز خروج 1 (الفحص المستقل الرابع، ج8)

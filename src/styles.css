@@ -2,6 +2,7 @@
    شاشة الدرس بلا تمرير: شريط المراحل ← المرشد وفقاعته ← المسرح ← زر واحد بارز. أهداف اللمس 56 والسحب 64 (D246) */
 :root {
   --sky-top: #bfe3ee; --sky-bot: #eef8f5; --ground: #ead9b2;
+  --wall: #f6ecd9; --wall2: #eadcc2; --floor: #d9bb8c; --floor2: #c8a571;   /* غرفة «أين أنا؟» (S1-U3) */
   --paper: #fffdf8; --ink: #1b3440; --muted: #4c6570; --line: #cfe0e0; --cloud: #ffffff;
   --circle: #ee7a5f; --square: #2a9d8f; --triangle: #8e6bbf; --rect: #f2b33d;   /* ألوان الهوية الثابتة */
   --compass: #1f5f99; --compass-dk: #154674; --chaos: #c8392d;
@@ -18,12 +19,14 @@
 }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
   --sky-top: #183747; --sky-bot: #10232c; --ground: #2e2a1f; --paper: #1d313b; --ink: #ecf4f2; --muted: #a9c2c8; --line: #2d4a55; --cloud: #2a4552;
+  --wall: #263840; --wall2: #213139; --floor: #4a3d2b; --floor2: #3e3222;
   --compass: #3d7cc0; --compass-dk: #2a5a8f; --chaos: #ff7a6a; --good: #63c98a; --think: #f0b45a;
   --dune1: #3a3424; --dune2: #2f2a1d; --sand-dk: #5d5137; --sand-crack: #7a6a48; --stone: #77746d; --stone-dk: #4b4944; --water: #2c7fae; --water-hi: #6cc3e6;
   --palm: #3f7f3c; --palm-dry: #7b6d47; --trunk: #7a5230; --trunk-dk: #5a3c22; --top-a: #1e3329; --top-b: #193027;
   --shadow: 0 5px 0 rgba(0,0,0,.25), 0 10px 22px rgba(0,0,0,.3); color-scheme: dark } }
 :root[data-theme="dark"] {
   --sky-top: #183747; --sky-bot: #10232c; --ground: #2e2a1f; --paper: #1d313b; --ink: #ecf4f2; --muted: #a9c2c8; --line: #2d4a55; --cloud: #2a4552;
+  --wall: #263840; --wall2: #213139; --floor: #4a3d2b; --floor2: #3e3222;
   --compass: #3d7cc0; --compass-dk: #2a5a8f; --chaos: #ff7a6a; --good: #63c98a; --think: #f0b45a;
   --dune1: #3a3424; --dune2: #2f2a1d; --sand-dk: #5d5137; --sand-crack: #7a6a48; --stone: #77746d; --stone-dk: #4b4944; --water: #2c7fae; --water-hi: #6cc3e6;
   --palm: #3f7f3c; --palm-dry: #7b6d47; --trunk: #7a5230; --trunk-dk: #5a3c22; --top-a: #1e3329; --top-b: #193027;
@@ -161,9 +164,16 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .pick.done { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--good); font-size: 21px; font-weight: 800; }
 .pick.done svg { width: 30px; height: 30px; } .pick.done span { color: var(--ink); }
 .choices.build { grid-template-columns: repeat(3, 1fr); }
+.choices.rbbar { grid-template-columns: repeat(5, 1fr); gap: 6px; }   /* أوامر الروبوت في صفّ واحد: تقدّم، وانعطف يميناً ويساراً، وامسح، وانطلق (S1-U3)؛ فيبقى للّوحة مكانها */
+.choices.rbbar.three { grid-template-columns: repeat(3, 1fr); }
+.choices.rbbar .pick { min-height: 64px; padding: 4px 2px; font-size: 13px; line-height: 1.25; }
+.choices.rbbar .pick svg { width: 32px; height: 32px; }
+.choices.rbbar .pick[data-k="G"] { color: var(--good); }
+.choices.rbbar .pick[data-k="X"] { color: var(--muted); }
 .pick.pot svg { filter: drop-shadow(0 3px 0 rgba(0,0,0,.15)); }
 .wsbar { position: absolute; top: 8px; inset-inline-start: 8px; display: flex; gap: 6px; padding: 0; }
 .wsbar .pick { min-height: var(--tap); padding: 4px 12px; font-size: 16px; grid-auto-flow: column; gap: 6px; }
+.wsbar.mid { inset-inline-start: 50%; transform: translateX(50%); }
 .wssel { filter: drop-shadow(0 0 6px var(--compass)) drop-shadow(0 0 2px var(--compass)); }
 
 /* ===== الأغطية ===== */
@@ -252,7 +262,11 @@ details.adult input[type=text]:focus { outline: none; border-color: var(--compas
   #lesson { display: flex; flex-direction: column; gap: 8px; padding-block: 6px; }
   #talk { grid-template-columns: 54px 1fr; min-height: 0; flex: none; }   /* فقاعة الدرس وحدها: للأغطية شكلها (الترحيب، والخروج، والاستراحة) */
   #who { width: 54px; height: 64px; }
-  #bubble { font-size: 17px; line-height: 1.5; padding: 6px 10px 6px 64px; min-height: 58px; height: calc(1.5em * 3 + 12px); box-sizing: border-box; overflow-y: auto; margin-bottom: 0; align-items: flex-start; }
+  #bubble { font-size: 17px; line-height: 1.5; padding: 6px 10px 6px 64px; min-height: 58px; height: calc(1.5em * 3 + 12px); box-sizing: border-box; overflow: hidden; margin-bottom: 0; align-items: flex-start; }
+  /* النصّ وحده يُمرَّر، فيبقى زرّ «أعد» في مكانه؛ وإن طال عن ثلاثة أسطر ظهر في أسفل الفقاعة سهم صغير يدلّ على البقية (الفحص المستقل B: السطر الرابع، وهو غالباً المطلوب، مخفيّ بلا علامة) */
+  #say { display: block; width: 100%; max-height: calc(1.5em * 3); overflow-y: auto; overscroll-behavior: contain; }
+  #bubble.saymore::before { content: "▾"; position: absolute; inset-inline: 10px 64px; bottom: 0; height: 18px; line-height: 16px; text-align: center; font-size: 15px; color: var(--muted);
+    background: linear-gradient(to bottom, transparent, var(--paper) 65%); border-radius: 0 0 8px 24px; pointer-events: none; }
   .stage { flex: 1 1 auto; } .stage > svg { max-height: none; }
   .go, .help { min-height: 56px; } .go.big { min-height: 64px; }
   .pick { min-height: 56px; padding: 6px 10px; font-size: 17px; } .choices { gap: 6px; padding: 0 8px 8px; } .choices.icons { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }

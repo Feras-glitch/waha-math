@@ -34,7 +34,14 @@ function bagIcon(svg, r, x, y) {
     cubes: () => { towerAt(g, -16, 40, 4, { size: 18, color: CUBE.lemon }); towerAt(g, 16, 40, 3, { size: 18, color: CUBE.white }); },
     cut: () => { shapeAt(g, { type: 'circle', size: 30, color: css('--circle') }, -26, -10); shapeAt(g, { type: 'square', size: 28, color: css('--square') }, 10, -14); shapeAt(g, { type: 'triangle', size: 30, color: css('--triangle') }, -8, 22); shapeAt(g, { type: 'rect', w: 34, h: 18, color: css('--rect') }, 28, 20); },
     hat: () => thingAt(g, { solid: 'cone', size: 80, color: '#6c7fa8' }, 0, 0), tube: () => thingAt(g, { solid: 'cylinder', size: 76, color: '#c9a072' }, 0, 0), box: () => thingAt(g, { solid: 'box', size: 84, color: BOXC }, 0, 0),
-    stickers: () => { for (let i = 0; i < 4; i++) el('rect', { x: -30 + (i % 2) * 30, y: -24 + Math.floor(i / 2) * 26, width: 24, height: 20, rx: 3, fill: '#f6cf7e', stroke: '#c98f55', 'stroke-width': 2, transform: `rotate(${i * 7 - 10})` }, g); } };
+    stickers: () => { for (let i = 0; i < 4; i++) el('rect', { x: -30 + (i % 2) * 30, y: -24 + Math.floor(i / 2) * 26, width: 24, height: 20, rx: 3, fill: '#f6cf7e', stroke: '#c98f55', 'stroke-width': 2, transform: `rotate(${i * 7 - 10})` }, g); },
+    /* S1-U3 */
+    chest: () => chestAt(g, 0, 44, { w: 76, h: 36, legs: 34, open: false }), doll: () => placeThingAt(g, 'doll', 0, 40, {}), teddy: () => placeThingAt(g, 'teddy', 0, 40, {}), ball: () => placeThingAt(g, 'ball', 0, 30, { scale: 1.3 }),
+    ribbon: () => { el('path', { d: 'M-50 0 Q-20 -18 0 0 Q20 18 50 0', fill: 'none', stroke: '#f2b33d', 'stroke-width': 14, 'stroke-linecap': 'round' }, g); },
+    train: () => { const t = el('g', { transform: 'translate(0 30) scale(.7)' }, g); locoAt(t, 40, 0); carAt(t, -36, 0, 1); },
+    mapCut: () => { shapeAt(g, { type: 'rect', w: 54, h: 32, color: css('--rect') }, -16, -20); shapeAt(g, { type: 'circle', size: 40, color: css('--circle') }, 30, 20); shapeAt(g, { type: 'square', size: 34, color: css('--square') }, -24, 26); },
+    road: () => { for (let i = 0; i < 3; i++) { el('rect', { x: -52 + i * 36, y: -16, width: 32, height: 32, rx: 6, fill: i % 2 ? '#e9dcc3' : '#dccaa8', stroke: '#fff', 'stroke-width': 2.5 }, g); el('text', { x: -36 + i * 36, y: 7, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: '#33454c', 'font-family': css('--f'), direction: 'ltr' }, g).textContent = DG(i + 1); } },
+    die: () => diceAt(g, 0, 0, 3, { sp: 13 }), treasure: () => treasureAt(g, 0, 30, 1.6) };
   if (typeof r === 'object' && r.icon && I[r.icon]) I[r.icon]();
   else { const s = make(typeof r === 'object' && r.mk ? r.mk : r); fitThing(g, { ...s, label: null }, 0, 0, 84); if (!lbl) labelFit(svg, x, y + 72, s.label || BIN_NAMES[s.kind] || '', 15, css('--muted'), 112); }   /* اسم كل شيء في الحقيبة، حتى المكعب */
   if (lbl) labelFit(svg, x, y + 72, lbl, 15, css('--muted'), 112); }
@@ -98,7 +105,7 @@ async function masteryStage(L) {
       ok = 0; for (const it of items) { const r = await runItem(it, 'mastery', { scene: 'mastery:' + C }); if (r.firstTry) ok++; }
       if (ok >= msNeed(items.length)) { passed = true; break; }
       if (round === 1) { await S('gen.ms.again');
-        if (M.recall && M.recall[C]) await SCENES.steps(M.recall[C]);
+        if (M.recall && M.recall[C]) await (M.recall[C].scene ? SCENES[M.recall[C].scene](M.recall[C], L) : SCENES.steps(M.recall[C]));   /* تذكّر بمشهد من الكتالوج (S1-U3) أو بلغة الخطوات */
         for (const it of (M.remedial && M.remedial[C]) || []) await runItem(it, 'remedial', { scene: 'remedial:' + C });
         await S('gen.ms.round2'); }
     }

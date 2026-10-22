@@ -5,6 +5,8 @@
 #   - house (بيت الأشكال): يلمس القطعة ثم مكانها، بالترتيبين (الجدار قبل النافذة، والنافذة قبل الجدار)، فيجب أن يتقدّم بعد كل وضع.
 #   - sort (الفرز): يسحب الشيء بالإصبع (أحداث لمس حقيقية عبر CDP) أو بالفأرة إلى سلّته، فيجب أن ينتهي الانتظار وأن يُحسب الجواب صحيحاً.
 #   - produce وfill (ضع العدد): يلمس القطع واحدة واحدة ثم «تمّ»؛ وsplitMake (لوّن البرج بطريقة جديدة): يلمس المكعبات ثم «تمّ»؛ ويجب أن يُحسب الجواب صحيحاً.
+#   - S1-U3: place (ضع الشيء: لمس الحلقة على شاشة، وسحب الشيء إليها على أخرى)، وprog (أزرار الروبوت ثم «انطلق»)، وroad (لمس البلاطات بالترتيب ثم «تمّ»)،
+#     وpaint (لوّن العربات ثم «تمّ»)؛ وما خرج من نافذة القطار أو الطريق يُظهَر أولاً بلمس زرّ التحريك (لا يُلمس ما لا يُرى)، ويجب أن يُحسب الجواب صحيحاً.
 #   (والسحب في «قارن الطولين» وبناء الروبوت فُحص يدوياً في الفحص المستقل الرابع، v6؛ لا يغطّيه هذا الفحص)
 # وبالفأرة أيضاً (MOUSE=1): الكبير الذي يجرّب على حاسوب. ويخرج بـ 1 إن كان فيه إخفاق.
 # python3 test/realtap_run.py [جهاز…]   (FILE=نسخة أخرى، كالنسخة التي فيها الخطأ القديم: الدرس 98)
@@ -27,7 +29,17 @@ CENTRES = """(sel) => { const svg = document.querySelector('#stage svg'); if (!s
       const b = c.getBoundingClientRect(); if (!b.width && !b.height) continue; r = r ? { left: Math.min(r.left, b.left), top: Math.min(r.top, b.top), right: Math.max(r.right, b.right), bottom: Math.max(r.bottom, b.bottom) } : { left: b.left, top: b.top, right: b.right, bottom: b.bottom }; }
     return r || g.getBoundingClientRect(); };
   return [...svg.querySelectorAll(sel)].filter(vis).map(g => { const r = box(g); return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2, ok: g.dataset.ok, k: g.dataset.id || g.dataset.k || '', slot: g.dataset.slot || '', label: g.getAttribute('aria-label') || g.tagName }; }); }"""
-LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6', 'm1.u2.d1', 'm1.u2.d2', 'm1.u2.d3', 'm1.u2.d4', 'm1.u2.d5', 'm1.u2.d6']
+LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6', 'm1.u2.d1', 'm1.u2.d2', 'm1.u2.d3', 'm1.u2.d4', 'm1.u2.d5', 'm1.u2.d6',
+           'm1.u3.d1', 'm1.u3.d2', 'm1.u3.d3', 'm1.u3.d4', 'm1.u3.d5', 'm1.u3.d6', 'm1.u3.d7']
+if os.environ.get('ONLY'): LESSONS = [l for l in LESSONS if l in os.environ['ONLY'].split(',')]   # تشغيل جزئي أثناء التطوير
+# ما خرج من نافذة الشريط (القطار، الطريق) مخفيّ لا يُلمس: يُلمس زرّ التحريك نحوه حتى يظهر
+REVEAL = """(sel) => { const g = document.querySelector(sel); if (!g || getComputedStyle(g).visibility !== 'hidden') return null;
+  const r = g.getBoundingClientRect(), w = document.querySelector('#stage svg').getBoundingClientRect(); const k = (r.left + r.right) / 2 < (w.left + w.right) / 2 ? 'back' : 'fwd';
+  const b = document.querySelector('#stage svg [data-panbtn=' + k + ']'); if (!b || getComputedStyle(b).visibility === 'hidden') return 'stuck'; const q = b.getBoundingClientRect(); return [q.left + q.width / 2, q.top + q.height / 2]; }"""
+CENTER_OF = """(sel) => { const e = document.querySelector(sel); if (!e) return null; let r = null;
+  for (const c of e.querySelectorAll('circle,ellipse,rect,polygon,path,text')) { if (c.matches('rect.hit')) continue; const f = c.getAttribute('fill'); if (f === 'transparent') continue; const b = c.getBoundingClientRect(); if (!b.width) continue;
+    r = r ? { l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom) } : { l: b.left, t: b.top, r: b.right, b: b.bottom }; }
+  if (!r) { const b = e.getBoundingClientRect(); r = { l: b.left, t: b.top, r: b.right, b: b.bottom }; } return [(r.l + r.r) / 2, (r.t + r.b) / 2]; }"""
 
 async def run(p, dev):
   b = await p.chromium.launch(); ctx = await b.new_context(**p.devices[dev]); pg = await ctx.new_page(); errs = []
@@ -48,6 +60,18 @@ async def run(p, dev):
   LASTOK = "() => { const k = Object.keys(localStorage).find(k => k.startsWith('hp_log:')); const a = (JSON.parse(localStorage.getItem(k) || '{}').attempts || []); return a.length ? a[a.length - 1].ok : null; }"
   CENTER = "(e) => { const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
   bad = []; tried = {}
+  async def reveal(sel):
+    for _ in range(14):
+      xy = await pg.evaluate(REVEAL, sel)
+      if xy is None: return True
+      if xy == 'stuck': return False
+      await tap(*xy); await pg.wait_for_timeout(520)
+    return False
+  async def tap_sel(sel):
+    if not await reveal(sel): return False
+    xy = await pg.evaluate(CENTER_OF, sel)
+    if xy: await tap(*xy)
+    return bool(xy)
   async def gone(n0):
     for _ in range(30):
       s = await pg.evaluate(STATE)
@@ -62,13 +86,17 @@ async def run(p, dev):
       if st['n'] is not None and st['n'] != last:
         last = st['n']; k = st['kind']
         if k == 'pick' and st['scene'].endswith(':bag'): await pg.evaluate("() => { const b = [...document.querySelectorAll('.choices .pick')]; (b.find(x => x.dataset.k === 'screen') || b[0]).click(); }"); await pg.wait_for_timeout(40); continue
-        if k in ('tapAll', 'tap', 'house', 'sort', 'produce', 'fill', 'splitMake'):
+        if k in ('tapAll', 'tap', 'house', 'sort', 'produce', 'fill', 'splitMake', 'place', 'prog', 'road', 'paint'):
           await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1
           if k == 'tapAll':
             for c in await pg.evaluate(CENTRES, '[role=button]'): await tap(c['x'], c['y']); await pg.wait_for_timeout(80)
           elif k == 'tap':
+            if await pg.evaluate("() => !!document.querySelector('#stage svg [data-car][data-ok=true], #stage svg [data-n][data-ok=true]')"): await reveal('#stage svg [role=button][data-ok=true]')   # عربة أو بلاطة خارج النافذة
             cs = [c for c in await pg.evaluate(CENTRES, '[role=button]') if c['ok'] == 'true']
             if cs: await tap(cs[0]['x'], cs[0]['y'])
+            else:   # زرّ تحت المسرح («أبقى مكاني»، وأوامر الروبوت في الاكتشاف وفوضى)
+              xy = await pg.evaluate("() => { const b = document.querySelector('#stage .choices .pick[data-ok=true]'); if (!b) return null; const r = b.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
+              if xy: await tap(*xy)
           elif k == 'sort':   # الفرز بالسحب إلى السلّة الصحيحة (ولغز المتجر بلمس الرفّ)
             info = await pg.evaluate("""() => { const it = window.__item; const ok = [it.kind, ...(it.accept || [])]; const b = [...document.querySelectorAll('.bins .bin')].find(x => ok.includes(x.dataset.k)); const rb = b.getBoundingClientRect();
               const g = [...document.querySelectorAll('#stage svg g')].find(x => x.style.cursor === 'grab' && x.getBBox().width > 4); const r = g && g.getBoundingClientRect();
@@ -87,6 +115,24 @@ async def run(p, dev):
             for i in range(kk):
               xy = await pg.evaluate("(i) => { const e = document.querySelectorAll('#stage svg [data-routed]')[i]; const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }", i); await tap(*xy); await pg.wait_for_timeout(60)
             xy = await pg.evaluate("() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"); await tap(*xy)
+          elif k == 'place':   # ضع الشيء: لمس الحلقة الصحيحة (Pixel 5)، أو سحب الشيء إليها بالإصبع (غيره)
+            ring = await pg.evaluate(CENTER_OF, '#stage svg [data-spot][data-ok=true]')
+            thing = await pg.evaluate("() => { const g = [...document.querySelectorAll('#stage svg g[role=button]')].find(x => x.style.cursor === 'grab'); if (!g) return null; const r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
+            if dev == 'Pixel 5' or not thing: await tap(*ring)
+            else: await drag(thing[0], thing[1], ring[0], ring[1])
+          elif k == 'prog':   # الروبوت: أوامر البند بالترتيب (بعد ما ملأه الحلّ المشترك)، ثم «انطلق»
+            prog = await pg.evaluate("() => window.__item.prog")
+            for c in prog:
+              xy = await pg.evaluate("(c) => { const b = document.querySelector('.rbbar .pick[data-k=' + c + ']'); const r = b.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }", c); await tap(*xy); await pg.wait_for_timeout(60)
+            xy = await pg.evaluate("() => { const b = document.querySelector('.rbbar .pick[data-k=G]'); const r = b.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"); await tap(*xy)
+          elif k == 'road':   # الطريق: البلاطات بالترتيب (يُحرَّك الطريق حين تخرج البلاطة من النافذة)، ثم «تمّ»
+            rd = await pg.evaluate("() => window.__road")   # البلاطات الباقية إلى الهدف (في البنود والمشاهد)، و«تمّ» بعدها إلا في «اسمع البلاطات»
+            for m in rd['seq']: await tap_sel('#stage svg g[data-n="%d"]' % m); await pg.wait_for_timeout(560)
+            if rd['done']: xy = await pg.evaluate("() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"); await tap(*xy)
+          elif k == 'paint':   # لوّن العربات الأولى بعدد البند، ثم «تمّ»
+            kk = await pg.evaluate("() => window.__item.k")
+            for i in range(kk): await tap_sel('#stage svg g[data-car="%d"]' % i); await pg.wait_for_timeout(80)
+            xy = await pg.evaluate("() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"); await tap(*xy)
           else:   # البيت: أكبر قطعة باقية (الجدار قبل النافذة)، ثم مكانها
             pieces = await pg.evaluate(CENTRES, 'g[data-k]'); slots = await pg.evaluate(CENTRES, 'g[data-slot]')
             area = await pg.evaluate("() => Object.fromEntries([...document.querySelectorAll('#stage svg g[data-k]')].map(g => [g.dataset.id, g.getBBox().width * g.getBBox().height]))")
@@ -96,7 +142,7 @@ async def run(p, dev):
               await tap(pc['x'], pc['y']); await pg.wait_for_timeout(80)
               if sl: await tap(sl[0]['x'], sl[0]['y'])
           ok = await gone(st['n'])
-          if ok and k in ('sort', 'produce', 'fill', 'splitMake'): await pg.wait_for_timeout(100); ok = (await pg.evaluate(LASTOK)) is True   # وأن يُحسب الجواب صحيحاً
+          if ok and k in ('sort', 'produce', 'fill', 'splitMake', 'place', 'prog', 'road') and await pg.evaluate("() => !!window.__item"): await pg.wait_for_timeout(100); ok = (await pg.evaluate(LASTOK)) is True   # وأن يُحسب الجواب صحيحاً
           if not ok:
             bad.append((dev, st['scene'], k)); await pg.screenshot(path=os.path.join(HERE, 'out', 'realtap_%s_%s.png' % (dev.replace(' ', ''), st['scene'].replace(':', '_').replace('.', '_'))))
             await pg.evaluate("() => { const a = window.__auto; if (a) a.ok(); }")   # يكمل بخطّاف البند ليتابع الدرس

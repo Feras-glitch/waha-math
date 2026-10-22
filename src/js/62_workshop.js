@@ -13,14 +13,17 @@ const WS_ICON = { puzzle: '<svg viewBox="0 0 40 24" width="40" height="24"><poly
 function wsButtons(btns) { const bar = document.createElement('div'); bar.className = 'choices icons wsbar'; $('#stage').appendChild(bar);
   btns.forEach(([id, lbl, ic, fn]) => { const b = document.createElement('button'); b.className = 'pick'; b.id = id; b.innerHTML = ic.replace('<svg', '<svg width="30" height="30"') + `<span>${esc(G(labelText(lbl)))}</span>`; b.setAttribute('aria-label', plain(G(labelText(lbl)))); b.onclick = fn; bar.appendChild(b); }); return bar; }
 const wsSolved = uid => (PROG.ws || {})[uid] || 0;
+/* ألغاز الغرفة من الأعلى (S1-U3) لها اسمها في القائمة والمحطة والكلام، لا «ألغاز الظلال» (الفحص المستقل B) */
+const wsRoom = uid => !!(WS[uid] && WS[uid].puzzles.some(p => p.frame === 'room'));
 async function runWorkshop(U) {
   if (TAB_LOST) { showTabLost(); return; }
   CUR = null; FLOW++; reseed((KID || 'k0') + '|ws|' + U.id + '|' + Date.now()); show('lesson'); lockGo(); setSteps(0); SCENE_NOW = 'ws'; /*T*/window.__scene = 'ws:menu';/*/T*/ const W = WS[U.id];
   const freeOpen = !!PROG['badge:' + U.id] || !!PROG.unlockAll;
   const svg = newStage(250, { oasisOpacity: .3 }); (HOSTS[U.id] || []).forEach((k, i) => hostAt(svg, k, 290 - i * 72, 150, 62));
   let mode = 'puzzle';
-  if (freeOpen) { say(...lineOf('gen.ws.intro'), { free: true }); mode = await choosePick([['puzzle', labelText('wsPuzzles'), WS_ICON.puzzle], ['free', labelText('wsFree'), WS_ICON.free]], null); hush(); }
-  else await S(wsSolved(U.id) ? 'gen.ws.again' : 'gen.ws.first');
+  const room = wsRoom(U.id);
+  if (freeOpen) { say(...lineOf(room ? 'gen.ws.introRoom' : 'gen.ws.intro'), { free: true }); mode = await choosePick([['puzzle', labelText(room ? 'wsPuzzlesRoom' : 'wsPuzzles'), WS_ICON.puzzle], ['free', labelText('wsFree'), WS_ICON.free]], null); hush(); }
+  else await S(wsSolved(U.id) ? (room ? 'gen.ws.againRoom' : 'gen.ws.again') : (room ? 'gen.ws.firstRoom' : 'gen.ws.first'));
   if (mode === 'free') return wsFree(U);
   PROG.ws = isObj(PROG.ws) ? PROG.ws : {}; let i = wsSolved(U.id) % W.puzzles.length;
   setSteps(W.puzzles.length);
@@ -35,8 +38,10 @@ async function wsMore() { say(...lineOf('gen.ws.more'), { free: true }); const k
 function wsPuzzle(U, P, ix) {
   /*T*/window.__scene = 'ws:' + P.id;/*/T*/ SCENE_NOW = 'ws:' + P.id;
   const svg = newStage(330, { oasis: false, ground: 0 }); el('rect', { x: -360, y: 236, width: 1080, height: 94, fill: css('--paper'), opacity: .95 }, svg);
+  if (P.frame === 'room') wsRoomFrame(svg, P);   /* ألغاز الغرفة من الأعلى (S1-U3): جدران الغرفة وعلامتا الباب والنافذة، والظلال قطع الخريطة */
   const shadows = el('g', {}, svg), layer = el('g', {}, svg);
-  const slots = P.slots.map(s => { const g = wsDraw(shadows, s, s.x, s.y, 1); g.style.filter = 'brightness(0)'; g.style.opacity = '.18'; g.setAttribute('role', 'button'); g.setAttribute('aria-label', labelText('shadow')); hitPad(g, 76); return { ...s, g, filled: false }; });
+  /* الظلّ أسود على ورق فاتح، وفاتح على ورق الوضع الداكن (الفحص المستقل B: الأسود على الداكن تباينه 1.1:1)؛ والشفافية تبلغ نحو 3:1 */
+  const slots = P.slots.map(s => { const g = wsDraw(shadows, s, s.x, s.y, 1); const dk = wsDark(); g.style.filter = dk ? 'brightness(0) invert(1)' : 'brightness(0)'; g.style.opacity = dk ? '.36' : '.22'; g.setAttribute('role', 'button'); g.setAttribute('aria-label', labelText('shadow')); hitPad(g, 76); return { ...s, g, filled: false }; });
   const items = shuffle([...P.slots.map(s => ({ ...s, rot: 0, need: s.rot || 0 })), { ...P.extra, rot: 0, extra: true }]);
   const n = items.length, gap = 340 / n; const TK = Math.min(.72, 64 / Math.max(...items.map(p => Math.max(p.w || p.size, p.size))));
   let sel = null, warnedTurn = false, done = 0;
@@ -66,7 +71,7 @@ function wsPuzzle(U, P, ix) {
     pc.g.addEventListener('keydown', e => { if (e.key === 'Enter' && !pc.placed) { select(pc); SFX.tick(); } }); });
   /* بديل النقر: المس القطعة ثم المس ظلّها */
   slots.forEach(s => { s.g.style.cursor = 'pointer'; s.g.onclick = () => { if (s.filled) return; if (!sel) { S('gen.ws.pickFirst', { ifIdle: true, free: true }); return; } tryDrop(sel, s.x, s.y, s); }; });
-  if (P.slots.some(q => q.rot)) wsButtons([['wsRot', 'turnIt', ICON.rotate, () => rotate(sel)]]);   // زر التدوير حين يحتاجه اللغز فقط
+  if (P.slots.some(q => q.rot)) { const bar = wsButtons([['wsRot', 'turnIt', ICON.rotate, () => rotate(sel)]]); if (P.frame === 'room') bar.classList.add('mid'); }   // زر التدوير حين يحتاجه اللغز فقط؛ وفي الغرفة وسط الجدار بين علامتي الباب والنافذة (الفحص المستقل B: غطّى النافذة)
   armIdle(async () => { const s = slots.find(q => !q.filled); if (!s) return; anim(s.g, [{ opacity: .18 }, { opacity: .45 }, { opacity: .18 }], { duration: 900, iterations: 3 }); await S('gen.ws.hint'); });
   AUTO({ kind: 'ws', ok: async () => {           // للفحص: يحلّ اللغز بالمنطق نفسه (يجرّب أولاً القطعة الغريبة، ثم قطعة تحتاج دوراناً بلا دوران)
     const ex = pieces.find(q => q.p.extra), s0 = slots.find(s => !s.filled); if (ex && s0) tryDrop(ex, s0.x, s0.y);
@@ -76,6 +81,13 @@ function wsPuzzle(U, P, ix) {
   (async () => { await S('gen.ws.puzzle'); await S(P.name); })();
   return doneP.then(() => AUTO_CLEAR());
 }
+/* هل الورق داكن؟ (الوضع الداكن من النظام أو من الإعداد) */
+function wsDark() { const h = css('--paper').replace('#', ''); if (!/^[0-9a-f]{6}$/i.test(h)) return false; const n = i => parseInt(h.slice(i, i + 2), 16); return n(0) * .3 + n(2) * .59 + n(4) * .11 < 110; }
+function wsRoomFrame(svg, P) { const x0 = 24, y0 = 18, W = 312, H = 206;
+  el('rect', { x: x0, y: y0, width: W, height: H, rx: 6, fill: css('--paper'), stroke: css('--ink'), 'stroke-width': 4 }, svg);
+  const dx = P.door === 'L' ? x0 + 34 : x0 + W - 34, wx = P.door === 'L' ? x0 + W - 56 : x0 + 56;
+  el('rect', { x: dx - 20, y: y0 - 4, width: 40, height: 8, fill: css('--paper') }, svg); el('path', { d: `M${dx - 20} ${y0} q20 26 40 0`, fill: 'none', stroke: MAT.wood, 'stroke-width': 3 }, svg);
+  el('rect', { x: wx - 26, y: y0 - 4, width: 52, height: 8, fill: '#d9f0f7', stroke: css('--ink'), 'stroke-width': 2 }, svg); }
 async function wsFree(U) {
   /*T*/window.__scene = 'ws:free';/*/T*/ SCENE_NOW = 'ws:free'; setSteps(0); const W = WS[U.id];
   const svg = newStage(330, { oasis: false, ground: 0 }); el('rect', { x: -360, y: 248, width: 1080, height: 82, fill: css('--paper'), opacity: .95 }, svg);

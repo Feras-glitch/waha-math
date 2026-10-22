@@ -1,8 +1,9 @@
 # السائق الآلي للمحرّك v2: يقرأ window.__auto (كل انتظار لفعل الطفل يسجّل حلّه الصحيح وخطأً مقصوداً) ويضغط «التالي».
-# الاستعمال: python3 test/auto_run.py [ok|mixed|deep|failmastery|failtest|replay] [mat|screen] [f|m] [عدد الدروس]
+# الاستعمال: python3 test/auto_run.py [ok|mixed|deep|deepall|remedialdeep|failmastery|failtest|failreview|replay] [mat|screen] [f|m] [عدد الدروس]
 #   ok: كل جواب صحيح · mixed: أول مرة لكل نوع بند يخطئ ثم يصيب (يمرّ بالتلميح الثلاثي) · failmastery: يخطئ في كل بنود الإتقان (التأجيل بعد دورتين)
 #   failreview: خطآن متتاليان في بند المراجعة نفسه (الأول والثاني الفوري) فيُعاد الدرس (المبدأ 14)
-#   deep: أربعة أخطاء لكل نوع في التمرين · failtest: ثلاثة أخطاء في اختبار الوحدة ثم المراجعة والإعادة · replay: المسار كله ثم كل درس مرة ثانية في الجلسة نفسها
+#   deep: أربعة أخطاء لكل نوع في التمرين · deepall: أربعة أخطاء في كل بند بمساعدة (التمرين واللعب) فيبلغ الكشف ثم توأمه، وCHAL=1 لفرع «التحدّي» ·
+#   remedialdeep: يخفق الإتقان فيُشغَّل العلاج، وبنوده بأربعة أخطاء ثم التوأم («twins missing»: بند بلغ الكشف ولا توأم له في درسه) · failtest: ثلاثة أخطاء في اختبار الوحدة ثم المراجعة والإعادة · replay: المسار كله ثم كل درس مرة ثانية في الجلسة نفسها
 import asyncio, json, os, sys, time
 from playwright.async_api import async_playwright
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -14,7 +15,7 @@ URL = 'file://' + os.path.abspath(FILE) + '#fast&seed=' + SEED
 STATE = """() => { const q = s => document.querySelector(s); const vis = s => { const e = q(s); return !!e && !e.hidden; };
   const a = window.__auto; return { scene: window.__scene || '', home: vis('#home'), lesson: vis('#lesson'), covers: [...document.querySelectorAll('.cover')].filter(c => !c.hidden).map(c => c.id),
     go: !!(q('#go') && !q('#go').disabled && !q('#go').classList.contains('idle')), auto: a ? { kind: a.kind, n: a.n, scene: a.scene } : null, mode: window.__itemMode || '', itype: window.__item ? window.__item.itype : '',
-    say: q('#say') ? q('#say').textContent : '', crash: (q('#crashCover') && !q('#crashCover').hidden) }; }"""
+    say: q('#say') ? q('#say').textContent : '', crash: (q('#crashCover') && !q('#crashCover').hidden), q: window.__item ? String(window.__item.q) : '', twin: !!window.__itemTwin }; }"""
 SMALL = """() => { const out = []; for (const e of document.querySelectorAll('button, [role=button], input, svg g[style*="grab"], svg rect.route')) {   /* وما يُسحب: 64 (D250)؛ والمكدّس يُقاس بمنطقة توجيهه (route) */ const r = e.getBoundingClientRect(); if (!r.width || !r.height || e.closest('[hidden]') || e.dataset.routed) continue;
   if (getComputedStyle(e).visibility === 'hidden' || +getComputedStyle(e).opacity < .5) continue;   
   if (e instanceof SVGElement && getComputedStyle(e).cursor !== 'grab' && !e.onclick) continue;   /* عنصر SVG لم يصر هدفاً بعد (لا فعل له الآن) */   /* ما يختفي بعد الجواب (حركة خروج) ليس هدفاً */
@@ -70,10 +71,18 @@ async def main():
     if SHOTS: await pg.screenshot(path=OUT + '/01_profile.png')
     await pg.click('.av[data-av="%s"]' % ('f3' if GENDER == 'f' else 'm2')); await pg.wait_for_timeout(200); await pg.click('#pSave'); await pg.wait_for_timeout(400)
     if SHOTS: await pg.screenshot(path=OUT + '/02_home.png')
+    if os.environ.get('CHAL') == '1': await pg.evaluate("() => { const cp = choosePick; window.choosePick = choosePick = (opts, ok) => (opts.length === 2 && opts[1][0] === 'challenge') ? Promise.resolve('challenge') : cp(opts, ok); }")   # CHAL=1: «تحدٍّ» بدل التمرين العادي
+    ONLY = [x for x in os.environ.get('ONLY', '').split(',') if x]   # ONLY=m1.u3.d1,ws:m1.u3,…: هذه الدروس والورش وحدها بالترتيب (والدروس كلها مفتوحة)
+    ONLY_SET = {x for x in ONLY if not x.startswith('ws:')}
+    tw_seen = {}; prev_twin = False
+    if ONLY: await pg.evaluate("() => { PROG.unlockAll = true; saveProg(); showHome(); }"); await pg.wait_for_timeout(300)
     small = {}; noname = {}; empty = {}; taps = {}; leaks = []; failed_rev = {}; redo_seen = set(); replay_q = None; crashes = 0; seen_types = set(); deep = {}; failed_test = {}; shots = set(); report = []; lessons = 0
     visits = 0   # MAXL يعدّ الدروس وحدها (لا المراجعة ولا الورشة)، وسقف الزيارات كلها 200 حارس من حلقة
     while lessons < MAXL and visits < 200:
-      target = await pg.evaluate("""() => { const n = document.querySelector('.stop.now'); if (n) return n.dataset.lesson ? ['lesson', n.dataset.lesson] : n.dataset.review ? ['review', 'review'] : null;
+      if os.environ.get('ONLY'):
+        if not ONLY: break
+        nx = ONLY.pop(0); target = ['ws', nx[3:]] if nx.startswith('ws:') else ['lesson', nx]
+      else: target = await pg.evaluate("""() => { const n = document.querySelector('.stop.now'); if (n) return n.dataset.lesson ? ['lesson', n.dataset.lesson] : n.dataset.review ? ['review', 'review'] : null;
         const w = document.querySelector('.stop.ws.must[aria-disabled=false]'); if (w) return ['ws', w.dataset.workshop]; return null; }""")
       if MODE == 'failreview' and not target is None and await pg.evaluate("() => Object.values(PROG.srs).some(r => r.due != null && r.due > Date.now())"):   # المراجعة تحين فوراً (لا ننتظر يوماً)
         await pg.evaluate("() => { Object.values(PROG.srs).forEach(r => { if (r.due != null) r.due = Date.now() - 1; }); saveProg(); showHome(); }"); await pg.wait_for_timeout(200); continue
@@ -84,9 +93,12 @@ async def main():
       kind, tid = target
       if MODE == 'failreview': redo_seen.update(await pg.evaluate("() => Object.keys(PROG.redo || {})"))
       sel = '.stop[data-lesson="%s"]' % tid if kind == 'lesson' else '.stop.review' if kind == 'review' else '.stop.ws[data-workshop="%s"]' % tid
+      await pg.evaluate("(s) => { const e = document.querySelector(s); if (e) e.scrollIntoView(); }", sel)   # محطة بعيدة في الخريطة (ONLY)
       await pg.click(sel); await pg.wait_for_timeout(200); lessons += kind == 'lesson'; visits += 1; t0 = time.time(); last_n = -1; idle = 0; steps = 0; stuck = False; acts = []
       while True:
         st = await pg.evaluate(STATE); steps += 1
+        if st['twin'] and not prev_twin: tw_seen[tid] = tw_seen.get(tid, 0) + 1   # بداية بند توأم (يُعدّ هنا لا من السجلّ: السجلّ يحفظ آخر 800 محاولة)
+        prev_twin = st['twin']
         if st['crash']: report.append([tid, 'CRASH', st['scene']]); await pg.screenshot(path=OUT + '/crash_%s.png' % tid.replace('.', '_')); await pg.click('#crashOk'); crashes += 1; break
         if st['home'] and not st['covers']: break
         sc = st['scene']
@@ -108,6 +120,9 @@ async def main():
           if sc.endswith(':bag') or (a['kind'] == 'pick' and 'bag' in sc): how = 'bag'
           elif MODE == 'mixed' and st['mode'] in ('practice', 'explore') and st['itype'] and st['itype'] not in seen_types: seen_types.add(st['itype']); how = 'wrong'
           elif MODE == 'deep' and st['mode'] == 'practice' and st['itype'] and deep.get(st['itype'], 0) < 4: deep[st['itype']] = deep.get(st['itype'], 0) + 1; how = 'wrong'
+          elif MODE == 'deepall' and st['mode'] == 'practice' and st['itype'] and not st['twin'] and deep.get((tid, st['scene'], st['q'], a['kind']), 0) < 4: deep[(tid, st['scene'], st['q'], a['kind'])] = deep.get((tid, st['scene'], st['q'], a['kind']), 0) + 1; how = 'wrong'   # كل بند بمساعدة: الدرجات الأربع والكشف ثم التوأم (صحيحاً)
+          elif MODE == 'remedialdeep' and st['mode'] == 'mastery': how = 'wrong'   # الإتقان يخفق فيُشغَّل العلاج، وبنوده بالدرجات الأربع ثم التوأم
+          elif MODE == 'remedialdeep' and st['mode'] == 'remedial' and st['itype'] and not st['twin'] and deep.get((tid, st['scene'], st['q'], a['kind']), 0) < 4: deep[(tid, st['scene'], st['q'], a['kind'])] = deep.get((tid, st['scene'], st['q'], a['kind']), 0) + 1; how = 'wrong'
           elif MODE == 'failtest' and st['mode'] == 'test' and failed_test.setdefault(sc.split(':')[0], 0) < 3: failed_test[sc.split(':')[0]] += 1; how = 'wrong'
           elif MODE == 'failmastery' and st['mode'] == 'mastery': how = 'wrong'
           elif MODE == 'failreview' and st['mode'] == 'review':   # المبدأ 14: خطأ في بند ثم في البند الثاني ← إعادة الدرس (بالبنود لا بالانتظارات، فالبند ذو الخطوات الكثيرة خطأ واحد)
@@ -144,12 +159,18 @@ async def main():
     print('chaos leaks:', len(leaks)); [print(' ', *x) for x in leaks[:10]]
     print('font fallbacks:', len(fontfb)); [print(' ', v, *k) for k, v in list(fontfb.items())[:20]]
     print('assessment misses:', len(bad)); [print(' ', *x) for x in bad[:40]]
+    # التوأم (الفحص المستقل B، المبدأ 5): في deepall وremedialdeep لكل بند بلغ الكشف (أربعة أخطاء) توأمٌ يُحلّ من أول محاولة، في درسه
+    want = {}
+    for key in {k[:3] for k, n in deep.items() if isinstance(k, tuple) and n >= 4}: want[key[0]] = want.get(key[0], 0) + 1   # البند بمرحلتين (لوّن ثم المس) يُعدّ مرة
+    missing = sum(max(0, n - tw_seen.get(t, 0)) for t, n in want.items()) if MODE in ('deepall', 'remedialdeep') else 0
+    print('twins: %d twin items in %d lessons; items revealed: %d' % (sum(tw_seen.values()), len(tw_seen), sum(want.values())))
+    print('twins missing:', missing); [print(' ', t, 'revealed', n, 'twins', tw_seen.get(t, 0)) for t, n in want.items() if n > tw_seen.get(t, 0)]
     clips = set(await pg.evaluate("() => window.__clips || []"))
     ids = set(json.load(open(os.path.join(HERE, '..', 'dist', 'script_m1.xlsx.ids.json'))))
     miss = sorted(clips - ids)                       # كل جملة منطوقة لها سطر في جدول التسجيل (القسم 12 من الميثاق)
     print('clips spoken: %d unique, %d of %d recording ids; NOT in script: %d' % (len(clips), len(clips & ids), len(ids), len(miss))); [print('  ', m) for m in miss[:20]]
     all_ids = await pg.evaluate("() => UNITS.flatMap(u => u.lessons)")   # كل درس انتهى، ولا درس توقّف أو دار في حلقة أو انهار (الفحص المستقل الخامس، ج1)
-    blocked = [r for r in report if r[1] in ('CRASH', 'LOOP', 'STUCK', 'stuck')]; not_done = [i for i in all_ids if not any(r[0] == i and r[1] == 'done' for r in report)]
+    blocked = [r for r in report if r[1] in ('CRASH', 'LOOP', 'STUCK', 'stuck')]; not_done = [i for i in all_ids if (not ONLY_SET or i in ONLY_SET) and not any(r[0] == i and r[1] == 'done' for r in report)]
     if os.environ.get('CLIPS_OUT'): json.dump(sorted(clips), open(os.environ['CLIPS_OUT'], 'w'))   # تجمعها test/unspoken.py: جمل لم تُنطق في أي تشغيل
     await pg.screenshot(path=OUT + '/99_home.png'); await b.close()
     for r in report: print(*r)

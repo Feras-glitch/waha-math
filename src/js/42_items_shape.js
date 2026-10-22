@@ -63,7 +63,7 @@ ITEM.yesno = {
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.err || 'generic' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { await (VIS[item.vis] || VIS.edges)(item.it, r.ctx); }, async together(item) { if (item.solve) await S(item.solve); }, async reveal(item) { if (item.why) await S(item.why); },
-  praise: () => 'praiseThink', reason(item) { return null; }, twin: () => null,
+  praise: () => 'praiseThink', reason(item) { return null; }, twin(item) { return item.twin || null; },
 };
 /* توقّع الدفع (تعليل بالخاصية، C009) */
 ITEM.property = {
@@ -76,7 +76,7 @@ ITEM.property = {
     const k = await choosePick([['roll', labelText('rolls'), PICKICON.roll, 'gen.opt.rolls'], ['stay', labelText('stays'), PICKICON.stay, 'gen.opt.stays']], item.want); return { ans: k, ctx: { svg, g } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.want === 'roll' ? 'rollMissed' : 'cubeNotRoll' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2() {}, async together() {},
-  async reveal(item) { await S(item.want === 'roll' ? 'gen.prop.rolls' : 'gen.prop.stays'); }, praise: () => 'praiseThink', reason(item) { return item.why || null; }, twin: () => null,
+  async reveal(item) { await S(item.want === 'roll' ? 'gen.prop.rolls' : 'gen.prop.stays'); }, praise: () => 'praiseThink', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
 /* المس الوجه المسطّح (إنتاج C009: الوجوه) — لمس السطح المنحني خطأ */
 ITEM.faceTap = {
@@ -103,7 +103,7 @@ ITEM.stamp = {
     const k = await choosePick(opts.map(([a, b, c]) => [a, b, PICKICON[a] || PICKICON.square, c]), item.print); return { ans: k, ctx: { svg } }; },
   judge(item, k) { return k === item.print ? { ok: true } : { ok: false, err: 'stampWrong' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2() {}, async together() {}, async reveal() { await S('gen.stamp.reveal'); },
-  praise: () => 'praiseThink', reason(item) { return item.why || null; }, twin: () => null,
+  praise: () => 'praiseThink', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
 /* المس كل ما هو كذا (تعرّف بأوضاع مختلفة): يلمس الطفل الأشياء ثم «تمّ». want: نوع أو أنواع، أو rolls: true */
 const isTarget = (item, s) => item.rolls ? (s.solid === 'sphere' || (s.solid === 'cylinder' && s.pose === 'lying')) : [].concat(item.want).includes(s.kind);
@@ -162,5 +162,5 @@ ITEM.reason = {
   onWrong(item, r) { SFX.soft(); r.ctx.cp.btns.find(b => b.dataset.k === r.ctx.c.k).classList.add('no'); },
   mark(item, r) { const i = item.opts.findIndex(o => o.ok); const b = r.ctx.cp.btns.find(x => x.dataset.k === 'o' + i); if (b) b.classList.add('ok'); },
   async hint2(item, r) { await VIS.edges(null, { g: r.ctx.svg.lastChild, svg: r.ctx.svg }); }, async together() {},
-  async reveal(item, r) { ITEM.reason.mark(item, r); await S(item.opts.find(o => o.ok).id); }, praise: () => 'praiseThink', twin: () => null,
+  async reveal(item, r) { ITEM.reason.mark(item, r); await S(item.opts.find(o => o.ok).id); }, praise: () => 'praiseThink', twin(item) { return item.twin || null; },
 };
