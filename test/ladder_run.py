@@ -31,7 +31,7 @@ START = """(n) => { const [id, k, it] = window.__LAD[n]; hush(); CUR = LDATA[id]
 STATE = """() => { const a = window.__auto; const go = document.querySelector('#go');
   return { res: window.__res, auto: a ? { n: a.n, kind: a.kind, wrong: !!a.wrong } : null, twin: !!window.__itemTwin, fails: window.__fails || 0,
     go: !!go && !go.disabled && !go.hidden && !go.classList.contains('idle') }; }"""
-GONE = """() => { if (window.__mo) window.__mo.disconnect(); const A = window.__added || [], par = new Map(A);
+GONE = r"""() => { if (window.__mo) window.__mo.disconnect(); const A = window.__added || [], par = new Map(A);
   /* ما ذهب من رسم المحاولة الرابعة قبل أن يجيب الطفل: رسمٌ على مسرح المحاولة السابقة ذهب بمسرح جديد (أعلى ما فوقه لم يُرسم في هذه المدة، أو أبوه لم يعد في الصفحة)،
      أو رسمٌ مُحي من مسرح هذه المحاولة ولم يُرسم مكانه مثله. أما ما يُعاد رسمه مكانه (نقاط القفزات، والروبوت في كل خطوة، والبرج العائد) فليس مساعدة تُمحى،
      وما يذهب بقصدٍ خطوةً من المهمة أو الحركة يُعلَّم data-step */
@@ -55,7 +55,10 @@ GONE = """() => { if (window.__mo) window.__mo.disconnect(); const A = window.__
   return [gone.length, A.length, [...new Set(gone.map(([e]) => name(e)))].slice(0, 6), !!document.querySelector('#stage [data-help]'), onR, under, lap, said.map(([c]) => c), order]; }"""
 # الأنواع التي حلّها المشترك رسمٌ يُعلَّم data-help في الكود: يجب أن يكون على المسرح في المحاولة الرابعة (الفحص المستقل D: حذفُه كله لم يُخفق الفحص)؛
 # و«المس العربة» في القطار وترتيب الطابور وحدهما من lineTap (مواضع الطابور حلّها كلام)
-HELP_DRAWN = {'lrTap', 'lrPick', 'linePick', 'lineTap', 'mapFind', 'mapPut', 'routePick', 'fact', 'unknownStart', 'same'}
+HELP_DRAWN = {'lrTap', 'lrPick', 'linePick', 'lineTap', 'mapFind', 'mapPut', 'routePick', 'fact', 'unknownStart', 'same',
+              # S1-U4: كلها حلّها رسم (خطوط عند النهايات، وشارات الترتيب الأولى، والسهم إلى الكفّة الأنزل، والعدّ، والوحدات الموضوعة، وعلامات الخطأ، والشبران، والمربعات، والعمود، والإطار)
+              'lenPick', 'orderBy', 'sizePick', 'balance', 'unitCount', 'unitLay', 'unitCheck', 'spanPick', 'spanSort', 'barRead', 'barBuild', 'rodCount', 'rodBuild', 'rodMatch',
+              'teenCmp', 'teenTrace', 'frameNeed', 'framePaint', 'frameGlance', 'makeTen', 'backTen'}
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await ctx.new_page(); errs = []

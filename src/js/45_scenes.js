@@ -193,8 +193,9 @@ SCENES.compareAlign = async c => {
     el('circle', { cx: -14, cy: 0, r: 7, fill: '#fff', opacity: .6 }, g); return g; };
   const A = stick(90, 200, 300, MAT.wood), B = stick(180, 170, 260, '#7f9fb0');   // ألوان مادّية لا ألوان الهوية (M7)
   B.style.cursor = 'grab'; hitPad(B, 64, 64); B.setAttribute('tabindex', 0); B.setAttribute('role', 'button'); B.setAttribute('aria-label', labelText('stickDrag'));
+  B.dataset.align = 'no'; B.dataset.alignX = 300;   /* كما في dragAlign: ما يُحاذى وخطّه، للمس الحقيقي وفحص بديل السحب (realtap_run، D246) */
   await S(c.lines[0]); if (firstTime('align')) await ghostHand(svg, [[160, 180], [200, 180]], 900);
-  await gate(new Promise(res => { let d = null, x = 260, x0 = 260; const snap = () => { if (d === 'done') return; d = 'done'; B.setAttribute('transform', 'translate(300 180)'); SFX.good(); AUTO_CLEAR(); res(); };
+  await gate(new Promise(res => { let d = null, x = 260, x0 = 260; const snap = () => { if (d === 'done') return; d = 'done'; B.setAttribute('transform', 'translate(300 180)'); B.dataset.align = 'yes'; SFX.good(); AUTO_CLEAR(); res(); };
     AUTO({ kind: 'align', ok: snap });
     B.addEventListener('pointerdown', e => { if (d === 'done') return; d = e.clientX; x0 = x; try { B.setPointerCapture(e.pointerId); } catch (x) {} });
     B.addEventListener('pointermove', e => { if (d == null || d === 'done') return; const ctm = svg.getScreenCTM(); x = Math.max(200, Math.min(320, x0 + (e.clientX - d) / ctm.a)); B.setAttribute('transform', `translate(${x} 180)`); });

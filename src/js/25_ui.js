@@ -60,7 +60,7 @@ function pulse(nodes) { const list = [].concat(nodes).filter(Boolean); list.forE
   document.addEventListener('pointerdown', off, true); return off; }
 /* يد شبح تعرض الحركة (M4) */
 async function ghostHand(svg, path, ms = 1200) {
-  const h = el('g', { 'pointer-events': 'none', opacity: .85 }, svg);
+  const h = el('g', { 'pointer-events': 'none', opacity: .85, 'data-step': 1 }, svg);   /* يد تُري الحركة ثم تذهب: حركةٌ لا رسمٌ يُمحى (data-step، فحص الدرجات) */
   el('path', { d: 'M0 0 l-6 -20 q-1 -5 4 -5 q4 0 5 5 l2 9 l1 -14 q1 -5 5 -5 q4 0 4 5 l0 14 l2 -10 q1 -4 5 -4 q4 1 3 5 l-1 12 q3 -5 6 -4 q4 2 2 6 l-6 14 q-4 8 -14 8 q-9 0 -12 -6 z', fill: '#fff', stroke: '#1b3440', 'stroke-width': 2, 'stroke-linejoin': 'round' }, h);
   const [x0, y0] = path[0]; h.setAttribute('transform', `translate(${x0} ${y0})`);
   await tween(ms, t => { const k = t * (path.length - 1); const i = Math.min(path.length - 2, Math.floor(k)), f = k - i; const [ax, ay] = path[i], [bx, by] = path[i + 1] || path[i];
@@ -129,11 +129,14 @@ const digitsKnown = () => !!(PROG['m1.u1.d5'] || {}).done || !!PROG.unlockAll;
 const LESSON_SEQ = () => UNITS.flatMap(u => u.lessons);
 const digitsShown = () => digitsKnown() || (!!CUR && LESSON_SEQ().indexOf(CUR.id) >= LESSON_SEQ().indexOf('m1.u1.d5'));
 const tallyText = n => '•'.repeat(n);
+/* الأعداد فوق العشرة تُسمع منذ طريق الأعداد (S1-U3 د5) ولا تُكتب في خيار قبل درس «عشرة وآحاد» (N010، S1-U4 د5) الذي يعلّم كتابتها (D229):
+   داخل الدرس بموضعه من المنهاج (فتدريب الفحص بفتح كل الدروس لا يغيّره)، وخارجه بإنجاز درس الجسر */
+const teenDigits = () => { const S = LESSON_SEQ(), d = S.indexOf('m1.u4.d5'); if (d < 0) return false; if (CUR && S.includes(CUR.id)) return S.indexOf(CUR.id) >= d; return !!(PROG['m1.u4.d5'] || {}).done; };
 function numberPick(nums, ok, opt = {}) {
   const box = document.createElement('div'); box.className = 'choices nums'; (opt.host || $('#stage')).appendChild(box);
-  const showDigits = opt.digits ?? digitsKnown();
+  const showDigits = opt.digits ?? digitsKnown(), teens = teenDigits();
   const btns = nums.map(n => { const b = document.createElement('button'); b.className = 'pick num'; b.dataset.k = n;
-    b.innerHTML = (showDigits ? `<b>${DG(n)}</b>` : '') + `<span>${esc(T(numw(n)))}</span>`; b.setAttribute('aria-label', plain(T(numw(n))));
+    b.innerHTML = (showDigits && (n <= 10 || teens) ? `<b>${DG(n)}</b>` : '') + `<span>${esc(T(numw(n)))}</span>`; b.setAttribute('aria-label', plain(T(numw(n))));
     /*T*/if (TESTHOOK) b.dataset.ok = n === ok;/*/T*/ box.appendChild(b); return b; });
   let answered = false;
   AUTO({ kind: 'num', ok: () => btns.find(b => +b.dataset.k === ok).click(), wrong: () => (btns.find(b => +b.dataset.k !== ok) || btns[0]).click() });

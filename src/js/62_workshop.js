@@ -2,10 +2,15 @@
    الورشة (D198-2) وألغاز الظلال (D197، D202، D245): محطة مكانية إلزامية في المسار قبل درس التحدّي،
    ولا تُحسب في الحمل. القطعة تُسحب أو تُلمس ثم يُلمس ظلّها (بديل النقر، D246). والبناء الحرّ بعد الشارة.
    ===================================================================== */
-const ROTSYM = { circle: 1, square: 90, rect: 180, triangle: 360, sphere: 1, cube: 90, cylinder: 360, cone: 360 };   // الدوران بمضاعفات زاوية التماثل لا يغيّر الشكل
+const ROTSYM = { circle: 1, square: 90, rect: 180, triangle: 360, sphere: 1, cube: 90, cylinder: 360, cone: 360, plank: 180 };
+/* لوح خشبي طوله L (أفقيّاً، ومركزه عند 0): قطعة «ألغاز الألواح» */
+function plankAt(parent, L) { el('rect', { x: -L / 2, y: -13, width: L, height: 26, rx: 5, fill: MAT.wood, stroke: '#fff', 'stroke-width': 2.5 }, parent);
+  for (let x = -L / 2 + 14; x < L / 2 - 8; x += 26) el('path', { d: `M${x} -5 q6 5 12 0`, fill: 'none', stroke: MAT.woodDk, 'stroke-width': 1.5, opacity: .6 }, parent);
+  el('circle', { cx: -L / 2 + 7, cy: 0, r: 2, fill: MAT.woodDk }, parent); el('circle', { cx: L / 2 - 7, cy: 0, r: 2, fill: MAT.woodDk }, parent); }   // الدوران بمضاعفات زاوية التماثل لا يغيّر الشكل
 const rotOk = (k, a, b) => { const s = ROTSYM[k]; if (!s || s === 1) return true; return (((a - b) % s) + s) % s === 0; };
 function wsDraw(parent, p, x, y, k) { const g = el('g', { transform: `translate(${x} ${y}) scale(${k})` }, parent); const inner = el('g', { transform: `rotate(${p.rot || 0})` }, g);
   if (SOLIDC[p.k]) solidAt(inner, { solid: p.k, size: p.size, pose: p.pose }, 0, 0);
+  else if (p.k === 'plank') plankAt(inner, p.size);   /* ألغاز الألواح (S1-U4): اللوح بطوله، والظلّ يقبل اللوح بطوله نفسه */
   else shapeAt(inner, { type: p.k, size: p.size, w: p.w, h: p.h, color: css(IDC[p.k]) }, 0, 0);
   g.inner = inner; return g; }
 const WS_ICON = { puzzle: '<svg viewBox="0 0 40 24" width="40" height="24"><polygon points="20,2 34,12 6,12" fill="currentColor" opacity=".35"/><rect x="9" y="12" width="22" height="11" fill="currentColor" opacity=".35"/><rect x="9" y="12" width="22" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="3 2"/></svg>',
@@ -15,15 +20,17 @@ function wsButtons(btns) { const bar = document.createElement('div'); bar.classN
 const wsSolved = uid => (PROG.ws || {})[uid] || 0;
 /* ألغاز الغرفة من الأعلى (S1-U3) لها اسمها في القائمة والمحطة والكلام، لا «ألغاز الظلال» (الفحص المستقل B) */
 const wsRoom = uid => !!(WS[uid] && WS[uid].puzzles.some(p => p.frame === 'room'));
+/* وألغاز الألواح (S1-U4) كذلك باسمها */
+const wsPlank = uid => !!(WS[uid] && WS[uid].puzzles.some(p => p.frame === 'plank'));
+const wsWord = (uid, base) => base + (wsRoom(uid) ? 'Room' : wsPlank(uid) ? 'Plank' : '');
 async function runWorkshop(U) {
   if (TAB_LOST) { showTabLost(); return; }
   CUR = null; FLOW++; reseed((KID || 'k0') + '|ws|' + U.id + '|' + Date.now()); show('lesson'); lockGo(); setSteps(0); SCENE_NOW = 'ws'; /*T*/window.__scene = 'ws:menu';/*/T*/ const W = WS[U.id];
   const freeOpen = !!PROG['badge:' + U.id] || !!PROG.unlockAll;
   const svg = newStage(250, { oasisOpacity: .3 }); (HOSTS[U.id] || []).forEach((k, i) => hostAt(svg, k, 290 - i * 72, 150, 62));
   let mode = 'puzzle';
-  const room = wsRoom(U.id);
-  if (freeOpen) { say(...lineOf(room ? 'gen.ws.introRoom' : 'gen.ws.intro'), { free: true }); mode = await choosePick([['puzzle', labelText(room ? 'wsPuzzlesRoom' : 'wsPuzzles'), WS_ICON.puzzle], ['free', labelText('wsFree'), WS_ICON.free]], null); hush(); }
-  else await S(wsSolved(U.id) ? (room ? 'gen.ws.againRoom' : 'gen.ws.again') : (room ? 'gen.ws.firstRoom' : 'gen.ws.first'));
+  if (freeOpen) { say(...lineOf(wsWord(U.id, 'gen.ws.intro')), { free: true }); mode = await choosePick([['puzzle', labelText(wsWord(U.id, 'wsPuzzles')), WS_ICON.puzzle], ['free', labelText('wsFree'), WS_ICON.free]], null); hush(); }
+  else await S(wsSolved(U.id) ? wsWord(U.id, 'gen.ws.again') : wsWord(U.id, 'gen.ws.first'));
   if (mode === 'free') return wsFree(U);
   PROG.ws = isObj(PROG.ws) ? PROG.ws : {}; let i = wsSolved(U.id) % W.puzzles.length;
   setSteps(W.puzzles.length);
@@ -43,10 +50,12 @@ function wsPuzzle(U, P, ix) {
   /* الظلّ أسود على ورق فاتح، وفاتح على ورق الوضع الداكن (الفحص المستقل B: الأسود على الداكن تباينه 1.1:1)؛ والشفافية تبلغ نحو 3:1 */
   const slots = P.slots.map(s => { const g = wsDraw(shadows, s, s.x, s.y, 1); const dk = wsDark(); g.style.filter = dk ? 'brightness(0) invert(1)' : 'brightness(0)'; g.style.opacity = dk ? '.36' : '.22'; g.setAttribute('role', 'button'); g.setAttribute('aria-label', labelText('shadow')); hitPad(g, 76); return { ...s, g, filled: false }; });
   const items = shuffle([...P.slots.map(s => ({ ...s, rot: 0, need: s.rot || 0 })), { ...P.extra, rot: 0, extra: true }]);
-  const n = items.length, gap = 340 / n; const TK = Math.min(.72, 64 / Math.max(...items.map(p => Math.max(p.w || p.size, p.size))));
+  const n = items.length, gap = 340 / n; const planks = items.every(p => p.k === 'plank');
+  /* الألواح على الرفّ في صفّين من ثلاثة، بمقياس واحد يحفظ نسب أطوالها (المقارنة بالنظر ثم بالتجربة) */
+  const TK = planks ? Math.min(.55, 100 / Math.max(...items.map(p => p.size))) : Math.min(.72, 64 / Math.max(...items.map(p => Math.max(p.w || p.size, p.size))));
   let sel = null, warnedTurn = false, done = 0;
-  const pieces = items.map((p, i) => { const home = { x: 350 - gap * (i + .5), y: 284 };
-    const g = wsDraw(layer, p, home.x, home.y, TK); const pc = { p, g, home, x: home.x, y: home.y, placed: false }; g.style.cursor = 'grab'; g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.setAttribute('aria-label', plain(BIN_NAMES[p.k] || '')); hitPad(g, 76, 64); g.dataset.ws = p.k; return pc; });
+  const pieces = items.map((p, i) => { const home = planks ? { x: 350 - (i % 3 + .5) * 113, y: 258 + Math.floor(i / 3) * 44 } : { x: 350 - gap * (i + .5), y: 284 };
+    const g = wsDraw(layer, p, home.x, home.y, TK); const pc = { p, g, home, x: home.x, y: home.y, placed: false }; g.style.cursor = 'grab'; g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.setAttribute('aria-label', plain(BIN_NAMES[p.k] || (p.k === 'plank' ? labelText('plank') : ''))); hitPad(g, 76, 64); g.dataset.ws = p.k; return pc; });
   const setPos = (pc, x, y, k) => { pc.x = x; pc.y = y; pc.g.setAttribute('transform', `translate(${x} ${y}) scale(${k})`); };
   const select = pc => { pieces.forEach(q => q.g.classList.remove('wssel')); sel = pc; if (pc) pc.g.classList.add('wssel'); };
   const rotate = pc => { if (!pc || pc.placed) { if (!pc) S('gen.ws.pickFirst', { ifIdle: true, free: true }); return; } pc.p.rot = ((pc.p.rot || 0) + 90) % 360; pc.g.inner.setAttribute('transform', `rotate(${pc.p.rot})`); SFX.tick(); };
@@ -99,7 +108,7 @@ async function wsFree(U) {
     pc.g.addEventListener('pointermove', e => { if (!drag) return; const ctm = svg.getScreenCTM(); const dx = (e.clientX - drag.sx) / ctm.a, dy = (e.clientY - drag.sy) / ctm.d;
       pc.x = Math.max(20, Math.min(340, drag.x0 + dx)); pc.y = Math.max(20, Math.min(232, drag.y0 + dy)); pc.g.setAttribute('transform', `translate(${pc.x} ${pc.y}) scale(1)`); });
     const up = () => { drag = null; }; pc.g.addEventListener('pointerup', up); pc.g.addEventListener('pointercancel', up); return pc; };
-  W.pieces.forEach((p, i) => { const x = 315 - i * 90; const g = wsDraw(svg, p, x, 289, .62); g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); g.setAttribute('aria-label', plain(BIN_NAMES[p.k] || '')); hitPad(g, 84); g.dataset.wsSpawn = p.k; g.onclick = () => spawn(p); });
+  W.pieces.forEach((p, i) => { const x = 315 - i * 90; const g = wsDraw(svg, p, x, 289, .62); g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); g.setAttribute('aria-label', plain(BIN_NAMES[p.k] || (p.k === 'plank' ? labelText('plank') : ''))); hitPad(g, 84); g.dataset.wsSpawn = p.k; g.onclick = () => spawn(p); });
   wsButtons([...(W.pieces.some(q => !SOLIDC[q.k]) ? [['wsRot', 'turnIt', ICON.rotate, () => { if (!sel || SOLIDC[sel.p.k]) return; sel.p.rot = (sel.p.rot + 45) % 360; sel.g.inner.setAttribute('transform', `rotate(${sel.p.rot})`); SFX.tick(); }]] : []),
     ['wsDel', 'remove', ICON.trash, () => { if (!sel) return; sel.g.remove(); placed.splice(placed.indexOf(sel), 1); select(null); SFX.soft(); }],
     ['wsSave', 'save', ICON.star, async () => { if (!placed.length) return; const list = store.get(designsKey(), []); list.unshift({ t: Date.now(), unit: U.id, pieces: placed.map(q => ({ ...q.p, x: Math.round(q.x), y: Math.round(q.y) })) });

@@ -13,6 +13,9 @@ function tapOne(targets, opt = {}) { const mine = [];
     targets.forEach(t => { t.g.__route = (x, y) => tapRoute(targets, x, y, t).g;   /* D255: اللمسة لما يراه الطفل تحت إصبعه، لا لمنطقة لمس شيء رُسم بعده */
       t.g.onclick = e => act(e && e.clientX ? tapRoute(targets, e.clientX, e.clientY, t) : t); t.g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(t); }; }); }));
 }
+/* ما انتهى دوره ليس هدفاً (بوابة S1-U4): تُنزع لمسته ودوره ومنطقته، فلا يأخذ لمسة جاره ولا لمسة زرّ بعده، ولا يحسبه فحص اللمس هدفاً
+   (بقيت قطع «نكوّن العشرة» أزراراً تحت خيارات «كم صار؟»، فسرقت مناطقها لمسات الخيارات على أضيق شاشة) */
+function untarget(gs) { for (const g of gs) { if (!g) continue; g.onclick = null; g.onkeydown = null; delete g.__route; g.removeAttribute('role'); g.removeAttribute('tabindex'); g.style.cursor = ''; g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); } }
 /* لمن اللمسة بين أهداف «لمس واحد» (D255): لأعلى رسمٍ مرئي لهدفٍ تحت الإصبع؛ فإن لم تقع إلا على مناطق لمس شفافة (rect.hit، أو شكل لا يُرى: بلا لون ولا حدّ أو شفافيته صفر)
    فلأقرب هدفٍ رسمُه إلى موضعها (البعد إلى إطار الرسم، ثم إلى مركزه). وشيء مرئي ليس هدفاً يحجب ما تحته. (و«لمس الكل» يوجّه بأقرب مركز ويفضّل ما لم يُعدّ بعد) */
 const blankEl = e => { if (e.matches('rect.hit')) return true; const cs = getComputedStyle(e), clear = v => !v || v === 'none' || /^rgba\(.*,\s*0\)$/.test(v) || v === 'transparent';

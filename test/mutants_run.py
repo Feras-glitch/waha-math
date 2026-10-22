@@ -93,6 +93,20 @@ CONTENT = [
   ('«ضع» في المراجعة جوابه حلقة جواب الإتقان', 'd4.json', lambda d: d['review'][1].update(lay=d['mastery']['concepts']['C012'][1]['lay'], want=d['mastery']['concepts']['C012'][1]['want']), 'حلقة جوابه (1,front)'),
   ('«بقي كما هو» جواب كل بنود الثبات', '../u1/d4.json', lambda d: d['practice']['challenge'][4].pop('add'), '«بقي كما هو/تغيّر» كلها'),
   ('التوأم يعيد مسألة الإشعال', 'd6.json', lambda d: d['practice']['challenge'][2]['twin'].update(n=8, b=11), 'يعيد مسألة hook:jumpChaosHook'),
+  # S1-U4: القياس بشيئه ووحدته وعدده مسألة واحدة عدّاً ووضعاً وحكماً (الدرس 138)، والعدد المكتوب فوق العشرة من درسه، وسجلّات الرسم، والمقارنة الممكنة
+  ('قياس الإتقان هو قياس التمرين بالوضع', '../u4/d3.json', lambda d: d['mastery']['concepts']['C016'][0].update(n=3), 'المسألة نفسها (meas|clip|3|key)'),
+  ('عدد فوق العشرة مكتوب قبل درسه', '../u4/d4.json', lambda d: d['review'].append({'t': 'rodCount', 'q': 'pr.2', 'n': 13, 'c': 'D001'}), 'عدد فوق العشرة مكتوب قبل درس العشرة'),
+  ('شيء يُقاس بلا رسم', '../u4/d3.json', lambda d: d['practice']['normal'][0].update(obj='pencil'), '«pencil» لا رسم له في HOUSE_DRAW'),
+  ('ميزان بثقلين متساويين', '../u4/d2.json', lambda d: d['practice']['normal'][2].update(a='feather', b='leaf'), 'بثقل واحد'),
+  ('دوائر أكبر من أماكنها', '../u4/d2.json', lambda d: d['practice']['normal'][1].update(vals=[22, 42, 14, 30]), 'أكبر من مكانه'),
+  ('شريط يخرج من المسرح', '../u4/d1.json', lambda d: d['practice']['normal'][0].update(shift=[0, 200]), 'يخرج من المسرح'),
+  ('مجموع تكوين العشرة فوق العشرين', '../u4/d7.json', lambda d: d['mastery']['concepts']['N012'][0].update(a=9, b=12), 'المجموع = 21'),
+  ('طول على حدّ سلّتين', '../u4/d4.json', lambda d: d['practice']['normal'][0].update(len=96), 'على حدّ سلّتين'),
+  ('عمودان أطول معاً', '../u4/d4.json', lambda d: d['practice']['normal'][1].update(counts=[5, 5, 2]), 'عمودان أطول معاً'),
+  ('التعدّي بشيئين من سلّة واحدة', '../u4/d4.json', lambda d: d['flow'][2]['trans'].update(pair=['book', 'shoe']), 'يلزم شيء أطول من الشبر وشيء أقصر منه'),
+  # وموضع الجواب في أنواع S1-U4 (امتداد الدرس 131): الأكثر في اليسار دائماً، والأطول أو الأقصر في الصفّ الأعلى في كل المسار الرئيس
+  ('«أيّهما أكثر؟» والأكثر في اليسار دائماً', '../u4/d5.json', lambda d: [d['practice']['normal'][3].update(a=14, b=18), d['review'][1].update(a=12, b=16)], '«أيّهما أكثر؟» كلها: الجواب في الموضع 2'),
+  ('الجواب في الصفّ الأعلى في كل المسار الرئيس', '../u4/d1.json', lambda d: [d['practice']['normal'][0].update(lens=[212, 176]), d['mastery']['concepts']['C014'][1].update(lens=[132, 172], shift=[64, 0])], 'في كل بنود التمرين العادي والإتقان'),
 ]
 def gtext(v): return v[1] if isinstance(v, list) else v
 CODE = [
@@ -106,6 +120,8 @@ CODE = [
    "  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */\n  async reveal(item, r) { const m = await rowCount(r.ctx.R, item.k, item.g || 'f');",
    "  async together(item, { ctx }) { const m = await rowCount(ctx.R, item.k - 1, item.g || 'f'); await sleep(400); m.remove(); },\n  async reveal(item, r) { const m = await rowCount(r.ctx.R, item.k, item.g || 'f');", 'يرسم على مسرح المحاولة السابقة'),
   ('جملة حلّ «أيّ أمر اتّبع؟» لخطأ لا يبلغه بند بمساعدة', 'src/js/43_items_place.js', "const RB_WATCH = { rbTurnSide: 'gen.rb.watchSide' };", "const RB_WATCH = { rbTurnSide: 'gen.rb.watchSide', rbOrder: 'gen.rb.watchSide' };", 'لا يبلغه بند بمساعدة'),
+  # S1-U4 (الدرس 139): دالة لوحة المقاول باسم دالة لوحة الروبوت أبطلتها صامتاً فانهار S1-U3 د3
+  ('دالة معرَّفة مرتين', 'src/js/24_measure.js', 'function barBoardAt(svg, cats, counts, opt = {}) {', 'function boardAt(svg, cats, counts, opt = {}) {', 'الدالة boardAt معرَّفة مرتين'),
   ('الكشف يقول «أكمل الآن»', 'src/js/43_items_place.js', "await S('gen.reveal.pos.' + item.ask); else await sleep(700); },", "await S('gen.solve.pos.' + item.ask); else await sleep(700); },", 'الكشف يقول جملة حلّ'),
 ]
 def lint(root):
@@ -166,6 +182,22 @@ RUNTIME = [
   ('شارات الأصابع بارتفاع واحد', "y: t.y - (i % 2) * 30", "y: t.y", ['test/ladder_run.py'], {'ONLY': 'm1.u2.d5'}, 'FAIL شارات'),
   ('«شاهد التجربة» بعد التجربة', "if (tries >= 3) await S('gen.prop.together');\n    if (tries >= 2) await pushTest(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, item.want === 'roll' ? 'roll' : (item.it.solid === 'cube' || item.it.solid === 'box' ? 'tip' : 'stay'));", "if (tries >= 2) await pushTest(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, item.want === 'roll' ? 'roll' : (item.it.solid === 'cube' || item.it.solid === 'box' ? 'tip' : 'stay'));\n    if (tries >= 3) await S('gen.prop.together');", ['test/ladder_run.py'], {'ONLY': 'm1.u2.d1'}, 'FAIL «شاهد التجربة»'),
   ('جدار الصندوق بلا سطح يمتصّ اللمس', "if (P.C) { const fb = P.C.front.getBBox();", "if (false) { const fb = P.C.front.getBBox();", ['test/items_run.py'], {'ONLY': 'm1.u1.d4'}, 'FAIL لمسة على حافة جدار الصندوق'),
+  # S1-U4: صفوف «كم؟» تتراكم فتضغط المسرح (الدرس 140)، والمكعبات المتماثلة تتنازع اللمس، ويد الحركة تُحسب رسماً يُمحى، ولا حلّ مرسوم في «لوّن صديقين»، ولا بديل لمس لسحب الشبر (D246)
+  ('صفوف «كم؟» تتراكم تحت المسرح', 'if (a === ok) { SFX.good(); await sleep(FAST ? 20 : 350); np.box.remove(); return t; }', 'if (a === ok) { SFX.good(); return t; }',
+   ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u4.d5', 'STRICT': '1', 'SHOTS': '0', 'OUT': 'test/out/mut_auto'}, 'rodFactory'),
+  ('مكعبات الكومة تتنازع اللمس', "p.g.dataset.rodin = 1; p.g.dataset.twin = 'cube';", "p.g.dataset.rodin = 1;", ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u4.d5', 'STRICT': '1', 'SHOTS': '0', 'OUT': 'test/out/mut_auto'}, 'rodMaker num stolen'),
+  ('يد الحركة رسمٌ يُمحى', "{ 'pointer-events': 'none', opacity: .85, 'data-step': 1 }", "{ 'pointer-events': 'none', opacity: .85 }", ['test/ladder_run.py'], {'ONLY': 'm1.u4.d5'}, 'FAIL teenTrace'),
+  ('لا حلّ مرسوم في «لوّن صديقين»', 'if (i < pre) k.dataset.help = 1;', '', ['test/ladder_run.py'], {'ONLY': 'm1.u4.d6'}, 'FAIL framePaint'),
+  ('سحب الشبر بلا بديل لمس', "else if (opt.tap) { t.align(); SFX.tick();", "else if (false) { t.align(); SFX.tick();", ['test/realtap_run.py', 'Pixel 5'], {'ONLY': 'm1.u4.d4'}, 'D246'),
+  # والتوقّع الصحيح من الصورة بلا ميزان بعده (H11)، وبرج العدّ بلا عدد لمساته فلا يلمسه الفحص بالإصبع (كان يفترض صفّ الوحدات فتوقّف عند برج S1-U2)
+  ('التوقّع من الصورة لا يُجرَّب', "if (!r.ctx.B) { r.ctx.T.forEach(t => t.g.remove()); const B = balanceAt(r.ctx.svg, 180, 276);", "if (false) { r.ctx.T.forEach(t => t.g.remove()); const B = balanceAt(r.ctx.svg, 180, 276);",
+   ['test/items_run.py'], {'ONLY': 'm1.u4.d2'}, 'لا ميزان فيه الشيئان'),
+  ('عود «قارن الطولين» بلا بديل لمس', "B.addEventListener('click', () => { if (d !== 'done' && Math.abs(x - 300) >= 18)", "B.addEventListener('click', () => { if (false && d !== 'done' && Math.abs(x - 300) >= 18)", ['test/realtap_run.py', 'Pixel 5'], {'ONLY': 'm1.u1.d3'}, 'D246'),
+  # وعلى أضيق شاشة (320×568): البطاقات الثلاث تضغط مسرح التعليل، وصفّ المشابك ومربعات الإطار أصغر من الإصبع (بوابة S1-U4)
+  ('بطاقات التعليل بحجمها على أضيق شاشة', ".choices.cards .card { font-size: 16px; line-height: 1.45; padding: 4px 8px; }", "", ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u4.d8', 'STRICT': '1', 'SHOTS': '0', 'DEVICE': 'iPhone SE', 'OUT': 'test/out/mut_auto'}, 'ts.8'),
+  ('صفّ العدّ بلا منطقة 56', "hitPad(g, 0, 56);   /* 56 بكسلاً", "/* 56 بكسلاً", ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u4.d3', 'STRICT': '1', 'SHOTS': '0', 'DEVICE': 'iPhone SE', 'OUT': 'test/out/mut_auto'}, 'clipLay'),
+  ('مربعات «لوّن صديقين» أصغر من الإصبع', "frameAt(svg, 180, 96, { cell: 70 })", "frameAt(svg, 180, 96, { cell: 58 })", ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u4.d6', 'STRICT': '1', 'SHOTS': '0', 'DEVICE': 'iPhone SE', 'OUT': 'test/out/mut_auto'}, 'm1.u4.d6:practice'),
+  ("برج العدّ بلا عدد لمساته", "plain(G(labelText('countTower'))), 'data-tapcount': n }", "plain(G(labelText('countTower'))) }", ['test/realtap_run.py', 'Pixel 5'], {'ONLY': 'm1.u2.d5'}, 'tapCount: target not found'),
   ('طريق التوأم يقطع السرير', '{"k":"table","col":0,"row":"back"},{"k":"rug","col":2,"row":"front"},{"k":"bed","col":1,"row":"front"}',
    '{"k":"table","col":0,"row":"back"},{"k":"rug","col":2,"row":"front"},{"k":"bed","col":1,"row":"back"}', ['test/items_run.py'], {'ONLY': 'm1.u3.d7'}, 'يقطع bed'),
 ]

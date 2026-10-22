@@ -157,9 +157,9 @@ ITEM.paint = {
   async reveal(item, r) { r.ctx.cells.forEach(c => c.g.querySelectorAll('[data-paint]').forEach(p => p.setAttribute('fill', css(IDC[item.objs[c.i].kind])))); await sleep(800); }, praise: () => 'praiseLook', twin(item) { return { ...item.spec }; },
 };
 /* التعليل (D238، D240): «لماذا هذا مثلث؟» يختار الطفل سبباً من ثلاثة مسموعة. opts: [{id, ok}] */
-ITEM.reason = {
-  make(spec) { return { ...spec, it: make(spec.show), tag: spec.tag || 'reason', want: 'ok' }; },
-  async ask(item) { const svg = newStage(200, { oasis: false, ground: 0 }); fitThing(svg, { ...item.it, label: null }, 180, 100, 140); await S(item.q);
+ITEM.reason = {   /* show: مولّد الشيء، أو pic: صورة من رسوم «قارن وقس» (reasonPic، S1-U4) */
+  make(spec) { return { ...spec, it: spec.show ? make(spec.show) : null, tag: spec.tag || 'reason', want: 'ok' }; },
+  async ask(item) { const svg = newStage(200, { oasis: false, ground: 0 }); if (item.pic) reasonPic(svg, item.pic); else fitThing(svg, { ...item.it, label: null }, 180, 100, 140); await S(item.q);
     const cp = cardPick(item.opts.map((o, i) => ({ id: o.id, k: 'o' + i, ok: !!o.ok })), { intro: item.q });   /* «أعد الجملة» يعيد السؤال ثم الأسباب */
     const c = await cp.p; cp.done(); return { ans: c.ok ? 'ok' : c.k, ctx: { svg, cp, c } }; },
   judge(item, a) { return a === 'ok' ? { ok: true } : { ok: false, err: item.err || 'generic' }; },

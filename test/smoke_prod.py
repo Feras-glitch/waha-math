@@ -15,6 +15,10 @@ async def used(cdp, sel, all_=False):
   return out
 def only(fonts, fam): return bool(fonts) and set(fonts) == {fam}
 F = sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'dist', 'واحة_الرياضيات.html')
+# العدّ المتوقّع من المحتوى نفسه لا رقماً مكتوباً (كان 19 + 3 فأخفق حين أُضيفت S1-U4، الدرس 113): كل dN.json درس، وكل unit.json فيه workshop ورشة
+import glob, json
+NL = len(glob.glob(os.path.join(ROOT, 'content', 'm*', 'u*', 'd*.json')))
+NW = sum(1 for f in glob.glob(os.path.join(ROOT, 'content', 'm*', 'u*', 'unit.json')) if json.load(open(f)).get('workshop'))
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['iPhone 13']); pg = await ctx.new_page(); errs = []
@@ -30,7 +34,7 @@ async def main():
     fonts['profile bubble'] = await used(cdp, '#profileCover .coversay')
     ok['profile: avatars'] = await pg.evaluate("document.querySelectorAll('.av[data-av]').length >= 8")
     await pg.click('.av[data-av="f3"]'); await pg.click('#pSave'); await pg.wait_for_timeout(800)
-    ok['home: 19 lessons + 3 workshops'] = await pg.evaluate("!document.getElementById('home').hidden && document.querySelectorAll('.stop[data-lesson]').length === 19 && document.querySelectorAll('.stop.ws').length === 3")
+    ok[f'home: {NL} lessons + {NW} workshops'] = await pg.evaluate(f"!document.getElementById('home').hidden && document.querySelectorAll('.stop[data-lesson]').length === {NL} && document.querySelectorAll('.stop.ws').length === {NW}")
     fonts['home h1'] = await used(cdp, '.banner h1'); fonts['home stop title'] = await used(cdp, '.stop[data-lesson]'); fonts['home stop small'] = await used(cdp, '.stop small', True)
     fonts['home unit title'] = await used(cdp, '.unithead .ut'); fonts['home unit small'] = await used(cdp, '.unithead small', True)
     ok['no test hooks'] = await pg.evaluate("Object.keys(window).every(k => !k.startsWith('__')) && typeof TESTHOOK === 'undefined' && FAST === false && !document.querySelector('[data-ok]')")

@@ -57,7 +57,7 @@ async function mailSpread(svg, mb, cy, opt = {}) {
    فيبقى لكل مكعب لمسة واحدة وعدد واحد (N001) */
 function towerTapCount(svg, T, opt = {}) {
   const n = T.cubes.length, w = Math.max(96, T.size * 2.4); let k = 0; const marks = el('g', { 'pointer-events': 'none' }, svg);
-  const g = el('g', { role: 'button', tabindex: 0, 'aria-label': plain(G(labelText('countTower'))) }, svg); g.style.cursor = 'pointer';
+  const g = el('g', { role: 'button', tabindex: 0, 'aria-label': plain(G(labelText('countTower'))), 'data-tapcount': n }, svg); g.style.cursor = 'pointer';   /* عدد اللمسات للمس الحقيقي (realtap_run) */
   el('rect', { x: T.x - w / 2, y: T.top - 12, width: w, height: T.baseY - T.top + 16, fill: 'transparent', 'pointer-events': 'all' }, g);
   AUTO({ kind: 'tapCount', ok: async () => { for (let i = k; i < n; i++) { g.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 40)); } } });
   const off = pulse(T.cubes);
@@ -93,14 +93,24 @@ const DIGIT_SK = {
   7: [[86, 14], [52, 128], [16, 14]], 8: [[86, 128], [50, 14], [14, 128]],
   9: [[64, 30], [52, 14], [34, 18], [26, 36], [34, 52], [50, 58], [66, 54], [68, 40], [70, 90], [76, 128]],
 };
+/* الأرقام الغربية (D229: يختارها الطفل بعد درس الأرقام): نماذج تتبّع العدد برقمين في «عشرة وآحاد» (N010، S1-U4 د5)، من الأعلى */
+const DIGIT_SK_W = {
+  0: [[50, 14], [28, 30], [22, 70], [28, 110], [50, 128], [72, 110], [78, 70], [72, 30], [50, 14]], 1: [[34, 32], [52, 14], [52, 128]],
+  2: [[24, 40], [36, 18], [56, 12], [74, 24], [76, 46], [62, 72], [24, 126], [80, 126]],
+  3: [[26, 24], [48, 12], [70, 22], [72, 44], [50, 64], [74, 82], [76, 108], [54, 128], [26, 118]],
+  4: [[62, 128], [62, 14], [18, 92], [84, 92]], 5: [[76, 14], [32, 14], [28, 62], [52, 54], [74, 70], [76, 102], [58, 126], [26, 120]],
+  6: [[72, 18], [48, 14], [28, 40], [22, 80], [30, 114], [52, 128], [74, 110], [74, 84], [54, 68], [30, 76], [22, 92]], 7: [[20, 14], [80, 14], [42, 128]],
+  8: [[50, 66], [30, 52], [28, 30], [44, 14], [60, 16], [72, 32], [68, 52], [50, 66], [28, 86], [26, 110], [42, 128], [60, 128], [76, 110], [74, 86], [50, 66]],
+  9: [[74, 46], [58, 64], [36, 62], [24, 42], [34, 18], [56, 12], [74, 26], [76, 50], [72, 128]],
+};
 /* منحنى ناعم يمرّ بالنقاط (كاتمول-روم) */
 function smoothPath(P) { if (P.length < 2) return ''; let d = `M${P[0][0]} ${P[0][1]}`;
   for (let i = 0; i < P.length - 1; i++) { const p0 = P[i - 1] || P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] || p2;
     const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
     d += ` C${c1[0].toFixed(1)} ${c1[1].toFixed(1)} ${c2[0].toFixed(1)} ${c2[1].toFixed(1)} ${p2[0]} ${p2[1]}`; } return d; }
 /* أداة التتبّع: تعيد {ok, err} — err: startDot (بدأ بعيداً عن طرف الخط) أو short (لم يُكمل) */
-function digitTrace(svg, n, x, y, k = 1.6, opt = {}) {
-  const g = el('g', { transform: `translate(${x - 50 * k} ${y - 70 * k}) scale(${k})` }, svg); const P = DIGIT_SK[n];
+function digitTrace(svg, n, x, y, k = 1.6, opt = {}) {   /* opt.sk: نماذج الأرقام (الغربية للعدد برقمين)، opt.noAuto: خطّاف الفحص لمن يجمع لوحين، opt.onFirst: أول لمسة على هذا اللوح */
+  const g = el('g', { transform: `translate(${x - 50 * k} ${y - 70 * k}) scale(${k})` }, svg); const P = (opt.sk || DIGIT_SK)[n];
   el('rect', { x: -8, y: -6, width: 116, height: 152, rx: 14, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 2 }, g);
   let path = null, samples;
   if (P.length > 1) { path = el('path', { d: smoothPath(P), fill: 'none', stroke: css('--line'), 'stroke-width': 18, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
@@ -118,14 +128,15 @@ function digitTrace(svg, n, x, y, k = 1.6, opt = {}) {
   const p = new Promise(r => res = r);
   const finish = () => { if (done) return; const cov = hit.size / samples.length; const nearEnd = first && ends.some(e => Math.hypot(e[0] - first[0], e[1] - first[1]) < 24);
     if (cov >= .85) { done = true; AUTO_CLEAR(); res({ ok: nearEnd, err: nearEnd ? null : 'startDot' }); } };
-  const onDown = ev => { if (done) return; down = true; try { svg.setPointerCapture(ev.pointerId); } catch (e) {} const q = local(ev); if (!first) first = q; strokes++; mark(q); finish(); };
+  const inBox = ev => { const q = local(ev); return q[0] > -12 && q[0] < 112 && q[1] > -10 && q[1] < 150; };
+  const onDown = ev => { if (done || (opt.sk && !inBox(ev))) return; if (opt.onFirst && !first) opt.onFirst(); down = true; try { svg.setPointerCapture(ev.pointerId); } catch (e) {} const q = local(ev); if (!first) first = q; strokes++; mark(q); finish(); };
   const onMove = ev => { if (!down || done) return; mark(local(ev)); finish(); };
   const onUp = () => { if (!down) return; down = false; if (!done && strokes >= 1 && hit.size / samples.length < .85 && opt.onShort) opt.onShort(hit.size / samples.length); };
   svg.addEventListener('pointerdown', onDown); svg.addEventListener('pointermove', onMove); svg.addEventListener('pointerup', onUp); svg.addEventListener('pointercancel', onUp);
   const demo = async (fromWrong) => { const L = path ? path.getTotalLength() : 0;
     if (fromWrong) { const q = path ? path.getPointAtLength(L / 2) : null; first = q ? [q.x, q.y] : [50, 140]; } else if (!first) first = P[0];   /* الخطأ: البدء من وسط الرقم، بعيداً عن طرفيه أياً كان الرقم */
     if (!path) { mark([50, 70]); finish(); return; } for (let s = 0; s <= L; s += 4) { const q = path.getPointAtLength(s); mark([q.x, q.y]); } finish(); };
-  AUTO({ kind: 'trace', ok: () => demo(false), wrong: () => demo(true) });
-  return { g, p, ghost: async () => { const pts = P.length > 1 ? Array.from({ length: 12 }, (_, i) => { const q = path.getPointAtLength(path.getTotalLength() * i / 11); return [x - 50 * k + q.x * k, y - 70 * k + q.y * k]; }) : [[x, y], [x, y]]; await ghostHand(svg, pts, 1500); },
+  if (!opt.noAuto) AUTO({ kind: 'trace', ok: () => demo(false), wrong: () => demo(true) });
+  return { g, p, demo, ghost: async () => { const pts = P.length > 1 ? Array.from({ length: 12 }, (_, i) => { const q = path.getPointAtLength(path.getTotalLength() * i / 11); return [x - 50 * k + q.x * k, y - 70 * k + q.y * k]; }) : [[x, y], [x, y]]; await ghostHand(svg, pts, 1500); },
     reset: () => { ink.innerHTML = ''; hit.clear(); first = null; strokes = 0; done = false; } };
 }

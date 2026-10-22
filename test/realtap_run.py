@@ -7,7 +7,11 @@
 #   - produce وfill (ضع العدد): يلمس القطع واحدة واحدة ثم «تمّ»؛ وsplitMake (لوّن البرج بطريقة جديدة): يلمس المكعبات ثم «تمّ»؛ ويجب أن يُحسب الجواب صحيحاً.
 #   - S1-U3: place (ضع الشيء: لمس الحلقة على شاشة، وسحب الشيء إليها على أخرى)، وprog (أزرار الروبوت ثم «انطلق»)، وroad (لمس البلاطات بالترتيب ثم «تمّ»)،
 #     وpaint (لوّن العربات ثم «تمّ»)؛ وما خرج من نافذة القطار أو الطريق يُظهَر أولاً بلمس زرّ التحريك (لا يُلمس ما لا يُرى)، ويجب أن يُحسب الجواب صحيحاً.
-#   (والسحب في «قارن الطولين» وبناء الروبوت فُحص يدوياً في الفحص المستقل الرابع، v6؛ لا يغطّيه هذا الفحص)
+#   - S1-U4: align (سحب الشريط إلى خط البداية بالإصبع، وزرّ «حاذِ البدايات» على Pixel 5)، وorder (لمس الأشياء بالترتيب ثم «تمّ»)، وweighPut (الشيئان إلى الكفّتين)،
+#     وlay وlayAll (أضف حتى النهاية)، وbarBuild (لمس الأعمدة)، وrods (عمود ومكعبات)، وframePaint وframeFill وframeMove وframeTake (الإطار)، وrodFill (المكعبات إلى العمود)،
+#     وstrip (شريط الوحدات)، وtapCount (لمس الصفّ مرة لكل وحدة)؛ ولمس التوقّع بلا جواب صحيح (الإشعال) يلمس أول الأهداف
+#   والسحب في «قارن الطولين» (S1-U1 د3) بالإصبع إلى خطّه، ولمسته البديلة (بوابة S1-U4)؛ وبناء الروبوت فُحص يدوياً في الفحص المستقل الرابع (v6) ولا يغطّيه هذا الفحص.
+#   والأنواع المشتركة بين الوحدات (align وtapCount) يلمسها المعالج في كل منتجيها: ما لا يجده إخفاقٌ يُسجَّل لا توقّف (البوابة نفسها: كان tapCount يفترض صفّ الوحدات فتوقّف عند برج S1-U2)
 # وبالفأرة أيضاً (MOUSE=1): الكبير الذي يجرّب على حاسوب. ويخرج بـ 1 إن كان فيه إخفاق.
 # python3 test/realtap_run.py [جهاز…]   (FILE=نسخة أخرى، كالنسخة التي فيها الخطأ القديم: الدرس 98)
 import asyncio, os, sys
@@ -30,7 +34,8 @@ CENTRES = """(sel) => { const svg = document.querySelector('#stage svg'); if (!s
     return r || g.getBoundingClientRect(); };
   return [...svg.querySelectorAll(sel)].filter(vis).map(g => { const r = box(g); return { x: (r.left + r.right) / 2, y: (r.top + r.bottom) / 2, ok: g.dataset.ok, k: g.dataset.id || g.dataset.k || '', slot: g.dataset.slot || '', label: g.getAttribute('aria-label') || g.tagName }; }); }"""
 LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6', 'm1.u2.d1', 'm1.u2.d2', 'm1.u2.d3', 'm1.u2.d4', 'm1.u2.d5', 'm1.u2.d6',
-           'm1.u3.d1', 'm1.u3.d2', 'm1.u3.d3', 'm1.u3.d4', 'm1.u3.d5', 'm1.u3.d6', 'm1.u3.d7']
+           'm1.u3.d1', 'm1.u3.d2', 'm1.u3.d3', 'm1.u3.d4', 'm1.u3.d5', 'm1.u3.d6', 'm1.u3.d7',
+           'm1.u4.d1', 'm1.u4.d2', 'm1.u4.d3', 'm1.u4.d4', 'm1.u4.d5', 'm1.u4.d6', 'm1.u4.d7', 'm1.u4.d8']
 if os.environ.get('ONLY'): LESSONS = [l for l in LESSONS if l in os.environ['ONLY'].split(',')]   # تشغيل جزئي أثناء التطوير
 # ما خرج من نافذة الشريط (القطار، الطريق) مخفيّ لا يُلمس: يُلمس زرّ التحريك نحوه حتى يظهر
 REVEAL = """(sel) => { const g = document.querySelector(sel); if (!g || getComputedStyle(g).visibility !== 'hidden') return null;
@@ -78,6 +83,73 @@ async def run(p, dev):
       if s['n'] != n0 or s['kind'] is None: return True
       await pg.wait_for_timeout(60)
     return False
+  BTN = "(k) => { const b = [...document.querySelectorAll('#stage .choices .pick')].find(x => (k === 'done' ? (x.classList.contains('done') || x.dataset.k === 'done') : x.dataset.k === k) && getComputedStyle(x.parentNode).visibility !== 'hidden'); if (!b) return null; const r = b.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
+  async def btn(k, times=1):
+    for _ in range(times):
+      xy = await pg.evaluate(BTN, k)
+      if not xy: return False
+      await tap(*xy); await pg.wait_for_timeout(70)
+    return True
+  async def tap_first(sel, times, n0=None):   # يلمس أول ما يطابق كل مرة (ما لُمس يُزال أو يُعلَّم)
+    for _ in range(times):
+      if n0 is not None and (await pg.evaluate(STATE))['n'] != n0: return
+      xy = await pg.evaluate(CENTER_OF, sel)
+      if not xy: return
+      await tap(*xy); await pg.wait_for_timeout(90)
+  async def u4tap(k, n0):
+    if k == 'align':   # بالإصبع على الأجهزة إلا Pixel 5 فبالزرّ (البديل، D246)
+      if dev == 'Pixel 5' and await btn('align'): return
+      # ما يُحاذى في S1-U4 (dragAlign) وعود «قارن الطولين» في S1-U1 د3: data-align وخطّه data-align-x (كان الفحص يفترض خط S1-U4 فلم يجد عود S1-U1)
+      d = await pg.evaluate("""() => { const svg = document.querySelector('#stage svg'), g = svg.querySelector('g[data-align=no]'); if (!g) return null; const m = svg.getScreenCTM(), t = g.getAttribute('transform').match(/translate\\(([-\\d.]+)/);
+        const r = g.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2, (+g.dataset.alignX - +t[1]) * m.a]; }""")
+      if not d: return   # حاذاه فحص بديل السحب قبله بلمسة (align_alt)؛ وإلا فالانتظار باقٍ ويُسجَّل
+      await drag(d[0], d[1], d[0] + d[2], d[1], 14)
+    elif k == 'order':
+      want = await pg.evaluate("() => window.__item.want.split(',').map(Number)")
+      for i in want: xy = await pg.evaluate("(i) => { const e = document.querySelectorAll('#stage svg [data-order]')[i]; let r = null; for (const c of e.querySelectorAll('rect,path,polygon,circle')) { if (c.matches('rect.hit')) continue; const b = c.getBoundingClientRect(); if (!b.width) continue; r = r ? { l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom) } : { l: b.left, t: b.top, r: b.right, b: b.bottom }; } return [(r.l + r.r) / 2, (r.t + r.b) / 2]; }", i); await tap(*xy); await pg.wait_for_timeout(80)
+      await btn('done')
+    elif k == 'weighPut': await tap_first('#stage svg [data-put]', 2)
+    elif k == 'lay': n = await pg.evaluate("() => window.__item.n"); await btn('plus', n); await btn('done')
+    elif k == 'layAll':
+      for _ in range(12):
+        if (await pg.evaluate(STATE))['n'] != n0: break
+        await btn('plus')
+    elif k == 'barBuild':
+      cats, counts = await pg.evaluate("() => [window.__item.cats, window.__item.counts]")
+      for c, m in zip(cats, counts):
+        for _ in range(m): xy = await pg.evaluate(CENTER_OF, '#stage svg g[data-col="%s"]' % c); await tap(*xy); await pg.wait_for_timeout(70)
+      await btn('done')
+    elif k == 'rods': n = await pg.evaluate("() => window.__item.n"); await btn('rod', n // 10); await btn('one', n % 10); await btn('done')
+    elif k == 'framePaint':
+      kk = await pg.evaluate("() => { const av = (window.__item.avoid || []).map(p => Math.min(...p)); return [1, 2, 3, 4, 5].find(k => !av.includes(k)) || 1; }")
+      for i in range(kk): xy = await pg.evaluate("(i) => { const e = document.querySelector('#stage svg [data-cell=\"' + i + '\"]'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }", i); await tap(*xy); await pg.wait_for_timeout(70)
+      await btn('done')
+    elif k == 'frameMove': await tap_first('#stage svg [data-move]', 10, n0)
+    elif k == 'frameTake':
+      b = await pg.evaluate("() => window.__item ? window.__item.b : 5")
+      await tap_first('#stage svg [data-take]:not([opacity])', b, n0)
+    elif k == 'frameFill':
+      for _ in range(10):
+        if (await pg.evaluate(STATE))['n'] != n0: break
+        await btn('put')
+    elif k == 'rodFill': await tap_first('#stage svg [data-rodin]', 10, n0)
+    elif k == 'strip': await btn('plus', 7); await btn('done')
+    elif k == 'tapCount':   # عدّ صفّ الوحدات (S1-U4) أو البرج (S1-U1، S1-U2) باللمس: هدف واحد يُلمس مرة لكل وحدة، وعدده في data-tapcount
+      n = await pg.evaluate("() => { const g = document.querySelector('#stage svg [data-tapcount]'); return g ? +g.dataset.tapcount : null; }")
+      if n is None: return False
+      for _ in range(n): xy = await pg.evaluate(CENTER_OF, '#stage svg [data-tapcount]'); await tap(*xy); await pg.wait_for_timeout(70)
+  # D246: كل ما يُسحب له بديل لمسٍ: زرّ «حاذِ البدايات» تحت المسرح، أو لمسة الشيء نفسه (الشبر) تحاذيه
+  ALIGN_ALT = """() => { const svg = document.querySelector('#stage svg'); if (!svg) return null; const g = svg.querySelector('g[data-align=no]'); if (!g) return null;
+    if ([...document.querySelectorAll('#stage .choices .pick[data-k=align]')].some(b => getComputedStyle(b).visibility !== 'hidden')) return 'button';
+    let r = null; for (const c of g.querySelectorAll('rect,path,polygon,circle')) { if (c.matches('rect.hit')) continue; const f = c.getAttribute('fill'); if (f === 'transparent') continue; const b = c.getBoundingClientRect(); if (!b.width) continue;
+      r = r ? { l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom) } : { l: b.left, t: b.top, r: b.right, b: b.bottom }; }
+    g.dataset.altprobe = 1; return r ? [(r.l + r.r) / 2, (r.t + r.b) / 2] : null; }"""
+  async def align_alt(scene):
+    xy = await pg.evaluate(ALIGN_ALT)
+    if not xy or xy == 'button': return
+    tried['alignTap'] = tried.get('alignTap', 0) + 1; await tap(*xy); await pg.wait_for_timeout(900)
+    if await pg.evaluate("() => { const g = document.querySelector('#stage svg g[data-altprobe]'); return !!g && g.dataset.align !== 'yes'; }"):
+      bad.append((dev, scene, 'drag without tap alternative (D246)')); await pg.screenshot(path=os.path.join(HERE, 'out', 'realtap_%s_%s_align.png' % (dev.replace(' ', ''), scene.replace(':', '_').replace('.', '_'))))
   for lid in LESSONS:
     await pg.evaluate("(id) => { runLesson(id); }", lid); last = -1
     for _ in range(5000):
@@ -85,10 +157,12 @@ async def run(p, dev):
       if (st['home'] and not st['covers']) or 'crashCover' in st['covers']: break
       if st['n'] is not None and st['n'] != last:
         last = st['n']; k = st['kind']
+        await align_alt(st['scene'])
         if k == 'pick' and st['scene'].endswith(':bag'): await pg.evaluate("() => { const b = [...document.querySelectorAll('.choices .pick')]; (b.find(x => x.dataset.k === 'screen') || b[0]).click(); }"); await pg.wait_for_timeout(40); continue
         # «لوّن» بالإصبع في «لوّن العربات ثم المس» وحده (kamAyn، S1-U3)؛ وبند التلوين بالأوعية (paint، S1-U1) بخطّافه كما كان
         kam = k == 'paint' and await pg.evaluate("() => !!(window.__item && window.__item.ask === 'kamAyn')")
-        if k in ('tapAll', 'tap', 'house', 'sort', 'produce', 'fill', 'splitMake', 'place', 'prog', 'road') or kam:
+        U4 = ('align', 'order', 'weighPut', 'lay', 'layAll', 'barBuild', 'rods', 'framePaint', 'frameMove', 'frameTake', 'frameFill', 'rodFill', 'strip', 'tapCount')
+        if k in ('tapAll', 'tap', 'house', 'sort', 'produce', 'fill', 'splitMake', 'place', 'prog', 'road') + U4 or kam:
           await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1
           if k == 'tapAll':
             for c in await pg.evaluate(CENTRES, '[role=button]'): await tap(c['x'], c['y']); await pg.wait_for_timeout(80)
@@ -97,8 +171,11 @@ async def run(p, dev):
             cs = [c for c in await pg.evaluate(CENTRES, '[role=button]') if c['ok'] == 'true']
             if cs: await tap(cs[0]['x'], cs[0]['y'])
             else:   # زرّ تحت المسرح («أبقى مكاني»، وأوامر الروبوت في الاكتشاف وفوضى)
-              xy = await pg.evaluate("() => { const b = document.querySelector('#stage .choices .pick[data-ok=true]'); if (!b) return null; const r = b.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
+              xy = await pg.evaluate("() => { const b = document.querySelector('#stage .choices .pick[data-ok=true]') || document.querySelector('#stage .choices.build .pick'); if (!b) return null; const r = b.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }")
               if xy: await tap(*xy)
+              else:   # توقّع بلا جواب صحيح (الإشعال في S1-U4): أيّ هدف
+                cs = await pg.evaluate(CENTRES, '[role=button]')
+                if cs: await tap(cs[0]['x'], cs[0]['y'])
           elif k == 'sort':   # الفرز بالسحب إلى السلّة الصحيحة (ولغز المتجر بلمس الرفّ)
             info = await pg.evaluate("""() => { const it = window.__item; const ok = [it.kind, ...(it.accept || [])]; const b = [...document.querySelectorAll('.bins .bin')].find(x => ok.includes(x.dataset.k)); const rb = b.getBoundingClientRect();
               const g = [...document.querySelectorAll('#stage svg g')].find(x => x.style.cursor === 'grab' && x.getBBox().width > 4); const r = g && g.getBoundingClientRect();
@@ -135,6 +212,8 @@ async def run(p, dev):
             kk = await pg.evaluate("() => window.__item.k")
             for i in range(kk): await tap_sel('#stage svg g[data-car="%d"]' % i); await pg.wait_for_timeout(80)
             xy = await pg.evaluate("() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"); await tap(*xy)
+          elif k in U4:   # هدف لا يجده الفحص إخفاقٌ يُسجَّل لا توقّفٌ للتشغيل كله (كان tapCount يفترض صفّ الوحدات فتوقّف عند برج S1-U1)
+            if await u4tap(k, st['n']) is False: bad.append((dev, st['scene'], k + ': target not found'))
           else:   # البيت: أكبر قطعة باقية (الجدار قبل النافذة)، ثم مكانها
             pieces = await pg.evaluate(CENTRES, 'g[data-k]'); slots = await pg.evaluate(CENTRES, 'g[data-slot]')
             area = await pg.evaluate("() => Object.fromEntries([...document.querySelectorAll('#stage svg g[data-k]')].map(g => [g.dataset.id, g.getBBox().width * g.getBBox().height]))")
@@ -144,7 +223,7 @@ async def run(p, dev):
               await tap(pc['x'], pc['y']); await pg.wait_for_timeout(80)
               if sl: await tap(sl[0]['x'], sl[0]['y'])
           ok = await gone(st['n'])
-          if ok and k in ('sort', 'produce', 'fill', 'splitMake', 'place', 'prog', 'road') and await pg.evaluate("() => !!window.__item"): await pg.wait_for_timeout(100); ok = (await pg.evaluate(LASTOK)) is True   # وأن يُحسب الجواب صحيحاً
+          if ok and k in ('sort', 'produce', 'fill', 'splitMake', 'place', 'prog', 'road', 'order', 'lay', 'barBuild', 'rods', 'framePaint') and await pg.evaluate("() => !!window.__item"): await pg.wait_for_timeout(100); ok = (await pg.evaluate(LASTOK)) is True   # وأن يُحسب الجواب صحيحاً
           if not ok:
             bad.append((dev, st['scene'], k)); await pg.screenshot(path=os.path.join(HERE, 'out', 'realtap_%s_%s.png' % (dev.replace(' ', ''), st['scene'].replace(':', '_').replace('.', '_'))))
             await pg.evaluate("() => { const a = window.__auto; if (a) a.ok(); }")   # يكمل بخطّاف البند ليتابع الدرس

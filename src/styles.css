@@ -164,6 +164,7 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .pick.done { display: flex; align-items: center; justify-content: center; gap: 8px; color: var(--good); font-size: 21px; font-weight: 800; }
 .pick.done svg { width: 30px; height: 30px; } .pick.done span { color: var(--ink); }
 .choices.build { grid-template-columns: repeat(3, 1fr); }
+.choices.build.four { grid-template-columns: repeat(4, 1fr); }   /* أربعة أزرار في صفّ واحد (ابنِ العدد): صفّان يضغطان المسرح (الدرس 140) */
 .choices.rbbar { grid-template-columns: repeat(5, 1fr); gap: 6px; }   /* أوامر الروبوت في صفّ واحد: تقدّم، وانعطف يميناً ويساراً، وامسح، وانطلق (S1-U3)؛ فيبقى للّوحة مكانها */
 .choices.rbbar.three { grid-template-columns: repeat(3, 1fr); }
 .choices.rbbar .pick { min-height: 64px; padding: 4px 2px; font-size: 13px; line-height: 1.25; }
@@ -272,6 +273,11 @@ details.adult input[type=text]:focus { outline: none; border-color: var(--compas
   .pick { min-height: 56px; padding: 6px 10px; font-size: 17px; } .choices { gap: 6px; padding: 0 8px 8px; } .choices.icons { grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); }
   .choices.cards .card { min-height: 56px; font-size: 18px; } .choices.nums .num { min-height: 60px; } .choices.nums .num b { font-size: 26px; }
   .bin { min-height: 56px; font-size: 15px; } .bin svg { max-width: 84px; }
+}
+/* أقصر الشاشات (iPhone SE، 568): البطاقات وأزرار الرموز أقلّ ارتفاعاً فيبقى للمسرح ما يُرى فيه الرسم (بوابة S1-U4: مسرح التعليل 84 بكسلاً تحت ثلاث بطاقات)؛ والهدف 56 كما هو */
+@media (max-height: 600px) {
+  .choices.cards .card { font-size: 16px; line-height: 1.45; padding: 4px 8px; }
+  .choices.icons .pick { font-size: 15px; line-height: 1.35; padding: 4px 6px; gap: 0; } .choices.icons .pick svg { max-width: 40px; max-height: 40px; }
 }
 @media (max-width: 340px) { #who { display: none; } #talk { grid-template-columns: 1fr; } .cover .talk { grid-template-columns: 64px 1fr; } .cover .talk .who { width: 64px; height: 74px; }
   .avatars { gap: 8px; } .av { min-height: 62px; padding: 4px; } }   /* صور الملف الأربع في 288 بكسلاً، لا تخرج عن الشاشة */

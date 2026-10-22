@@ -1,0 +1,173 @@
+{
+ "id": "m1.u4",
+ "title": "قَارِنْ وَقِسْ",
+ "sub": "الوَحْدَةُ الرَّابِعَةُ",
+ "district": "سُوقُ القِيَاسِ",
+ "hosts": [
+  "square",
+  "triangle",
+  "rect"
+ ],
+ "hunt": [],
+ "workshop": {
+  "pieces": [
+   {
+    "k": "plank",
+    "size": 60
+   },
+   {
+    "k": "plank",
+    "size": 100
+   },
+   {
+    "k": "plank",
+    "size": 150
+   }
+  ],
+  "puzzles": [
+   {
+    "id": "ladder",
+    "name": "gen.ws.p.ladder",
+    "frame": "plank",
+    "slots": [
+     {
+      "k": "plank",
+      "x": 120,
+      "y": 120,
+      "size": 170,
+      "rot": 90
+     },
+     {
+      "k": "plank",
+      "x": 240,
+      "y": 120,
+      "size": 170,
+      "rot": 90
+     },
+     {
+      "k": "plank",
+      "x": 180,
+      "y": 80,
+      "size": 90
+     },
+     {
+      "k": "plank",
+      "x": 180,
+      "y": 160,
+      "size": 90
+     }
+    ],
+    "extra": {
+     "k": "plank",
+     "size": 110
+    }
+   },
+   {
+    "id": "bridge",
+    "name": "gen.ws.p.bridge",
+    "frame": "plank",
+    "slots": [
+     {
+      "k": "plank",
+      "x": 180,
+      "y": 86,
+      "size": 180
+     },
+     {
+      "k": "plank",
+      "x": 112,
+      "y": 152,
+      "size": 100,
+      "rot": 90
+     },
+     {
+      "k": "plank",
+      "x": 248,
+      "y": 152,
+      "size": 100,
+      "rot": 90
+     }
+    ],
+    "extra": {
+     "k": "plank",
+     "size": 120
+    }
+   },
+   {
+    "id": "raft",
+    "name": "gen.ws.p.raft",
+    "frame": "plank",
+    "slots": [
+     {
+      "k": "plank",
+      "x": 180,
+      "y": 110,
+      "size": 180
+     },
+     {
+      "k": "plank",
+      "x": 180,
+      "y": 146,
+      "size": 180
+     },
+     {
+      "k": "plank",
+      "x": 180,
+      "y": 182,
+      "size": 180
+     },
+     {
+      "k": "plank",
+      "x": 180,
+      "y": 54,
+      "size": 70,
+      "rot": 90
+     }
+    ],
+    "extra": {
+     "k": "plank",
+     "size": 150
+    }
+   },
+   {
+    "id": "fence",
+    "name": "gen.ws.p.fence",
+    "frame": "plank",
+    "slots": [
+     {
+      "k": "plank",
+      "x": 90,
+      "y": 140,
+      "size": 110,
+      "rot": 90
+     },
+     {
+      "k": "plank",
+      "x": 150,
+      "y": 125,
+      "size": 140,
+      "rot": 90
+     },
+     {
+      "k": "plank",
+      "x": 210,
+      "y": 140,
+      "size": 110,
+      "rot": 90
+     },
+     {
+      "k": "plank",
+      "x": 270,
+      "y": 125,
+      "size": 140,
+      "rot": 90
+     }
+    ],
+    "extra": {
+     "k": "plank",
+     "size": 125
+    }
+   }
+  ]
+ }
+}

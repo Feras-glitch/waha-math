@@ -3,8 +3,13 @@
 # تبني النسختين، ثم تشغّل: الفحص الدخاني لنسخة الأطفال، والمسارات خارج الدرس (الخروج والاستئناف، والاستراحة والبوابة، و«أرقامي»، والمعرض، واللوحة، والليلي، والأغطية على 320×568)،
 # ووسوم أخطاء الفرز، و«أعد الجملة» (replay_run)، واللمس الحقيقي بالإصبع والفأرة (realtap_run)، وتخطيط الأشياء المبعثرة (layout_run)، وحزمة الصوت والنسخة الاحتياطية (backup_voice_run)، وفحص الفحوص بالطفرات (mutants_run، الدرس 98)، ثم السائق الآلي على الدروس التسعة عشر والورش الثلاث بسبعة أنماط ومساري الحقيبة والجنسين، والوضع الليلي، وشاشتين قصيرتين (360×640 و320×568)،
 # ثم تقرير الجمل غير المنطوقة. كل ملف نتائج ينتهي بسطور errors / LOG.errors / FAILS / small targets / unnamed targets / tap conflicts / chaos leaks / font fallbacks (D256) / NOT in script.
+# وتُشغَّل على ثلاثة أجزاء متتابعة حين يحدّ المشغّل زمن المهمة الواحدة (ساعتان؛ والمجموعة كلها نحو ساعتين ونصف منذ S1-U4):
+#   PART=a (البناءان والفحوص المنفردة والطفرات) ثم PART=b (أنماط السائق التسعة الأولى) ثم PART=c (deepall وremedialdeep والخلاصة)، بمجلد النتائج نفسه؛ وبلا PART كلها.
 cd "$(dirname "$0")/.." || exit 1
-O="${1:-test/out/all}"; mkdir -p "$O/clips"; rm -f "$O/FAILED" "$O/DONE" "$O/SUMMARY.txt"
+O="${1:-test/out/all}"; P="${PART:-all}"; mkdir -p "$O/clips"
+in_part() { [ "$P" = all ] || [ "$P" = "$1" ]; }
+if in_part a; then
+rm -f "$O/FAILED" "$O/DONE" "$O/SUMMARY.txt" "$O"/auto_*.txt "$O"/clips/*.json
 node build/build.mjs > "$O/build_prod.txt" 2>&1 || { echo "فشل البناء الإنتاجي"; cat "$O/build_prod.txt"; exit 1; }
 node build/build.mjs --dev > "$O/build_dev.txt" 2>&1 || { echo "فشل بناء الفحص"; exit 1; }
 python3 test/smoke_prod.py                         > "$O/smoke_prod.txt" 2>&1    || echo smoke_prod >> "$O/FAILED"
@@ -19,6 +24,8 @@ python3 test/quicktap_run.py                       > "$O/quicktap.txt" 2>&1     
 python3 test/items_run.py                          > "$O/items.txt" 2>&1         || echo items >> "$O/FAILED"   # كل بند يُقيَّم أو يُراجَع صحيحاً وخطأً، والطرق المرسومة (الفحص المستقل C)
 python3 test/ladder_run.py                         > "$O/ladder.txt" 2>&1        || echo ladder >> "$O/FAILED"   # الحلّ المشترك باقٍ في المحاولة الرابعة (D257(5)(و))
 python3 test/mutants_run.py                        > "$O/mutants.txt" 2>&1       || echo mutants >> "$O/FAILED"   # كل فحص جديد يخفق على الخطأ القديم (الدرس 98)
+fi
+if in_part b; then
 SHOTS=1 CLIPS_OUT="$O/clips/auto_ok_screen_f.json" python3 test/auto_run.py ok screen f       > "$O/auto_ok_screen_f.txt" 2>&1
 SHOTS=0 CLIPS_OUT="$O/clips/auto_ok_mat_m.json" python3 test/auto_run.py ok mat m          > "$O/auto_ok_mat_m.txt" 2>&1
 SHOTS=0 CLIPS_OUT="$O/clips/auto_mixed_screen_m.json" python3 test/auto_run.py mixed screen m    > "$O/auto_mixed_screen_m.txt" 2>&1
@@ -30,6 +37,8 @@ SHOTS=0 CLIPS_OUT="$O/clips/auto_failreview_screen_m.json" python3 test/auto_run
 SHOTS=0 DARK=1 CLIPS_OUT="$O/clips/auto_dark_ok_mat_f.json" python3 test/auto_run.py ok mat f   > "$O/auto_dark_ok_mat_f.txt" 2>&1            # الوضع الليلي
 SHOTS=0 DEVICE='Galaxy S5' CLIPS_OUT="$O/clips/auto_s5_mixed_screen_m.json" python3 test/auto_run.py mixed screen m > "$O/auto_s5_mixed_screen_m.txt" 2>&1   # 360×640
 SHOTS=0 DEVICE='iPhone SE' CLIPS_OUT="$O/clips/auto_se_ok_screen_f.json" python3 test/auto_run.py ok screen f > "$O/auto_se_ok_screen_f.txt" 2>&1        # 320×568، أضيق شاشة
+fi
+if in_part c; then
 SHOTS=0 CLIPS_OUT="$O/clips/auto_deepall_screen_f.json" python3 test/auto_run.py deepall screen f > "$O/auto_deepall_screen_f.txt" 2>&1   # كل بند بمساعدة حتى الكشف، ثم توأمه (الفحص المستقل B)
 SHOTS=0 CHAL=1 CLIPS_OUT="$O/clips/auto_deepall_chal_mat_m.json" python3 test/auto_run.py deepall mat m > "$O/auto_deepall_chal_mat_m.txt" 2>&1   # وفرع «التحدّي»
 SHOTS=0 CLIPS_OUT="$O/clips/auto_remedialdeep_screen_m.json" python3 test/auto_run.py remedialdeep screen m > "$O/auto_remedialdeep_screen_m.txt" 2>&1   # وبنود العلاج
@@ -42,7 +51,7 @@ import sys, os, re, glob
 O = sys.argv[1]; bad = [l.strip() for l in open(os.path.join(O, 'FAILED'))] if os.path.exists(os.path.join(O, 'FAILED')) else []
 for f in sorted(glob.glob(os.path.join(O, 'auto_*.txt'))):
   t = open(f).read(); name = os.path.basename(f)
-  for k in ['errors', 'LOG.errors', 'small targets', 'unnamed targets', 'tap conflicts', 'chaos leaks', 'font fallbacks', 'NOT in script', 'blocked lessons', 'lessons not done', 'empty drags', 'twins missing'] + ([] if re.search(r'_(fail[a-z]*|remedialdeep)_', name) else ['assessment misses']):   # النمط كلمة بين شرطتين في اسم الملف أينما كانت (auto_se_remedialdeep_…: كان الفحص يطلبها من أوله وحده)
+  for k in ['errors', 'LOG.errors', 'small targets', 'unnamed targets', 'tap conflicts', 'chaos leaks', 'font fallbacks', 'NOT in script', 'blocked lessons', 'lessons not done', 'empty drags', 'squeezed stages', 'twins missing'] + ([] if re.search(r'_(fail[a-z]*|remedialdeep)_', name) else ['assessment misses']):   # النمط كلمة بين شرطتين في اسم الملف أينما كانت (auto_se_remedialdeep_…: كان الفحص يطلبها من أوله وحده)
     v = re.findall(r'(?:^|; )' + re.escape(k) + r': (\d+)', t, re.M)
     if not v: bad.append(f'{name}: {k} مفقود')
     elif any(int(x) for x in v): bad.append(f'{name}: {k} = {v}')
@@ -51,3 +60,4 @@ PY
 rc=$?
 echo done > "$O/DONE"
 exit $rc
+fi

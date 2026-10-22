@@ -41,7 +41,21 @@ function bagIcon(svg, r, x, y) {
     train: () => { const t = el('g', { transform: 'translate(0 30) scale(.7)' }, g); locoAt(t, 40, 0); carAt(t, -36, 0, 1); },
     mapCut: () => { shapeAt(g, { type: 'rect', w: 54, h: 32, color: css('--rect') }, -16, -20); shapeAt(g, { type: 'circle', size: 40, color: css('--circle') }, 30, 20); shapeAt(g, { type: 'square', size: 34, color: css('--square') }, -24, 26); },
     road: () => { for (let i = 0; i < 3; i++) { el('rect', { x: -52 + i * 36, y: -16, width: 32, height: 32, rx: 6, fill: i % 2 ? '#e9dcc3' : '#dccaa8', stroke: '#fff', 'stroke-width': 2.5 }, g); el('text', { x: -36 + i * 36, y: 7, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: '#33454c', 'font-family': css('--f'), direction: 'ltr' }, g).textContent = DG(i + 1); } },
-    die: () => diceAt(g, 0, 0, 3, { sp: 13 }), treasure: () => treasureAt(g, 0, 30, 1.6) };
+    die: () => diceAt(g, 0, 0, 3, { sp: 13 }), treasure: () => treasureAt(g, 0, 30, 1.6),
+    /* S1-U4 */
+    pencils: () => { lenAt(g, { kind: 'pencil', len: 96, color: NEUTRAL[3] }, 48, -14); lenAt(g, { kind: 'pencil', len: 70, color: '#c0564a' }, 48, 14); },
+    strips: () => { [96, 70, 84].forEach((L, i) => lenAt(g, { kind: 'strip', len: L, color: NEUTRAL[[0, 3, 2][i]] }, 48, -26 + i * 26)); },
+    balance: () => { const gg = el('g', { transform: 'translate(0 -58) scale(.42)' }, g); balanceAt(gg, 0, 270).set(-1); },
+    ballStone: () => { weighAt(g, 'beachBall', 18, 40, .9); weighAt(g, 'stone', -40, 40, 1); },
+    bookFeather: () => { weighAt(g, 'book', 14, 20, 1); weighAt(g, 'feather', -16, -8, .9); },
+    clips: () => unitRow(g, 'clip', 3, 45, 0, { u: 30 }),
+    circles: () => [30, 22, 14].forEach((r, i) => sizeThingAt(g, 'circle', r, 36 - i * 34 - (i ? 10 : 0), 20 - r, css('--circle'))),
+    hand: () => handSpanAt(g, 48, 30, 96, '#3d7cc0'),
+    cards: () => { [[-16, -8, 1], [16, 8, 7]].forEach(([dx, a, n]) => { const c = el('g', { transform: `translate(${dx} 6) rotate(${a})` }, g); el('rect', { x: -20, y: -28, width: 40, height: 52, rx: 7, fill: '#fffdf6', stroke: '#3d7cc0', 'stroke-width': 3 }, c);
+      el('text', { y: 10, 'text-anchor': 'middle', 'font-size': 26, 'font-weight': 800, fill: '#1b3440', 'font-family': css('--f') }, c).textContent = DG(n); }); },
+    rods: () => { rodAt(g, -24, 50, { c: 9 }); for (let i = 0; i < 4; i++) oneAt(g, 30 - (i % 2) * 20, 40 - Math.floor(i / 2) * 20, { c: 16 }); },
+    frame: () => { const F = frameAt(g, 0, 0, { cell: 20 }); F.fill(6, CUBE.lemon); },
+    squares: () => { for (let i = 0; i < 5; i++) el('rect', { x: 48 - (i + 1) * 19, y: -9, width: 19, height: 19, fill: i % 2 ? '#5c9bb0' : CUBE.lemon, stroke: '#fff', 'stroke-width': 2 }, g); } };
   if (typeof r === 'object' && r.icon && I[r.icon]) I[r.icon]();
   else { const s = make(typeof r === 'object' && r.mk ? r.mk : r); fitThing(g, { ...s, label: null }, 0, 0, 84); if (!lbl) labelFit(svg, x, y + 72, s.label || BIN_NAMES[s.kind] || '', 15, css('--muted'), 112); }   /* اسم كل شيء في الحقيبة، حتى المكعب */
   if (lbl) labelFit(svg, x, y + 72, lbl, 15, css('--muted'), 112); }

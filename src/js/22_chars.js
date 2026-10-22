@@ -87,7 +87,10 @@ function stoneArt(svg, unit, x = 180, y = 150) {
     el('rect', { x: -40, y: -30, width: 80, height: 62, rx: 5, fill: '#fffdf6', stroke: '#1b3440', 'stroke-width': 3 }, b);
     shapeAt(b, { type: 'rect', w: 30, h: 18, color: css('--rect') }, 18, -14); shapeAt(b, { type: 'circle', size: 22, color: css('--circle') }, -18, 14); shapeAt(b, { type: 'square', size: 18, color: css('--square') }, 20, 16);
     el('path', { d: 'M-30 -18 Q-10 -6 4 8', fill: 'none', stroke: '#c94f3d', 'stroke-width': 3, 'stroke-dasharray': '5 4' }, b); }
-  const ks = unit === 'm1.u2' ? ['cube', 'sphere', 'cylinder', 'cone'] : unit === 'm1.u3' ? [] : ['circle', 'square', 'triangle', 'rect'];
+  if (unit === 'm1.u4') {   /* حجر «قارن وقس»: ميزان صغير، وشريطان على خط واحد */
+    const gg = el('g', { transform: 'translate(-34 -46) scale(.2)' }, b); balanceAt(gg, 0, 270).set(-1);
+    el('line', { x1: 52, y1: -8, x2: 52, y2: 34, stroke: '#1b3440', 'stroke-width': 2, 'stroke-dasharray': '3 3' }, b); lenAt(b, { kind: 'strip', len: 44, color: NEUTRAL[0] }, 52, 0); lenAt(b, { kind: 'strip', len: 30, color: NEUTRAL[3] }, 52, 24); }
+  const ks = unit === 'm1.u2' ? ['cube', 'sphere', 'cylinder', 'cone'] : unit === 'm1.u3' || unit === 'm1.u4' ? [] : ['circle', 'square', 'triangle', 'rect'];
   ks.forEach((k, i) => { const px = (i % 2 ? 22 : -22), py = i < 2 ? -12 : 24;
     if (SOLIDC[k]) thingAt(b, { solid: k, size: 34 }, px, py);
     else shapeAt(b, { type: k, size: 28, w: k === 'rect' ? 34 : k === 'triangle' ? 32 : undefined, h: k === 'rect' ? 20 : k === 'triangle' ? 28 : undefined, color: css(IDC[k]) }, px, py); });

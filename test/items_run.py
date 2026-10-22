@@ -79,6 +79,16 @@ EDGE_START = r"""(px) => { const L = LDATA['m1.u3.d1']; const it = (new Function
   if (!window.__la2) { window.__la2 = logAttempt; logAttempt = a => { (window.__att = window.__att || []).push(a); return window.__la2(a); }; }
   runItem(JSON.parse(JSON.stringify(it)), 'practice', { scene: 'edge' }).then(r => { window.__res = r.ok; }); }"""
 EDGE_PT = r"""() => { const f = document.querySelector('#stage [data-front]'); if (!f) return null; const r = f.getBoundingClientRect(); return [(r.left + r.right) / 2, r.bottom - 5]; }"""
+# والتوقّع من الصورة في الميزان يُجرَّب بعد الجواب الصحيح أيضاً (H11): بعد «أيّهما أثقل؟» بالصورة وحدها يُرسم الميزان وفيه الشيئان
+PICS = r"""async () => { const found = []; const walk = (v, id) => { if (Array.isArray(v)) return v.forEach(x => walk(x, id)); if (!v || typeof v !== 'object') return;
+    if (v.t === 'balance' && v.mode === 'pic') found.push([id, v]); for (const [k, x] of Object.entries(v)) if (k !== 'lines' && k !== 'labels') walk(x, id); };
+  for (const id of UNITS.flatMap(u => u.lessons)) walk(LDATA[id], id); const out = [];
+  for (const [id, spec] of found) { hush(); FLOW++; CUR = LDATA[id]; show('lesson'); window.__auto = null; let done = false, n0 = -1;
+    runItem(JSON.parse(JSON.stringify(spec)), 'practice', { scene: 'pic' }).then(() => { done = true; }, () => { done = true; });
+    for (let w = 0; w < 400 && !done; w++) { const a = window.__auto; if (a && a.n !== n0) { n0 = a.n; a.ok(); } const go = document.querySelector('#go'); if (go && !go.hidden && !go.disabled) go.click(); await new Promise(r => setTimeout(r, 25)); }
+    const B = document.querySelector('#stage [data-balance]'); const ws = B ? [...B.querySelectorAll('[data-weigh]')].map(g => g.dataset.weigh).sort().join(',') : '';
+    out.push([id, spec.q, done, ws, [spec.a, spec.b].sort().join(',')]); }
+  hush(); FLOW++; return out; }"""
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await ctx.new_page(); errs = []
@@ -138,6 +148,9 @@ async def main():
     bad_e = [e for e in edges if not e[1] or e[2]]
     check(not bad_e, 'لمسة على حافة جدار الصندوق السفلى لا تُسجَّل جواباً (iPhone SE)%s' % ('' if not bad_e else ': ' + '; '.join('%s → %s' % (e[0], e[2] or 'لا جدار') for e in bad_e)))
     check(pads[0] >= 20 and pads[1] < 25, 'حساب مناطق اللمس (%d منطقة على الطريق، معالج أبطأ أربع مرات): %.1f م.ث (المطلوب أقل من 25)' % tuple(pads))
+    pics = await pg.evaluate(PICS); bad_pics = [r for r in pics if not r[2] or r[3] != r[4]]
+    for lid, q, d, ws, want in bad_pics: check(False, '%s: «%s»: بعد التوقّع الصحيح من الصورة %s' % (lid, q, 'لم ينتهِ البند' if not d else 'لا ميزان فيه الشيئان (%s)' % (ws or 'لا ميزان')))
+    check(bool(pics) and not bad_pics, 'التوقّع من الصورة (%d بنود) يُجرَّب بالميزان بعد الجواب الصحيح' % len(pics))
     places = await pg.evaluate(PLACES); bad_places = [r for r in places if not r[3] or r[3] == r[2]]
     for lid, q, at, st in bad_places: check(False, '%s: «%s»: النجمة تبدأ في المنطقة المطلوبة (%s)' % (lid, q, st or 'لا علامة بداية'))
     check(bool(places) and not bad_places, '«ضع النجمة» (%d بنود) لا يبدأ والمطلوب صحيح' % len(places))

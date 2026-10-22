@@ -24,7 +24,15 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     map: () => { el('rect', { x: 10, y: 8, width: 52, height: 40, rx: 3, fill: '#fffdf6', stroke: css('--ink'), 'stroke-width': 2 }, s); shapeAt(s, { type: 'rect', w: 18, h: 11, color: css('--rect') }, 48, 18); shapeAt(s, { type: 'circle', size: 14, color: css('--circle') }, 34, 36); shapeAt(s, { type: 'square', size: 11, color: css('--square') }, 20, 18); },
     road: () => { for (let i = 0; i < 3; i++) { el('rect', { x: 8 + i * 20, y: 30, width: 17, height: 17, rx: 3, fill: i % 2 ? '#e9dcc3' : '#dccaa8', stroke: '#fff', 'stroke-width': 1.5 }, s); if (digitsKnown()) el('text', { x: 16.5 + i * 20, y: 43, 'text-anchor': 'middle', 'font-size': 11, 'font-weight': 800, fill: '#33454c', 'font-family': css('--f'), direction: 'ltr' }, s).textContent = DG(i + 1); } },
     jump: () => { for (let i = 0; i < 3; i++) el('rect', { x: 8 + i * 20, y: 34, width: 17, height: 14, rx: 3, fill: i % 2 ? '#e9dcc3' : '#dccaa8', stroke: '#fff', 'stroke-width': 1.5 }, s); el('path', { d: 'M16 30 Q26 8 36 30 M36 30 Q46 8 56 30', fill: 'none', stroke: css('--compass'), 'stroke-width': 2.5, 'stroke-dasharray': '3 3' }, s); },
-    treasure: () => { treasureAt(s, 36, 46, .9); } };
+    treasure: () => { treasureAt(s, 36, 46, .9); },
+    /* S1-U4 */
+    len: () => { el('line', { x1: 62, y1: 12, x2: 62, y2: 50, stroke: '#1b3440', 'stroke-width': 1.5, 'stroke-dasharray': '3 3' }, s); el('rect', { x: 14, y: 16, width: 48, height: 9, rx: 2, fill: NEUTRAL[0] }, s); el('rect', { x: 30, y: 34, width: 32, height: 9, rx: 2, fill: NEUTRAL[3] }, s); },
+    weigh: () => { const gg = el('g', { transform: 'translate(36 2) scale(.2)' }, s); balanceAt(gg, 0, 260).set(-1); },
+    clips: () => { lenAt(s, { kind: 'pencil', len: 56, color: NEUTRAL[3] }, 64, 18); unitRow(s, 'clip', 3, 64, 40, { u: 18 }); },
+    board: () => { barBoardAt(s, ['short', 'same', 'long'], [2, 1, 3], { baseY: 46, cell: 9, gap: 18, x0: 54, iconS: .01 }); },
+    rods: () => { rodAt(s, 22, 52, { c: 4.4 }); rodAt(s, 34, 52, { c: 4.4 }); for (let i = 0; i < 3; i++) oneAt(s, 50 + i * 8, 48, { c: 7 }); },
+    frame: () => { const F = frameAt(s, 36, 30, { cell: 12 }); F.fill(7, CUBE.lemon); F.fill(3, COUNTER2, 7); },
+    bus: () => { el('rect', { x: 8, y: 12, width: 56, height: 30, rx: 7, fill: '#f2b33d' }, s); const F = frameAt(s, 34, 27, { cell: 9 }); F.fill(10, CUBE.lemon); for (const x of [18, 52]) el('circle', { cx: x, cy: 44, r: 5, fill: '#33454c' }, s); } };
   if (special[ic[0]]) special[ic[0]]();
   else ic.forEach((k, i) => { const x = 36 + (i - (ic.length - 1) / 2) * (SOLIDC[k] ? 28 : 24);
     if (SOLIDC[k]) thingAt(s, { solid: k, size: 44 }, x, 28); else shapeAt(s, { type: k, size: 28, w: k === 'rect' ? 36 : k === 'triangle' ? 32 : undefined, h: k === 'rect' ? 22 : k === 'triangle' ? 28 : undefined, color: css(IDC[k]) }, x, 28); });
@@ -75,7 +83,7 @@ function showHome() {
 function wsStop(U, uOpen) { const open = uOpen && wsOpen(U); const solved = wsSolved(U.id), total = WS[U.id].puzzles.length;
   const wb = document.createElement('button'); wb.className = 'stop ws' + (open && solved < 1 ? ' must' : ''); wb.dataset.workshop = U.id; wb.setAttribute('aria-disabled', !open);
   wb.innerHTML = `<svg viewBox="0 0 72 56" aria-hidden="true">${hostsSVG(U.id).replace(/^<svg[^>]*>/, '<g transform="translate(-14 -10) scale(.5)">').replace(/<\/svg>$/, '</g>')}<path d="M8 50 h56" stroke="${css('--basket-dk')}" stroke-width="4" stroke-linecap="round"/></svg>`
-    + `<span>${esc(G(labelText('workshop')))}<small aria-label="${solved} / ${total}">${esc(G(labelText(wsRoom(U.id) ? 'wsShadowsRoom' : 'wsShadows')))} <span class="dots" aria-hidden="true">${'<i class="on"></i>'.repeat(solved)}${'<i></i>'.repeat(Math.max(0, total - solved))}</span></small></span>` + (open ? (solved ? ST_ICON.done(css('--good')) : '') : ST_ICON.lock(css('--muted')));
+    + `<span>${esc(G(labelText('workshop')))}<small aria-label="${solved} / ${total}">${esc(G(labelText(wsWord(U.id, 'wsShadows'))))} <span class="dots" aria-hidden="true">${'<i class="on"></i>'.repeat(solved)}${'<i></i>'.repeat(Math.max(0, total - solved))}</span></small></span>` + (open ? (solved ? ST_ICON.done(css('--good')) : '') : ST_ICON.lock(css('--muted')));
   wb.onclick = () => { if (!open) { SFX.soft(); return; } SFX.tick(); runWorkshop(U); }; return wb; }
 /* بدء الدرس: الراحة أولاً إن بلغت الجلسة حدّها، ثم سؤال الاستئناف إن خرج الطفل في منتصفه */
 function startLesson(id) {

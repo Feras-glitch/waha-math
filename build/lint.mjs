@@ -34,6 +34,9 @@ export function lint(content, js) {
   const code = js.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
   for (const m of code.matchAll(/\b(?:say|S)\(\s*(?:'(?:compass|chaos)'\s*,\s*'[^']*'\s*,\s*)?'([^']*)'/g)) if (AR.test(m[1])) errors.push('جملة منطوقة مكتوبة في الكود: ' + m[1].slice(0, 40));
   js.split('\n').forEach((l, i) => { if (/Math\.random\(/.test(l) && !/rng-ok/.test(l)) errors.push('Math.random بلا علامة rng-ok في السطر ' + (i + 1)); });
+  /* الدالة المعرَّفة مرتين في الكود المجموع تُبطل الأولى صامتاً (S1-U4، الدرس 139: boardAt للوحة المقاول أبطل لوحة الروبوت فانهار S1-U3 د3) */
+  { const seen = new Map(); for (const m of code.matchAll(/^(?:async\s+)?function\s+(\w+)\s*\(/gm)) { const ln = code.slice(0, m.index).split('\n').length;
+      if (seen.has(m[1])) errors.push(`الدالة ${m[1]} معرَّفة مرتين في الكود (السطران ${seen.get(m[1])} و${ln})، فالثانية تُبطل الأولى صامتاً`); else seen.set(m[1], ln); } }
   // تعليق سطر بعده كود في السطر نفسه يبتلع الكود صامتاً (وقع مرتين في بوابة هـ): التعليق داخل السطر يُكتب بين علامتي التعليق الكتلي
   const SWALLOW = /\b(await|const|let|return|if|else)\b\s|\w\([^)]*\);|\};|\)\s*;\s*\w/;
   const swallowIn = (txt, name) => txt.split('\n').forEach((l, i) => { const m = l.match(/\s\/\/\s(.*)$/); if (m && SWALLOW.test(m[1])) errors.push('كود بعد تعليق السطر (يُبتلع) في ' + name + ' السطر ' + (i + 1) + ': ' + m[1].slice(0, 50)); });
@@ -164,6 +167,8 @@ export function lint(content, js) {
     if (v.t === 'roadHop' && v.n != null) o.push(['الوصول', v.a + (v.dir || 1) * v.n]);
     if (v.t === 'roadPick') o.push(['الجواب', v.ask === 'land' ? v.n + (v.dir || 1) * v.k : v.ask === 'hops' ? v.b - v.n : v.n + (['next', 'more'].includes(v.ask) ? 1 : -1)]);
     if (v.scene === 'jumpChaosHook' || v.scene === 'chaosSubForward') o.push(['الوصول', v.a + (v.scene === 'chaosSubForward' ? -1 : 1) * v.n]);
+    if (v.t === 'makeTen') o.push(['المجموع', v.a + v.b], ['صديق العشرة', 10 - v.a]); if (v.t === 'backTen') o.push(['الباقي', v.a - v.b], ['ما بعد العشرة', v.a - 10]);   /* S1-U4 */
+    if (v.t === 'frameNeed' || v.t === 'frameGlance') o.push(['الإطار', 10 - v.n]); if (v.scene === 'tenBus') for (const r of v.rounds || []) o.push(['المجموع', r.a + r.b]);
     return o; };
   const walkNum = (v, where, top) => { if (Array.isArray(v)) return v.forEach(x => walkNum(x, where, top)); if (!v || typeof v !== 'object') return;
     if (typeof v.t === 'string' || typeof v.scene === 'string') { const mx = maxN(top);
@@ -190,6 +195,51 @@ export function lint(content, js) {
       if (new Set(items.map(key)).size !== items.length) errors.push(`${where}: mapFind «${v.q}»: قطعتان في خانة واحدة`); }
     for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkMap(x, where); };
   for (const L of Object.values(lessons)) walkMap(L, L.id);
+  // 4ب4) «قارن وقس» (S1-U4): ما يرسمه البند موجود في سجلّات الرسم، والمقارنة ممكنة (أطوال مختلفة، وثقلان مختلفان)، والشيء داخل المسرح، والعدد المكتوب فوق العشرة من درسه
+  { const block = name => { const i = code.indexOf('const ' + name + ' = {'); if (i < 0) return ''; let d = 0, j = code.indexOf('{', i);
+      for (let k = j; k < code.length; k++) { if (code[k] === '{') d++; else if (code[k] === '}' && !--d) return code.slice(j, k + 1); } return ''; };
+    const HOUSE = new Set([...block('HOUSE_DRAW').matchAll(/^\s{2}(\w+)\(g, L\)/gm)].map(m => m[1])), WGT = Object.fromEntries([...block('WEIGH').matchAll(/(\w+): \{ w: (\d+)/g)].map(m => [m[1], +m[2]]));
+    const UU = Object.fromEntries([...(code.match(/const UNIT_U = \{([^}]*)\}/) || ['', ''])[1].matchAll(/(\w+): (\d+)/g)].map(m => [m[1], +m[2]]));
+    const SPS = +((code.match(/const SPAN_S = (\d+)/) || [])[1] || 112), MSX = +((code.match(/const MS_X = (\d+)/) || [])[1] || 318);
+    const IDK = Object.keys(Object.fromEntries([...(code.match(/const IDC = \{([^}]*)\}/) || ['', ''])[1].matchAll(/(\w+):/g)].map(m => [m[1], 1])));
+    const LEN_K = new Set(['strip', 'pencil', 'ribbon', 'worm', 'stick']), SIZE_K = new Set(['circle', 'ball', 'box']), CAT_K = new Set(['short', 'same', 'long', ...Object.keys(WGT), ...IDK]);
+    if (!HOUSE.size || !Object.keys(WGT).length || !Object.keys(UU).length) errors.push('فحص S1-U4: لم يُعثر على سجلّات الرسم (HOUSE_DRAW أو WEIGH أو UNIT_U) في الكود');
+    const TEEN_FROM = ORDER.indexOf('m1.u4.d5'), TEEN_T = new Set(['rodCount', 'rodBuild', 'rodMatch', 'teenCmp', 'teenTrace']), TEEN_S = new Set(['rodMaker', 'teenWrite', 'rodFactory', 'chaos31']);
+    const walkU4 = (v, where, top) => { if (Array.isArray(v)) return v.forEach(x => walkU4(x, where, top)); if (!v || typeof v !== 'object') return; const t = v.t, sc = v.scene, nm = t || sc;
+      /* العدد فوق العشرة مكتوباً (البطاقات والبناء والتتبّع) من درس العشرة والآحاد فصاعداً (N010، D229): قبله يُسمع ولا يُكتب */
+      if ((TEEN_T.has(t) || TEEN_S.has(sc) || (sc === 'recallU4' && v.pic && v.pic.kind === 'teen')) && TEEN_FROM >= 0 && ORDER.indexOf(top) < TEEN_FROM) errors.push(`${where}: ${nm}: عدد فوق العشرة مكتوب قبل درس العشرة والآحاد (m1.u4.d5)`);
+      if (t === 'rodMatch') for (const o of v.opts || []) if (typeof o !== 'number' || o < 0 || o > 20) errors.push(`${where}: rodMatch: الخيار ${o} خارج 0–20`);
+      if (t === 'rodMatch' && !(v.opts || []).includes(v.n)) errors.push(`${where}: rodMatch: الجواب ${v.n} ليس في الخيارات`);
+      /* الأشياء من سجلّات الرسم: شيء البيت يُقاس، وما يوزن، وما يُرتَّب بحجمه، وفئات اللوحة */
+      for (const o of [v.obj, ...(t === 'orderBy' || t === 'lenPick' ? v.house || [] : []), ...(sc === 'contractorBoard' ? (v.house || []).map(h => h[0]) : [])]) if (o != null && !HOUSE.has(o)) errors.push(`${where}: ${nm}: الشيء «${o}» لا رسم له في HOUSE_DRAW`);
+      if (t === 'balance' || (sc === 'recallU4' && v.pic && v.pic.kind === 'weigh')) { const P = t ? v : v.pic; for (const k of [P.a, P.b]) if (!(k in WGT)) errors.push(`${where}: ${nm}: «${k}» ليس في WEIGH`);
+        if (P.a in WGT && P.b in WGT && WGT[P.a] === WGT[P.b]) errors.push(`${where}: ${nm}: «${P.a}» و«${P.b}» بثقل واحد، فلا يميل الميزان ولا أثقل`); }
+      for (const pr of (sc === 'balanceLab' ? v.pairs : sc === 'gardenBalance' ? v.rounds : []) || []) { for (const k of pr) if (!(k in WGT)) errors.push(`${where}: ${sc}: «${k}» ليس في WEIGH`); if (WGT[pr[0]] === WGT[pr[1]]) errors.push(`${where}: ${sc}: «${pr[0]}» و«${pr[1]}» بثقل واحد`); }
+      if (sc === 'chaosHeavyBadge' && !(WGT[v.big] < WGT[v.small])) errors.push(`${where}: chaosHeavyBadge: الكبير «${v.big}» ليس أخفّ من الصغير «${v.small}» (الخطأ المقصود: الأكبر أثقل)`);
+      if ((t === 'lenPick' || (t === 'orderBy' && (v.by || 'len') === 'len')) && v.kind && !LEN_K.has(v.kind)) errors.push(`${where}: ${t}: نوع الطول «${v.kind}» غير معروف`);
+      if ((t === 'sizePick' || (t === 'orderBy' && v.by === 'size')) && v.kind && !SIZE_K.has(v.kind)) errors.push(`${where}: ${t}: نوع الحجم «${v.kind}» غير معروف`);
+      if (t === 'barRead' || t === 'barBuild' || sc === 'chaosBars') { for (const k of v.cats || []) if (!CAT_K.has(k)) errors.push(`${where}: ${nm}: الفئة «${k}» لا رمز لها`);
+        if ((v.cats || []).length !== (v.counts || []).length) errors.push(`${where}: ${nm}: الفئات والأعداد بطولين مختلفين`);
+        if (t === 'barRead' && ['most', 'least'].includes(v.ask)) { const m = (v.ask === 'most' ? Math.max : Math.min)(...v.counts); if (v.counts.filter(x => x === m).length > 1) errors.push(`${where}: barRead: عمودان ${v.ask === 'most' ? 'أطول' : 'أقصر'} معاً، فلا جواب واحد`); }
+        if (t === 'barRead' && v.ask === 'more' && !(v.counts[v.cats.indexOf(v.a)] > v.counts[v.cats.indexOf(v.b)])) errors.push(`${where}: barRead: «كم زاد ${v.a} على ${v.b}؟» والأول ليس أكثر`); }
+      /* المقارنة ممكنة: أطوال وأحجام مختلفة، والأشياء داخل المسرح (البداية على MS_X والشيء يمتدّ يساراً) */
+      const vals = t === 'lenPick' ? v.lens : t === 'orderBy' || t === 'sizePick' ? v.vals : null;
+      if (vals) { if (new Set(vals).size !== vals.length) errors.push(`${where}: ${t}: قيمتان متساويتان (${vals}) فلا ترتيب ولا أطول واحد`);
+        const near = [...vals].sort((a, b) => a - b).find((x, i, a) => i && x - a[i - 1] < (t === 'sizePick' || v.by === 'size' ? 4 : 14)); if (near != null) errors.push(`${where}: ${t}: قيمتان متقاربتان (${vals}) لا يميّزهما الطفل بعينه`);
+        if (t !== 'sizePick' && v.by !== 'size') vals.forEach((L, i) => { const sh = (v.shift || [])[i] || 0; if (MSX - sh - L < 8) errors.push(`${where}: ${t}: الشيء ${i} (${L} بإزاحة ${sh}) يخرج من المسرح`); });
+        else { const n = vals.length, R = 330 / n / 2; for (const r of vals) if (r > R - 1) errors.push(`${where}: ${t}: نصف القطر ${r} أكبر من مكانه (${Math.floor(R - 1)}) فتتراكب الأشياء`); } }
+      if (['unitCount', 'unitLay', 'unitCheck'].includes(t)) { if (!(v.unit in UU)) errors.push(`${where}: ${t}: الوحدة «${v.unit}» ليست في UNIT_U`); else if (v.n * UU[v.unit] > MSX - 12) errors.push(`${where}: ${t}: ${v.n} × ${UU[v.unit]} يخرج من المسرح`); }
+      if (t === 'unitCheck' && v.bad === 'mix') { const u = UU[v.unit], L = v.n * u; let s = 0; for (let i = 0; s < L - 4; i++) { const ui = i % 2 ? Math.round(u * 1.5) : u; if (s + ui > L + 4) break; s += ui; } if (Math.abs(s - L) > 4) errors.push(`${where}: unitCheck mix: الوحدات المختلفة لا تبلغ نهاية الشيء (${s} من ${L})، فالخطأ خطآن`); }
+      /* سلّة الشبر: لا يكون الطول على حدّ سلّتين (يُرى بعين الطفل) */
+      for (const L of t === 'spanSort' ? [v.len] : sc === 'contractorBoard' ? (v.house || []).map(h => h[1]) : []) for (const b of [SPS * .85, SPS * 1.15]) if (Math.abs(L - b) < 6) errors.push(`${where}: ${nm}: الطول ${L} على حدّ سلّتين (${Math.round(b)})`);
+      /* التعدّي في لوحة المقاول (مراجعة فابل B): الشيئان من أشياء اللوحة، أحدهما أطول من الشبر والآخر أقصر منه، فالشبر بينهما ويُستنتج الأطول بلا تجاور؛ ولكلٍّ اسمٌ للمس */
+      if (sc === 'contractorBoard' && v.trans) { const H = Object.fromEntries(v.house || []), [a, b] = v.trans.pair || [], cat = L => L < SPS * .85 ? 'short' : L > SPS * 1.15 ? 'long' : 'same';
+        if (!(a in H) || !(b in H) || a === b) errors.push(`${where}: contractorBoard: التعدّي بشيئين ليسا من أشياء اللوحة (${a}، ${b})`);
+        else if ([cat(H[a]), cat(H[b])].sort().join() !== 'long,short') errors.push(`${where}: contractorBoard: التعدّي بـ«${a}» (${cat(H[a])}) و«${b}» (${cat(H[b])}): يلزم شيء أطول من الشبر وشيء أقصر منه`);
+        for (const k of [a, b]) if (!content.labels.ui['h.' + k]) errors.push(`${where}: contractorBoard: لا اسم للشيء «${k}» (h.${k})`);
+        if (!(v.trans.lines || []).length) errors.push(`${where}: contractorBoard: التعدّي بلا جملة سؤال`); }
+      for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkU4(x, where, top); };
+    for (const L of Object.values(lessons)) walkU4(L, L.id, L.id); }
   // 4ب3) التوأم (الفحص المستقل B، المبدأ 5): كل بند يُشغَّل بالمساعدة (التمرين، والعلاج، ومراحل البنود بوضع التمرين أو العلاج) من نوعٍ توأمُه في بياناته
   //      (دالة twin في الكود تعيد item.twin) له توأم؛ ولا توأم للتوأم (يُشغَّل مرة واحدة)، ولا توأم في بند لا يُشغَّل توأمه (التقييم والاكتشاف)
   { const TWIN_DATA = new Set(), starts = [...code.matchAll(/^ITEM\.(\w+) = \{/gm)];
@@ -236,9 +286,23 @@ export function lint(content, js) {
   //      ولا في كل بنود المسار الرئيس للدرس (التمرين العادي والإتقان) إن كانت ثلاثة فأكثر. و«فوق أم تحت؟» يُقرأ خياراه بترتيبهما في السؤال
   //      (كان جواب «فوق أم تحت؟» أول الكلمتين في بنود المساعدة السبعة كلها، وجواب «في أيّ عربة؟» الزرّ الأوسط في الإتقان والتمرين)
   { const ROOTW = { on: 'فوق', under: 'تحت', in: 'داخل', out: 'خارج', beside: 'بجانب' }, bare = s => s.replace(/[ً-ْ]/g, ''), pkw = a => /^beside/.test(a || '') ? 'beside' : a;
-    const NAME = { where: '«أين هو؟»', linePick: '«في أيّ عربة؟»', lrPick: '«على يمينه أم يساره؟»', yesno: '«نعم/لا»', same: '«بقي كما هو/تغيّر»' };
+    const NAME = { where: '«أين هو؟»', linePick: '«في أيّ عربة؟»', lrPick: '«على يمينه أم يساره؟»', yesno: '«نعم/لا»', same: '«بقي كما هو/تغيّر»',
+      /* S1-U4: الأشياء والخيارات في أماكن ثابتة من البيانات (الصفوف من الأعلى، والدوائر والبطاقات من اليمين، وكفّتا الميزان، والشبران، واللوحتان، وسلال الشبر) */
+      lenPick: '«أيّها أطول/أقصر؟»', sizePick: '«أيّها أكبر/أصغر؟»', balance: '«أيّهما أثقل/أخف؟»', teenCmp: '«أيّهما أكثر؟»', rodMatch: '«المس بطاقته/بناءه»',
+      spanPick: '«شبر مَن…؟»', unitCheck: '«أيّ القياسين صحيح؟»', spanSort: 'سلّة الشبر', barRead: '«أيّ عمود أطول/أقصر؟»' };
+    const WG = (() => { const i = code.indexOf('const WEIGH = {'); return i < 0 ? {} : Object.fromEntries([...code.slice(i, i + 3000).matchAll(/(\w+): \{ w: (\d+)/g)].map(m => [m[1], +m[2]])); })();
+    const SPS5 = +((code.match(/const SPAN_S = (\d+)/) || [])[1] || 112), ext = (a, f) => a.indexOf(f(...a));
     const ansIdx = v => v.t === 'where' && v.ask !== 'thing' && Array.isArray(v.words) ? v.words.indexOf(pkw(v.want || v.pic.at)) : v.t === 'linePick' ? (v.opts || []).indexOf(v.k)
-      : v.t === 'lrPick' ? (v.side === 'R' ? 0 : 1) : v.t === 'yesno' ? (v.ans ? 0 : 1) : v.t === 'same' ? (v.add ? 1 : 0) : null;
+      : v.t === 'lrPick' ? (v.side === 'R' ? 0 : 1) : v.t === 'yesno' ? (v.ans ? 0 : 1) : v.t === 'same' ? (v.add ? 1 : 0)
+      : v.t === 'lenPick' ? ext(v.lens, v.ask === 'short' ? Math.min : Math.max) : v.t === 'sizePick' ? ext(v.vals, v.ask === 'small' ? Math.min : Math.max)
+      : v.t === 'balance' && (v.mode || 'read') !== 'test' ? ((WG[v.a] > WG[v.b]) === ((v.ask || 'heavy') === 'heavy') ? 0 : 1)
+      : v.t === 'teenCmp' ? ((v.a > v.b) === ((v.ask || 'more') === 'more') ? 0 : 1) : v.t === 'rodMatch' ? (v.opts || []).indexOf(v.n)
+      : v.t === 'spanPick' ? ((v.a < v.b) === ((v.ask || 'longer') === 'longer') ? 0 : 1) : v.t === 'unitCheck' ? ((v.top || 'ok') === 'ok' ? 0 : 1)
+      : v.t === 'spanSort' ? (v.len < SPS5 * .85 ? 0 : v.len > SPS5 * 1.15 ? 2 : 1) : v.t === 'barRead' && ['most', 'least'].includes(v.ask) ? ext(v.counts, v.ask === 'most' ? Math.max : Math.min) : null;
+    /* ومواضع النوع بعدد خياراته (الثاني من اثنين أسفلهما، والثاني من ثلاثة أوسطها) */
+    /* والميزان بطريقته: التوقّع من الصورة (الشيئان على الأرض) غير قراءة الكفّتين */
+    const kindOf = v => ['lenPick', 'sizePick', 'rodMatch'].includes(v.t) ? v.t + '#' + (v.lens || v.vals || v.opts || []).length + ' خيارات' : v.t === 'balance' ? v.t + '#' + ((v.mode || 'read') === 'pic' ? 'من الصورة' : 'بالميزان') : v.t;
+    const kName = k => { const [t, sub] = k.split('#'); return NAME[t] + (sub ? ' (' + sub + ')' : ''); };
     const lists = (L, help) => { const st = L.flow.filter(s => s.scene === 'items'); const P = L.practice || {}, M = L.mastery || {};
       const base = help ? [...(P.normal || []), ...(P.challenge || []), ...Object.values(M.remedial || {}).flat(), ...st.filter(s => ['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])]
         : [...Object.values(M.concepts || {}).flat(), ...(M.mixed ? [M.mixed.item] : []), ...(L.review || []), ...((L.test && L.test.items) || []).map(q => q.item), ...st.filter(s => !['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])];
@@ -261,11 +325,11 @@ export function lint(content, js) {
         if (v.t === 'where') { const c = LINES.get(v.q.startsWith('gen.') ? v.q : L.id + '.' + v.q); if (c) { const t = bare(c.text.replace(GEN_RX, '$1')), at = v.words.map(w => ROOTW[w] ? t.indexOf(ROOTW[w]) : -1);
           if (at.some(x => x < 0)) errors.push(`${L.id}: where «${v.q}»: السؤال لا يسمّي الخيارات كلها ${JSON.stringify(v.words)}`);
           else if (at.some((x, k) => k && x < at[k - 1])) errors.push(`${L.id}: where «${v.q}»: الخيارات تُقرأ بغير ترتيبها في السؤال ${JSON.stringify(v.words)}`); } }
-        add(L.unit + '|' + v.t + '|كلها', i); if (help) add(L.unit + '|' + v.t + '|بالمساعدة', i); }
+        add(L.unit + '|' + kindOf(v) + '|كلها', i); if (help) add(L.unit + '|' + kindOf(v) + '|بالمساعدة', i); }
       const main = [...((L.practice || {}).normal || []), ...Object.values((L.mastery || {}).concepts || {}).flat()];
-      for (const t of Object.keys(NAME)) { const ix = main.filter(v => v && v.t === t).map(ansIdx).filter(i => i != null && i >= 0); if (ix.length >= 3 && new Set(ix).size === 1) errors.push(`${L.id}: ${NAME[t]}: الجواب في الموضع ${ix[0] + 1} في كل بنود التمرين العادي والإتقان (${ix.length})`); } }
-    for (const [k, c] of Object.entries(per)) { const n = Object.values(c).reduce((a, b) => a + b, 0), [u, t, nm] = k.split('|'), [top, m] = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
-      if (n >= 3 && m > 2 * n / 3) errors.push(`${u}: ${NAME[t]} ${nm}: الجواب في الموضع ${+top + 1} في ${m} من ${n}، فيكفي الطفلَ موضعُه (المطلوب ثلثا البنود على الأكثر)`); } }
+      for (const t of new Set(main.filter(v => v && NAME[v.t]).map(kindOf))) { const ix = main.filter(v => v && kindOf(v) === t).map(ansIdx).filter(i => i != null && i >= 0); if (ix.length >= 3 && new Set(ix).size === 1) errors.push(`${L.id}: ${kName(t)}: الجواب في الموضع ${ix[0] + 1} في كل بنود التمرين العادي والإتقان (${ix.length})`); } }
+    for (const [k, c] of Object.entries(per)) { const n = Object.values(c).reduce((a, b) => a + b, 0), [u, tk, nm] = k.split('|'), [top, m] = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
+      if (n >= 3 && m > 2 * n / 3) errors.push(`${u}: ${kName(tk)} ${nm}: الجواب في الموضع ${+top + 1} في ${m} من ${n}، فيكفي الطفلَ موضعُه (المطلوب ثلثا البنود على الأكثر)`); } }
   // 4ب6) علاج «بقي كما هو/تغيّر» فيه بقاءٌ خالص (الفحص المستقل E): الخطأ الذي يعالجه «البعثرة تزيد» (N002)، فلو كانت بنوده كلها بزيادة لكان «تغيّر»
   //      صواباً دائماً، ولمُدح الطفل على الخطأ الذي يُعالَج (كانت زيادةٌ لتوازن موضع الجواب قد وُضعت في بند العلاج الوحيد)
   for (const L of Object.values(lessons)) for (const [c, a] of Object.entries((L.mastery || {}).remedial || {})) { const s = (a || []).filter(v => v && v.t === 'same');

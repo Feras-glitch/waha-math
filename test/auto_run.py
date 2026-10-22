@@ -41,6 +41,13 @@ EMPTY = """() => { const svg = document.querySelector('#stage svg'); if (!svg) r
   return [...svg.querySelectorAll('g[style*="grab"]')].filter(g => !g.closest('[hidden]') && +getComputedStyle(g).opacity >= .5)
     .filter(g => ![...g.querySelectorAll('circle,ellipse,rect,polygon,path,line,polyline,text,image')].some(e => { if (!seen(e)) return false; try { const k = e.getBBox(); return k.width || k.height; } catch (x) { return true; } }))   /* بإطار الرسم نفسه، لا بحجمه على الشاشة أثناء حركة الدخول */
     .map(g => g.getAttribute('aria-label') || g.dataset.k || g.getAttribute('class') || 'g'); }"""
+# مسرحٌ مضغوط: جملة طويلة أو أزرار تحت المسرح تصغّر الرسم فتتقارب أهدافه وتصغر (حدث في S1-U4: رتّب أربعة أشرطة بجملة من خمسة أسطر وزرّ المحاذاة، فصار المسرح نصف حجمه
+# وأشرطته على 25 نقطة بعضها من بعض، فسرقت منطقة لمسٍ لمسة جارتها؛ وصفوف «كم؟» تراكمت تحت المسرح). مقياس الرسم إلى مقياس عرضه (preserveAspectRatio meet): أقل من 0.75 مضغوط
+# (أصغر ما في الدروس الأخرى 0.76: مسرح تتبّع الرقم في S1-U1 د3، وأحجامه كبيرة)
+# وحدّان (بوابة S1-U4 على أضيق شاشة): 0.75 لمسرحٍ فيه أهداف لمس (تتقارب فتسرق بعضها)، و0.6 لمسرحٍ يُرى ولا يُلمس (الأزرار تحته: الروبوت 0.75 على 320×568، وكان التعليل 0.52 تحت ثلاث بطاقات فصُغّرت البطاقات)
+SQUEEZE = """() => { const s = document.querySelector('#stage svg'); if (!s) return null; const r = s.getBoundingClientRect(), vb = s.viewBox.baseVal; if (!vb || !vb.width || !r.width) return null;
+  const live = [...s.querySelectorAll('[role=button]')].some(g => (g.onclick || getComputedStyle(g).cursor === 'grab') && !g.closest('[hidden]') && +getComputedStyle(g).opacity >= .5);
+  const k = s.getScreenCTM().a, kw = r.width / vb.width; return k / kw < (live ? .75 : .6) ? [Math.round(100 * k / kw), Math.round(r.width), Math.round(r.height), (document.querySelector('#say') || {}).textContent.length, live ? 'targets' : 'view'] : null; }"""
 CARDS = """() => { const c = [...document.querySelectorAll('.choices.cards .card')]; if (!c.length) return null;   /* بطاقتا فوضى: كلتاهما مخفية النص، ومتماثلتان بالنظر (D254 (1)) */
   if (!c.every(b => b.classList.contains('hidden-text'))) return 'card text visible'; return [...new Set(c.map(b => b.innerHTML))].length > 1 ? 'cards differ' : null; }"""
 WATCH = """() => { window.__shown = []; const s = document.querySelector('#say'), b = document.querySelector('#bubble'); if (window.__obs) window.__obs.disconnect();   /* كل نصّ تظهره الفقاعة أثناء الإعادة */
@@ -76,7 +83,7 @@ async def main():
     ONLY_SET = {x for x in ONLY if not x.startswith('ws:')}
     tw_seen = {}; prev_twin = False
     if ONLY: await pg.evaluate("() => { PROG.unlockAll = true; saveProg(); showHome(); }"); await pg.wait_for_timeout(300)
-    small = {}; noname = {}; empty = {}; taps = {}; leaks = []; failed_rev = {}; redo_seen = set(); replay_q = None; crashes = 0; seen_types = set(); deep = {}; failed_test = {}; shots = set(); report = []; lessons = 0
+    small = {}; noname = {}; empty = {}; squeeze = {}; taps = {}; leaks = []; failed_rev = {}; redo_seen = set(); replay_q = None; crashes = 0; seen_types = set(); deep = {}; failed_test = {}; shots = set(); report = []; lessons = 0
     visits = 0   # MAXL يعدّ الدروس وحدها (لا المراجعة ولا الورشة)، وسقف الزيارات كلها 200 حارس من حلقة
     while lessons < MAXL and visits < 200:
       if os.environ.get('ONLY'):
@@ -114,6 +121,8 @@ async def main():
           for x in await pg.evaluate(SMALL): small.setdefault(tuple(x[:1]) + (a['kind'],), (sc, x))   # كل انتظار لفعل الطفل: أهدافه الآن
           for x in await pg.evaluate(NONAME): noname.setdefault((x, a['kind']), sc)
           for x in await pg.evaluate(EMPTY): empty.setdefault((sc, a['kind'], x), 0)
+          sq = await pg.evaluate(SQUEEZE)
+          if sq: squeeze.setdefault((sc, a['kind'], st['q']), sq)
           for x in await pg.evaluate(TAPS): taps.setdefault((sc, a['kind']) + tuple(x), 0); taps[(sc, a['kind']) + tuple(x)] += 1
           for fam, html in await font_fallbacks(cdp): fontfb.setdefault((fam, html), sc)
           last_n = a['n']; how = 'ok'
@@ -178,6 +187,10 @@ async def main():
     print('LOG.errors:', len(errlog)); [print(' ', e) for e in errlog[:20]]
     print('small targets:', len(small)); [print(' ', *v) for v in list(small.values())[:30]]
     print('empty drags:', len(empty)); [print(' ', *k) for k in list(empty)[:20]]
+    print('squeezed stages:', len(squeeze)); [print(' ', *k, v) for k, v in list(squeeze.items())[:30]]
     print('blocked lessons:', len(blocked)); [print(' ', *r) for r in blocked[:20]]
     print('lessons not done:', len(not_done) if MAXL >= len(all_ids) else 0, not_done if MAXL >= len(all_ids) else '(MAXL)')
-asyncio.run(main())
+    # STRICT=1 (لفحص الفحوص، الدرس 98): يخرج بـ 1 إن كان في العدّادات شيء، كما تحكم خلاصة المجموعة
+    return int(bool(errs or errlog or small or empty or squeeze or blocked or taps or noname or leaks or fontfb or miss))
+rc = asyncio.run(main())
+if os.environ.get('STRICT') == '1': sys.exit(rc or 0)
