@@ -1,7 +1,9 @@
 /* =====================================================================
    البنود (D240): كل سؤال للطفل بند من نوع، وكل نوع يعرّف:
-     make(spec) ← بند جديد · ask(item, mode) ← {ans, ctx} · judge(item, ans) ← {ok, err, alt}
-     hint2(item, r, err) حركة الأداة · together(item, r) الحل المشترك حتى الخطوة الأخيرة · reveal(item, r) · reason(item) · twin(item)
+     make(spec) ← بند جديد · ask(item, mode, tries) ← {ans, ctx} · judge(item, ans) ← {ok, err, alt}
+     hint2(item, r, err) حركة الأداة · together(item, r, err) الحل المشترك حتى الخطوة الأخيرة · reveal(item, r) · reason(item) · twin(item)
+   والحلّ المشترك المرسوم يُرسم في ask عند tries >= 3 على مسرح المحاولة التي يخدمها، فيبقى أمام الطفل حين يجيب (D257(5)(و))؛
+   وtogether لا يرسم على مسرح المحاولة السابقة (r.ctx): يقول جملة، أو يحفظ الخطأ لـ ask (يفحصه build/lint.mjs)
    والتلميح الثلاثي: الأول سؤال خاص بالخطأ لا يذكر الجواب ولا اسم الفئة (errors.json)، والثاني حركة أداة إلزامية،
    والثالث حلّ مشترك يتوقف قبل الخطوة الأخيرة ويُتمّها الطفل، ثم مسألة توأم.
    ===================================================================== */
@@ -10,7 +12,8 @@ const itemType = spec => (spec && typeof spec === 'object' && !Array.isArray(spe
 /* السؤال الأول (المستوى 1) للخطأ: من الدرس إن خصّصه، وإلا من سجلّ الأخطاء */
 const ERRQ_LAST = {};
 function errQ(err, item) { const D = CUR ? LDATA[CUR.id] : null; const o = D && D.errQ && D.errQ[err]; if (o) return o;
-  const e = ERRORS[err]; const ids = e && e.q ? (Array.isArray(e.q) ? e.q : Object.keys(e.q)) : ['gen.err.generic.01', 'gen.err.generic.02'];
+  const e = ERRORS[err]; let ids = e && e.q ? (Array.isArray(e.q) ? e.q : Object.keys(e.q)) : ['gen.err.generic.01', 'gen.err.generic.02'];
+  if (e && e.mat && !PATH_MAT()) ids = ids.filter(id => !e.mat.includes(id));   /* ما يحتاج أداة الطفل الحقيقية (الشريط على يده) لا يُسأل على الشاشة */
   let id = pick(ids); if (ids.length > 1) while (id === ERRQ_LAST[err]) id = pick(ids); ERRQ_LAST[err] = id; return id; }   // صيغ متنوّعة للسؤال نفسه (M6)
 let streak = 0;
 async function praiseFor(item, tries) {

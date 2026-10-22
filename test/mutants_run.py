@@ -8,6 +8,13 @@
 #      حزمة الصوت والنسخة الاحتياطية (backup_voice_run)، واللمس الحقيقي لما خرج من نافذة القطار (realtap_run)،
 #      واللمس السريع على الطريق (quicktap_run)، و«أعد الجملة» بعد فعل الطفل (replay_run، القسم 8).
 #      وقواعد التوأم وجملة حلّ كل موضع (الفحص المستقل B) في فحص المحتوى.
+#   3) وقواعد الفحص المستقل C: الساكن قبل همزة الوصل، وجملة علاج الاختبار، وتوازن «فوق أم تحت؟»، وجملة الكشف، وحلّ «أيّ أمر اتّبع؟» بخطئه، وأسئلة المواد،
+#      ومسألة الخريطة بخانتها، وجِدّة التوأم، والحلّ المشترك على مسرح محاولته (فحص المحتوى)؛ وفي المتصفح: كل بند يُقيَّم (items_run)، والحلّ المشترك
+#      باقٍ في المحاولة الرابعة (ladder_run)، والطريق المرسوم لا يقطع قطعة (items_run).
+#   4) وقواعد الفحص المستقل D: موضع الجواب في كل خيارات ثابتة الترتيب وفي المسار الرئيس للدرس، وجملة علاج تسمّي درساً بلا علامتي تنصيص، والتوأم لا يعيد
+#      مسألة لعبة أو بند مساعدة في درسه، والكرسي للتقييم وحده، وحلقات «ضع في الخريطة»، و`together` بمعامل باسم آخر، وحلّ روبوت لا يبلغه بند (فحص المحتوى)؛
+#      وفي المتصفح: الحلّ المشترك المرسوم موجود (لا باقٍ فقط)، وهالة اليد اليمنى عليها، وما في اليد مرفوع، والطريق لا يمرّ بقطعة منه قبل دورها،
+#      و«أعد الجملة» يعيد حركة الروبوت.
 # وأول تشغيل له كشف ثلاث طفرات نجت فأُصلحت الفحوص: «تبقى الحزمة بعد إعادة الفتح» لم يكن يعيد الفتح (الانتقال إلى العنوان نفسه بوسمه)،
 # وطول القطار داخل row لا يبلغه فحص الأعداد، وطفرة «حُلّت في التمرين» كانت تفترض قاعدةً غير القاعدة المكتوبة (الترتيب يُحجز بين التقييمات).
 # python3 test/mutants_run.py   (بعد البناء؛ يخرج بـ 1 إن نجت طفرة أو أخفق الأصل)
@@ -53,10 +60,40 @@ CONTENT = [
   # وكل موضع يُطلب له جملة حلّه (الفحص المستقل B: فراغ الطابور g1 بلا جملة فتوقّف الدرس)
   ('فراغ طابور خارج الطابور', 'd2.json', lambda d: next(s for s in d['flow'] if s.get('s') == 'game')['items'][2].update(at='g5'), 'ليس من g0 إلى g2'),
   ('موضع بلا جملة حلّ', 'd1.json', lambda d: d['practice']['normal'][0]['pic'].update(at='near'), 'جملة غير موجودة gen.solve.pos.near'),
+  # الفحص المستقل C للبوابة (الملف بمسار نسبي إلى content/m1/u3: الجمل العامة ووسوم الأخطاء ودروس الوحدات الأخرى)
+  ('ساكن قبل همزة وصل', '../../strings/gen.json', lambda d: d['lines'].__setitem__('gen.solve.pos.on', gtext(d['lines']['gen.solve.pos.on']).replace('{أَكْمِلِ|', '{أَكْمِلْ|')), 'ساكن قبل همزة وصل في gen.solve.pos.on'),
+  ('جملة علاج الاختبار لا تُحيل إلى الدرس الظاهر', 'd7.json', lambda d: d['lines'].__setitem__('ts.rem', 'نَلْعَبُ بِالحَرَكَةِ وَالأَغَانِي، ثُمَّ نُعِيدُ «غُرْفَةَ الدُّمَى» وَ«طَابُورَ القِطَارِ».'), 'لا تُحيل إلى «هذا الدرس»'),
+  ('جملة علاج الاختبار تسمّي درساً', '../u1/d6.json', lambda d: d['lines'].__setitem__('ts.rem', 'نُعِيدُ «صَيْدَ الأَشْكَالِ» مَعَ الكِبَارِ بِأَشْيَاءَ مِنَ البَيْتِ، ثُمَّ نُرَاجِعُ هَذَا الدَّرْسَ.'), 'تسمّي الدرس «صيد الأشكال»'),
+  ('«أين هو؟» جوابه أول الكلمتين في بنود المساعدة', 'd1.json', lambda d: (d['practice']['normal'][0].__setitem__('words', ['on', 'under']), d['lines'].__setitem__('pr.1', 'القِطَّةُ فَوْقَ الطَّاوِلَةِ، أَمْ تَحْتَهَا؟'),
+     d['practice']['challenge'][0].__setitem__('words', ['in', 'on']), d['lines'].__setitem__('pr.c1', 'الدُّبُّ دَاخِلَ الصُّنْدُوقِ، أَمْ فَوْقَهُ؟')), 'بالمساعدة: الجواب في الموضع 1'),
+  # والمسار الرئيس للدرس (الفحص المستقل D، ص5: جواب د1 الكلمة الثانية في التمرين العادي والإتقان كلها)
+  ('«أين هو؟» جوابه في الموضع نفسه في المسار الرئيس', 'd1.json', lambda d: (d['mastery']['concepts']['C010'][0].__setitem__('words', ['on', 'under']), d['lines'].__setitem__('ms.1', 'الدُّبُّ فَوْقَ الطَّاوِلَةِ، أَمْ تَحْتَهَا؟')), 'في كل بنود التمرين العادي والإتقان'),
+  ('الخياران بغير ترتيب السؤال', 'd1.json', lambda d: d['practice']['normal'][0].__setitem__('words', ['on', 'under']), 'الخيارات تُقرأ بغير ترتيبها'),
+  ('لا جملة كشف لموضع الطابور', '../../strings/gen.json', lambda d: d['lines'].pop('gen.reveal.pos.front'), 'جملة غير موجودة gen.reveal.pos.front'),
+  ('حلّ «أيّ أمر اتّبع؟» لا يعرف الخطأ', 'd3.json', lambda d: d['practice']['challenge'][3]['opts'][1].__setitem__('err', 'rbSteps'), 'لا حلّ مشترك لخطئه «rbSteps»'),
+  ('أسئلة الوسم كلها للمواد', '../../errors.json', lambda d: d['lrSwap'].__setitem__('mat', list(d['lrSwap']['q'])), 'لا سؤال له على الشاشة'),
+  ('خانة المراجعة خانةُ الاكتشاف', 'd4.json', lambda d: d['review'][0]['mark'].__setitem__('cell', [2, 'front']), 'المسألة نفسها (map|find|2,front|floor)'),
+  ('الصندوق مفتوح ومغلق معاً', 'd1.json', lambda d: d['flow'][3]['items'][1]['twin']['pic']['put'][1].__setitem__(1, 'on'), 'الصندوق فيه شيء «داخل» وشيء «فوق» معاً'),
+  # الفحص المستقل D للبوابة
+  ('جملة العلاج تسمّي درساً بلا علامتي تنصيص', 'd7.json', lambda d: d['lines'].__setitem__('ts.rem', 'نَمْشِي مَعَ الكِبَارِ عَلَى طَرِيقِ الأَعْدَادِ، ثُمَّ نُرَاجِعُ هَذَا الدَّرْسَ.'), 'تسمّي الدرس «طريق الأعداد»'),
+  ('التوأم يعيد مسألة اللعبة', 'd3.json', lambda d: d['practice']['normal'][2]['twin'].__setitem__('prog', ['F', 'R', 'F']), 'يعيد مسألة game'),
+  ('التوأم يعيد مسألة لعبة بمشهدها', 'd5.json', lambda d: d['practice']['normal'][2]['twin'].__setitem__('n', 15), 'يعيد مسألة game:roadCountChaos'),
+  ('الكرسي في توأم', 'd1.json', lambda d: d['practice']['normal'][0]['twin']['pic'].__setitem__('ref', 'chair'), 'الكرسي مرجع للتقييم وحده'),
+  ('«في أيّ عربة؟» جوابه الزرّ الأوسط', 'd2.json', lambda d: (d['practice']['normal'][3].__setitem__('opts', [3, 4, 5]), d['mastery']['concepts']['N008'][1].__setitem__('opts', [6, 7, 8])), '«في أيّ عربة؟» كلها: الجواب في الموضع 2'),
+  ('«ضع» في المراجعة بحلقات الإتقان وجوابه', 'd4.json', lambda d: d['review'][1].__setitem__('cands', [[1, 'front'], [0, 'front'], [2, 'front']]), 'حلقاته وحلقة جوابه'),
+  ('«بقي كما هو» جواب كل بنود الثبات', '../u1/d4.json', lambda d: (d['practice']['challenge'][4].pop('add'), d['mastery']['remedial']['N002'][0].pop('add')), '«بقي كما هو/تغيّر» كلها'),
+  ('التوأم يعيد مسألة الإشعال', 'd6.json', lambda d: d['practice']['challenge'][2]['twin'].update(n=8, b=11), 'يعيد مسألة hook:jumpChaosHook'),
 ]
+def gtext(v): return v[1] if isinstance(v, list) else v
 CODE = [
   ('نوع بند يُسقط توأمه', 'src/js/43_items_place.js', "praise: () => 'praiseRoute', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },",
    "praise: () => 'praiseRoute', reason(item) { return item.why || null; }, twin: () => null,", 'نوع البند routePick بلا توأم'),
+  # الفحص المستقل C: عدّ «أيّ عربة؟» على المسرح السابق ثم يُمحى، والكشف يقول «أكمل الآن»
+  ('الحلّ المشترك على مسرح المحاولة السابقة (بمعامل باسم آخر)', 'src/js/43_items_place.js',
+   "  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */\n  async reveal(item, r) { const m = await rowCount(r.ctx.R, item.k, item.g || 'f');",
+   "  async together(item, q) { const m = await rowCount(q.ctx.R, item.k - 1, item.g || 'f'); await sleep(400); m.remove(); },\n  async reveal(item, r) { const m = await rowCount(r.ctx.R, item.k, item.g || 'f');", 'يرسم على مسرح المحاولة السابقة'),
+  ('جملة حلّ «أيّ أمر اتّبع؟» لخطأ لا يبلغه بند بمساعدة', 'src/js/43_items_place.js', "const RB_WATCH = { rbTurnSide: 'gen.rb.watchSide' };", "const RB_WATCH = { rbTurnSide: 'gen.rb.watchSide', rbOrder: 'gen.rb.watchSide' };", 'لا يبلغه بند بمساعدة'),
+  ('الكشف يقول «أكمل الآن»', 'src/js/43_items_place.js', "await S('gen.reveal.pos.' + item.ask); else await sleep(700); },", "await S('gen.solve.pos.' + item.ask); else await sleep(700); },", 'الكشف يقول جملة حلّ'),
 ]
 def lint(root):
   r = subprocess.run(['node', 'build/lint.mjs'], cwd=root, capture_output=True, text=True); return r.returncode, r.stdout + r.stderr
@@ -95,6 +132,18 @@ RUNTIME = [
   ('عرض المساعدة يصير «آخر جملة»', "'gen.hintOffer.01', { ifIdle: true, free: true, aside: true }", "'gen.hintOffer.01', { ifIdle: true, free: true }", ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL عرض المساعدة'),
   ('«نبقى» يعيد سؤال الخروج', 'lastLine = prev; replayLine();', 'replayLine();', ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL «نبقى»'),
   ('لا علامة لبقية الفقاعة', "b.classList.toggle('saymore',", "b.classList.toggle('saymoreX',", ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL iPhone SE: جملة أطول'),
+  # الفحص المستقل C: بطاقة «ينقص واحداً عن عشرين» واحد وعشرون (يتوقّف الدرس)، والحلّ المشترك يُمحى قبل الجواب، وطريق التوأم يقطع السرير
+  ('بطاقة الطريق خارج الطريق', 'return o >= 0 && o <= (item.last || 20) ? o : item.n; };', 'return o; };', ['test/items_run.py'], {'ONLY': 'm1.u3.d6'}, 'gen.numw.21'),
+  ('عدّ «أيّ عربة؟» يُمحى قبل أن يختار الطفل', 'if (tries >= 3) (item.k > 1 ? await rowCount(R, item.k - 1, g) : await rowFront(R, true)).dataset.help = 1;', 'if (tries >= 3) (item.k > 1 ? await rowCount(R, item.k - 1, g) : await rowFront(R, true)).remove();', ['test/ladder_run.py'], {'ONLY': 'm1.u3.d2'}, 'FAIL linePick'),
+  ('لا حلّ مشترك أصلاً في «أيّ عربة؟»', 'if (tries >= 3) (item.k > 1 ? await rowCount(R, item.k - 1, g) : await rowFront(R, true)).dataset.help = 1;', '', ['test/ladder_run.py'], {'ONLY': 'm1.u3.d2'}, 'FAIL linePick'),
+  ('ما في اليد على الأرض', "placeThingAt(svg, th, h.x + (side === 'R' ? 8 : -8), h.y + H * .7, { scale: sc });", "placeThingAt(svg, th, h.x, h.y + 24 + H0 * .3, { scale: .8 });", ['test/items_run.py'], {'ONLY': 'm1.u3.d4'}, 'على الأرض'),
+  ('«أعد الجملة» لا يعيد حركة الروبوت', "{ intro: item.q, replayPre: () => RB.run(item.prog) }", "{ intro: item.q }", ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL «أعد الجملة» في «أيّ أمر اتّبع'),
+  ('سهم اليد اليمنى يُمحى قبل اللمس', "{ duration: 900 }).done; return g; }", "{ duration: 900 }).done; g.remove(); return g; }", ['test/ladder_run.py'], {'ONLY': 'm1.u3.d3'}, 'FAIL lrTap'),
+  # الفحص المستقل D: هالة الحلّ المشترك على اليد الأخرى، والطريق يمرّ بقطعة منه قبل دورها (كان المنعطف داخلها فتُعفى)
+  ('هالة الحلّ المشترك على اليد اليسرى', "const K = C.K, h = K.hand('R'), c = css('--compass');", "const K = C.K, h = K.hand('L'), c = css('--compass');", ['test/ladder_run.py'], {'ONLY': 'm1.u3.d3'}, 'FAIL lrTap: هالة'),
+  ('الطريق يمرّ بقطعة منه قبل دورها', '"path":["bed","rug"]', '"path":["rug","bed"]', ['test/items_run.py'], {'ONLY': 'm1.u3.d7'}, 'قبل دوره'),
+  ('طريق التوأم يقطع السرير', '{"k":"table","col":0,"row":"back"},{"k":"rug","col":2,"row":"front"},{"k":"bed","col":1,"row":"front"}',
+   '{"k":"table","col":0,"row":"back"},{"k":"rug","col":2,"row":"front"},{"k":"bed","col":1,"row":"back"}', ['test/items_run.py'], {'ONLY': 'm1.u3.d7'}, 'يقطع bed'),
 ]
 def run(args, env, f):
   e = dict(os.environ, **env, FILE=f); r = subprocess.run(['python3'] + [a.replace('{F}', f) for a in args], cwd=ROOT, capture_output=True, text=True, env=e, timeout=1800)

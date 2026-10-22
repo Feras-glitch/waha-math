@@ -26,6 +26,8 @@ export function lint(content, js) {
     for (const m of c.text.matchAll(GEN_RX)) if (!m[1].trim() || !m[2].trim()) errors.push(`صيغة مخاطبة ناقصة في ${c.full}: ${m[0]}`);
     const bare = c.text.replace(GEN_RX, ''); if (/[{}|]/.test(bare)) errors.push(`أقواس أو شرطة شاردة في ${c.full}: ${c.text}`);
     if (/[0-9٠-٩]/.test(c.text)) errors.push(`أرقام مكتوبة في جملة منطوقة (العدد كلمةً): ${c.full}`);
+    // الساكن آخر الكلمة قبل همزة الوصل يُحرَّك (الفحص المستقل C، ن-ث1): «أَكْمِلْ الآنَ» صوابها «أَكْمِلِ الآنَ»، و«مِنْ الـ» صوابها «مِنَ الـ»؛ في الصيغتين
+    for (const f of ['$1', '$2']) { const m = c.text.replace(GEN_RX, f).match(/\S*[^\sْ]ْ\s+ا\S*/); if (m) errors.push(`ساكن قبل همزة وصل في ${c.full}: ${m[0]}`); }
     const words = c.text.replace(GEN_RX, '$1').split(/\s+/).filter(Boolean).length; if (words > 30) warn.push(`جملة طويلة (${words} كلمة) لطفل في السادسة: ${c.full}`);
   }
   // 2) JS
@@ -48,7 +50,8 @@ export function lint(content, js) {
   for (const m of code.matchAll(/err: [^,;]*\? '(\w+)' : '(\w+)'/g)) for (const t of [m[1], m[2]]) if (!ERR[t]) errors.push(`الكود يسجّل err '${t}' وليس في errors.json`);
   for (const [tag, e] of Object.entries(ERR)) { if (!e.label) errors.push('وسم بلا اسم للكبار: ' + tag);
     for (const [id, t] of Object.entries(e.q || {})) { if (!id.startsWith('gen.err.' + tag + '.')) errors.push('معرّف سؤال الخطأ لا يتبع gen.err.<الوسم>: ' + id); if (!/[؟?]/.test(t)) warn.push(`السؤال الأول للخطأ ليس سؤالاً (D240): ${id}`); }
-    if (e.vis && !new RegExp('\\b' + e.vis + ': ').test(code)) errors.push(`حركة الأداة ${e.vis} للوسم ${tag} غير معرّفة في VIS`); }
+    if (e.vis && !new RegExp('\\b' + e.vis + ': ').test(code)) errors.push(`حركة الأداة ${e.vis} للوسم ${tag} غير معرّفة في VIS`);
+    if (e.mat) { for (const id of e.mat) if (!(e.q || {})[id]) errors.push(`الوسم ${tag}: سؤال المواد ${id} ليس من أسئلته`); if (!Object.keys(e.q || {}).some(id => !e.mat.includes(id))) errors.push(`الوسم ${tag}: لا سؤال له على الشاشة (كل أسئلته للمواد)`); } }
   const ITEMS = new Set([...code.matchAll(/^ITEM\.(\w+) = /gm)].map(m => m[1]));
   const SCENES = new Set([...code.matchAll(/^SCENES\.(\w+) = /gm)].map(m => m[1]));
   const VIS = new Set([...code.matchAll(/^\s{2}(\w+): (?:async )?\(/gm)].map(m => m[1]));
@@ -100,6 +103,12 @@ export function lint(content, js) {
       if (L.mastery.mixed && !lessons[L.mastery.mixed.lesson]) errors.push(`${L.id}: البند المشتبك يشير إلى درس غير موجود`); }
     if (!L.test && !(L.review && L.review.length)) warn.push(`${L.id}: لا مخزون مراجعة محجوز`);
     if (L.test) for (const q of L.test.items) { if (!lessons[q.of] || lessons[q.of].unit !== L.unit) errors.push(`${L.id}: البند ${q.id} يشير إلى درس خارج الوحدة: ${q.of}`); }
+    // جملة العلاج بعد الاختبار تُقال والشاشة تعرض أضعف درس (الفحص المستقل C، ن-ك4): تُحيل إلى «هذا الدرس»، ولا تسمّي درساً من الوحدة
+    if (L.test) { const id = L.test.remedial || 'gen.test.remedial', c = LINES.get(id.startsWith('gen.') ? id : L.id + '.' + id), bare = s => s.replace(/[ً-ْ]/g, '');
+      if (!c) errors.push(`${L.id}: جملة العلاج ${id} غير موجودة`);
+      else { const t = bare(c.text.replace(GEN_RX, '$1'));
+        if (L.test.remedial && !t.includes('هذا الدرس')) errors.push(`${L.id}: جملة العلاج ${id} لا تُحيل إلى «هذا الدرس» الظاهر على الشاشة`);
+        for (const o of Object.values(lessons).filter(o => o.unit === L.unit)) { const tt = bare(String(o.title || '')); if (tt && t.includes(tt)) errors.push(`${L.id}: جملة العلاج ${id} تسمّي الدرس «${tt}» (${o.id})، والشاشة تعرض أضعف درس`); } } }
   }
   { const r = d240(lessons, code + '\n' + read(join(ROOT, 'src', 'styles.css')), MAKERS);   /* والأنماط لألوان الهوية (D253 (3)) */ errors.push(...r.errors); warn.push(...r.notes); }   /* D240 وD239: build/d240.mjs */
   /* أسماء الأشياء المنطوقة وتعليل «لا سلّة لنوعه»: كل جملة منها يبلغها المحتوى، وكل ما يبلغه المحتوى له جملته (فلا تسجيل لا يُسمع، ولا اسم يسكت) */
@@ -188,6 +197,16 @@ export function lint(content, js) {
       /* ولكل نوع بند توأم (من الكود أو من بياناته): «twin: () => null» كان يُسقط التوأم صامتاً في ثمانية أنواع (الفحص المستقل B) */
       if (!/\btwin[(:]/.test(body) || /twin: \(\) => null/.test(body)) errors.push(`نوع البند ${m[1]} بلا توأم: twin من الكود أو twin(item) { return item.twin || null; } مع توأم في البيانات (المبدأ 5)`); });
     if (!TWIN_DATA.size) errors.push('فحص التوأم: لم يُعثر على نوع بند توأمه في بياناته (تغيّرت صيغة twin في الكود؟)');
+    /* الحلّ المشترك يُرسم في المحاولة التي يخدمها (D257(5)(و)، الفحص المستقل C: عدّ القطار ثم يُمحى ويُرسم قطار نظيف، وسهم اليمين يُمحى قبل اللمس):
+       together لا يرسم على مسرح المحاولة السابقة r.ctx، فالمسرح يُرسم من جديد في ask التالية */
+    starts.forEach((m, i) => { const body = code.slice(m.index, i + 1 < starts.length ? starts[i + 1].index : undefined), t = body.search(/(?:async )?together\(/);
+      if (t < 0) return; const rest = body.slice(t), e = rest.search(/\n {2}(?:async )?\w+[(:]|, (?:async )?(?:reveal|mark|praise|twin|reason|hint2)\b/), tb = e < 0 ? rest : rest.slice(0, e);
+      const pm = tb.match(/together\(\s*\w+\s*,\s*(\w+)/), rn = pm ? pm[1] : null;   /* باسم المعامل الثاني أيّاً كان (الفحص المستقل D: q.ctx لم يُرَ) */
+      if (rn && (new RegExp('\\b' + rn + '\\.ctx\\b').test(tb) || new RegExp('\\{[^}]*\\bctx\\b[^}]*\\} = ' + rn + '\\b').test(tb))) errors.push(`نوع البند ${m[1]}: الحلّ المشترك (together) يرسم على مسرح المحاولة السابقة r.ctx، فيُمحى قبل أن يجيب الطفل (D257(5)(و))`); });
+    /* الكشف لا يطلب من الطفل فعلاً (الفحص المستقل C، ن-ك5): جمل الحلّ gen.solve.* تنتهي بـ«أكمل/اختر الآن»، فلا تُقال في reveal */
+    starts.forEach((m, i) => { const body = code.slice(m.index, i + 1 < starts.length ? starts[i + 1].index : undefined), r = body.search(/\n {2}async reveal\(|\n {2}reveal\(| async reveal\(/);
+      if (r < 0) return; const rest = body.slice(r + 1), e = rest.search(/\n {2}(?:async )?\w+[(:]|, (?:async )?(?:mark|praise|twin|reason)\b/), rv = e < 0 ? rest : rest.slice(0, e);
+      if (/'gen\.solve\./.test(rv)) errors.push(`نوع البند ${m[1]}: الكشف يقول جملة حلّ gen.solve.* («أكمل الآن») والجواب ظاهر`); });
     const items = (L, help) => { const st = L.flow.filter(s => s.scene === 'items'); const P = L.practice || {}, M = L.mastery || {};
       return help ? [...(P.normal || []), ...(P.challenge || []), ...Object.values(M.remedial || {}).flat(), ...st.filter(s => ['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])]
         : [...Object.values(M.concepts || {}).flat(), ...(M.mixed ? [M.mixed.item] : []), ...(L.review || []), ...((L.test && L.test.items) || []).map(q => q.item), ...st.filter(s => !['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])]; };
@@ -200,11 +219,47 @@ export function lint(content, js) {
     const walkP = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkP(x, where)); if (!v || typeof v !== 'object') return;
       if (v.t === 'place') { let w = pkw(v.at);
         if (v.ref === 'queue') { const n = (v.members || []).length, m = /^g(\d+)$/.exec(v.at || ''); if (!m || +m[1] > n) errors.push(`${where}: place «${v.q}»: فراغ الطابور «${v.at}» ليس من g0 إلى g${n}`); w = !m ? null : +m[1] === 0 ? 'front' : +m[1] === n ? 'behind' : 'between'; }
-        if (w && !LINES.has('gen.solve.pos.' + w)) errors.push(`${where}: place «${v.q}»: لا جملة حلّ لموضعه gen.solve.pos.${w}`); }
+        if (v.word) w = v.word;
+        if (w && !LINES.has('gen.solve.pos.' + w)) errors.push(`${where}: place «${v.q}»: لا جملة حلّ لموضعه gen.solve.pos.${w}`);
+        if (w && !LINES.has('gen.pos.' + w) && !LINES.has('gen.reveal.pos.' + w)) errors.push(`${where}: place «${v.q}»: لا كلمة لموضعه في الكشف (gen.pos.${w} أو gen.reveal.pos.${w})`); }
+      /* الصندوق إمّا مفتوح (ما في داخله يُرى) أو مغلق (ما فوق غطائه): فلا يجتمع «داخل» و«فوق» في صورة واحدة (وُجد في توأم «ما الذي داخل الصندوق؟»: الدب فوقه أغلقه فاختفت الكرة) */
+      if ((v.t === 'where' || v.t === 'place') && v.pic && v.pic.ref === 'chest') { const at = [...(v.pic.put || []).map(p => p[1]), v.pic.at].filter(Boolean); if (at.includes('in') && at.includes('on')) errors.push(`${where}: ${v.t} «${v.q}»: الصندوق فيه شيء «داخل» وشيء «فوق» معاً، والغطاء المغلق يخفي ما في داخله`); }
+      if (v.t === 'lineTap' && v.row && v.row.kind === 'queue' && v.ask !== 'ord') { const s3 = ['front', 'behind', 'between', 'first', 'last'].includes(v.ask) ? v.ask : 'riddle';
+        for (const id of ['gen.solve.pos.' + s3, 'gen.reveal.pos.' + v.ask]) if (!LINES.has(id)) errors.push(`${where}: lineTap «${v.q}» في الطابور: جملة غير موجودة ${id}`); }
       if (v.t === 'where') { const w = pkw(v.want || (v.pic && v.pic.at));
         for (const id of ['gen.solve.pos.' + w, 'gen.pos.' + w, ...(v.ask === 'thing' ? [] : (v.words || []).map(o => 'gen.pos.' + o))]) if (!LINES.has(id)) errors.push(`${where}: where «${v.q}»: جملة غير موجودة ${id}`); }
       for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkP(x, where); };
     for (const L of Object.values(lessons)) walkP(L, L.id); }
+  // 4ب5) موضع الجواب لا يدلّ عليه (الفحص المستقل C، ن-ك1؛ والفحص المستقل D، ك2): الخيارات بترتيب ثابت («فوق أم تحت؟»، و«في أيّ عربة؟»، و«على يمينه أم
+  //      يساره؟»، و«نعم/لا»، و«بقي كما هو/تغيّر») لا يكون جوابها في الموضع نفسه في أكثر من ثلثي بنود النوع في الوحدة، ولا في بنود المساعدة وحدها؛
+  //      ولا في كل بنود المسار الرئيس للدرس (التمرين العادي والإتقان) إن كانت ثلاثة فأكثر. و«فوق أم تحت؟» يُقرأ خياراه بترتيبهما في السؤال
+  //      (كان جواب «فوق أم تحت؟» أول الكلمتين في بنود المساعدة السبعة كلها، وجواب «في أيّ عربة؟» الزرّ الأوسط في الإتقان والتمرين)
+  { const ROOTW = { on: 'فوق', under: 'تحت', in: 'داخل', out: 'خارج', beside: 'بجانب' }, bare = s => s.replace(/[ً-ْ]/g, ''), pkw = a => /^beside/.test(a || '') ? 'beside' : a;
+    const NAME = { where: '«أين هو؟»', linePick: '«في أيّ عربة؟»', lrPick: '«على يمينه أم يساره؟»', yesno: '«نعم/لا»', same: '«بقي كما هو/تغيّر»' };
+    const ansIdx = v => v.t === 'where' && v.ask !== 'thing' && Array.isArray(v.words) ? v.words.indexOf(pkw(v.want || v.pic.at)) : v.t === 'linePick' ? (v.opts || []).indexOf(v.k)
+      : v.t === 'lrPick' ? (v.side === 'R' ? 0 : 1) : v.t === 'yesno' ? (v.ans ? 0 : 1) : v.t === 'same' ? (v.add ? 1 : 0) : null;
+    const lists = (L, help) => { const st = L.flow.filter(s => s.scene === 'items'); const P = L.practice || {}, M = L.mastery || {};
+      const base = help ? [...(P.normal || []), ...(P.challenge || []), ...Object.values(M.remedial || {}).flat(), ...st.filter(s => ['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])]
+        : [...Object.values(M.concepts || {}).flat(), ...(M.mixed ? [M.mixed.item] : []), ...(L.review || []), ...((L.test && L.test.items) || []).map(q => q.item), ...st.filter(s => !['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])];
+      return help ? [...base, ...base.map(it => it && it.twin).filter(Boolean)] : base; };
+    const per = {}, add = (k, i) => { const c = per[k] = per[k] || {}; c[i] = (c[i] || 0) + 1; };
+    /* ولكل خطأ في «أيّ أمر اتّبع الروبوت؟» يُشغَّل بالمساعدة حلٌّ مشترك بجملته (RB_WATCH، الفحص المستقل C، ن-ث3)، ولا يُسجَّل حلٌّ لخطأ لا يبلغه بند بمساعدة (D) */
+    const RBW = new Set([...((code.match(/const RB_WATCH = \{([^}]*)\}/) || [])[1] || '').matchAll(/(\w+):/g)].map(m => m[1])), rbUsed = new Set();
+    for (const L of Object.values(lessons)) for (const v of lists(L, true)) if (v && v.t === 'robotWatch') for (const o of v.opts || []) if (!o.ok) { rbUsed.add(o.err || 'rbWrong'); if (!RBW.has(o.err || 'rbWrong')) errors.push(`${L.id}: robotWatch «${v.q}»: لا حلّ مشترك لخطئه «${o.err || 'rbWrong'}» في RB_WATCH (الحلّ بحسب الخطأ نفسه)`); }
+    for (const e of RBW) if (!rbUsed.has(e)) errors.push(`RB_WATCH: الخطأ «${e}» لا يبلغه بند بمساعدة، فجملته تُسجَّل ولا تُقال`);
+    /* الكرسي مرجعٌ للتقييم وحده (D257 (1)، الفحص المستقل A): يقيس نقل الكلمة إلى شيء لم يُتمرَّن عليه، فلا يظهر في تمرين ولا لعبة ولا توأم ولا علاج ولا اكتشاف (الفحص المستقل D) */
+    for (const L of Object.values(lessons)) for (const v of [...lists(L, true), ...L.flow.filter(s => s.scene === 'items' && !['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])])
+      if (v && (v.ref === 'chair' || (v.pic && v.pic.ref === 'chair'))) errors.push(`${L.id}: ${v.t} «${v.q}»: الكرسي مرجع للتقييم وحده، وهنا يُعرض قبله`);
+    for (const L of Object.values(lessons)) { for (const help of [true, false]) for (const v of lists(L, help)) { if (!v || typeof v.t !== 'string') continue; const i = ansIdx(v); if (i == null) continue;
+        if (i < 0) { errors.push(`${L.id}: ${v.t} «${v.q}»: الجواب ليس بين الخيارات`); continue; }
+        if (v.t === 'where') { const c = LINES.get(v.q.startsWith('gen.') ? v.q : L.id + '.' + v.q); if (c) { const t = bare(c.text.replace(GEN_RX, '$1')), at = v.words.map(w => ROOTW[w] ? t.indexOf(ROOTW[w]) : -1);
+          if (at.some(x => x < 0)) errors.push(`${L.id}: where «${v.q}»: السؤال لا يسمّي الخيارات كلها ${JSON.stringify(v.words)}`);
+          else if (at.some((x, k) => k && x < at[k - 1])) errors.push(`${L.id}: where «${v.q}»: الخيارات تُقرأ بغير ترتيبها في السؤال ${JSON.stringify(v.words)}`); } }
+        add(L.unit + '|' + v.t + '|كلها', i); if (help) add(L.unit + '|' + v.t + '|بالمساعدة', i); }
+      const main = [...((L.practice || {}).normal || []), ...Object.values((L.mastery || {}).concepts || {}).flat()];
+      for (const t of Object.keys(NAME)) { const ix = main.filter(v => v && v.t === t).map(ansIdx).filter(i => i != null && i >= 0); if (ix.length >= 3 && new Set(ix).size === 1) errors.push(`${L.id}: ${NAME[t]}: الجواب في الموضع ${ix[0] + 1} في كل بنود التمرين العادي والإتقان (${ix.length})`); } }
+    for (const [k, c] of Object.entries(per)) { const n = Object.values(c).reduce((a, b) => a + b, 0), [u, t, nm] = k.split('|'), [top, m] = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
+      if (n >= 3 && m > 2 * n / 3) errors.push(`${u}: ${NAME[t]} ${nm}: الجواب في الموضع ${+top + 1} في ${m} من ${n}، فيكفي الطفلَ موضعُه (المطلوب ثلثا البنود على الأكثر)`); } }
   // 4ج) في بند التعليل لا يكون الصحيح أطول الأسباب بفرق ظاهر (الفحص المستقل الثالث، ن3): طوله بلا تشكيل ≤ 1.2 × أطول المشتّتين؛
   //     وكذلك بطاقتا «أيّ أمر نفّذ الروبوت؟» و«أيّ وصف يناسب الطريق؟» (S1-U3): نصّهما ظاهر كأسباب التعليل، فلا يدلّ الطول على الصحيحة
   const bare = t => String(t || '').replace(/\{([^|{}]*)\|[^{}]*\}/g, '$1').replace(/[\u064B-\u0652\u0670]/g, '').replace(/\s+/g, ' ').trim().length;

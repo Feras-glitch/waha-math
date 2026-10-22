@@ -97,6 +97,15 @@ async def section8(p):
     await ask_again(pg, '%s (%s)' % (label, lid), lambda: act(pg))
     check(not errs, '%s: لا خطأ في الصفحة %s' % (label, errs[:2])); await b.close()
 
+  # و«أعد الجملة» في «أيّ أمر اتّبع الروبوت؟» يعيد حركة الروبوت مع السؤال (الفحص المستقل C، ن-ث11؛ وD: لم يكن له فحص)، في الإتقان حيث لا تلميح يعيدها
+  b, pg, errs = await boot(p)
+  await pg.evaluate("""() => { CUR = LDATA['m1.u3.d3']; show('lesson'); const spec = CUR.mastery.concepts.C013.find(x => x.t === 'robotWatch'); runItem(JSON.parse(JSON.stringify(spec)), 'mastery', { scene: 'mastery' }); }""")
+  await pg.wait_for_function("() => window.__auto && window.__auto.kind === 'card'", timeout=15000); await pg.wait_for_timeout(600)
+  await pg.evaluate("""() => { window.__moves = 0; const svg = document.querySelector('#stage svg'); window.__rbmo = new MutationObserver(ms => { for (const m of ms) if (m.addedNodes.length) window.__moves++; }); window.__rbmo.observe(svg, { childList: true, subtree: true }); }""")
+  await pg.click('#replay'); await pg.wait_for_timeout(2500)
+  moves = await pg.evaluate("() => { window.__rbmo.disconnect(); return window.__moves; }")
+  check(moves > 0 and not errs, '«أعد الجملة» في «أيّ أمر اتّبع الروبوت؟» يعيد حركته (%d تغييراً في المسرح) %s' % (moves, errs[:1])); await b.close()
+
   # والجملة الأطول من ثلاثة أسطر على الشاشة القصيرة (الفحص المستقل B): سهم في أسفل الفقاعة، وزرّ «أعد» يبقى فيها حين يُمرَّر النصّ، وبعد الجملة يُرى آخرها
   for dev in ['iPhone SE', 'Galaxy S5']:
     b, pg, errs = await boot(p, fast=False, settings={'muted': True}, dev=dev)

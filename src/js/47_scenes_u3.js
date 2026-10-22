@@ -89,7 +89,7 @@ SCENES.queueOrdinals = async c => { const svg = newStage(QH, { oasis: false, gro
 SCENES.chaosTrainBadge = async c => { const svg = newStage(TH, { oasis: false, ground: 0 }); const R = rowPic(svg, { kind: 'train', n: c.n || 6, things: c.things || {} }); const n = R.members.length;
   await R.S.setOff(0, false); const b = ordBadgeAt(R.S.g, R.members[n - 1].x, R.members[n - 1].y - 66, 'first'); const fz = chaosAt(svg, 60, 50, .42); await chaosGiggle(fz); await S(c.find);
   let tries = 0; while (true) { const k = await tapOne(R.members.map(M => ({ g: M.g, k: M.k, label: labelText('car') })), { ok: n - 1, pad: 60 }); tries++;
-    logAttempt({ scene: 'chaos', tag: 'find', ok: k === n - 1, firstTry: tries === 1 }); if (k === n - 1) break; SFX.soft(); await S('gen.chaos.no'); }
+    logAttempt({ scene: 'chaos', tag: 'find', ok: k === n - 1, firstTry: tries === 1 }); if (k === n - 1) break; SFX.soft(); await S('gen.chaos.notThis'); }
   /* ثم يتحرّك القطار إلى مقدّمته فتُرى القاطرة (الفحص المستقل B: بقي على ذيله، والقاطرة والعربة الأولى خارج النافذة) */
   SFX.good(); fz.remove(); await R.S.setOff(R.S.max); await S(c.fix); tries = 0;
   while (true) { const k = await tapOne(R.members.map(M => ({ g: M.g, k: M.k, label: labelText('car') })), { ok: 0, pad: 60 }); tries++;
@@ -133,7 +133,7 @@ SCENES.chaosTurn = async c => { const svg = newStage(300, { oasis: false, ground
   let tries = 0;
   while (true) { const p = RB.B.at(3, 3); const t = el('g', { transform: `translate(${p.x} ${p.y})` }, svg); el('circle', { r: 28, fill: 'transparent' }, t); const tg = el('g', { transform: `translate(${p0.x} ${p0.y})` }, svg); el('circle', { r: 28, fill: 'transparent' }, tg);
     const k = await tapOne([{ g: t, k: 'bot', label: labelText('robot') }, { g: tg, k: 'start', label: labelText('spot') }], { ok: 'bot', pad: 60 }); t.remove(); tg.remove(); tries++;
-    logAttempt({ scene: 'chaos', tag: 'find', ok: k === 'bot', firstTry: tries === 1 }); if (k === 'bot') break; SFX.soft(); await S('gen.chaos.no'); }
+    logAttempt({ scene: 'chaos', tag: 'find', ok: k === 'bot', firstTry: tries === 1 }); if (k === 'bot') break; SFX.soft(); await S('gen.chaos.notThis'); }
   SFX.good(); fz.remove(); ghost.remove(); RB.show(start); await S(c.fix);
   const box = document.createElement('div'); box.className = 'choices icons rbbar three'; $('#stage').appendChild(box); const btn = {};
   for (const [k, lbl] of [['F', 'rbF'], ['R', 'rbR'], ['L', 'rbL']]) { const b = document.createElement('button'); b.className = 'pick rb'; b.dataset.k = k; b.innerHTML = RB_ICON[k] + `<span>${esc(G(labelText(lbl)))}</span>`; b.setAttribute('aria-label', plain(G(labelText(lbl)))); box.appendChild(b); btn[k] = b; }
@@ -211,7 +211,7 @@ SCENES.chaosSkipBack = async c => { const svg = newStage(270, { oasis: false, gr
   const step = n => el('circle', { cx: 0, cy: ROAD_TILE / 2 - 9, r: 6, fill: css('--chaos'), stroke: '#fff', 'stroke-width': 2, 'pointer-events': 'none' }, S0.tiles[n].g);
   for (const n of c.said) { if (n !== fz.n) await fz.leap(n); step(n); SFX.pop(); await sleep(420); } SFX.chaos(); await S(c.find); let tries = 0;
   while (true) { const k = await tapOne(S0.tiles.filter(t => t.n >= c.b - 1 && t.n <= c.a + 1).map(t => ({ g: t.g, k: t.n, label: T(numw(t.n)) })), { ok: c.skip, pad: 56 }); tries++;
-    logAttempt({ scene: 'chaos', tag: 'find', ok: k === c.skip, firstTry: tries === 1 }); if (k === c.skip) break; SFX.soft(); await S('gen.chaos.no'); }
+    logAttempt({ scene: 'chaos', tag: 'find', ok: k === c.skip, firstTry: tries === 1 }); if (k === c.skip) break; SFX.soft(); await S('gen.chaos.notThis'); }
   SFX.good(); await S(numw(c.skip), { num: true }); fz.g.remove(); await S(c.fix); const kid = roadToken(S0, 'kid', c.a); tries = 0;
   while (true) { const r = await roadHops({ svg, S: S0, tok: kid }, { a: c.a, b: c.b }, 'explore'); const ok = roadErr({ a: c.a, b: c.b }, r.path).ok; tries++;
     logAttempt({ scene: 'chaos', tag: 'fix', ok, firstTry: tries === 1 }); if (ok) break; SFX.soft(); await S('gen.err.roadSkip.01'); kid.place(c.a); }
@@ -242,7 +242,7 @@ SCENES.chaosSubForward = async c => { const svg = newStage(270, { oasis: false, 
   const mark = el('rect', { x: -27, y: -27, width: 54, height: 54, rx: 11, fill: 'none', stroke: css('--chaos'), 'stroke-width': 4, 'stroke-dasharray': '6 5', 'pointer-events': 'none' }, S0.tiles[c.a].g);
   SFX.chaos(); await fz.hop(c.a + c.n); await S(c.find); let tries = 0;
   while (true) { const k = await tapOne(S0.tiles.filter(t => t.n >= c.a - c.n && t.n <= c.a + c.n).map(t => ({ g: t.g, k: t.n, label: T(numw(t.n)) })), { ok: c.a + c.n, pad: 56 }); tries++;
-    logAttempt({ scene: 'chaos', tag: 'find', ok: k === c.a + c.n, firstTry: tries === 1 }); if (k === c.a + c.n) break; SFX.soft(); await S('gen.chaos.no'); }
+    logAttempt({ scene: 'chaos', tag: 'find', ok: k === c.a + c.n, firstTry: tries === 1 }); if (k === c.a + c.n) break; SFX.soft(); await S('gen.chaos.notThis'); }
   SFX.good(); fz.g.remove(); await S(c.fix); const kid = roadToken(S0, 'kid', c.a); tries = 0;
   while (true) { const r = await roadHops({ svg, S: S0, tok: kid }, { a: c.a, n: c.n, dir: -1 }, 'explore'); const ok = roadErr({ a: c.a, n: c.n, dir: -1 }, r.path).ok; tries++;
     logAttempt({ scene: 'chaos', tag: 'fix', ok, firstTry: tries === 1 }); if (ok) break; SFX.soft(); await S('gen.err.roadDir.01'); kid.place(c.a); }

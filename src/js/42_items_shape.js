@@ -68,11 +68,15 @@ ITEM.yesno = {
 /* توقّع الدفع (تعليل بالخاصية، C009) */
 ITEM.property = {
   make(spec) { const it = make(spec.mk); return { ...spec, it, tag: 'prop-' + (it.tag || it.solid), want: spec.want || (it.solid === 'sphere' || (it.solid === 'cylinder' && it.pose === 'lying') ? 'roll' : 'stay') }; },
-  async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 0 }); floorLine(svg); const g = placeOnFloor(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, 120);
+  async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 0 }); floorLine(svg);
+    /* من المحاولة الثالثة تُعاد التجربة: الدفع يرسم الشيء نفسه (لا يُرسم ثم يُمحى) */
+    const g = tries >= 2 ? null : placeOnFloor(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, 120);
     if (item.it.label) label(svg, 120, 262, item.it.label, 16, css('--muted'));
-    if (tries >= 2) { g.remove(); await pushTest(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, item.want === 'roll' ? 'roll' : (item.it.solid === 'cube' || item.it.solid === 'box' ? 'tip' : 'stay')); }
+    /* «شاهد التجربة مرة أخرى، ثم اختر» قبل التجربة لا بعدها (الفحص المستقل D) */
+    if (tries >= 3) await S('gen.prop.together');
+    if (tries >= 2) await pushTest(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, item.want === 'roll' ? 'roll' : (item.it.solid === 'cube' || item.it.solid === 'box' ? 'tip' : 'stay'));
     const nm = objClip(item.it); if (nm) await S(nm);   /* اسم الشيء المكتوب تحته يُقال (المبدأ 8) */
-    await S(tries >= 3 ? 'gen.prop.together' : 'gen.prop.ask');
+    await S('gen.prop.ask');
     const k = await choosePick([['roll', labelText('rolls'), PICKICON.roll, 'gen.opt.rolls'], ['stay', labelText('stays'), PICKICON.stay, 'gen.opt.stays']], item.want); return { ans: k, ctx: { svg, g } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.want === 'roll' ? 'rollMissed' : 'cubeNotRoll' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2() {}, async together() {},
@@ -97,8 +101,9 @@ ITEM.faceTap = {
 ITEM.stamp = {
   make(spec) { const it = make(spec.mk); return { ...spec, it, tag: 'stamp-' + it.solid, want: spec.print }; },
   async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 0 }); floorLine(svg, 236);
+    if (tries >= 3) await S('gen.stamp.together');   /* «شاهد الختم مرة أخرى» قبل الختم لا بعده */
     if (tries >= 2) await stampTest(svg, { ...item.it, size: 84, label: null }, item.print); else placeOnFloor(svg, { ...item.it, size: 92, label: null }, 120, 236);
-    await S(tries >= 3 ? 'gen.stamp.together' : 'gen.stamp.ask');
+    await S('gen.stamp.ask');
     const opts = [['square', labelText('printSquare'), 'gen.opt.printSquare'], ['circle', labelText('printCircle'), 'gen.opt.printCircle'], ['dot', labelText('printDot'), 'gen.opt.printDot']]; if (item.print === 'rect') opts.splice(1, 0, ['rect', labelText('printRect'), 'gen.opt.printRect']);
     const k = await choosePick(opts.map(([a, b, c]) => [a, b, PICKICON[a] || PICKICON.square, c]), item.print); return { ans: k, ctx: { svg } }; },
   judge(item, k) { return k === item.print ? { ok: true } : { ok: false, err: 'stampWrong' }; },

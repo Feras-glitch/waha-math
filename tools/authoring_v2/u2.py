@@ -97,7 +97,7 @@ d1['labels'].update({'paperSq': 'مُرَبَّعٌ مِنْ وَرَقٍ', 'cub
 SHOP = {'shop.r1': ('cylinder', ['cylinder', 'cone', 'sphere']), 'shop.r2': ('cone', ['cone', 'cylinder', 'cube']), 'shop.r3': ('sphere', ['sphere', 'cylinder', 'cone']),
         'shop.r4': ('cylinder', ['cylinder', 'cone', 'cube']), 'shop.r5': ('cone', ['cone', 'cylinder', 'sphere'])}
 # توأم «هل يتدحرج المخروط في خط مستقيم؟» بعد الكشف (المبدأ 5): الأسطوانة النائمة تتدحرج في خط مستقيم
-CYL_TWIN = {'t': 'yesno', 'show': SOL('cylinder', pose='lying'), 'q': 'pr.cylRoll', 'ans': True, 'vis': 'roll', 'err': 'rollMissed', 'why': 'cyl.02'}
+CYL_TWIN = {'t': 'yesno', 'show': SOL('cylinder', pose='lying'), 'q': 'pr.cylRoll', 'ans': True, 'vis': 'roll', 'err': 'rollPath', 'why': 'cyl.02', 'solve': 'pr.cylSolve'}
 d2 = {
  'id': 'm1.u2.d2', 'title': 'الأُسْطُوَانَةُ وَالمَخْرُوطُ', 'icon': ['cylinder', 'cone'],
  'concepts': {'C007': 'تعرّف الأسطوانة والمخروط', 'C009': 'خصائص المجسّم: الوجوه المسطّحة'},
@@ -128,6 +128,9 @@ d2 = {
   'pr.coneRoll': 'هَلْ يَتَدَحْرَجُ المَخْرُوطُ فِي خَطٍّ مُسْتَقِيمٍ؟',
   'pr.coneWhy': 'يَدُورُ حَوْلَ رَأْسِهِ، لِأَنَّ رَأْسَهُ يَبْقَى فِي مَكَانِهِ.',
   'pr.cylRoll': 'وَالأُسْطُوَانَةُ النَّائِمَةُ: هَلْ تَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ؟',
+  # الحلّ المشترك (المستوى 3) لـ«هل يتدحرج في خط مستقيم؟» (الفحص المستقل D: كانت المحاولة الرابعة كالأولى)
+  'pr.coneSolve': 'هَيَّا نُفَكِّرُ مَعًا: لِلْمَخْرُوطِ رَأْسٌ مُدَبَّبٌ يَبْقَى فِي مَكَانِهِ حِينَ يَتَدَحْرَجُ. ' + G('اِخْتَرِ', 'اِخْتَارِي') + ' الآنَ.',
+  'pr.cylSolve': 'هَيَّا نُفَكِّرُ مَعًا: طَرَفَا الأُسْطُوَانَةِ النَّائِمَةِ مُتَسَاوِيَانِ، فَلَا يَبْقَى أَحَدُهُمَا فِي مَكَانِهِ. ' + G('اِخْتَرِ', 'اِخْتَارِي') + ' الآنَ.',
   'game.01': 'مَتْجَرُ المُجَسَّمَاتِ: ' + G('اِسْمَعْ', 'اِسْمَعِي') + ' طَلَبَ كُلِّ زَبُونٍ، وَ' + G('أَعْطِهِ', 'أَعْطِيهِ') + ' مَا يَطْلُبُ.',
   'shop.r1': 'زَبُونٌ يَطْلُبُ شَيْئًا يَقِفُ، وَيَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ.', 'shop.r2': 'زَبُونَةٌ تَطْلُبُ شَيْئًا رَأْسُهُ مُدَبَّبٌ، وَقَاعِدَتُهُ دَائِرِيَّةٌ.',
   'shop.r3': 'زَبُونٌ يَطْلُبُ شَيْئًا يَتَدَحْرَجُ فِي كُلِّ اتِّجَاهٍ، وَلَيْسَ لَهُ وَجْهٌ مُسَطَّحٌ.', 'shop.r4': 'زَبُونَةٌ تَطْلُبُ شَيْئًا لَهُ وَجْهَانِ دَائِرِيَّانِ مُسَطَّحَانِ.',
@@ -169,8 +172,8 @@ d2 = {
   'reasons': [{'when': {'tag': 'riddle'}, 'id': None}, {'when': {'tag': 'cylLying'}, 'id': 'why.cylLying'}, {'when': {'kind': 'cylinder'}, 'id': 'why.cyl'}, {'when': {'kind': 'cone'}, 'id': 'why.cone'}, {'id': 'why.other'}],
   'twins': {'cylinder': sort('cyl'), 'cylLying': sort('tube'), 'cone': sort('coneLying'), 'coneTurned': sort('cone'), 'riddle': sort('u2r4'), '*': sort('cyl')}},
  'practice': {'intro': 'pr.intro',
-  'normal': [sort('cyl'), sort('cone'), sort('tube'), sort('coneLying'), sort('u2r4', bins=None), {'t': 'faceTap', 'mk': CONEDOWN}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy', 'twin': CYL_TWIN}],
-  'challenge': [sort('tube'), sort('coneLying'), sort('cube'), sort('u2r5', bins=None), {'t': 'faceTap', 'mk': {**CONEDOWN, 'color': '$neutral.5', 'size': 128}}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy', 'twin': CYL_TWIN}]},
+  'normal': [sort('cyl'), sort('cone'), sort('tube'), sort('coneLying'), sort('u2r4', bins=None), {'t': 'faceTap', 'mk': CONEDOWN}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'rollPath', 'why': 'pr.coneWhy', 'solve': 'pr.coneSolve', 'twin': CYL_TWIN}],
+  'challenge': [sort('tube'), sort('coneLying'), sort('cube'), sort('u2r5', bins=None), {'t': 'faceTap', 'mk': {**CONEDOWN, 'color': '$neutral.5', 'size': 128}}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'rollPath', 'why': 'pr.coneWhy', 'solve': 'pr.coneSolve', 'twin': CYL_TWIN}]},
  'chaos': {'kind': 'bins', 'bins': ['cylinder', 'cone', 'other'], 'check': 'faces', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong',
   'placed': [{'mk': SN('cylinder', 0, size=64), 'bin': 'cylinder'}, {'mk': SN('cone', 2, size=64), 'bin': 'cone'}, {'mk': SN('cone', 4, size=58, pose='tipdown'), 'bin': 'cone'},
              {'mk': {**SN('cylinder', 3, size=130, pose='lying'), 'tag': 'cylLying'}, 'bin': 'other', 'wrong': True}, {'mk': SN('cube', 5, size=56), 'bin': 'other'}]},
@@ -386,7 +389,7 @@ d5 = {
    'N007': [{'t': 'fact', 'op': '+', 'a': 1, 'b': 3}, {'t': 'fact', 'op': '-', 'a': 4, 'b': 2}, {'t': 'fact', 'op': '+', 'a': 2, 'b': 2}]},
   'recall': {'N006': {'auto': True, 'h': 250, 'steps': [[{'towers': [[4, 220, 'lemon']], 'base': 240}, {'towers2': [[3, 220, 'white', 4]]}, {'sentence': [4, '+', 3, 7], 'at': [180, 40], 'quiet': True}, {'say': 'ms.recall'}]]},
              'N007': {'auto': True, 'h': 240, 'steps': [[{'say': 'ms.recall7'}]]}},
-  'remedial': {'N006': [join(2, 3), rem(6, 2)], 'N007': [{'t': 'fact', 'op': '+', 'a': 2, 'b': 1, 'twin': {'t': 'fact', 'op': '+', 'a': 2, 'b': 3}}]},   # التوأم مسألة عُرضت في الاكتشاف (لا يقيسها تقييم)
+  'remedial': {'N006': [join(2, 3), rem(6, 2)], 'N007': [{'t': 'fact', 'op': '+', 'a': 2, 'b': 1, 'twin': {'t': 'fact', 'op': '+', 'a': 1, 'b': 1}}]},   # التوأم مسألة جديدة: لا ما عُرض في الاكتشاف (الفحص المستقل D)، ولا ما يقيسه تقييم
   'mixed': {'lesson': 'm1.u2.d4', 'item': split(9, 2)}, 'ok': 'ms.ok'},   # 7 = 2 + 5 في مراجعة d4
  'review': [{**join(4, 2), 'c': 'N006'}, {**rem(6, 4), 'c': 'N006'}, {**sent('+', 5, 4), 'c': 'N006'},   # 5 + 3 ضمٌّ في الإتقان
             {'t': 'fact', 'op': '-', 'a': 5, 'b': 3, 'c': 'N007'}, {'t': 'fact', 'op': '-', 'a': 4, 'b': 1, 'c': 'N007'}],   # N007 تأسيس هنا، فله بندا مراجعة (المبدأ 14)
@@ -409,7 +412,7 @@ d6 = {
   'rv.flat': 'وَالمُسَطَّحُ نَرْسُمُهُ وَنَقُصُّهُ، أَمَّا المُجَسَّمُ فَيَمْلَأُ الكَفَّ.',
   'mat.01': G('أَلْصِقْ', 'أَلْصِقِي') + ' قُصَاصَةً عَلَى كُلِّ وَجْهٍ مِنْ وُجُوهِ النَّرْدِ وَأَنْتَ ' + G('تُدِيرُهُ', 'تُدِيرِينَهُ') + '، ثُمَّ ' + G('عُدَّ', 'عُدِّي') + ' القُصَاصَاتِ. ثُمَّ ' + TOUCH + ' «تَمَّ».',
   'mat.02': 'هَيَّا نَعُدُّ عَلَى الشَّاشَةِ أَيْضًا.',
-  'fc.cube': TOUCH + ' كُلَّ وَجْهٍ مِنْ وُجُوهِ المُكَعَّبِ، فَتُلْصَقُ عَلَيْهِ قُصَاصَةٌ. وَ' + G('أَدِرْهُ', 'أَدِيرِيهِ') + ' لِتَرَى الوُجُوهَ الأُخْرَى.'.replace('لِتَرَى', G('لِتَرَى', 'لِتَرَيْ')),
+  'fc.cube': TOUCH + ' كُلَّ وَجْهٍ مِنْ وُجُوهِ المُكَعَّبِ، فَتُلْصَقُ عَلَيْهِ قُصَاصَةٌ. وَ' + G('أَدِرْهُ', 'أَدِيرِيهِ') + ' لِتَرَى الوُجُوهَ الأُخْرَى.'.replace('لِتَرَى', G('لِتَرَى', 'لِتَرَيِ')),
   'fc.count': 'نَعُدُّ القُصَاصَاتِ:', 'fc.cube.after': 'سِتَّةُ وُجُوهٍ لِلْمُكَعَّبِ، وَكُلُّهَا مُرَبَّعَاتٌ.',
   'fc.box': 'وَعُلْبَةُ الشَّايِ؟ ' + TOUCH + ' كُلَّ وَجْهٍ مِنْ وُجُوهِهَا.', 'fc.box.after': 'لِلْعُلْبَةِ سِتَّةُ وُجُوهٍ أَيْضًا، لَكِنَّ وُجُوهَهَا لَيْسَتْ كُلُّهَا مُرَبَّعَاتٍ.',
   'rh.intro': 'صَائِدُ المُجَسَّمَاتِ: ' + G('جِدْ', 'جِدِي') + ' مَا أَطْلُبُهُ فِي الغُرْفَةِ. ' + G('خُذْ وَقْتَكَ', 'خُذِي وَقْتَكِ') + '، فَنَحْنُ نَفُوزُ بِالجَوَابِ الصَّحِيحِ.',

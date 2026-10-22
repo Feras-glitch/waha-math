@@ -16,6 +16,8 @@ MOUSE=1 python3 test/realtap_run.py 'Pixel 5'      > "$O/realtap_mouse.txt" 2>&1
 python3 test/layout_run.py                         > "$O/layout.txt" 2>&1        || echo layout >> "$O/FAILED"   # الأشياء المبعثرة: لا تراكب، ومركز كل شيء له، و«لمس واحد» لما تحت الإصبع (D255)
 python3 test/backup_voice_run.py                   > "$O/backup_voice.txt" 2>&1  || echo backup_voice >> "$O/FAILED"   # حزمة الصوت والنسخة الاحتياطية (D181، D246)
 python3 test/quicktap_run.py                       > "$O/quicktap.txt" 2>&1      || echo quicktap >> "$O/FAILED"   # اللمس السريع على طريق الأعداد (الفحص المستقل B)
+python3 test/items_run.py                          > "$O/items.txt" 2>&1         || echo items >> "$O/FAILED"   # كل بند يُقيَّم أو يُراجَع صحيحاً وخطأً، والطرق المرسومة (الفحص المستقل C)
+python3 test/ladder_run.py                         > "$O/ladder.txt" 2>&1        || echo ladder >> "$O/FAILED"   # الحلّ المشترك باقٍ في المحاولة الرابعة (D257(5)(و))
 python3 test/mutants_run.py                        > "$O/mutants.txt" 2>&1       || echo mutants >> "$O/FAILED"   # كل فحص جديد يخفق على الخطأ القديم (الدرس 98)
 SHOTS=1 CLIPS_OUT="$O/clips/auto_ok_screen_f.json" python3 test/auto_run.py ok screen f       > "$O/auto_ok_screen_f.txt" 2>&1
 SHOTS=0 CLIPS_OUT="$O/clips/auto_ok_mat_m.json" python3 test/auto_run.py ok mat m          > "$O/auto_ok_mat_m.txt" 2>&1
@@ -31,6 +33,7 @@ SHOTS=0 DEVICE='iPhone SE' CLIPS_OUT="$O/clips/auto_se_ok_screen_f.json" python3
 SHOTS=0 CLIPS_OUT="$O/clips/auto_deepall_screen_f.json" python3 test/auto_run.py deepall screen f > "$O/auto_deepall_screen_f.txt" 2>&1   # كل بند بمساعدة حتى الكشف، ثم توأمه (الفحص المستقل B)
 SHOTS=0 CHAL=1 CLIPS_OUT="$O/clips/auto_deepall_chal_mat_m.json" python3 test/auto_run.py deepall mat m > "$O/auto_deepall_chal_mat_m.txt" 2>&1   # وفرع «التحدّي»
 SHOTS=0 CLIPS_OUT="$O/clips/auto_remedialdeep_screen_m.json" python3 test/auto_run.py remedialdeep screen m > "$O/auto_remedialdeep_screen_m.txt" 2>&1   # وبنود العلاج
+SHOTS=0 DEVICE='iPhone SE' SEED=23 ONLY='m1.u3.d5,ws:m1.u3' CLIPS_OUT="$O/clips/auto_se_remedialdeep_d5ws.json" python3 test/auto_run.py remedialdeep screen m > "$O/auto_se_remedialdeep_d5ws.txt" 2>&1   # أهداف اللمس حين تظهر الخيارات تحت المسرح على أضيق شاشة (الفحصان المستقلان C وD)
 python3 test/unspoken.py "$O/clips" > "$O/unspoken.txt" 2>&1   # جمل في جدول التسجيل لم تُنطق في أي تشغيل (تقرير لا يوقف)
 # الخلاصة (الفحص المستقل الخامس: المجموعة كانت تتجاهل رموز الخروج): كل فحص يخرج بـ 1 مع الإخفاق يُسجَّل في FAILED، وعدّادات السائق الآلي كلها صفر
 # (ومنها الدروس المتوقّفة والتي لم تنتهِ، وإلا «assessment misses» في أنماط الإخفاق المقصود)؛ فتُكتب SUMMARY.txt وتخرج المجموعة بـ 1 إن أخفق شيء
@@ -39,7 +42,7 @@ import sys, os, re, glob
 O = sys.argv[1]; bad = [l.strip() for l in open(os.path.join(O, 'FAILED'))] if os.path.exists(os.path.join(O, 'FAILED')) else []
 for f in sorted(glob.glob(os.path.join(O, 'auto_*.txt'))):
   t = open(f).read(); name = os.path.basename(f)
-  for k in ['errors', 'LOG.errors', 'small targets', 'unnamed targets', 'tap conflicts', 'chaos leaks', 'font fallbacks', 'NOT in script', 'blocked lessons', 'lessons not done', 'empty drags', 'twins missing'] + ([] if re.search(r'auto_(fail|remedialdeep)', name) else ['assessment misses']):
+  for k in ['errors', 'LOG.errors', 'small targets', 'unnamed targets', 'tap conflicts', 'chaos leaks', 'font fallbacks', 'NOT in script', 'blocked lessons', 'lessons not done', 'empty drags', 'twins missing'] + ([] if re.search(r'_(fail[a-z]*|remedialdeep)_', name) else ['assessment misses']):   # النمط كلمة بين شرطتين في اسم الملف أينما كانت (auto_se_remedialdeep_…: كان الفحص يطلبها من أوله وحده)
     v = re.findall(r'(?:^|; )' + re.escape(k) + r': (\d+)', t, re.M)
     if not v: bad.append(f'{name}: {k} مفقود')
     elif any(int(x) for x in v): bad.append(f'{name}: {k} = {v}')

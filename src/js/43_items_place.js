@@ -82,6 +82,8 @@ ITEM.where = {
   make(spec) { return { ...spec, tag: 'where', want: spec.want || posKey(spec.pic.at) }; },
   async ask(item) { const svg = newStage(300, null); const pic = item.ask === 'thing' ? item.pic : { ...item.pic, put: [[item.pic.thing, item.pic.at], ...(item.pic.put || [])] }; const P = posPic(svg, pic);
     if (item.ask === 'thing') { say(...lineOf(item.q), { free: true });
+      /* ما في داخل الصندوق يطلّ نصفه فوق جداره الأمامي: اللمس على الجدار يبلغه (الفحص المستقل D: كانت لمسة وسط الكرة تقع على الجدار فلا يحدث شيء) */
+      if (P.C) P.C.front.setAttribute('pointer-events', 'none');
       const k = await tapOne(P.placed.map(t => ({ g: t.g, k: posKey(t.at), label: THING_LABEL(t.k) })), { ok: item.want, pad: 64 }); hush(); return { ans: k, ctx: { svg, P } }; }
     say(...lineOf(item.q), { free: true });
     const k = await choosePick(item.words.map(o => [o, T('gen.pos.' + o), '', 'gen.pos.' + o]), item.want); hush(); return { ans: k, ctx: { svg, P } }; },
@@ -95,7 +97,7 @@ ITEM.where = {
 };
 /* ================= ضع الشيء في موضعه (إنتاج C010) ================= */
 /* كلمة الموضع المطلوب: فراغات الطابور مفاتيحها g0…gN، فأمامَ الأول، وخلفَ الأخير، وبين اثنين لما بينهما (الفحص المستقل B: «gen.solve.pos.g1» غير موجودة) */
-const placeWord = item => item.ref === 'queue' ? (item.want === 'g0' ? 'front' : item.want === 'g' + item.members.length ? 'behind' : 'between') : posKey(item.want);
+const placeWord = item => item.word || (item.ref === 'queue' ? (item.want === 'g0' ? 'front' : item.want === 'g' + item.members.length ? 'behind' : 'between') : posKey(item.want));   /* word: كلمة السؤال نفسه («في آخر الطابور» ← الأخير) */
 ITEM.place = {
   make(spec) { return { ...spec, tag: 'place', want: spec.at }; },
   async ask(item, mode, tries) { const svg = item.ref === 'queue' ? newStage(QH, { oasis: false, ground: 0 }) : newStage(300, null); const P = posPic(svg, { ref: item.ref, put: item.put || [], open: true, members: item.members });
@@ -115,7 +117,7 @@ ITEM.place = {
   async together() {},
   async reveal(item, r) { const P = r.ctx.P; P.placed.forEach(t => t.g.remove()); P.placed.length = 0; for (const [k, at] of item.put || []) P.put(k, at); P.put(item.thing, Object.keys(P.spots).find(s => posKey(s) === item.want)); SFX.pop();
     /* الكشف يقول كلمة الموضع (الفحص المستقل B: كان صامتاً)، ومنطقتا الدائرة والمربع بجملة حلّهما */
-    const w = placeWord(item); await S(hasLine('gen.pos.' + w) ? 'gen.pos.' + w : 'gen.solve.pos.' + w); await sleep(500); },
+    const w = placeWord(item); await S(hasLine('gen.pos.' + w) ? 'gen.pos.' + w : 'gen.reveal.pos.' + w); await sleep(500); },
   mark(item, r) { r.ctx.P.glow(Object.keys(r.ctx.P.spots).find(s => posKey(s) === item.want), 900); },
   praise: () => 'praisePlace', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
@@ -157,9 +159,11 @@ async function rowCount(R, upto, g = 'f') { const m = el('g', { 'pointer-events'
   for (let i = 0; i < upto; i++) { await rowShow(R, i); const M = R.members[i]; badge(m, M.x, M.y - (R.S ? 70 : 118), i + 1, css('--compass')); SFX.tick(); await S('gen.ord.' + g + '.' + String(i + 1).padStart(2, '0'), { num: true, noGap: true }); await sleep(120); }
   return m; }
 /* المقدّمة: القاطرة أو الدكّان تومض، وسهم باتجاه السير */
-async function rowFront(R) { const svg = R.members[0].g.ownerSVGElement; if (R.S) await R.S.setOff(R.S.max);
+/* keep (الحلّ المشترك): السهم يبقى حين يجيب الطفل */
+async function rowFront(R, keep = false) { const svg = R.members[0].g.ownerSVGElement; if (R.S) await R.S.setOff(R.S.max);
   const x = R.S ? R.S.at(R.members[0].x + 52) : 320, y = R.S ? 92 : 132; const a = el('g', { transform: `translate(${x} ${y})`, 'pointer-events': 'none' }, svg);
   el('path', { d: 'M-46 0 H20 M6 -14 L22 0 L6 14', fill: 'none', stroke: css('--compass'), 'stroke-width': 7, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, a);
+  if (keep) { await anim(a, [{ opacity: 0 }, { opacity: 1 }], { duration: 600, fill: 'forwards' }).done; return a; }
   await anim(a, [{ opacity: 0 }, { opacity: 1 }, { opacity: 1 }, { opacity: 0 }], { duration: 1700 }).done; a.remove(); }
 /* ================= المس العضو (إنتاج N008، ومواضع الطابور) ================= */
 ITEM.lineTap = {
@@ -169,7 +173,7 @@ ITEM.lineTap = {
     /* «ضع الكرة في العربة الرابعة» (لعبة الدرس 2): الكرة على رفّ فوق القطار، وتقع في العربة حين يلمسها الطفل */
     let dropG = null; if (item.drop) { const tr = trayAt(svg, 54, 44); dropG = placeThingAt(svg, item.drop, tr.x, tr.y, { scale: .7 }); }
     const ordG = item.row.kind === 'queue' ? 'm' : (item.g || 'f');   /* الدببة: الأول… العاشر؛ والعربات: الأولى… العاشرة */
-    let mk = null; if (tries >= 3) { if (item.row.kind === 'train' || item.ask === 'ord') { if (item.want > 0) mk = await rowCount(R, Math.min(item.want, 9), ordG); } else await S('gen.solve.pos.' + (['front', 'behind', 'between', 'first', 'last'].includes(item.ask) ? item.ask : 'riddle')); }
+    let mk = null; if (tries >= 3) { if (item.row.kind === 'train' || item.ask === 'ord') { mk = item.want > 0 ? await rowCount(R, Math.min(item.want, 9), ordG) : await rowFront(R, true); mk.dataset.help = 1; } else await S('gen.solve.pos.' + (['front', 'behind', 'between', 'first', 'last'].includes(item.ask) ? item.ask : 'riddle')); }
     let painted = null;
     if (item.ask === 'kamAyn') { painted = await paintN(svg, R, item); }
     say(...lineOf(item.ask === 'kamAyn' ? item.q2 : item.q), { free: true });
@@ -185,10 +189,11 @@ ITEM.lineTap = {
   async hint2(item, r) { await rowFront(r.ctx.R); },
   async together() {},
   async reveal(item, r) { const R = r.ctx.R; if ((R.S || item.ask === 'ord') && item.want < 10) { const m = await rowCount(R, item.want + 1, R.S ? (item.g || 'f') : 'm'); await sleep(500); m.remove(); } await rowShow(R, item.want); ITEM.lineTap.mark(item, r);
-    /* ومواضع الطابور تُقال مع الكشف بجملة معناها (الفحص المستقل B: كان صامتاً) */
-    if (item.row.kind === 'queue' && item.ask !== 'ord') await S('gen.solve.pos.' + item.ask); else await sleep(700); },
+    /* ومواضع الطابور تُقال مع الكشف بجملة معناها (الفحص المستقل B: كان صامتاً)، بلا «أكمل الآن» (الفحص المستقل C) */
+    if (item.row.kind === 'queue' && item.ask !== 'ord') await S('gen.reveal.pos.' + item.ask); else await sleep(700); },
   mark(item, r) { const R = r.ctx.R, M = R.members[item.want]; el('circle', { cx: M.x, cy: M.y - (R.S ? 24 : 58), r: 36, fill: 'none', stroke: css('--good'), 'stroke-width': 5, 'pointer-events': 'none' }, R.S ? R.S.g : r.ctx.svg); },
-  praise: () => 'praiseOrder', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
+  /* مواضع الطابور (أمام وخلف وبين، والأول والأخير، واللغز) تُمدح بالمكان، والعدّ الترتيبي بالترتيب (الفحص المستقل C: «عددتَ من المقدّمة!» بعد «من بين…؟») */
+  praise: item => item.row.kind === 'queue' && item.ask !== 'ord' ? 'praisePlace' : 'praiseOrder', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
 /* «لوّن ثلاث عربات»: يلمس الطفل العربات فتتلوّن (ولمسة ثانية تمحو)، ثم «تمّ» */
 async function paintN(svg, R, item) { const set = new Set(); say(...lineOf(item.q), { free: true });
@@ -200,13 +205,16 @@ async function paintN(svg, R, item) { const set = new Set(); say(...lineOf(item.
 /* ================= أيّ عربة؟ (تعرّف N008): العدد الترتيبي من خيارات مسموعة ================= */
 ITEM.linePick = {
   make(spec) { const it = { ...spec, tag: 'line:which' }; it.want = spec.k; return it; },
-  async ask(item) { const svg = newStage(TH, { oasis: false, ground: 0 }); const R = rowPic(svg, item.row);   /* يبدأ عند القاطرة: يعدّ الطفل من المقدّمة ويحرّك القطار بنفسه */
+  async ask(item, mode, tries) { const svg = newStage(TH, { oasis: false, ground: 0 }); const R = rowPic(svg, item.row);   /* يبدأ عند القاطرة: يعدّ الطفل من المقدّمة ويحرّك القطار بنفسه */
     const g = item.g || 'f', id = n => 'gen.ord.' + g + '.' + String(n).padStart(2, '0');
+    /* الحلّ المشترك (المستوى 3): نعدّ معاً من المقدّمة حتى قبل المطلوب على قطار هذه المحاولة، فتبقى الأعداد أمام الطفل حين يختار
+       (الفحص المستقل C: كان العدّ على القطار السابق ثم يُمحى ويُرسم قطار نظيف قبل السؤال، D257(5)(و)) */
+    if (tries >= 3) (item.k > 1 ? await rowCount(R, item.k - 1, g) : await rowFront(R, true)).dataset.help = 1;   /* والأولى: سهم المقدّمة يبقى (الفحص المستقل D: كان لا شيء) */
     say(...lineOf(item.q), { free: true }); const k = await choosePick(item.opts.map(n => ['o' + n, T(id(n)), '', id(n)]), 'o' + item.k); hush(); return { ans: +k.slice(1), ctx: { svg, R } }; },
   judge(item, k) { const n = item.row.n || 10; return k === item.k ? { ok: true } : (k === n + 1 - item.k ? { ok: false, err: 'ordFromBack' } : Math.abs(k - item.k) === 1 ? { ok: false, err: 'ordOff' } : { ok: false, err: 'ordWrong' }); },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { await rowFront(r.ctx.R); },
-  async together(item, r) { const m = await rowCount(r.ctx.R, item.k - 1, item.g || 'f'); await sleep(400); m.remove(); },
+  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */
   async reveal(item, r) { const m = await rowCount(r.ctx.R, item.k, item.g || 'f'); await sleep(500); m.remove(); },
   mark() {}, praise: () => 'praiseOrder', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
@@ -214,18 +222,26 @@ ITEM.linePick = {
 /* ================= اليمين واليسار (C011): الطفل من ظهره، والشريط على يده اليمنى (يُخفى في الفحص، ويظهر تلميحاً) ================= */
 function lrPic(svg, item) { roomBg(svg, 300, 200); const K = kidBackAt(svg, 180, 286, { ribbon: item.ribbon === false ? null : 'R', raise: item.raise || null, s: 1.08 });
   const out = { K, things: {} };
-  for (const [side, th] of Object.entries(item.hold || {})) { const h = K.hand(side); out.things[side] = placeThingAt(svg, th, h.x, h.y + 24 + (THING_H[th] || 50) * .3, { scale: .8 }); }   /* يتدلّى من اليد */
+  /* ما في اليد مرفوع عن الأرض، واليد فوق أعلاه تمسكه (الفحص المستقل C: كان يُرسم على الأرض بجانب الرجلين، فلا يُرى في اليد) */
+  for (const [side, th] of Object.entries(item.hold || {})) { const h = K.hand(side), H0 = THING_H[th] || 50, sc = Math.min(.9, Math.max(.5, 40 / H0)), H = H0 * sc;   /* بحجم اليد: نحو 40 وحدة، والصغير (الكتاب) لا يصغر */
+    out.things[side] = placeThingAt(svg, th, h.x + (side === 'R' ? 8 : -8), h.y + H * .7, { scale: sc }); }
+  if (item.hold) { svg.appendChild(K.g); K.g.setAttribute('pointer-events', 'none'); }   /* واللمس على اليد يبلغ ما تمسكه */
   if (item.thing) { const x = item.side === 'R' ? 290 : 70; out.things[item.side] = placeThingAt(svg, item.thing, x, 286, { scale: .9 }); }
   return out; }
 const showRibbon = async (svg, K) => { const h = K.hand('R'); const r = el('rect', { x: h.x - 11, y: h.y - 18, width: 22, height: 10, rx: 3, fill: '#f2b33d', stroke: '#fff', 'stroke-width': 2, 'pointer-events': 'none' }, svg);
   await anim(r, [{ opacity: 0 }, { opacity: 1 }, { opacity: .4 }, { opacity: 1 }], { duration: 1400 }).done; return r; };
-async function lrTogether(svg, side) { const a = el('g', { transform: `translate(${side === 'R' ? 300 : 60} 60)`, 'pointer-events': 'none' }, svg);
-  el('path', { d: side === 'R' ? 'M-30 0 H24 M10 -14 L26 0 L10 14' : 'M30 0 H-24 M-10 -14 L-26 0 L-10 14', fill: 'none', stroke: css('--compass'), 'stroke-width': 7, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, a);
-  await S('gen.lr.together'); await anim(a, [{ opacity: 1 }, { opacity: .3 }, { opacity: 1 }], { duration: 900 }).done; a.remove(); }
+/* الحلّ المشترك في اليمين واليسار (المستوى 3): هالة حول يد الطفل اليمنى وسهم إليها من خارجه، والجملة عن اليمنى أياً كان المطلوب،
+   فيدلّ السهم والجملة على اليد نفسها، والخطوة الأخيرة للطفل؛ ويبقيان أمامه حين يجيب (D257(5)(و)). وكان السهم يشير إلى الجهة المطلوبة
+   والجملة تقول «اليمنى» في كل بند، ثم يُمحى قبل أن يلمس الطفل (الفحص المستقل C) */
+async function lrTogether(svg, C, side) { const K = C.K, h = K.hand('R'), c = css('--compass'); const g = el('g', { 'pointer-events': 'none', 'data-help': 1 }, svg);
+  const held = Object.values(C.things || {})[0]; if (held && held.parentNode === svg) svg.insertBefore(g, held);   /* تحت ما في اليد، فلا تغطّي الهالةُ الكتاب (الفحص المستقل D) */
+  el('circle', { cx: h.x, cy: h.y, r: 20, fill: 'none', stroke: c, 'stroke-width': 5 }, g);
+  el('path', { d: `M${h.x + 58} ${h.y - 58} L${h.x + 22} ${h.y - 22} M${h.x + 22} ${h.y - 42} V${h.y - 22} H${h.x + 42}`, fill: 'none', stroke: c, 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
+  await S(side === 'L' ? 'gen.lr.togetherL' : 'gen.lr.together'); await anim(g, [{ opacity: 1 }, { opacity: .35 }, { opacity: 1 }], { duration: 900 }).done; return g; }
 ITEM.lrTap = {
   make(spec) { return { ...spec, tag: 'lr:' + (spec.ask || 'hand'), want: spec.side }; },
   async ask(item, mode, tries) { const svg = newStage(300, null); const C = lrPic(svg, item);
-    if (tries >= 3) await lrTogether(svg, item.side);
+    if (tries >= 3) await lrTogether(svg, C, item.side);
     say(...lineOf(item.q), { free: true });
     const tg = item.ask === 'hold' ? ['R', 'L'].map(s => ({ g: C.things[s], k: s, label: THING_LABEL(item.hold[s]) }))
       : ['R', 'L'].map(s => { const h = C.K.hand(s); const g = el('g', { transform: `translate(${h.x} ${h.y})` }, svg); el('circle', { r: 22, fill: 'transparent' }, g); return { g, k: s, label: labelText('hand') }; });
@@ -241,12 +257,12 @@ ITEM.lrTap = {
 /* الشيء على يمين الطفل أم يساره؟ (تعرّف C011) */
 ITEM.lrPick = {
   make(spec) { return { ...spec, tag: 'lr:side', want: spec.side }; },
-  async ask(item) { const svg = newStage(300, null); const C = lrPic(svg, item); say(...lineOf(item.q), { free: true });
+  async ask(item, mode, tries) { const svg = newStage(300, null); const C = lrPic(svg, item); if (tries >= 3) await lrTogether(svg, C, item.side); say(...lineOf(item.q), { free: true });
     const k = await choosePick([['R', T('gen.pos.right'), '', 'gen.pos.right'], ['L', T('gen.pos.left'), '', 'gen.pos.left']], item.side); hush(); return { ans: k, ctx: { svg, C } }; },
   judge(item, k) { return k === item.side ? { ok: true } : { ok: false, err: 'lrSwap' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { const m = await showRibbon(r.ctx.svg, r.ctx.C.K); await sleep(500); m.remove(); },
-  async together(item, r) { await lrTogether(r.ctx.svg, 'R'); },
+  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */
   async reveal(item) { await S(item.side === 'R' ? 'gen.pos.right' : 'gen.pos.left'); },
   mark() {}, praise: () => 'praisePlace', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
@@ -268,12 +284,13 @@ function rbBoard(svg, start, opt = {}) { const B = boardAt(svg, { cols: 5, rows:
   const holder = el('g', {}, svg); let bot = null;
   const show = s => { st = { ...s }; holder.innerHTML = ''; const p = B.at(s.c, s.r); bot = robotTopAt(holder, p.x, p.y, { dir: s.dir, s: 1 }); };
   show(start);
-  const run = async (prog, from = start) => { let s = { ...from }; show(s);
-    for (const t of prog) { const n = rbRun([t], s); const a = B.at(s.c, s.r), b = B.at(n.c, n.r);
+  let runId = 0;   /* تشغيل جديد يوقف القديم (إعادة الحركة مع «أعد الجملة» ثم التلميح) */
+  const run = async (prog, from = start) => { const me = ++runId; let s = { ...from }; show(s);
+    for (const t of prog) { if (me !== runId) return s; const n = rbRun([t], s); const a = B.at(s.c, s.r), b = B.at(n.c, n.r);
       if (n.c < 0 || n.r < 0 || n.c >= B.cols || n.r >= B.rows) { SFX.soft(); await anim(bot, [{ transform: `translate(${a.x}px,${a.y}px) rotate(${s.dir * 90}deg)` }, { transform: `translate(${a.x + (b.x - a.x) * .25}px,${a.y + (b.y - a.y) * .25}px) rotate(${s.dir * 90}deg)` }, { transform: `translate(${a.x}px,${a.y}px) rotate(${s.dir * 90}deg)` }], { duration: 500 }).done; continue; }
       const to = t === 'L' ? s.dir * 90 - 90 : t === 'R' ? s.dir * 90 + 90 : s.dir * 90;
       await anim(bot, [{ transform: `translate(${a.x}px,${a.y}px) rotate(${s.dir * 90}deg)` }, { transform: `translate(${b.x}px,${b.y}px) rotate(${to}deg)` }], { duration: t === 'F' ? 520 : 600, easing: 'ease-in-out', fill: 'forwards' }).done;
-      s = { c: n.c, r: n.r, dir: n.dir }; show(s); SFX.tick(); await sleep(120); }
+      if (me !== runId) return s; s = { c: n.c, r: n.r, dir: n.dir }; show(s); SFX.tick(); await sleep(120); }
     return s; };
   return { B, show, run, get state() { return st; } }; }
 /* شريط الأوامر: يبني الطفل البرنامج (حتى 4 أوامر) ثم «انطلق» */
@@ -313,15 +330,21 @@ ITEM.robot = {
   mark() {}, praise: () => 'praiseRobot', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
 /* ما الأمر الذي اتّبعه الروبوت؟ (تعرّف C013): يشاهد الطفل الروبوت ثم يختار من بطاقتين مسموعتين */
+const RB_WATCH = { rbTurnSide: 'gen.rb.watchSide' };   /* لكل خطأ في بند بمساعدة جملته (يفحصه lint)؛ وبنود الإتقان والمراجعة لا حلّ مشترك فيها */
 ITEM.robotWatch = {
   make(spec) { const start = spec.start || { c: 2, r: 3, dir: 0 }; return { ...spec, start, tag: 'robotWatch' }; },
-  async ask(item) { const svg = newStage(300, { oasis: false, ground: 0 }); const RB = rbBoard(svg, item.start, { y0: 40 }); await S(item.q); await RB.run(item.prog); await sleep(300);
-    const cp = cardPick(item.opts.map((o, i) => ({ id: o.id, k: 'c' + i, ok: !!o.ok })), { intro: item.q }); const pk = await cp.p; cp.done(); cp.box.remove();
+  async ask(item, mode, tries) { const svg = newStage(300, { oasis: false, ground: 0 }); const RB = rbBoard(svg, item.start, { y0: 40 }); await S(item.q);
+    /* الحلّ المشترك (المستوى 3) بحسب الخطأ نفسه: جهة الدوران، أو ترتيب الأوامر، أو المشي والدوران (الفحص المستقل C: كان يسأل «هل مشى أم دار؟»
+       وخطأ البنود كلها جهة الدوران)، ثم يتحرّك الروبوت أمام الطفل */
+    if (tries >= 3 && RB_WATCH[item.lastErr]) await S(RB_WATCH[item.lastErr]);
+    await RB.run(item.prog); await sleep(300);
+    /* و«أعد الجملة» يعيد السؤال وحركة الروبوت معه ثم البطاقتين (الفحص المستقل C: في الإتقان والمراجعة كان يتحرّك مرة واحدة) */
+    const cp = cardPick(item.opts.map((o, i) => ({ id: o.id, k: 'c' + i, ok: !!o.ok })), { intro: item.q, replayPre: () => RB.run(item.prog) }); const pk = await cp.p; cp.done(); cp.box.remove();
     return { ans: pk.k, ctx: { svg, RB, pk } }; },
   judge(item, k) { const o = item.opts[+k.slice(1)]; return o.ok ? { ok: true } : { ok: false, err: o.err || 'rbWrong' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { await r.ctx.RB.run(item.prog); },
-  async together() { await S('gen.rb.watch'); },
+  async together(item, r, err) { item.lastErr = err; },   /* يُقال في ask عند المحاولة الرابعة */
   async reveal(item) { await S(item.opts.find(o => o.ok).id); },
   mark() {}, praise: () => 'praiseRobot', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
@@ -333,8 +356,10 @@ function mapErr(lay, want, got) { const W = lay.items.find(i => (i.id || i.k) ==
   if (Gt.col === W.col && Gt.row !== W.row) return { ok: false, err: 'mapRow' };
   return { ok: false, err: 'mapWrong' }; }
 /* خطّ إرشاد من الشيء في الصورة إلى عموده في الخريطة */
-async function mapGuide(svg, Rm, M, it, ms = 1600) { const x1 = ROOM_COLX[it.col], x2 = M.colX(it.col), y2 = M.rowY(it.row);
+/* keep: الخطّ يبقى خافتاً أمام الطفل حين يجيب (الحلّ المشترك، D257(5)(و)) */
+async function mapGuide(svg, Rm, M, it, ms = 1600, keep = false) { const x1 = ROOM_COLX[it.col], x2 = M.colX(it.col), y2 = M.rowY(it.row);
   const l = el('path', { d: `M${x1} ${Rm.y0 + (it.row === 'back' ? Rm.fy : Rm.H - 20)} L${x2} ${y2}`, stroke: css('--compass'), 'stroke-width': 4, 'stroke-dasharray': '8 6', fill: 'none', 'pointer-events': 'none' }, svg);
+  if (keep) { l.dataset.help = 1; await anim(l, [{ opacity: 0 }, { opacity: 1 }, { opacity: 1 }, { opacity: .55 }], { duration: ms, fill: 'forwards' }).done; return l; }
   await anim(l, [{ opacity: 0 }, { opacity: 1 }, { opacity: 1 }, { opacity: 0 }], { duration: ms }).done; l.remove(); }
 /* «أين هو في الخريطة؟» (الفحص المستقل A للبوابة: كان الجواب قطعةً يُعرف شكلها من اسمها، فلا تُقرأ الخريطة):
    شيء مرسوم في الغرفة (كنز أو قطة) لا يُسمّى مكانه، في خانة فارغة (mark.cell) أو فوق شيء أو تحته (mark.on، mark.rel)؛ ويلمس الطفل خانته في الخريطة
@@ -344,11 +369,13 @@ const cellKey = c => c.col + ',' + c.row;
 ITEM.mapFind = {
   make(spec) { const m = spec.mark || {}; const on = m.on && spec.lay.items.find(i => (i.id || i.k) === m.on);
     const W = m.cell ? { col: m.cell[0], row: m.cell[1] } : { col: on.col, row: on.row }; return { ...spec, tag: 'map:find', W, want: cellKey(W) }; },
-  async ask(item) { const svg = newStage(320, { oasis: false, ground: 0 }); const Rm = roomSideAt(svg, item.lay, { y0: 0, H: 150 }); const mk = roomMarkAt(svg, Rm, item.lay, item.mark);
+  async ask(item, mode, tries) { const svg = newStage(320, { oasis: false, ground: 0 }); const Rm = roomSideAt(svg, item.lay, { y0: 0, H: 150 }); const mk = roomMarkAt(svg, Rm, item.lay, item.mark);
     const M = roomMapAt(svg, item.lay, { y0: 168, H: 140 }); const at = {}; for (const it of item.lay.items) at[cellKey(it)] = M.pieces[it.id || it.k];
     const targets = MAP_CELLS.map(c => { let g = at[cellKey(c)];
       if (!g) { g = el('g', { transform: `translate(${M.colX(c.col)} ${M.rowY(c.row)})` }, svg); el('circle', { r: 24, fill: '#fff', 'fill-opacity': .3, stroke: css('--compass'), 'stroke-width': 3, 'stroke-dasharray': '7 6' }, g); }
       return { g, k: cellKey(c), label: labelText('spot') }; });
+    /* الحلّ المشترك (المستوى 3) على مسرح هذه المحاولة: الخطّ من الشيء في الغرفة إلى خانته، ويبقى خافتاً حين يلمس الطفل (الفحص المستقل C، D257(5)(و)) */
+    if (tries >= 3) { await S('gen.map.together'); await mapGuide(svg, Rm, M, item.W, 2200, true); }
     say(...lineOf(item.q), { free: true }); const k = await tapOne(targets, { ok: item.want, pad: 60 }); hush();
     return { ans: k, ctx: { svg, Rm, M, mk } }; },
   judge(item, k) { if (k === item.want) return { ok: true }; const [c, row] = k.split(','), col = +c, W = item.W;
@@ -359,7 +386,7 @@ ITEM.mapFind = {
   async hint2(item, r) { const I = item.lay.items, d = I.find(i => i.col !== item.W.col && cellKey(i) !== r.ans) || I.find(i => cellKey(i) !== r.ans && cellKey(i) !== item.want) || I[0];
     if (r.ctx.mk) await anim(r.ctx.mk, [{ filter: 'none' }, { filter: 'drop-shadow(0 0 7px #f2b33d)' }, { filter: 'none' }], { duration: 1200 }).done;
     await mapGuide(r.ctx.svg, r.ctx.Rm, r.ctx.M, d); },
-  async together(item, r) { await S('gen.map.together'); await mapGuide(r.ctx.svg, r.ctx.Rm, r.ctx.M, item.W, 2200); },
+  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */
   async reveal(item, r) { ITEM.mapFind.mark(item, r); await mapGuide(r.ctx.svg, r.ctx.Rm, r.ctx.M, item.W, 1200); },
   mark(item, r) { const M = r.ctx.M; el('circle', { cx: M.colX(item.W.col), cy: M.rowY(item.W.row), r: 40, fill: 'none', stroke: css('--good'), 'stroke-width': 5, 'pointer-events': 'none' }, r.ctx.svg); },
   praise: () => 'praisePlace', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
@@ -369,7 +396,7 @@ ITEM.mapPut = {
   make(spec) { const W = spec.lay.items.find(i => (i.id || i.k) === spec.want); return { ...spec, tag: 'map:put', W }; },
   async ask(item, mode, tries) { const svg = newStage(320, { oasis: false, ground: 0 }); const Rm = roomSideAt(svg, item.lay, { y0: 0, H: 150 });
     const M = roomMapAt(svg, { ...item.lay, items: item.lay.items.filter(i => (i.id || i.k) !== item.want) }, { y0: 168, H: 140, x0: 18, W: 252 });
-    if (tries >= 3) { await S('gen.map.together'); await mapGuide(svg, Rm, M, item.W, 2200); }
+    if (tries >= 3) { await S('gen.map.together'); await mapGuide(svg, Rm, M, item.W, 2200, true); }
     const cands = item.cands.map(([col, row], i) => ({ k: 'c' + i, col, row, x: M.colX(col), y: M.rowY(row) }));
     el('rect', { x: 284, y: 214, width: 70, height: 10, rx: 4, fill: MAT.wood }, svg); const th = mapPieceAt(svg, item.W.k, 319, 190); th.setAttribute('transform', 'translate(319 190) scale(.85)');
     say(...lineOf(item.q), { free: true }); const okK = cands.find(c => c.col === item.W.col && c.row === item.W.row).k;
@@ -388,26 +415,31 @@ function treasureAt(parent, x, y, s = .8) { const g = el('g', { transform: `tran
   el('rect', { x: -20, y: -26, width: 40, height: 26, rx: 4, fill: '#a9774a', stroke: '#fff', 'stroke-width': 2.5 }, g); el('path', { d: 'M-20 -26 Q0 -44 20 -26 Z', fill: '#c98f55', stroke: '#fff', 'stroke-width': 2.5 }, g);
   el('rect', { x: -4, y: -20, width: 8, height: 10, rx: 2, fill: '#f2d36b' }, g); return g; }
 /* يمشي الطفل على الطريق نقطةً نقطة، ويتوهّج ما يصل إليه من القطع (stop: يقف عنده قليلاً) */
-async function routeWalk(ctx, item, stop) { const { kid, pts, M } = ctx; if (!kid || !pts) return; const at = p => `translate(${p.x}px,${p.y + 20}px)`;
+/* keep (الحلّ المشترك): يبقى على كل شيء مرّ به رقمُ ترتيبه، فيرى الطفل ما نمرّ به أولاً وما بعده حين يختار الوصف */
+async function routeWalk(ctx, item, stop, keep = false) { const { kid, pts, M, svg } = ctx; if (!kid || !pts) return; const at = p => `translate(${p.x}px,${p.y + 20}px)`; let n = 0;
   for (let i = 1; i < pts.length; i++) { await anim(kid, [{ transform: at(pts[i - 1]) }, { transform: at(pts[i]) }], { duration: 520, easing: 'ease-in-out' }).done; kid.setAttribute('transform', `translate(${pts[i].x} ${pts[i].y + 20})`);
     const id = (item.path || []).find(id => { const it = item.lay.items.find(q => (q.id || q.k) === id); return Math.abs(M.colX(it.col) - pts[i].x) < 3 && Math.abs(M.rowY(it.row) - pts[i].y) < 3; });
-    if (id) { const g = M.pieces[id]; SFX.tick(); if (g) await anim(g, [{ opacity: 1 }, { opacity: .35 }, { opacity: 1 }], { duration: stop ? 900 : 500 }).done; } }
+    if (id) { const g = M.pieces[id]; SFX.tick(); if (keep && svg) badge(el('g', { 'pointer-events': 'none', 'data-help': 1 }, svg), pts[i].x + 26, pts[i].y - 26, ++n, css('--compass'));
+      if (g) await anim(g, [{ opacity: 1 }, { opacity: .35 }, { opacity: 1 }], { duration: stop ? 900 : 500 }).done; } }
   await sleep(500); kid.setAttribute('transform', `translate(${pts[0].x} ${pts[0].y + 20})`); }
 /* أيّ وصف يوصل من الباب إلى السرير؟ (البند المفتوح في الاختبار: على الشاشة يختار الطفل من وصفين مسموعين) */
 ITEM.routePick = {
   make(spec) { return { ...spec, tag: 'map:route' }; },
-  async ask(item) { const svg = newStage(260, { oasis: false, ground: 0 }); const M = roomMapAt(svg, item.lay, { y0: 40, H: 190 });
+  async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 0 }); const M = roomMapAt(svg, item.lay, { y0: 40, H: 190 });
     /* الطريق المرسوم: من الباب نزولاً إلى صفّ الشيء الأول، ثم أفقياً إليه، وهكذا (خطوط مستقيمة لا تقطع ما ليس عليه) */
     const pts = [{ x: M.door.x, y: M.door.y - 4 }]; let prev = pts[0];
-    for (const id of item.path || []) { const it = item.lay.items.find(i => (i.id || i.k) === id); const q = { x: M.colX(it.col), y: M.rowY(it.row) };
+    for (const id of item.path || []) { const it = item.lay.items.find(i => (i.id || i.k) === id); const q = { x: M.colX(it.col), y: M.rowY(it.row), id };
       if (Math.abs(prev.x - q.x) > 4 && Math.abs(prev.y - q.y) > 4) pts.push(prev === pts[0] ? { x: prev.x, y: q.y } : { x: q.x, y: prev.y }); pts.push(q); prev = q; }
-    el('path', { d: 'M' + pts.map(p => p.x + ' ' + p.y).join(' L'), fill: 'none', stroke: '#c94f3d', 'stroke-width': 5, 'stroke-dasharray': '9 7', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'pointer-events': 'none' }, svg);
+    /* data-stops: الشيء عند كل نقطة من الخط (والفارغ منعطف)، يقرؤه فحص الطريق: كل قطعة من الخط تمسّ ما بين طرفيها وحده (الفحص المستقل D) */
+    el('path', { d: 'M' + pts.map(p => p.x + ' ' + p.y).join(' L'), 'data-stops': pts.map(p => p.id || '').join(','), fill: 'none', stroke: '#c94f3d', 'stroke-width': 5, 'stroke-dasharray': '9 7', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'pointer-events': 'none' }, svg);
     const kid = el('g', { transform: `translate(${M.door.x} ${M.door.y + 20})` }, svg); kid.innerHTML = kidSVG(PROFILE ? PROFILE.gender : 'm', PROFILE && PROFILE.avatar).replace('<svg', '<svg x="-20" y="-20" width="40" height="40"');
+    /* الحلّ المشترك (المستوى 3) على مسرح هذه المحاولة: نمشي الطريق معاً ونقف عند كل شيء، ويبقى رقم ترتيبه عليه حين يختار الطفل (D257(5)(و)) */
+    if (tries >= 3) { await S('gen.map.routeTogether'); await routeWalk({ svg, M, pts, kid }, item, true, true); }
     await S(item.q); const cp = cardPick(item.opts.map((o, i) => ({ id: o.id, k: 'c' + i, ok: !!o.ok })), { intro: item.q }); const pk = await cp.p; cp.done(); cp.box.remove(); return { ans: pk.k, ctx: { svg, M, pts, kid } }; },
   judge(item, k) { const o = item.opts[+k.slice(1)]; return o.ok ? { ok: true } : { ok: false, err: o.err || 'mapRoute' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   /* التلميح الثاني: الطفل يمشي على الطريق المرسوم من الباب؛ والحلّ المشترك: يمشي ويقف عند كل شيء يمرّ به فيتوهّج (الفحص المستقل A: كان بلا تلميح) */
-  async hint2(item, r) { await routeWalk(r.ctx, item, false); }, async together(item, r) { await S('gen.map.routeTogether'); await routeWalk(r.ctx, item, true); },
+  async hint2(item, r) { await routeWalk(r.ctx, item, false); }, async together() {},   /* في ask عند المحاولة الرابعة */
   async reveal(item) { await S(item.opts.find(o => o.ok).id); }, mark() {},
   praise: () => 'praiseRoute', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
@@ -466,6 +498,10 @@ ITEM.roadHop = {
   mark() {}, praise: () => 'praiseRoad', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },
 };
 /* ================= ما بعده؟ ما قبله؟ أين أصل؟ (تعرّف N009): بطاقتان مسموعتان، فلا يُقرأ عدد فوق العشرة (D229) ================= */
+/* بطاقة الخطأ في «أين نصل؟» البلاطة قبل الأخيرة (عدّ بلاطته)، وفي «بعد/قبل/يزيد/ينقص» الجهة الأخرى؛ فإن خرجت عن الطريق
+   (ينقص واحداً عن عشرين: واحد وعشرون، ولا بلاطة له ولا كلمة، فتوقّف الدرس في الفحص المستقل C) فالعدد نفسه: لم يخطُ */
+const roadAlt = item => { if (item.alt != null) return item.alt; if (item.ask === 'land') return item.n + (item.dir || 1) * (item.k - 1);
+  const o = item.n - item.d; return o >= 0 && o <= (item.last || 20) ? o : item.n; };
 ITEM.roadPick = {
   make(spec) { const d = spec.ask === 'next' || spec.ask === 'more' ? 1 : spec.ask === 'prev' || spec.ask === 'less' ? -1 : 0;
     const want = spec.ask === 'land' ? spec.n + (spec.dir || 1) * spec.k : spec.ask === 'hops' ? spec.b - spec.n : spec.n + d; return { ...spec, tag: 'road:' + spec.ask, want, d }; },
@@ -478,11 +514,11 @@ ITEM.roadPick = {
       else { roadArrow(R.S.tiles[item.n].g, dir); await S('gen.road.look'); } }
     say(...lineOf(item.q), { free: true });
     if (item.ask === 'hops') { const np = numberPick(nearNums(item.want, 10), item.want); const k = await np.p; np.box.remove(); return { ans: k, ctx: R }; }
-    const alt = item.alt != null ? item.alt : (item.ask === 'land' ? item.n + (item.dir || 1) * (item.k - 1) : item.n - item.d);
+    const alt = roadAlt(item);
     const cp = cardPick([{ id: numw(item.want), k: 'w', ok: true, hide: true }, { id: numw(alt), k: 'a', ok: false, hide: true }], { intro: item.q, keepQ: true }); const pk = await cp.p; cp.done(); cp.box.remove();
     return { ans: pk.k === 'w' ? item.want : alt, ctx: R }; },
   judge(item, k) { if (k === item.want) return { ok: true }; if (item.ask === 'land') return k === item.n + (item.dir || 1) * (item.k - 1) ? { ok: false, err: 'roadOwnTile' } : (k - item.n) * (item.dir || 1) < 0 ? { ok: false, err: 'roadDir' } : { ok: false, err: 'roadHops' };
-    if (item.ask === 'hops') return { ok: false, err: 'roadHops' }; return { ok: false, err: 'roadNext' }; },
+    if (item.ask === 'hops') return { ok: false, err: 'roadHopsCount' }; return { ok: false, err: k === item.n ? 'roadOwnTile' : 'roadNext' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { const t = r.ctx.S.tiles[item.n]; const m = el('rect', { x: -27, y: -27, width: 54, height: 54, rx: 11, fill: 'none', stroke: css('--compass'), 'stroke-width': 5, 'pointer-events': 'none' }, t.g); await S(numw(item.n), { num: true });
     const a = roadArrow(t.g, item.ask === 'land' || item.ask === 'hops' ? (item.dir || 1) : item.d); await sleep(1400); m.remove(); a.remove(); },

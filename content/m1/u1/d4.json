@@ -351,7 +351,8 @@
     "mk": "circleS",
     "n": 7,
     "from": "scatter",
-    "to": "circle"
+    "to": "circle",
+    "add": 1
    },
    {
     "t": "produce",
@@ -598,7 +599,8 @@
      "mk": "circleS",
      "n": 5,
      "from": "scatter",
-     "to": "row"
+     "to": "row",
+     "add": 1
     }
    ]
   },

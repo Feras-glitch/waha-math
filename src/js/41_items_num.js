@@ -48,13 +48,15 @@ ITEM.same = {
     const svg = newStage(250, { oasis: false, ground: 0 }); const proto = make(item.mk);
     const from = layoutPts(item.n, item.from || 'row', 180, 118, 58, CHAOS_SPOT); const gs = from.map(p => thingAt(svg, { ...proto, size: 44, label: null }, p.x, p.y));
     if (tries === 0) { await S('gen.same.count'); await countTouch(svg, from.map((p, i) => ({ ...p, g: gs[i] })), { halo: 26, by: -28 }); }
-    else await badgeCount(svg, from.map(p => ({ x: p.x, y: p.y - 26 })));
+    else (await badgeCount(svg, from.map(p => ({ x: p.x, y: p.y - 26 })))).dataset.step = 1;   /* عدّ ما قبل البعثرة خطوة من المهمة نفسها، يذهب حين تتحرّك الأشياء */
     await sleep(400); const fz = mode === 'practice' && tries === 0 ? chaosAt(svg, CHAOS_SPOT.x, CHAOS_SPOT.y, .45) : null; if (fz) await chaosGiggle(fz);
     const to = layoutPts(item.n, item.to || 'scatter', 180, 118, 58, CHAOS_SPOT);
-    svg.querySelectorAll('g[pointer-events=none]').forEach(m => m.remove());
+    svg.querySelectorAll('g[pointer-events=none]').forEach(m => { if (m.parentNode === svg) m.remove(); });   /* العلامات كلها بمجموعاتها (لا الشارة من داخل مجموعتها) */
     await Promise.all(gs.map((g, i) => anim(g, [{ transform: `translate(${from[i].x}px,${from[i].y}px)` }, { transform: `translate(${to[i].x}px,${to[i].y}px)` }], { duration: 900, fill: 'forwards', easing: 'ease-in-out' }).done));
     if (item.add) { const p = layoutPts(1, 'row', item.add > 0 ? 330 : 30, 40)[0]; const extra = thingAt(svg, { ...proto, size: 44, label: null }, p.x, p.y); const q = { x: 180 + R(-30, 30), y: 210 };
       await anim(extra, [{ transform: `translate(${p.x}px,${p.y}px)` }, { transform: `translate(${q.x}px,${q.y}px)` }], { duration: 900, fill: 'forwards' }).done; item._extra = q; }
+    /* الحلّ المشترك (المستوى 3): «نعدّها معاً الآن» بعد البعثرة، والأعداد باقية حين يختار الطفل (D257(5)(و)) */
+    if (tries >= 3) (await badgeCount(svg, [...to, ...(item._extra && item.add ? [item._extra] : [])].map(p => ({ x: p.x, y: p.y - 26 })), css('--square'))).dataset.help = 1;
     item._to = to; await S('gen.same.ask');
     const k = await choosePick([['same', labelText('same'), PICKICON.same], ['changed', labelText('changed'), PICKICON.changed]], item.want); return { ans: k, ctx: { svg, to } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.add ? 'missedAdd' : 'spreadMore' }; },
@@ -348,14 +350,15 @@ ITEM.buildTo = {
 ITEM.unknownStart = { ...numItem,
   make(spec) { return { ...spec, tag: 'unknownStart', want: spec.took + spec.left }; },
   async ask(item, mode, tries) { const svg = newStage(250, { oasis: false, ground: 14 }); const L = towerAt(svg, 180, 230, item.left, { size: 24, color: CUBE.lemon }); const fz = chaosAt(svg, 300, 70, .45);
-    const tk = tries >= 2 ? towerAt(svg, 300, 150, item.took, { size: 24, color: CUBE.lemon }) : null;
+    const tk = tries === 2 ? towerAt(svg, 300, 150, item.took, { size: 24, color: CUBE.lemon }) : null;   /* وفي الرابعة يعود ما أُخذ فوق البرج (لا يُرسم ثم يُمحى) */
+    /* الحلّ المشترك (المستوى 3) على مسرح هذه المحاولة، فتبقى الأعداد أمام الطفل حين يختار (D257(5)(و)؛ كان العدّ على المسرح السابق ثم يُرسم غيره) */
+    if (tries >= 3) { await unknownReturn(item, { svg, L, tk }); await S('gen.count.together'); const pts = [];
+      for (let i = 0; i < item.want - 1; i++) pts.push({ x: L.x + 26, y: L.baseY - L.size * .62 - i * L.step }); (await badgeCount(svg, pts)).dataset.help = 1; }
     await S(item.line); const np = numberPick(nearNums(item.want), item.want); return { ans: await np.p, ctx: { svg, np, L, tk } }; },
   judge(item, ans) { return ans === item.want ? { ok: true } : { ok: false, err: 'unknownStart' }; },
   /* المستوى 2: فوضى تعيد ما أخذته فوق البرج (حركة الأداة)، والمستوى 3: نعدّ معاً البرج ثم ما عاد، ونقف قبل الأخير */
   async hint2(item, r) { await S('gen.unknown.return'); await unknownReturn(item, r.ctx); await sleep(400); },
-  async together(item, r) { const { svg, L } = r.ctx; await unknownReturn(item, r.ctx); await S('gen.count.together'); const pts = [];
-    for (let i = 0; i < item.want; i++) pts.push({ x: L.x + 26, y: L.baseY - L.size * .62 - i * L.step });
-    await badgeCount(svg, pts.slice(0, item.want - 1)); },
+  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */
   async reveal(item, r) { markNum(r, item.want, 'ok'); await S(numw(item.want)); }, twin(item) { return item.twin || null; },
 };
 /* ما أخذته فوضى يعود فوق البرج (أبيض ليُرى أنه العائد) */
@@ -367,6 +370,11 @@ ITEM.fact = { ...numItem,
   async ask(item, mode, tries) { const svg = newStage(250, { oasis: false, ground: 0 });
     const hands = item.op === '+' ? [handAtN(svg, 250, 110, item.a, 1.3), handAtN(svg, 110, 110, item.b, 1.3)] : [handAtN(svg, 180, 110, item.a, 1.4)];
     sentenceAt(svg, 180, 214, item.a, item.op, item.b, null);
+    /* الحلّ المشترك (المستوى 3) على أصابع هذه المحاولة (D257(5)(و)) */
+    if (tries >= 3) { const tips = item.op === '+' ? [...hands[0].tips, ...hands[1].tips] : hands[0].tips.slice(0, item.a - item.b);
+      if (item.op === '-') hands[0].fingers.slice(item.a - item.b).forEach(f => f.setAttribute('opacity', .25)); await S('gen.count.together');
+      /* الشارات متناوبة الارتفاع: الأصابع متقاربة فكانت تتراكب ويختفي نصف «٢» (الفحص المستقل D) */
+      (await badgeCount(svg, tips.slice(0, item.want - 1).map((t, i) => ({ x: t.x, y: t.y - (i % 2) * 30 })))).dataset.help = 1; }
     const intro = [...sentenceLines(item.a, item.op, item.b), [...lineOf('gen.fact.ask'), { append: true }]]; for (const l of intro) await say(l[0], l[1], l[2], l[3] || {});
     const np = numberPick(nearNums(item.want, 5), item.want, { intro }); return { ans: await np.p, ctx: { svg, np, hands } }; },
   judge(item, ans) { return ans === item.want ? { ok: true } : { ok: false, err: 'factWrong' }; },
@@ -374,8 +382,7 @@ ITEM.fact = { ...numItem,
   async hint2(item, r) { await S('gen.fact.fingers'); const H = r.ctx.hands, svg = r.ctx.svg;
     if (item.op === '+') for (const t of [...H[0].tips, ...H[1].tips]) { const k = el('circle', { cx: t.x, cy: t.y, r: 12, fill: css('--rect'), opacity: .55, 'pointer-events': 'none' }, svg); SFX.tick(); await sleep(FAST ? 20 : 420); }
     else for (const f of H[0].fingers.slice(item.a - item.b)) { f.setAttribute('opacity', .25); SFX.tick(); await sleep(FAST ? 20 : 420); } },
-  async together(item, r) { const H = r.ctx.hands; const tips = item.op === '+' ? [...H[0].tips, ...H[1].tips] : H[0].tips.slice(0, item.a - item.b);
-    if (item.op === '-') H[0].fingers.slice(item.a - item.b).forEach(f => f.setAttribute('opacity', .25)); await S('gen.count.together'); await badgeCount(r.ctx.svg, tips.slice(0, item.want - 1)); },
+  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */
   async reveal(item, r) { markNum(r, item.want, 'ok'); await readSentence(item.a, item.op, item.b, item.want); }, twin(item) { return item.twin || null; },
 };
 /* ⑩ قصص الواحة (مراجعة اليوم): القصة مسموعة، ويمثّلها الطفل بالمكعبات، ثم «كم؟» والجملة العددية */

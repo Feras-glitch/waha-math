@@ -182,7 +182,7 @@ async function pushTest(svg, s, behave, x0 = 110) {
     const px = bb.x + bb.width - 4, py = bb.y + bb.height - 8; const fr = [];
     for (let a = 0; a <= 90; a += 10) fr.push({ transform: `translate(${x0}px,${y0}px) translate(${px}px,${py}px) rotate(${a}deg) translate(${-px}px,${-py}px)` });
     await anim(g, fr, { duration: 650, fill: 'forwards', easing: 'ease-in' }).done;
-    SFX.soft(); g.remove(); const g2 = placeOnFloor(svg, { ...s }, x0 + bb.width * .9);
+    SFX.soft(); g.dataset.step = 1; g.remove(); const g2 = placeOnFloor(svg, { ...s }, x0 + bb.width * .9);   /* الشيء نفسه بعد أن انقلب (خطوة في الحركة) */
     anim(g2, [{ transform: `translate(${g2.__x}px,${g2.__y - 4}px)` }, { transform: `translate(${g2.__x}px,${g2.__y}px)` }], 160);
   } else {
     await anim(g, [{ transform: `translate(${x0}px,${y0}px)` }, { transform: `translate(${x0 + 8}px,${y0}px) rotate(3deg)` }, { transform: `translate(${x0 + 8}px,${y0}px) rotate(-2deg)` }, { transform: `translate(${x0 + 8}px,${y0}px)` }], { duration: 700, fill: 'forwards' }).done;

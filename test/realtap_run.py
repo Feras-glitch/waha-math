@@ -86,7 +86,9 @@ async def run(p, dev):
       if st['n'] is not None and st['n'] != last:
         last = st['n']; k = st['kind']
         if k == 'pick' and st['scene'].endswith(':bag'): await pg.evaluate("() => { const b = [...document.querySelectorAll('.choices .pick')]; (b.find(x => x.dataset.k === 'screen') || b[0]).click(); }"); await pg.wait_for_timeout(40); continue
-        if k in ('tapAll', 'tap', 'house', 'sort', 'produce', 'fill', 'splitMake', 'place', 'prog', 'road', 'paint'):
+        # «لوّن» بالإصبع في «لوّن العربات ثم المس» وحده (kamAyn، S1-U3)؛ وبند التلوين بالأوعية (paint، S1-U1) بخطّافه كما كان
+        kam = k == 'paint' and await pg.evaluate("() => !!(window.__item && window.__item.ask === 'kamAyn')")
+        if k in ('tapAll', 'tap', 'house', 'sort', 'produce', 'fill', 'splitMake', 'place', 'prog', 'road') or kam:
           await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1
           if k == 'tapAll':
             for c in await pg.evaluate(CENTRES, '[role=button]'): await tap(c['x'], c['y']); await pg.wait_for_timeout(80)

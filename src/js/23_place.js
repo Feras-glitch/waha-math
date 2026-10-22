@@ -81,11 +81,11 @@ function treeAt(parent, x, y, { s = 1 } = {}) { const g = el('g', { transform: `
 /* الطفل من ظهره (قاعدة الصور): شعر الطفل نفسه ولون بشرته من صورته، وشريط على اليد اليمنى (اليمين في الصورة يمين الطفل). raise: اليد المرفوعة */
 function kidBackAt(parent, x, y, { ribbon = 'R', raise = null, shirt = '#7e9a4e', s = 1 } = {}) {
   const A = AVATARS[(PROFILE && PROFILE.avatar) || ''] || AVATARS[PROFILE && PROFILE.gender === 'f' ? 'f1' : 'm1'];
-  const g = el('g', { transform: `translate(${x} ${y}) scale(${s})` }, parent); const skin = A.skin;
-  for (const dx of [-12, 12]) el('rect', { x: dx - 7, y: -46, width: 14, height: 46, rx: 6, fill: '#33454c', stroke: PL_EDGE, 'stroke-width': 2.5 }, g);
+  const g = el('g', { transform: `translate(${x} ${y}) scale(${s})`, 'data-kid': 1 }, parent); const skin = A.skin;
+  for (const dx of [-12, 12]) el('rect', { x: dx - 7, y: -46, width: 14, height: 46, rx: 6, fill: '#33454c', stroke: PL_EDGE, 'stroke-width': 2.5, 'data-leg': 1 }, g);
   const arm = side => { const up = raise === side, sx = side === 'R' ? 1 : -1, a = el('g', {}, g);
     el('path', { d: up ? `M${sx * 24} -96 L${sx * 34} -150` : `M${sx * 26} -94 L${sx * 34} -48`, stroke: shirt, 'stroke-width': 15, 'stroke-linecap': 'round' }, a);
-    const hx = up ? sx * 35 : sx * 35, hy = up ? -156 : -42; el('circle', { cx: hx, cy: hy, r: 8, fill: skin, stroke: PL_EDGE, 'stroke-width': 2.5 }, a);
+    const hx = up ? sx * 35 : sx * 35, hy = up ? -156 : -42; el('circle', { cx: hx, cy: hy, r: 8, fill: skin, stroke: PL_EDGE, 'stroke-width': 2.5, 'data-hand': side }, a);
     if (ribbon === side) el('rect', { x: hx - 9, y: hy + (up ? 5 : -15), width: 18, height: 8, rx: 3, fill: '#f2b33d', stroke: PL_EDGE, 'stroke-width': 2, class: 'ribbon' }, a);
     return a; };
   arm('L'); arm('R');

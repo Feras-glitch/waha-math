@@ -9,9 +9,13 @@ function nextBtn(lbl) { AUTO({ kind: 'go', ok: () => go.click() }); return gate(
 /* شريط المراحل بعدد مراحل الدرس الفعلي */
 function setSteps(n) { const s = $('#steps'); s.innerHTML = ''; s.style.setProperty('--n', n); for (let i = 0; i < n; i++) s.appendChild(document.createElement('i')); s.hidden = !n; }
 function setStep(i) { [...$('#steps').children].forEach((d, k) => { d.className = k < i ? 'done' : (k === i ? 'now' : ''); }); }
-let STAGE_RO = null;   /* إن تغيّر حجم المسرح (فقاعة أطول، أو شاشة قصيرة، أو تدوير) أُعيد حساب مناطق اللمس بالبكسل الفعلي */
+let STAGE_RO = null, STAGE_MO = null;   /* إن تغيّر حجم المسرح (فقاعة أطول، أو شاشة قصيرة، أو تدوير) أُعيد حساب مناطق اللمس بالبكسل الفعلي */
 function newStage(H = 300, bg = {}, aria) { const st = $('#stage'); st.innerHTML = ''; const svg = el('svg', { viewBox: `0 0 360 ${H}`, preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': aria || (CUR ? plain(CUR.title || '') : '') }); st.appendChild(svg);
-  try { if (STAGE_RO) STAGE_RO.disconnect(); STAGE_RO = new ResizeObserver(() => refreshPads(svg)); STAGE_RO.observe(svg); } catch (e) {} if (bg !== null) backdrop(svg, H, bg); return svg; }
+  try { if (STAGE_RO) STAGE_RO.disconnect(); STAGE_RO = new ResizeObserver(() => refreshPads(svg)); STAGE_RO.observe(svg); } catch (e) {}
+  /* وحين تظهر الخيارات تحت المسرح أو تزول يصغر أو يكبر قبل أن يُبلغ ResizeObserver: يُعاد الحساب فوراً، فلا تبقى منطقة لمس دون حدّها لحظةً
+     (الفحصان المستقلان C وD: زرّ تحريك الطريق 55 بكسلاً، وقطعة الورشة 61، على iPhone SE) */
+  try { if (STAGE_MO) STAGE_MO.disconnect(); STAGE_MO = new MutationObserver(() => refreshPads(svg)); STAGE_MO.observe(st, { childList: true }); } catch (e) {}
+  if (bg !== null) backdrop(svg, H, bg); return svg; }
 function label(svgOrKey, x, y, text, size = 19, color) {
   if (typeof svgOrKey === 'string') return labelText(svgOrKey);
   const t = el('text', { x, y, 'text-anchor': 'middle', 'font-size': size, 'font-weight': 800, fill: color || css('--ink'), 'font-family': css('--f'), 'paint-order': 'stroke', stroke: css('--paper'), 'stroke-width': 5 }, svgOrKey); t.textContent = G(text); return t; }
@@ -93,7 +97,8 @@ function cardPick(cards, opt = {}) {   // cards: [{id(line), k, ok, icon, hide, 
   const p = gate(new Promise(res => btns.forEach((b, i) => b.onclick = () => { if (box.dataset.done) return; answered = true; REPLAY_HOOK = null; AUTO_CLEAR(); hush(); btns.forEach(x => x.classList.remove('reading')); res(list[i]); })));
   const lines = list.map(c => lineOf(c.id)), intro = opt.intro ? lineOf(opt.intro) : null, flow = FLOW;   /* النصوص من درسها وقت الإنشاء، لا من الدرس الجاري وقت اللمس */
   const readAll = async withIntro => { const me = ++run; btns.forEach(x => x.classList.remove('reading'));
-    if (withIntro && intro) { await say(...intro, { free: true }); if (answered || me !== run) return; }
+    if (withIntro && intro) { await say(...intro, { free: true }); if (answered || me !== run) return;
+      if (opt.replayPre) { await opt.replayPre(); if (answered || me !== run) return; } }   /* replayPre: ما يُعاد مع السؤال، كحركة الروبوت في «أيّ أمر اتّبع؟» */
     for (const [i, b] of btns.entries()) { if (answered || me !== run) break; b.classList.add('reading'); const c = list[i]; if (c.pre) await c.pre(); if (answered || me !== run) break;
       await say(...lines[i], { hideText: c.hide && !opt.keepQ, keep: !!opt.keepQ, free: true }); b.classList.remove('reading'); } };   /* keepQ: بطاقات الأعداد المسموعة تُقرأ والسؤال باقٍ في الفقاعة (S1-U3) */
   /* الخطّاف حيّ ما دامت البطاقات على الشاشة في المسار نفسه: الخروج إلى الخريطة أو مسرح جديد يُسقطه (الدرس الآخر لا يسمع بطاقات هذا) */
