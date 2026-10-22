@@ -1,7 +1,7 @@
 // بناء «واحة الرياضيات»: يدمج src/ وcontent/ في ملف واحد يعمل دون اتصال (D246).
 //   node build/build.mjs          ← dist/واحة_الرياضيات.html (نسخة الأطفال: بلا خطافات فحص ولا وضع #fast)
 //   node build/build.mjs --dev    ← dist/واحة_الرياضيات.dev.html (نسخة الفحص: تبقي TESTHOOK و#fast و#test لأدوات test/)
-//   خطوات كل بناء: فحص المحتوى (lint) → حقن CONTENT → تضمين الخط إن وُجد assets/fonts/BalooBhaijaan2.woff2 → جدول التسجيل dist/script_m1.xlsx
+//   خطوات كل بناء: فحص المحتوى (lint) → حقن CONTENT → تضمين الخطّين من assets/fonts/ (D256) → جدول التسجيل dist/script_m1.xlsx
 import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -11,7 +11,7 @@ import { writeScript } from './script.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'src'), DIST = join(ROOT, 'dist'), CONTENT_DIR = join(ROOT, 'content');
-const FONT = join(ROOT, 'assets', 'fonts', 'BalooBhaijaan2.woff2');
+const FONTS = join(ROOT, 'assets', 'fonts');
 const read = p => readFileSync(p, 'utf8');
 const json = p => JSON.parse(read(p));
 
@@ -29,25 +29,36 @@ export function stripHooks(js, dev) {
   if (left) throw new Error('بقايا خطافات فحص في النسخة الإنتاجية: ' + [...new Set(left)].join(', '));
   return js;
 }
-/* الخط: إن وُجد الملف المضمّن (OFL) نحقنه كـ @font-face بصيغة data: ونحذف روابط Google؛ وإلا نُبقي الرابط غير الحاجب كما هو */
-export function embedFont(head) {
-  if (!existsSync(FONT)) return { head, embedded: false };
-  const b64 = readFileSync(FONT).toString('base64');
-  const face = `@font-face { font-family: "Baloo Bhaijaan 2"; font-style: normal; font-weight: 500 800; font-display: swap; src: url(data:font/woff2;base64,${b64}) format("woff2"); }\n`;
-  head = head.replace(/<link rel="preconnect" href="https:\/\/fonts\.g[^>]*>\n/g, '').replace(/<link rel="stylesheet" href="https:\/\/fonts\.googleapis\.com[^>]*>\n/, '');
-  head = head.replace('<!-- الخط: يُضمَّن ملف Baloo Bhaijaan 2 (OFL) في خطوة البناء عند توفّره (D232)؛ حتى ذلك الحين رابط غير حاجب وبدائل نظام عربية -->', '<!-- الخط Baloo Bhaijaan 2 (OFL) مضمّن في الملف (D232) -->');
-  head = head.replace('<style>\n', '<style>\n' + face);
-  return { head, embedded: true };
+/* الخطّان (D232، D256): يُضمَّنان دائماً من assets/fonts/ كـ @font-face بصيغة data:، بلا شبكة. يكتبهما tools/fonts/make_fonts.py مقتطَعَين
+   (خط القراءة Waha Naskh من Scheherazade New، وخط العناوين Baloo Bhaijaan 2)، ويصف fonts.json الأوجه والحروف التي يغطّيها كل وجه.
+   ويوقف البناءَ حرفٌ عربي أو لاتيني في المحتوى أو الكود لا يغطّيه خط القراءة، فلا يظهر للطفل بخط بديل */
+const TEXT_RANGES = [[0x20, 0x7E], [0xA0, 0xFF], [0x600, 0x6FF], [0x750, 0x77F], [0x8A0, 0x8FF], [0xFB50, 0xFDFF], [0xFE70, 0xFEFE], [0x2010, 0x2027]];
+const FORMAT_CHARS = c => (c >= 0x200B && c <= 0x200F) || (c >= 0x2066 && c <= 0x2069) || c === 0xAD;
+export function embedFonts(head, texts) {
+  const manPath = join(FONTS, 'fonts.json');
+  if (!existsSync(manPath)) throw new Error('assets/fonts/fonts.json غير موجود: شغّل tools/fonts/make_fonts.py (D256)');
+  const faces = json(manPath).faces;
+  const css = faces.map(f => {
+    const p = join(FONTS, f.file); if (!existsSync(p)) throw new Error('ملف الخط غير موجود: assets/fonts/' + f.file + ' (tools/fonts/make_fonts.py)');
+    return `@font-face { font-family: "${f.family}"; font-style: normal; font-weight: ${f.weight}; font-display: block; src: url(data:font/${f.format};base64,${readFileSync(p).toString('base64')}) format("${f.format}"); }\n`;
+  }).join('');
+  const read = faces.filter(f => f.role === 'read'); const cov = new Set();
+  for (const f of read) for (const [a, b] of f.covers) for (let c = a; c <= b; c++) cov.add(c);
+  const bad = new Map();
+  for (const t of texts) for (const ch of t) { const c = ch.codePointAt(0);
+    if (TEXT_RANGES.some(([a, b]) => c >= a && c <= b) && !FORMAT_CHARS(c) && !cov.has(c)) bad.set(ch, (bad.get(ch) || 0) + 1); }
+  if (bad.size) throw new Error('حروف لا يغطّيها خط القراءة (D256): ' + [...bad].map(([ch, n]) => `U+${ch.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')} «${ch}» ×${n}`).join('، ') + ' — أضفها إلى RANGES في tools/fonts/make_fonts.py');
+  return { head: head.replace('<style>\n', '<style>\n' + css), faces };
 }
 
 export function build({ dev = false } = {}) {
   const content = loadContent(); const modules = readModules();
   const L = lint(content, modules); if (L.errors.length) { console.error(L.summary); for (const e of L.errors) console.error('  مخالفة:', e); throw new Error('أوقف البناءَ فحصُ المحتوى'); }
-  const font = embedFont(read(join(SRC, 'head.html')).replace('@@STYLES@@', read(join(SRC, 'styles.css'))));
   const body = read(join(SRC, 'body.html')), tail = read(join(SRC, 'tail.html'));
+  const font = embedFonts(read(join(SRC, 'head.html')).replace('@@STYLES@@', read(join(SRC, 'styles.css'))), [JSON.stringify(content), modules, body, tail]);
   const js = stripHooks(modules, dev);
   const html = font.head + body + '<script>\n\'use strict\';\nconst CONTENT = ' + JSON.stringify(content) + ';\n' + js + '</script>\n' + tail;
-  return { html, content, modules, lint: L, fontEmbedded: font.embedded };
+  return { html, content, modules, lint: L, fonts: font.faces };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -57,7 +68,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const out = join(DIST, dev ? 'واحة_الرياضيات.dev.html' : 'واحة_الرياضيات.html');
   writeFileSync(out, r.html);
   console.log(r.lint.summary); for (const w of r.lint.warn) console.log('  تنبيه:', w);
-  console.log('الخط:', r.fontEmbedded ? 'مضمّن من assets/fonts/BalooBhaijaan2.woff2' : 'غير مضمّن (رابط غير حاجب) — ضع الملف في assets/fonts/ ليُضمَّن');
+  console.log('الخط:', r.fonts.map(f => `${f.family} ${f.weight} (${f.file})`).join('، '), '— مضمّنة (D256)');
   const s = writeScript(r.content, r.modules, DIST);
   console.log(`جدول التسجيل: ${s.nclips} جملة، ${s.nfiles} ملفاً صوتياً${s.xlsx ? ' → dist/script_m1.xlsx' : ' (json فقط)'}`); for (const p of s.problems) console.log('  مشكلة:', ...p);
   console.log('كُتب', out, Math.round(r.html.length / 1024), 'KB', dev ? '(نسخة الفحص --dev)' : '(نسخة الأطفال)');

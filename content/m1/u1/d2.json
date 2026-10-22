@@ -78,7 +78,12 @@
   "ms.recallN": "نَلْمَسُ كُلَّ وَاحِدٍ مَرَّةً وَاحِدَةً، وَآخِرُ عَدَدٍ نَقُولُهُ هُوَ «كَمْ».",
   "mx.tri": "أَيْنَ المُثَلَّثُ؟ {اِلْمَسْهُ|اِلْمَسِيهِ}.",
   "ms.how6": "كَمْ شَيْئًا فِي الصَّفِّ؟",
-  "ms.ok": "رَائِعٌ! {أَتْقَنْتَ|أَتْقَنْتِ} المُثَلَّثَ وَالعَدَّ. {هَذِهِ نَجْمَتُكَ|هَذِهِ نَجْمَتُكِ}.",
+  "rv.howV": "كَمْ رَأْسًا لِهَذَا المُثَلَّثِ؟",
+  "rv.howS": "كَمْ ضِلْعًا لِهَذَا المُسْتَطِيلِ؟",
+  "ms.ok": "رَائِعٌ! {أَتْقَنْتَ|أَتْقَنْتِ} المُثَلَّثَ، وَالأَضْلَاعَ وَالرُّؤُوسَ، وَالعَدَّ. {هَذِهِ نَجْمَتُكَ|هَذِهِ نَجْمَتُكِ}.",
+  "ms.who4": "لِي أَرْبَعَةُ أَضْلَاعٍ، وَأَرْبَعَةُ رُؤُوسٍ. مَنْ أَنَا؟ {اِلْمَسْنِي|اِلْمَسِينِي}.",
+  "ms.howSides": "كَمْ ضِلْعًا لِهَذِهِ البَلَاطَةِ؟",
+  "ms.recall4": "الضِّلْعُ حَافَّةٌ مُسْتَقِيمَةٌ بَيْنَ رَأْسَيْنِ، وَالرَّأْسُ حَيْثُ يَلْتَقِي ضِلْعَانِ. لِلْمُثَلَّثِ ثَلَاثَةُ أَضْلَاعٍ، وَلِلْمُرَبَّعِ أَرْبَعَةٌ.",
   "wrap.01": "بُيُوتُ الوَاحَةِ صَارَتْ لَهَا سُقُوفٌ مُثَلَّثَةٌ!",
   "wrap.home": [
    "chaos",
@@ -485,6 +490,12 @@
     "err": "countCorners"
    },
    {
+    "when": {
+     "kind": "triangle"
+    },
+    "err": "triRejected"
+   },
+   {
     "err": "generic"
    }
   ],
@@ -738,7 +749,7 @@
     },
     {
      "t": "sort",
-     "mk": "curvedTri"
+     "mk": "curvedTriTilt"
     },
     {
      "t": "connect",
@@ -758,19 +769,45 @@
      ]
     }
    ],
-   "N001": [
+   "C004": [
     {
-     "t": "count",
+     "t": "vertices",
      "shape": {
       "type": "triangle",
       "kind": "triangle",
-      "w": 126,
-      "h": 110,
-      "rot": 180,
-      "color": "$neutral.3"
-     },
-     "what": "vertices",
-     "how": "gen.count.how"
+      "w": 176,
+      "h": 96,
+      "apex": -0.4,
+      "rot": -25,
+      "color": "$neutral.4"
+     }
+    },
+    {
+     "t": "pick",
+     "q": [
+      "ms.who4"
+     ],
+     "opts": [
+      "triWide",
+      "circleS",
+      "window4"
+     ],
+     "ans": 2,
+     "err": "fourCorners"
+    },
+    {
+     "t": "count",
+     "shape": "tile",
+     "what": "sides",
+     "how": "ms.howSides"
+    }
+   ],
+   "N001": [
+    {
+     "t": "count",
+     "objs": "plateS",
+     "n": 9,
+     "layout": "circle"
     },
     {
      "t": "count",
@@ -819,6 +856,36 @@
      ]
     ]
    },
+   "C004": {
+    "auto": true,
+    "h": 280,
+    "steps": [
+     [
+      {
+       "show": {
+        "type": "triangle",
+        "kind": "triangle",
+        "w": 170,
+        "h": 150,
+        "color": "$id.triangle"
+       },
+       "at": [
+        180,
+        140
+       ],
+       "id": "a"
+      },
+      {
+       "badges": "a",
+       "what": "sides",
+       "color": "--triangle"
+      },
+      {
+       "say": "ms.recall4"
+      }
+     ]
+    ]
+   },
    "N001": {
     "auto": true,
     "h": 260,
@@ -858,6 +925,14 @@
      "mk": "openTri"
     }
    ],
+   "C004": [
+    {
+     "t": "count",
+     "shape": "squareUp",
+     "what": "sides",
+     "how": "gen.count.how"
+    }
+   ],
    "N001": [
     {
      "t": "count",
@@ -871,7 +946,7 @@
    "lesson": "m1.u1.d1",
    "item": {
     "t": "sort",
-    "mk": "windowTilt",
+    "mk": "cracker",
     "bins": [
      "triangle",
      "square",
@@ -884,17 +959,56 @@
  "review": [
   {
    "t": "sort",
-   "mk": "sign"
+   "mk": "samosa",
+   "c": "C002"
   },
   {
    "t": "sort",
-   "mk": "cheese"
+   "mk": "kite",
+   "c": "C002"
   },
   {
    "t": "count",
    "objs": "capS",
-   "n": 9,
-   "layout": "row"
+   "n": 5,
+   "layout": "row",
+   "c": "N001"
+  },
+  {
+   "t": "count",
+   "objs": "triS",
+   "n": 7,
+   "layout": "scatter",
+   "c": "N001"
+  },
+  {
+   "t": "count",
+   "shape": {
+    "type": "triangle",
+    "kind": "triangle",
+    "w": 150,
+    "h": 110,
+    "apex": 0.3,
+    "rot": 180,
+    "color": "$neutral.1"
+   },
+   "what": "vertices",
+   "how": "rv.howV",
+   "c": "C004"
+  },
+  {
+   "t": "count",
+   "shape": {
+    "type": "rect",
+    "kind": "rect",
+    "w": 170,
+    "h": 90,
+    "rot": -12,
+    "color": "$neutral.3"
+   },
+   "what": "sides",
+   "how": "rv.howS",
+   "c": "C004"
   }
  ],
  "wrap": {

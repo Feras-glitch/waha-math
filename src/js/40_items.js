@@ -92,13 +92,21 @@ const VIS = {
 };
 
 /* ================= فرز (السلال) ================= */
+const SOLID_BINS = ['cube', 'sphere', 'cylinder', 'cone', 'flat', 'solid'];
+const noShadowIfMixed = list => { if (list.some(s => s.solid) && list.some(s => !s.solid)) list.forEach(s => s.noShadow = true); return list; };   /* خيارات فيها مسطّح ومجسّم: بلا ظلّ (D238) */
 function sortCfg() { const D = CUR ? LDATA[CUR.id] : null; return (D && D.sort) || { bins: ['other'], errors: [], reasons: [], twins: {} }; }
 ITEM.sort = {
   make(spec) { const cfg = sortCfg(); const ref = spec && spec.mk ? spec.mk : spec; const item = make(ref);
-    if ((spec && spec.kindOf) || cfg.kindOf) item.kind = item.solid ? 'solid' : 'flat';
-    const bins = (spec && spec.bins) || cfg.bins; if (spec && spec.kindOf) item.kindOf = spec.kindOf; item.bins = bins; if (!item.riddle && !bins.includes(item.kind)) item.kind = 'other';
+    if ((spec && spec.kindOf) || cfg.kindOf) { item.kind = item.solid ? 'solid' : 'flat'; item.noShadow = true; }   /* D238: الظلّ ليس قاعدة للتمييز بين المسطّح والمجسّم */
+    const bins = (spec && spec.bins) || cfg.bins; if (bins.some(b => SOLID_BINS.includes(b))) item.noShadow = true;   /* وفي كل فرز فيه مجسّمات: الورقة بين المجسّمات لا تُعرف بغياب ظلّها (D238) */
+    if (spec && spec.kindOf) item.kindOf = spec.kindOf; item.bins = bins; item.trueKind = item.kind; if (!item.riddle && !bins.includes(item.kind)) item.kind = 'other';
     item.accept = (cfg.accept && cfg.accept[item.kind]) || []; return item; },
-  ask(item) { const cfg = sortCfg(); if (item.riddle) say(...lineOf(item.riddle[0]), { free: true }); return askSort(item, item.bins).then(r => { if (item.riddle) hush(); return { ans: r.bin, ctx: r }; }); },
+  ask(item, mode) { const cfg = sortCfg();
+    let intro = null;
+    if (!item.riddle) { const nm = objClip(item); intro = [nm && lineOf(nm), lineOf(item.kindOf || cfg.kindOf ? 'gen.sort.askFS' : 'gen.sort.ask')].filter(Boolean); intro.forEach(l => say(...l, { free: true })); }   /* سؤال مسموع واسم الشيء (المبدأ 8) */
+    else say(...lineOf(item.riddle[0]), { free: true });
+    const newBins = String(item.bins) !== String(cfg.bins);   /* سلال غير سلال الدرس (البند المشتبك): تُقرأ أيضاً، فلا تمرين قبلها يسمّيها */
+    return askSort(item, item.bins, { readBins: !item.riddle && (mode === 'review' || mode === 'test' || newBins), intro }).then(r => { hush(); return { ans: r.bin, ctx: r }; }); },
   judge(item, bin) { if (bin === item.kind) return { ok: true }; if (item.accept.includes(bin)) return { ok: true, alt: true };
     return { ok: false, err: ruleOf(sortCfg().errors, item, bin, 'err') || 'generic' }; },
   onOk(item, r) { const b = r.ctx.binsEl.querySelector(`[data-k="${r.ans}"]`); b.classList.add('ok'); SFX.good(); anim(r.ctx.g, [{ opacity: 1 }, { opacity: 0, transform: 'translate(180px,250px) scale(.25)' }], { duration: 450, fill: 'forwards' }); },
@@ -109,17 +117,19 @@ ITEM.sort = {
   async together(item) { await S('gen.solve.' + item.kind); },
   async reveal(item, r) { const b = r.ctx.binsEl.querySelector(`[data-k="${item.kind}"]`); if (b) b.classList.add('ok'); await sleep(500); },
   mark(item, r) { const b = r.ctx.binsEl.querySelector(`[data-k="${item.kind}"]`); if (b) b.classList.add('ok'); },
-  reason(item) { return ruleOf(sortCfg().reasons, item, null, 'id'); },
+  /* شيء من درس آخر لا سلّة لنوعه هنا (البند المشتبك): السبب يسمّيه بنوعه الحقيقي، فلا يقال عن مكعب «ليس مكعباً» */
+  reason(item) { const cfg = sortCfg(); if (item.kind === 'other' && item.trueKind && (cfg.bins || []).includes(item.trueKind) && GL['gen.why.notHere.' + item.trueKind]) return 'gen.why.notHere.' + item.trueKind;   /* لنوعه سلّة في درسه لا في هذه السلال */
+    return ruleOf(cfg.reasons, item, null, 'id'); },
   twin(item) { const t = sortCfg().twins || {}; return t[item.tag] || t['*']; },
 };
 
 /* ================= اختيار صورة من صور (التحدّي و«خمّن الشكل») ================= */
 ITEM.pick = {
-  make(spec) { const opts = spec.opts.map(r => make(r)); return { ...spec, opts, tag: spec.tag || 'pick' }; },
+  make(spec) { const opts = noShadowIfMixed(spec.opts.map(r => make(r))); return { ...spec, opts, tag: spec.tag || 'pick' }; },
   async ask(item) { const svg = newStage(250, { oasis: false, ground: 0 }); const order = item.order || (item.order = shuffle(item.opts.map((_, i) => i)));
     /*T*/window.__test = { ans: order.indexOf(item.ans) };/*/T*/
     const n = order.length, cols = n <= 3 ? n : 2, rows = Math.ceil(n / cols), cw = 320 / cols, box = Math.min(96, cw - 18);   // أربعة خيارات فأكثر: شبكة عمودين لا صفّ متراكب
-    const gs = order.map((oi, pos) => { const x = 340 - (pos % cols + .5) * cw, y = rows === 1 ? 120 : 68 + Math.floor(pos / cols) * 114; const g = fitThing(svg, item.opts[oi], x, y, box); return { g, k: oi, x, y, r: box * .64, label: (item.opts[oi].label || '') }; });
+    const gs = order.map((oi, pos) => { const x = 340 - (pos % cols + .5) * cw, y = rows === 1 ? 120 : 68 + Math.floor(pos / cols) * 114; const g = fitThing(svg, item.opts[oi], x, y, box); return { g, k: oi, x, y, r: box * .64, label: (item.opts[oi].label || labelText('shapeOne')) }; });   /* اسم محايد لا يكشف الجواب */
     const qs = [].concat(item.q); let answered = false; const p = tapOne(gs, { ok: item.ans }).then(k => { answered = true; hush(); return k; });
     (async () => { for (const q of qs) { if (answered) break; await say(...lineOf(q), { free: true }); } })();
     const k = await p; return { ans: k, ctx: { svg, gs } }; },

@@ -1,25 +1,49 @@
 /* =====================================================================
    الأدوات التفاعلية: كل انتظار لفعل الطفل يمرّ هنا، وكل أداة تسجّل حلّها للفحص الآلي (AUTO)
    ===================================================================== */
-/* لمس واحد من عدّة: targets = [{g, k}] → المفتاح. يضيف منطقة لمس ≥64 واسماً لقارئ الشاشة */
-function tapOne(targets, opt = {}) {
-  targets.forEach(t => { t.g.style.cursor = 'pointer'; t.g.setAttribute('role', 'button'); t.g.setAttribute('tabindex', 0); if (t.label) t.g.setAttribute('aria-label', plain(G(t.label))); if (opt.pad !== false) hitPad(t.g, opt.pad || 76);
+/* لمس واحد من عدّة: targets = [{g, k}] → المفتاح. يضيف منطقة لمس (D255) واسماً لقارئ الشاشة، ويزيل عند الجواب ما أضافه من مناطق (فالسؤال التالي على الأشياء نفسها لا يكدّسها) */
+function tapOne(targets, opt = {}) { const mine = [];
+  targets.forEach(t => { t.g.style.cursor = 'pointer'; t.g.setAttribute('role', 'button'); t.g.setAttribute('tabindex', 0); if (t.label) t.g.setAttribute('aria-label', plain(G(t.label)));
+    if (opt.pad !== false) { const had = t.g.querySelector(':scope > rect.hit'); const r = hitPad(t.g, opt.pad || 76); if (r && !had) mine.push(r); }
     /*T*/if (TESTHOOK) t.g.dataset.ok = opt.ok == null ? '' : [].concat(opt.ok).includes(t.k);/*/T*/ });
   const okT = targets.find(t => opt.ok != null && [].concat(opt.ok).includes(t.k)) || targets[0], badT = targets.find(t => !(opt.ok != null && [].concat(opt.ok).includes(t.k)));
   AUTO({ kind: 'tap', ok: () => okT.g.dispatchEvent(new MouseEvent('click', { bubbles: true })), wrong: () => (badT || okT).g.dispatchEvent(new MouseEvent('click', { bubbles: true })) });
   const off = opt.pulse === false ? () => {} : pulse(targets.map(t => t.g));
-  return gate(new Promise(res => targets.forEach(t => { const act = () => { if (t.g.dataset.off) return; off(); AUTO_CLEAR(); targets.forEach(x => { x.g.onclick = null; x.g.onkeydown = null; }); res(t.k); };
-    t.g.onclick = act; t.g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(); }; })));
+  return gate(new Promise(res => { const act = t => { off(); AUTO_CLEAR(); targets.forEach(x => { x.g.onclick = null; x.g.onkeydown = null; }); mine.forEach(r => r.remove()); res(t.k); };
+    targets.forEach(t => { t.g.__route = (x, y) => tapRoute(targets, x, y, t).g;   /* D255: اللمسة لما يراه الطفل تحت إصبعه، لا لمنطقة لمس شيء رُسم بعده */
+      t.g.onclick = e => act(e && e.clientX ? tapRoute(targets, e.clientX, e.clientY, t) : t); t.g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(t); }; }); }));
 }
+/* لمن اللمسة بين أهداف «لمس واحد» (D255): لأعلى رسمٍ مرئي لهدفٍ تحت الإصبع؛ فإن لم تقع إلا على مناطق لمس شفافة (rect.hit، أو شكل لا يُرى: بلا لون ولا حدّ أو شفافيته صفر)
+   فلأقرب هدفٍ رسمُه إلى موضعها (البعد إلى إطار الرسم، ثم إلى مركزه). وشيء مرئي ليس هدفاً يحجب ما تحته. (و«لمس الكل» يوجّه بأقرب مركز ويفضّل ما لم يُعدّ بعد) */
+const blankEl = e => { if (e.matches('rect.hit')) return true; const cs = getComputedStyle(e), clear = v => !v || v === 'none' || /^rgba\(.*,\s*0\)$/.test(v) || v === 'transparent';
+  if (+cs.opacity === 0) return true; return (clear(cs.fill) || +cs.fillOpacity === 0) && (clear(cs.stroke) || +cs.strokeOpacity === 0 || parseFloat(cs.strokeWidth) === 0); };
+function drawnBox(g) { let r = null; for (const e of [g, ...g.querySelectorAll('*')]) { if (!(e instanceof SVGGeometryElement || e instanceof SVGTextElement) || blankEl(e)) continue;
+    const b = e.getBoundingClientRect(); if (!b.width && !b.height) continue; r = r ? { l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom) } : { l: b.left, t: b.top, r: b.right, b: b.bottom }; } return r; }
+function tapRoute(targets, x, y, t0) { const own = e => { for (let n = e; n && n !== document; n = n.parentNode) { const t = targets.find(t => t.g === n); if (t) return t; } return null; }; const pads = [];   /* أعمق هدف يحوي العنصر */
+  for (const e of document.elementsFromPoint(x, y)) { const t = own(e); if (!t) { if (e instanceof SVGElement && e.closest('#stage') && e.tagName !== 'svg' && !blankEl(e)) break; continue; } if (!blankEl(e)) return t; if (!pads.includes(t)) pads.push(t); }
+  if (pads.length < 2) return pads[0] || t0;
+  let best = pads[0], d = Infinity; for (const t of pads) { const r = drawnBox(t.g); if (!r) continue; const dd = Math.hypot(Math.max(r.l - x, 0, x - r.r), Math.max(r.t - y, 0, y - r.b)) + Math.hypot(x - (r.l + r.r) / 2, y - (r.t + r.b) / 2) / 1000;
+    if (dd < d) { d = dd; best = t; } } return best; }
 /* لمس الكل: كل لمسة على عنصر لم يُلمس بعد تستدعي onTouch(t, i) وتنتهي حين تُلمس كلها */
 function tapAll(targets, onTouch, opt = {}) {
   const done = new Set();
   targets.forEach(t => { t.g.style.cursor = 'pointer'; t.g.setAttribute('role', 'button'); t.g.setAttribute('tabindex', 0); if (t.label) t.g.setAttribute('aria-label', plain(G(t.label))); if (opt.pad !== false) hitPad(t.g, opt.pad || 70); });
   AUTO({ kind: 'tapAll', ok: async () => { for (const t of targets) { if (!done.has(t)) { t.g.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 40)); } } } });
   const off = opt.pulse === false ? () => {} : pulse(targets.map(t => t.g));
-  return gate(new Promise(res => targets.forEach((t, i) => { const act = async () => { if (done.has(t)) { if (opt.onAgain) opt.onAgain(t); return; } done.add(t); off(); if (onTouch) await onTouch(t, done.size, i);
-      if (done.size === targets.length) { AUTO_CLEAR(); res(done.size); } };
-    t.g.onclick = act; t.g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(); }; })));
+  /* إن تراكبت مناطق اللمس فاللمسة لأقرب هدف إلى موضعها، لا لصاحب المنطقة العليا (D255). والمرشّحون من يقع اللمس فعلاً على رسمه أو منطقته
+     (elementsFromPoint، بسُمك الخطّ وهيئة الشكل، لا بإطاره: إطار القاعدة الأفقية بارتفاع صفر)، والبعد إلى القطعة المستقيمة للخطّ وإلى المركز لغيره */
+  const owner = e => targets.find(t => t.g === e || t.g.contains(e));
+  const dist = (t, x, y) => { const g = t.g;
+    if (g instanceof SVGLineElement) { const m = g.getScreenCTM(); const P = (a, b) => { const p = g.ownerSVGElement.createSVGPoint(); p.x = +g.getAttribute(a); p.y = +g.getAttribute(b); return p.matrixTransform(m); };
+      const a = P('x1', 'y1'), b = P('x2', 'y2'), vx = b.x - a.x, vy = b.y - a.y, k = Math.max(0, Math.min(1, ((x - a.x) * vx + (y - a.y) * vy) / (vx * vx + vy * vy || 1))); return Math.hypot(x - a.x - k * vx, y - a.y - k * vy); }
+    const h = g.querySelector(':scope > rect.hit'); const r = (h || g).getBoundingClientRect(); return Math.hypot(x - r.left - r.width / 2, y - r.top - r.height / 2); };
+  /* وبين هدفين متراكبين تقريباً (قطعتان فوق بعضهما) يُفضَّل الذي لم يُلمس بعد، فلا يبقى أحدهما بلا عدّ */
+  const nearest = (x, y, t0) => { const cand = new Set(); for (const e of document.elementsFromPoint(x, y)) { const t = owner(e); if (t) cand.add(t); } if (!cand.size) return t0;
+    let best = t0, d = Infinity; for (const t of cand) { const dd = dist(t, x, y) + (done.has(t) ? 24 : 0); if (dd < d) { d = dd; best = t; } } return best; };
+  return gate(new Promise(res => targets.forEach((t0, i0) => { const act = async t => { const i = targets.indexOf(t); if (done.has(t)) { if (opt.onAgain) opt.onAgain(t); return; } done.add(t); off(); if (onTouch) await onTouch(t, done.size, i);
+      if (done.size === targets.length) { AUTO_CLEAR(); targets.forEach(x => { x.g.onclick = null; x.g.onkeydown = null; x.g.removeAttribute('role'); x.g.removeAttribute('tabindex'); x.g.style.cursor = ''; x.g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); }); res(done.size); } };   /* انتهى العدّ: النقاط لم تعد أهدافاً، فلا تبقى أزراراً بلا عمل */
+    t0.g.__route = (x, y) => nearest(x, y, t0).g;
+    t0.g.onclick = e => act(e && e.clientX ? nearest(e.clientX, e.clientY, t0) : t0); t0.g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(t0); }; })));
 }
 
 /* ① تتبّع الحافة: يجد الطفل الرؤوس بإصبعه (العدّ من الأعلى على اليمين، D232)، ثم يلمس الأضلاع ليعدّها */
@@ -39,20 +63,20 @@ async function traceTool(svg, shapes, opt = {}) {
       const P = worldPoly(s); let onEdge = false; for (let k = 0; k < P.length; k++) if (distSeg(p, P[k], P[(k + 1) % P.length]) < 20) onEdge = true;
       if (!onEdge) return; el('circle', { cx: p.x, cy: p.y, r: 4.5, fill: '#fff', stroke: css('--ink'), 'stroke-opacity': .25 }, trail);
       P.forEach((c, k) => { if (!st.found.has(k) && Math.hypot(p.x - c[0], p.y - c[1]) < 22) { st.found.add(k); SFX.tick(); buzz(30); badge(marks, c[0], c[1], st.found.size);
-        if (s.cap) s.cap.textContent = G(labelText('vertices')) + ' ' + DG(st.found.size); if (!SET.muted && !FAST) say(...lineOf(numw(st.found.size)), { num: true, noGap: true, free: true });
+        if (s.cap) s.cap.textContent = G(labelText('vertices')) + ' ' + (digitsShown() ? DG(st.found.size) : tallyText(st.found.size)); if (!SET.muted && !FAST) say(...lineOf(numw(st.found.size)), { num: true, noGap: true, free: true });
         if (st.found.size === P.length) { st.done = true; check(); } } }); });
   }
-  let down = false;
-  svg.addEventListener('pointerdown', e => { down = true; try { svg.setPointerCapture(e.pointerId); } catch (x) {} touch(svgPoint(svg, e)); });
-  svg.addEventListener('pointermove', e => { if (down) touch(svgPoint(svg, e)); });
-  const up = () => { down = false; }; svg.addEventListener('pointerup', up); svg.addEventListener('pointercancel', up);
+  let down = false; const ac = new AbortController(), on = { signal: ac.signal };   /* تُزال المستمعات بعد التتبّع: التقاط المؤشّر كان يأخذ نقرة الفأرة من الأضلاع بعده */
+  svg.addEventListener('pointerdown', e => { down = true; try { svg.setPointerCapture(e.pointerId); } catch (x) {} touch(svgPoint(svg, e)); }, on);
+  svg.addEventListener('pointermove', e => { if (down) touch(svgPoint(svg, e)); }, on);
+  const up = e => { down = false; try { svg.releasePointerCapture(e.pointerId); } catch (x) {} }; svg.addEventListener('pointerup', up, on); svg.addEventListener('pointercancel', up, on);
   async function demo(speed = 1) { for (const st of state) { const s = st.s; if (st.done) continue; if (s.type === 'circle') { const r = shapeGeom(s).r; for (let a = 0; a <= 360; a += 8) { const q = a * Math.PI / 180; touch({ x: s.x + r * Math.cos(q), y: s.y + r * Math.sin(q) }); await sleep(18 * speed); } }
       else { const P = worldPoly(s); const path = [...P, P[0]]; for (let k = 0; k < P.length; k++) for (let t = 0; t <= 1; t += .1) { touch({ x: path[k][0] + (path[k + 1][0] - path[k][0]) * t, y: path[k][1] + (path[k + 1][1] - path[k][1]) * t }); await sleep(25 * speed); } } } }
   AUTO({ kind: 'trace', ok: () => demo(.05) });
   if (firstTime('trace')) { const s = shapes.find(x => x.type !== 'circle') || shapes[0]; const P = s.type === 'circle' ? [[s.x + 60, s.y], [s.x, s.y + 60]] : worldPoly(s).slice(0, 2);
     await ghostHand(svg, P.map(([x, y]) => [x, y]), 1100); }
   armIdle(async () => { await S('gen.demo.01'); await demo(); }, { first: !SET.seen.traceIdle });
-  await allDone; disarmIdle(); AUTO_CLEAR(); SET.seen.traceIdle = 1;
+  await allDone; ac.abort(); down = false; disarmIdle(); AUTO_CLEAR(); SET.seen.traceIdle = 1;
   // عدّ الأضلاع باللمس (من الدرس الثاني، حين يدخل مصطلح «ضلع»): الأضلاع ظاهرة بخطّ منقّط خافت (M4)
   if (opt.sides) {
     const s = shapes.find(x => x.type !== 'circle'); const P = worldPoly(s); const counted = new Set();
@@ -66,7 +90,7 @@ async function traceTool(svg, shapes, opt = {}) {
     await tapAll(lines, async (t) => { const col = opt.pairColors ? (t.len > longest * .8 ? css('--rect') : css('--square')) : css('--rect');
       SFX.pop(); el('line', { x1: t.c[0], y1: t.c[1], x2: t.d[0], y2: t.d[1], stroke: col, 'stroke-width': 9, 'stroke-linecap': 'round', 'pointer-events': 'none' }, marks);
       counted.add(t); badge(marks, (t.c[0] + t.d[0]) / 2, (t.c[1] + t.d[1]) / 2, counted.size, css('--triangle'));
-      if (s.cap) s.cap.textContent = G(labelText('sides')) + ' ' + DG(counted.size);
+      if (s.cap) s.cap.textContent = G(labelText('sides')) + ' ' + (digitsShown() ? DG(counted.size) : tallyText(counted.size));
       if (!SET.muted && !FAST) say(...lineOf(numw(counted.size)), { num: true, noGap: true, free: true });
       logAttempt({ scene: 'explore', tag: 'side', ok: true }); }, { pad: false });
   }
@@ -75,7 +99,7 @@ async function traceTool(svg, shapes, opt = {}) {
 /* ② العدّ باللمس (N001): كل شيء يُلمس مرة واحدة، فيضيء ويُقال عدده؛ وآخر عدد هو «كم» */
 async function countTouch(svg, pts, opt = {}) {   // pts: [{x, y, g?}] — g عنصر الشيء إن وُجد
   const marks = el('g', { 'pointer-events': 'none' }, svg); let n = 0;
-  const targets = pts.map(p => { const g = p.g || el('g', { transform: `translate(${p.x} ${p.y})` }, svg); if (!p.g) el('circle', { r: 24, fill: 'transparent' }, g); return { g, p }; });
+  const targets = pts.map(p => { const g = p.g || el('g', { transform: `translate(${p.x} ${p.y})` }, svg); if (!p.g) el('circle', { r: 24, fill: 'transparent' }, g); g.dataset.twin = 'count'; return { g, p, label: p.label || opt.label || labelText('countPoint') }; });   /* اسم مسموع لكل نقطة عدّ؛ ونقاط العدّ متماثلة (أيّها لُمس يُعدّ واحداً) */
   await tapAll(targets, async (t) => { n++; SFX.tick(); buzz(20); const { x, y } = t.p;
     el('circle', { cx: x, cy: y, r: opt.halo || 30, fill: css('--rect'), opacity: .28 }, marks); badge(marks, x + (opt.bx ?? 0), y + (opt.by ?? -(opt.halo || 30)), n, opt.color);
     if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); if (opt.onCount) opt.onCount(n); },
@@ -84,7 +108,7 @@ async function countTouch(svg, pts, opt = {}) {   // pts: [{x, y, g?}] — g ع�
 }
 
 /* ③ السلال: يعرض شيئاً واحداً، ويعيد اختيار الطفل (لمس السلة أو سحب الشيء إليها) */
-function askSort(item, bins) {
+function askSort(item, bins, opt = {}) {
   const svg = newStage(330, { oasis: false, ground: 0 });
   /*T*/window.__item = item; window.__n = (window.__n || 0) + 1;/*/T*/
   let g;
@@ -98,12 +122,14 @@ function askSort(item, bins) {
   const box = document.createElement('div'); box.className = 'bins' + (item.riddle ? ' shelf' : ''); box.style.setProperty('--n', bins.length);
   bins.forEach(k => { const b = document.createElement('button'); b.className = 'bin'; b.dataset.k = k; b.innerHTML = (item.riddle ? solidIcon(k).replace('width="46" height="46"', 'width="92" height="92"') : basketSVG(k)) + `<span>${esc(BIN_NAMES[k])}</span>`; b.setAttribute('aria-label', plain(labelText('basket')) + ' ' + plain(BIN_NAMES[k])); box.appendChild(b); });
   $('#stage').appendChild(box);
+  if (opt.readBins) readBins(box, opt.intro);   /* في المراجعة والاختبار: أسماء السلال مسموعة (لا تمرين قبلها يسمّيها)، و«أعد الجملة» يعيد السؤال ثم السلال */
   return new Promise(res => {
-    let settled = false; const pick = k => { if (settled) return; settled = true; AUTO_CLEAR(); res({ bin: k, binsEl: box, g, svg }); };
+    let settled = false; const pick = k => { if (settled) return; settled = true; box.dataset.done = 1; AUTO_CLEAR(); res({ bin: k, binsEl: box, g, svg }); };
     box.querySelectorAll('.bin').forEach(b => b.onclick = () => pick(b.dataset.k));
     const okBins = [item.kind, ...((item.accept) || [])];
     AUTO({ kind: 'sort', ok: () => box.querySelector(`.bin[data-k="${okBins.find(k => bins.includes(k)) || bins[0]}"]`).click(), wrong: () => box.querySelector(`.bin:not([data-k="${item.kind}"])${(item.accept || []).map(k => `:not([data-k="${k}"])`).join('')}`).click() });
-    let drag = null; g.style.cursor = 'grab';
+    if (item.riddle) return;   /* لغز المتجر لا شيء فيه يُسحب: الجواب لمس الرفّ (كانت منطقة سحب فارغة في زاوية المسرح) */
+    let drag = null; g.style.cursor = 'grab'; hitPad(g, 64, 64);   /* ما يُسحب: 64 بكسلاً على الأقل (D250) */
     g.addEventListener('pointerdown', e => { drag = { sx: e.clientX, sy: e.clientY }; try { g.setPointerCapture(e.pointerId); } catch (x) {} });
     g.addEventListener('pointermove', e => { if (!drag) return; const ctm = svg.getScreenCTM();
       g.setAttribute('transform', `translate(${180 + (e.clientX - drag.sx) / ctm.a} ${104 + (e.clientY - drag.sy) / ctm.d}) rotate(${item.rot || 0})`);
@@ -114,6 +140,8 @@ function askSort(item, bins) {
   });
 }
 
+/* أسماء السلال بالترتيب، وتُضاء السلّة التي يُقال اسمها (D254)؛ والكلام يتوقف حين يجيب الطفل */
+function readBins(box, intro) { readChoices([...box.querySelectorAll('.bin')].filter(b => GL['gen.bin.' + b.dataset.k]).map(b => ({ line: lineOf('gen.bin.' + b.dataset.k), el: b })), { intro, host: box, noGap: true }); }
 /* ④ أدوات المجسّمات (الوحدة 2) */
 const FLOOR = 236;
 function placeOnFloor(parent, s, x, floor = FLOOR) { const g = thingAt(parent, s, x, 0); const bb = g.getBBox();

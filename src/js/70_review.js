@@ -14,6 +14,9 @@ function streamsDue() { const today = dayStart(Date.now()); return STREAMS.filte
 const reviewWaiting = () => reviewDue().length + streamsDue().length > 0;
 /* البند التالي من المخزون المحجوز بالتناوب، فلا يتكرّر البند نفسه */
 function nextReviewItem(L) { const r = PROG.srs[L.id]; const k = (r.k || 0) % L.review.length; r.k = k + 1; return L.review[k]; }
+/* المبدأ 14: بعد الخطأ بند ثانٍ فوري من المفهوم نفسه (c): لكل مفهوم يُراجَع بندان على الأقل (يفحصه build/d240.mjs) */
+function secondReviewItem(L, first) { const same = L.review.filter(x => x !== first && x.c && x.c === first.c); const any = L.review.filter(x => x !== first);
+  const pool = same.length ? same : any.length ? any : [first]; const r = PROG.srs[L.id]; const k = (r.k2 || 0) % pool.length; r.k2 = k + 1; return pool[k]; }
 async function runReview() {
   if (TAB_LOST) { showTabLost(); return; }
   const due = shuffle(reviewDue()).slice(0, 3); const streams = streamsDue();
@@ -25,7 +28,10 @@ async function runReview() {
   await S('gen.review.intro'); await nextBtn(labelText('letsGo'));
   const res = {}; let step = 1, allOk = true;
   for (const L of due) { CUR = L; setStep(step++); SCENE_NOW = 'review:' + L.id; /*T*/window.__scene = 'review:' + L.id;/*/T*/
-    const r = await runItem(nextReviewItem(L), 'review', { scene: 'review' }); res[L.id] = r.firstTry; allOk = allOk && r.firstTry; await sleep(400); }
+    const first = nextReviewItem(L); const r = await runItem(first, 'review', { scene: 'review' }); res[L.id] = r.firstTry; allOk = allOk && r.firstTry;
+    if (!r.firstTry) { await sleep(400); const r2 = await runItem(secondReviewItem(L, first), 'review', { scene: 'review:second' });   /* المبدأ 14: بند ثانٍ فوري */
+      if (!r2.firstTry) { PROG.redo = isObj(PROG.redo) ? PROG.redo : {}; PROG.redo[L.id] = Date.now(); saveProg(); } }   /* خطآن متتاليان: يُعاد الدرس (D237) */
+    await sleep(400); }
   CUR = null;
   for (const s of streams) { setStep(step++); SCENE_NOW = 'stream:' + s.id; /*T*/window.__scene = 'review:stream:' + s.id;/*/T*/ const st = PROG.streams[s.id] = isObj(PROG.streams[s.id]) ? PROG.streams[s.id] : {};
     if (!st.seen) { await streamModel(s); st.seen = true; saveProg(); await nextBtn(); }       // أول لقاء: فرجار يحلّ نموذجاً
@@ -97,7 +103,7 @@ async function weeklyReport() {
   const p1 = pct(ok1, n1), p0 = pct(ok0, n0); const trend = n1 >= 20 && n0 >= 20;
   $('#panel').innerHTML = `<div class="wrap report" id="report"><div class="noprint row"><button class="go" id="repPrint">طباعة</button><button class="pick" id="repBack">رجوع</button></div>
     <div class="card"><h2>تقرير الأسبوع: ${PROFILE ? esc(PROFILE.name || '') : ''}</h2><p class="muted">من ${fmt.date(w0)} إلى ${fmt.date(now)} · واحة الرياضيات، المرحلة الأولى</p></div>
-    <div class="card"><b>ما أُنجز:</b> ${doneW.length ? doneW.map(id => `${plain(LDATA[id].title)}${(PROG[id] || {}).mastered ? ' (متقن)' : (PROG[id] || {}).entry ? ' (مدخل)' : ''}`).join('، ') : 'لا دروس جديدة هذا الأسبوع'}.
+    <div class="card"><b>ما أُنجز:</b> ${doneW.length ? doneW.map(id => `${plain(LDATA[id].title)}${(PROG[id] || {}).mastered ? ((PROG[id] || {}).entry ? ' (أتقنه على الشاشة، مدخل)' : ' (متقن)') : (PROG[id] || {}).entry ? ' (مدخل)' : ''}`).join('، ') : 'لا دروس جديدة هذا الأسبوع'}.
       <br><b>الصواب من المحاولة الأولى:</b> ${p1 == null ? 'لا محاولات هذا الأسبوع' : DG(p1) + '٪ (' + DG(ok1) + ' من ' + DG(n1) + ')'}${trend ? ' · الأسبوع السابق ' + DG(p0) + '٪' : n1 && n1 < 20 ? ' · لا نعرض اتجاهاً قبل عشرين بنداً' : ''}
       <br><b>المراجعة المتباعدة:</b> ${nw(strong, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${strong === 1 ? 'ثابت' : strong === 2 ? 'ثابتان' : 'ثابتة'}، و${nw(due, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${due === 1 ? 'ينتظر' : due === 2 ? 'ينتظران' : 'تنتظر'} المراجعة اليوم.
       <br><b>الورشة:</b> ${Object.entries(PROG.ws || {}).filter(([u]) => WS[u]).map(([u, n]) => `${plain(UNITS.find(x => x.id === u).title)}: ${DG(n)} من ${DG(WS[u].puzzles.length)} ألغاز`).join('، ') || 'لم تُفتح بعد'}.

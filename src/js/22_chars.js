@@ -22,6 +22,7 @@ const CHAOS_BODY = `<path d="M8 40 q-6 6 0 12 M92 36 q6 8 0 14" stroke="#d9483b"
 function chaosSVG() { return `<svg viewBox="0 0 100 112" aria-hidden="true">${CHAOS_BODY}</svg>`; }
 const CHAR = { compass: compassSVG, chaos: chaosSVG };
 /* فوضى على المسرح: تظهر وهي تفعل (D236)، وتختبئ وتضحك حين يُكشف ما فعلت */
+const CHAOS_SPOT = { x: 320, y: 40, r: 60 };   /* موضع فوضى فوق النقاط المبعثرة، ونصف قطر لا تقع فيه نقطة (layoutPts) */
 function chaosAt(parent, x, y, s = .6) { const g = el('g', { transform: `translate(${x} ${y})`, class: 'chaosbody', 'aria-hidden': 'true' }, parent);
   const b = el('g', { transform: `scale(${s}) translate(-50 -56)` }, g); b.innerHTML = CHAOS_BODY; return g; }
 function chaosGiggle(g) { if (!g) return; SFX.chaos(); const t = g.getAttribute('transform'); return anim(g, [{ transform: t + ' rotate(0)' }, { transform: t + ' rotate(-10)' }, { transform: t + ' rotate(8)' }, { transform: t + ' rotate(0)' }], { duration: 700 }).done; }

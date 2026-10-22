@@ -79,6 +79,8 @@ async def main():
       await pg.click('#mapBtn'); await pg.wait_for_timeout(150); await pg.click('#exLeave'); await pg.wait_for_timeout(200)
       # 3) «أرقامي»: يظهر بعد الدرس 5، وأول تبديل بطاقة تعارف ولعبة مطابقة
       check(not await vis(pg, '#digBtn'), scheme + ': زرّ «أرقامي» مخفيّ قبل درس الأرقام')
+      txt0 = await pg.evaluate("() => document.querySelector('#path').textContent")
+      check(not any(ch in txt0 for ch in '0123456789٠١٢٣٤٥٦٧٨٩'), scheme + ': لا رقم مكتوب في الخريطة قبل درس الأرقام (D254 (4))')
       await pg.evaluate("() => { progOf('m1.u1.d5').done = true; saveProg(); renderDigits(); }")
       check(await vis(pg, '#digBtn'), scheme + ': زرّ «أرقامي» يظهر بعد درس الأرقام')
       await pg.click('#digBtn'); await pg.wait_for_timeout(300)
@@ -132,7 +134,43 @@ async def main():
       clips = set(await pg.evaluate("() => window.__clips || []")); ids = set(json.load(open(os.path.join(HERE, '..', 'dist', 'script_m1.xlsx.ids.json'))))
       check(not (clips - ids), scheme + ': كل جملة منطوقة في جدول التسجيل ' + str(sorted(clips - ids)[:5]))
       await ctx.close()
+    # 6) الأغطية على أضيق شاشة (320×568): لا يخرج شيء عن العرض، ولا تُقصّ الفقاعة (D255)
+    ctx = await b.new_context(**p.devices['iPhone SE']); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append('pageerror: ' + str(e)))
+    await pg.goto(URL); await pg.wait_for_timeout(400)
+    FIT = """() => { const c = [...document.querySelectorAll('.cover')].find(x => !x.hidden); if (!c) return ['no cover']; const W = Math.min(innerWidth, visualViewport ? visualViewport.width : innerWidth, screen.width), bad = [];
+      for (const e of c.querySelectorAll('button, .bubble, .talk, .avatars')) { const r = e.getBoundingClientRect(); if (!r.width || e.closest('[hidden]')) continue; if (r.left < -0.5 || r.right > W + 0.5) bad.push((e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right)); }
+      for (const b of c.querySelectorAll('.bubble')) if (b.scrollHeight > b.clientHeight + 1) bad.push('bubble clipped ' + b.clientHeight + '<' + b.scrollHeight);
+      return bad; }"""
+    await pg.click('#startBtn'); await pg.wait_for_timeout(300)
+    r1 = await pg.evaluate(FIT); check(r1 == [], 'iPhone SE: غطاء الملف داخل الشاشة وفقاعته كاملة ' + str(r1[:4]))
+    await pg.screenshot(path=OUT + '/profile_se.png')
+    await pg.click('.av[data-av="g1"]') if await pg.query_selector('.av[data-av="g1"]') else await pg.click('.av'); await pg.click('#pSave'); await pg.wait_for_timeout(400)
+    await pg.click('.stop.now'); await pg.wait_for_timeout(300); await drive(pg, 3); await pg.click('#mapBtn'); await pg.wait_for_timeout(250)
+    r2 = await pg.evaluate(FIT); check(r2 == [], 'iPhone SE: غطاء الخروج داخل الشاشة وفقاعته كاملة ' + str(r2[:4]))
+    await pg.screenshot(path=OUT + '/exit_se.png')
+    await ctx.close()
+    # 7) اسم طويل من كلمتين على الشاشتين الضيقتين: الخريطة (وفيها زرّ «أرقامي» بعد درس الأرقام) وغطاء الاستراحة فوقها لا يتّسعان عن العرض (D255)
+    # العرض المرئي لا innerWidth: المتصفح على الهاتف يوسّع مساحة التخطيط لتسع ما يفيض، فيكبر innerWidth معه (438 لا 320)
+    WIDE = """() => { const W = Math.min(innerWidth, visualViewport ? visualViewport.width : innerWidth, screen.width), bad = []; if (innerWidth > W + 0.5) bad.push('layout ' + innerWidth + '>' + W); if (document.documentElement.scrollWidth > W + 0.5) bad.push('page ' + document.documentElement.scrollWidth + '>' + W);
+      for (const e of document.querySelectorAll('#home .hello, #home .banner, #home .stop, .cover:not([hidden]) button, .cover:not([hidden]) .bubble')) { const r = e.getBoundingClientRect(); if (!r.width || e.closest('[hidden]')) continue; if (r.left < -0.5 || r.right > W + 0.5) bad.push((e.id || e.className) + ' ' + Math.round(r.left) + '..' + Math.round(r.right)); }
+      const P = [...document.querySelectorAll('#path > *')].filter(e => e.getBoundingClientRect().height);   /* ولا يغطّي عنصرٌ في الخريطة ما تحته، ولا يفيض نصّه عن زرّه */
+      P.forEach((e, i) => { const r = e.getBoundingClientRect(); if (P[i + 1] && r.bottom > P[i + 1].getBoundingClientRect().top + 0.5) bad.push('overlap ' + e.className); const t = e.matches('.stop') ? e : e.querySelector('.ut'); if (t && t.scrollHeight > t.clientHeight + 8) bad.push('overflow ' + e.className + ' ' + t.clientHeight + '<' + t.scrollHeight); });   /* النصّ لا يفيض عن زرّه (رسم المضيفين يتجاوز صندوقه عمداً؛ وهامش 8 لأن مقاييس خط النسخ أطول من ارتفاع السطر بلا قصّ) */
+      const h = document.querySelector('#helloName'); if (h && h.textContent && h.scrollWidth > h.clientWidth + 1) bad.push('name cut ' + h.clientWidth + '<' + h.scrollWidth);
+      return bad; }"""
+    for dev in ('iPhone SE', 'Galaxy S5', 'Pixel 5'):
+      ctx = await b.new_context(**p.devices[dev]); pg = await ctx.new_page(); pg.on('pageerror', lambda e: errs.append('pageerror: ' + str(e)))
+      await pg.goto(URL); await pg.wait_for_timeout(300)
+      await pg.evaluate("""() => { localStorage.clear(); localStorage.setItem('hp_kids', JSON.stringify([{ id: 'k1', name: 'عبد الرحمن', gender: 'm', av: 'm2' }])); localStorage.setItem('hp_kid', JSON.stringify('k1'));
+        localStorage.setItem('hp_settings:k1', JSON.stringify({ sessionMax: 3 })); localStorage.setItem('hp_prog:k1', JSON.stringify({ schema: 3, 'm1.u1.d1': { done: true }, 'm1.u1.d2': { done: true }, 'm1.u1.d3': { done: true }, 'm1.u1.d4': { done: true }, 'm1.u1.d5': { done: true } })); }""")
+      await pg.reload(); await pg.wait_for_timeout(500)
+      w1 = await pg.evaluate(WIDE); check(w1 == [] and await vis(pg, '#digBtn'), dev + ': الخريطة باسم «عبد الرحمن» وزرّ «أرقامي» داخل العرض ' + str(w1[:4]))
+      await pg.screenshot(path=OUT + '/home_longname_' + dev.replace(' ', '') + '.png')
+      await pg.evaluate("() => { SESSION.n = SET.sessionMax; SESSION.t = Date.now(); store.set(kk('hp_session'), SESSION); }"); await pg.evaluate("() => document.querySelector('.stop[data-lesson][aria-disabled=false]').click()"); await pg.wait_for_timeout(400)
+      w2 = await pg.evaluate(WIDE); f2 = await pg.evaluate(FIT); check(await vis(pg, '#breakCover') and w2 == [] and f2 == [], dev + ': غطاء الاستراحة فوقها داخل العرض وفقاعته كاملة ' + str((w2 + f2)[:4]))
+      await pg.screenshot(path=OUT + '/break_longname_' + dev.replace(' ', '') + '.png')
+      await ctx.close()
     await b.close()
     print('errors:', len(errs)); [print(' ', e[:300]) for e in errs[:10]]
     print('FAILS:', len(fails)); [print(' ', f) for f in fails]
-asyncio.run(main())
+    return len(fails) + len(errs)
+sys.exit(1 if asyncio.run(main()) else 0)   # إخفاق ⇒ رمز خروج 1

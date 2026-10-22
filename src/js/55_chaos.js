@@ -12,16 +12,18 @@ async function chaosStage(C) {
 async function chaosBins(C) {
   const svg = newStage(330, { oasis: false, ground: 0 }); const n = C.bins.length; const bx = i => 360 - (i + .5) * (360 / n);
   C.bins.forEach((k, i) => { const g = el('g', { transform: `translate(${bx(i) - 40} 236) scale(.73)` }, svg); g.innerHTML = basketSVG(k).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, ''); label(svg, bx(i), 322, plain(BIN_NAMES[k]), 14); });
-  const items = C.placed.map((p, j) => { const s = make(p.mk); const i = C.bins.indexOf(p.bin); const same = C.placed.slice(0, j).filter(q => q.bin === p.bin).length;
+  const flatSolid = !!(CUR && CUR.sort && CUR.sort.kindOf) || C.bins.some(b => SOLID_BINS.includes(b));   /* D238: بلا ظلّ في كل فرز فيه مجسّمات، فلا تُعرف الورقة بغياب ظلّها */
+  const items = C.placed.map((p, j) => { const s = { ...make(p.mk), ...(flatSolid ? { noShadow: true } : {}) }; const i = C.bins.indexOf(p.bin); const same = C.placed.slice(0, j).filter(q => q.bin === p.bin).length;
     const x = bx(i), y = 196 - same * 70; const g = fitThing(svg, { ...s, label: null }, x, y, 62); return { g, s, x, y, wrong: !!p.wrong, p }; });
   const fz = chaosAt(svg, 40, 50, .42); await chaosGiggle(fz);
+  for (const k of C.bins) if (GL['gen.bin.' + k]) await S('gen.bin.' + k, { noGap: true });   /* أسماء السلال قبل البحث (D254) */
   await S(C.find || 'gen.chaos.find');
-  let tries = 0; while (true) { const k = await tapOne(items.map((it, i) => ({ g: it.g, k: i, label: plain(it.s.label || BIN_NAMES[it.s.kind] || '') })), { ok: items.findIndex(it => it.wrong) }); tries++;
+  let tries = 0; while (true) { const k = await tapOne(items.map((it, i) => ({ g: it.g, k: i, label: plain(it.s.label || labelText('shapeOne')) })), { ok: items.findIndex(it => it.wrong) });   /* لا اسم النوع: المربع في «غير ذلك» لا يُعلَن «مربعاً» (D254 (3)) */ tries++;
     const it = items[k]; logAttempt({ scene: 'chaos', tag: 'find', ok: it.wrong, firstTry: tries === 1 });
     if (it.wrong) break; SFX.soft(); await S('gen.chaos.no'); }
   SFX.good(); hush(); fz.remove(); const W = items.find(it => it.wrong);
   /* يتحقّق الطفل بيده: يعدّ الرؤوس أو الأضلاع، أو يدير الورقة، أو يلمس الوجوه */
-  const stage = newStage(260, { oasis: false, ground: 0 }); const s = { ...W.s, label: null }; if (C.check === 'faces') Object.assign(s, { size: Math.max(160, s.size || 0), ry: .34 });   /* وجوه يلمسها الإصبع (≥ 56) */
+  const stage = newStage(260, { oasis: false, ground: 0 }); const s = { ...W.s, label: null }; if (C.check === 'faces') Object.assign(s, { size: Math.max(faceSize(stage, 160), s.size || 0), ry: .34 });   /* وجوه يلمسها الإصبع (≥ 56) */
   const g = thingAt(stage, s, 180, 104);
   await S(C.foundLine || 'gen.chaos.found');
   if (C.check === 'countVertices' || C.check === 'countSides') { const P = worldPoly({ ...s, x: 180, y: 104 });
@@ -62,9 +64,10 @@ async function chaosCards(C) {
   const svg = newStage(220, { oasisOpacity: .2 }); compassAt(svg, 250, 110, .8); chaosAt(svg, 110, 110, .5);
   await S('gen.chaos.cards');
   for (let round = 0; round < 3; round++) {
-    const cp = cardPick([{ id: C.right, k: 'r', ok: true, icon: '' }, { id: C.wrong, k: 'w', ok: false, hide: true, pre: async () => { SFX.chaos(); await S('gen.chaos.thinks', { free: true }); } }]);
+    /* البطاقتان متماثلتان بلا نصّ (D236): لا تُعرف الصحيحة بالنظر، والخاطئة تسبقها النغمة و«فوضى تظنّ…»؛ ويُكشف نصّ الصحيحة بعد اختيارها */
+    const cp = cardPick([{ id: C.right, k: 'r', ok: true, hide: true }, { id: C.wrong, k: 'w', ok: false, hide: true, pre: async () => { SFX.chaos(); await S('gen.chaos.thinks', { free: true }); } }]);
     const pickd = await cp.p; cp.done(); const ok = pickd.k === 'r'; logAttempt({ scene: 'chaos', tag: 'cards', ok, firstTry: round === 0 });
-    cp.btns.find(b => b.dataset.k === pickd.k).classList.add(ok ? 'ok' : 'no');
+    cp.btns.find(b => b.dataset.k === pickd.k).classList.add(ok ? 'ok' : 'no'); if (ok) cp.reveal('r');
     await sleep(500); cp.box.remove();
     if (ok) break; SFX.soft(); await S(round < 1 ? 'gen.chaos.listenAgain' : 'gen.chaos.together');
   }

@@ -11,7 +11,8 @@ const ST_ICON = {
 /* أيقونة المحطة (72×56): أشكال الدرس أو مجسّماته، أو رمزه الخاص */
 function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const ic = L.icon || [];
   const special = { stone: () => { const g = el('g', { transform: 'translate(36 30) scale(.32)' }, s); stoneArt(g, L.unit, 0, 0); },
-    mail: () => { mailboxAt(s, 36, 34, 3).g.setAttribute('transform', 'translate(36 34) scale(.42)'); digitCard(s, 58, 16, 3, { size: .36 }); },
+    mail: () => { mailboxAt(s, 36, 34, 3).g.setAttribute('transform', 'translate(36 34) scale(.42)');   /* بطاقة الرقم بعد درس الأرقام نفسه، وقبله رسالة (D254 (4)) */
+      if (digitsKnown()) digitCard(s, 58, 16, 3, { size: .36 }); else { el('rect', { x: 50, y: 8, width: 16, height: 11, rx: 2, fill: '#fffdf6', stroke: '#c98f55', 'stroke-width': 1.6 }, s); el('path', { d: 'M50.8 9 L58 14.5 L65.2 9', fill: 'none', stroke: '#c98f55', 'stroke-width': 1.6 }, s); } },
     towers: () => { towerAt(s, 26, 52, 4, { size: 10, color: CUBE.lemon }); towerAt(s, 48, 52, 6, { size: 10, color: CUBE.white }); },
     plus: () => { towerAt(s, 22, 52, 3, { size: 10, color: CUBE.lemon }); towerAt(s, 50, 52, 2, { size: 10, color: CUBE.white }); el('path', { d: 'M30 30h12M36 24v12', stroke: css('--compass'), 'stroke-width': 4, 'stroke-linecap': 'round' }, s); },
     hunt: () => { [['circle', 18], ['triangle', 36], ['rect', 54]].forEach(([k, x]) => shapeAt(s, { type: k, size: 20, w: k === 'rect' ? 24 : k === 'triangle' ? 22 : undefined, h: k === 'rect' ? 14 : k === 'triangle' ? 20 : undefined, color: css(IDC[k]) }, x, 28)); },
@@ -52,12 +53,13 @@ function showHome() {
     U.lessons.forEach((id, i) => { const L = LDATA[id], p = PROG[id] || {}; const open = uOpen && lessonOpen(U, i);
       if (WS[U.id] && isTestLesson(id)) path.appendChild(wsStop(U, uOpen));
       const btn = document.createElement('button'); btn.className = 'stop'; btn.setAttribute('aria-disabled', !open); btn.dataset.lesson = id;
-      const want = PROG.review ? PROG.review === id : (!p.done || (L.test && !p.mastered));
+      const redo = isObj(PROG.redo) && !!PROG.redo[id];   /* خطآن متتاليان في المراجعة: يُعاد الدرس (المبدأ 14) */
+      const want = PROG.review ? PROG.review === id : isObj(PROG.redo) && Object.keys(PROG.redo).length ? redo : (!p.done || (L.test && !p.mastered));
       if (open && want && !nowSet) { btn.classList.add('now'); nowSet = true; }
       const st = !open ? ST_ICON.lock(css('--muted')) : resting && !p.done ? ST_ICON.moon(css('--muted')) : p.mastered ? ST_ICON.star() : p.done ? ST_ICON.done(css('--good')) : '';
-      const sub = p.resume ? labelText('resumeHere') : PROG.review === id ? labelText('reviewThis') : L.test && p.done && !p.mastered ? labelText('tryAgain') : labelText('lessonN').replace('{n}', DG(i + 1));
+      const sub = p.resume ? labelText('resumeHere') : PROG.review === id ? labelText('reviewThis') : redo ? labelText('redoThis') : L.test && p.done && !p.mastered ? labelText('tryAgain') : '';   /* لا رقم درس مكتوباً على الخريطة (الأرقام تُتعلَّم في الدرس الخامس) */
       const tag = p.entry ? `<em class="tag">${esc(labelText('entry'))}</em>` : '';
-      btn.innerHTML = stopIcon(L) + `<span>${esc(L.title)}${tag}<small>${esc(G(sub))}</small></span>` + st; btn.setAttribute('aria-label', plain(L.title));
+      btn.innerHTML = stopIcon(L) + `<span>${esc(L.title)}${tag}${sub ? `<small>${esc(G(sub))}</small>` : ''}</span>` + st; btn.setAttribute('aria-label', plain(L.title));
       btn.onclick = () => { if (!open) { SFX.soft(); return; } SFX.tick(); startLesson(id); };
       path.appendChild(btn); }); });
   const nowBtn = path.querySelector('.stop.now'); if (nowBtn && !FAST) setTimeout(() => { try { nowBtn.scrollIntoView({ block: 'nearest', behavior: RM ? 'auto' : 'smooth' }); } catch (e) {} }, 300);
@@ -65,7 +67,7 @@ function showHome() {
 function wsStop(U, uOpen) { const open = uOpen && wsOpen(U); const solved = wsSolved(U.id), total = WS[U.id].puzzles.length;
   const wb = document.createElement('button'); wb.className = 'stop ws' + (open && solved < 1 ? ' must' : ''); wb.dataset.workshop = U.id; wb.setAttribute('aria-disabled', !open);
   wb.innerHTML = `<svg viewBox="0 0 72 56" aria-hidden="true">${hostsSVG(U.id).replace(/^<svg[^>]*>/, '<g transform="translate(-14 -10) scale(.5)">').replace(/<\/svg>$/, '</g>')}<path d="M8 50 h56" stroke="${css('--basket-dk')}" stroke-width="4" stroke-linecap="round"/></svg>`
-    + `<span>${esc(G(labelText('workshop')))}<small>${esc(G(labelText('wsShadows')))} ${DG(solved)} / ${DG(total)}</small></span>` + (open ? (solved ? ST_ICON.done(css('--good')) : '') : ST_ICON.lock(css('--muted')));
+    + `<span>${esc(G(labelText('workshop')))}<small aria-label="${solved} / ${total}">${esc(G(labelText('wsShadows')))} <span class="dots" aria-hidden="true">${'<i class="on"></i>'.repeat(solved)}${'<i></i>'.repeat(Math.max(0, total - solved))}</span></small></span>` + (open ? (solved ? ST_ICON.done(css('--good')) : '') : ST_ICON.lock(css('--muted')));
   wb.onclick = () => { if (!open) { SFX.soft(); return; } SFX.tick(); runWorkshop(U); }; return wb; }
 /* بدء الدرس: الراحة أولاً إن بلغت الجلسة حدّها، ثم سؤال الاستئناف إن خرج الطفل في منتصفه */
 function startLesson(id) {

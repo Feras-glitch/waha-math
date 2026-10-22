@@ -41,7 +41,7 @@ function wsPuzzle(U, P, ix) {
   const n = items.length, gap = 340 / n; const TK = Math.min(.72, 64 / Math.max(...items.map(p => Math.max(p.w || p.size, p.size))));
   let sel = null, warnedTurn = false, done = 0;
   const pieces = items.map((p, i) => { const home = { x: 350 - gap * (i + .5), y: 284 };
-    const g = wsDraw(layer, p, home.x, home.y, TK); const pc = { p, g, home, x: home.x, y: home.y, placed: false }; g.style.cursor = 'grab'; g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.setAttribute('aria-label', plain(BIN_NAMES[p.k] || '')); hitPad(g, 76); g.dataset.ws = p.k; return pc; });
+    const g = wsDraw(layer, p, home.x, home.y, TK); const pc = { p, g, home, x: home.x, y: home.y, placed: false }; g.style.cursor = 'grab'; g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.setAttribute('aria-label', plain(BIN_NAMES[p.k] || '')); hitPad(g, 76, 64); g.dataset.ws = p.k; return pc; });
   const setPos = (pc, x, y, k) => { pc.x = x; pc.y = y; pc.g.setAttribute('transform', `translate(${x} ${y}) scale(${k})`); };
   const select = pc => { pieces.forEach(q => q.g.classList.remove('wssel')); sel = pc; if (pc) pc.g.classList.add('wssel'); };
   const rotate = pc => { if (!pc || pc.placed) { if (!pc) S('gen.ws.pickFirst', { ifIdle: true, free: true }); return; } pc.p.rot = ((pc.p.rot || 0) + 90) % 360; pc.g.inner.setAttribute('transform', `rotate(${pc.p.rot})`); SFX.tick(); };
@@ -81,7 +81,7 @@ async function wsFree(U) {
   const svg = newStage(330, { oasis: false, ground: 0 }); el('rect', { x: -360, y: 248, width: 1080, height: 82, fill: css('--paper'), opacity: .95 }, svg);
   const layer = el('g', {}, svg); const placed = []; let sel = null;
   const select = pc => { placed.forEach(q => q.g.classList.remove('wssel')); sel = pc; if (pc) pc.g.classList.add('wssel'); };
-  const spawn = p => { const pc = { p: { ...p, rot: 0 }, x: 180 + R(-30, 30), y: 130 + R(-20, 20) }; pc.g = wsDraw(layer, pc.p, pc.x, pc.y, 1); pc.g.style.cursor = 'grab'; hitPad(pc.g, 64); /* هدف السحب 64 (D246) */ placed.push(pc); select(pc); SFX.pop();
+  const spawn = p => { const pc = { p: { ...p, rot: 0 }, x: 180 + R(-30, 30), y: 130 + R(-20, 20) }; pc.g = wsDraw(layer, pc.p, pc.x, pc.y, 1); pc.g.style.cursor = 'grab'; hitPad(pc.g, 64, 64); /* هدف السحب 64 (D246) */ placed.push(pc); select(pc); SFX.pop();
     let drag = null;
     pc.g.addEventListener('pointerdown', e => { drag = { sx: e.clientX, sy: e.clientY, x0: pc.x, y0: pc.y }; try { pc.g.setPointerCapture(e.pointerId); } catch (x) {} select(pc); });
     pc.g.addEventListener('pointermove', e => { if (!drag) return; const ctm = svg.getScreenCTM(); const dx = (e.clientX - drag.sx) / ctm.a, dy = (e.clientY - drag.sy) / ctm.d;

@@ -34,8 +34,10 @@ function diceAt(parent, x, y, n, opt = {}) { const g = el('g', { transform: `tra
 function handAtN(parent, x, y, n, s = 1) { const g = el('g', { transform: `translate(${x} ${y}) scale(${s})` }, parent);
   el('path', { d: 'M-26 10 Q-28 40 0 44 Q28 40 26 10 Z', fill: '#f1c9a5', stroke: '#c98f55', 'stroke-width': 2 }, g);
   const F = [[-22, -2, -30], [-11, -14, -10], [0, -18, 0], [11, -14, 10], [24, 4, 40]];
+  g.tips = []; g.fingers = [];   /* أطراف الأصابع المرفوعة بإحداثيات المسرح: للتلميح (إضاءة) والعدّ المشترك */
   F.forEach(([fx, fy, a], i) => { const up = i < n; const f = el('g', { transform: `translate(${fx} ${fy + 14}) rotate(${a * .4})` }, g);
-    el('rect', { x: -5, y: up ? -26 : -6, width: 10, height: up ? 30 : 10, rx: 5, fill: '#f1c9a5', stroke: '#c98f55', 'stroke-width': 2 }, f); });
+    const fr = el('rect', { x: -5, y: up ? -26 : -6, width: 10, height: up ? 30 : 10, rx: 5, fill: '#f1c9a5', stroke: '#c98f55', 'stroke-width': 2 }, f);
+    if (up) { g.fingers.push(fr); const q = (a * .4) * Math.PI / 180; g.tips.push({ x: x + (fx + Math.sin(q) * 22) * s, y: y + (fy + 14 - Math.cos(q) * 22) * s }); } });
   return g; }
 /* عدّ رسائل الصندوق باللمس: الرسائل في نافذته صغيرة متلاصقة (12 وحدة)، فتخرج إلى صفّين متباعدين بحجم يلمسه إصبع الطفل
    (هدف ≥ 56)، ويعدّها، ثم تعود إلى الصندوق. cy: منتصف الصفّين */
@@ -73,8 +75,10 @@ function sentenceAt(parent, x, y, a, op, b, c, opt = {}) { const g = el('g', { t
   if (opt.box !== false) el('rect', { x: -96, y: -30, width: 192, height: 52, rx: 14, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 3 }, g);
   const t = el('text', { y: 8, 'text-anchor': 'middle', 'font-size': 34, 'font-weight': 800, fill: opt.box === false ? css('--ink') : CARD_INK, 'font-family': css('--f'), direction: NUM_DIR(), 'unicode-bidi': 'bidi-override' }, g); t.textContent = sentenceText(a, op, b, c); return g; }
 /* قراءة الجملة بالكلمات: «أَرْبَعَة» «زَائِد» «ثَلَاثَة» «يُسَاوِي» «سَبْعَة» */
-async function readSentence(a, op, b, c) { await S(numw(a), { noGap: true }); await S(op === '+' ? 'gen.op.plus' : 'gen.op.minus', { noGap: true }); await S(numw2(b), { noGap: true });
-  if (c != null) { await S('gen.op.eq', { noGap: true }); await S(numw2(c)); } }
+/* والجملة جملٌ قصيرة تُكتب في الفقاعة متتابعة (append)، فتظهر الجملة كلها لا آخر كلمة؛ وsentenceLines تعطيها لـ readChoices وخطّاف «أعد الجملة» */
+function sentenceLines(a, op, b, c) { const L = [[...lineOf(numw(a)), { noGap: true }], [...lineOf(op === '+' ? 'gen.op.plus' : 'gen.op.minus'), { noGap: true, append: true }], [...lineOf(numw2(b)), { noGap: true, append: true }]];
+  if (c != null) L.push([...lineOf('gen.op.eq'), { noGap: true, append: true }], [...lineOf(numw2(c)), { append: true }]); return L; }
+async function readSentence(a, op, b, c) { for (const [w, id, t, o] of sentenceLines(a, op, b, c)) await say(w, id, t, o); }
 
 /* ---------- تتبّع الأرقام المشرقية (N003): نموذج خطّ اليد، والنقطة الخضراء، وفحص بالتغطية ----------
    النماذج مرسومة يدوياً على أشكال الخطوط المعيارية (صندوق 100×140). البدء من الأعلى، ومن اليمين حين يكون للرقم طرفان علويّان.
@@ -118,10 +122,10 @@ function digitTrace(svg, n, x, y, k = 1.6, opt = {}) {
   const onMove = ev => { if (!down || done) return; mark(local(ev)); finish(); };
   const onUp = () => { if (!down) return; down = false; if (!done && strokes >= 1 && hit.size / samples.length < .85 && opt.onShort) opt.onShort(hit.size / samples.length); };
   svg.addEventListener('pointerdown', onDown); svg.addEventListener('pointermove', onMove); svg.addEventListener('pointerup', onUp); svg.addEventListener('pointercancel', onUp);
-  const demo = async (fromWrong) => { const pts = fromWrong ? [[50, 140]] : []; const L = path ? path.getTotalLength() : 0;
-    if (fromWrong) { first = pts[0]; } else if (!first) first = P[0];
+  const demo = async (fromWrong) => { const L = path ? path.getTotalLength() : 0;
+    if (fromWrong) { const q = path ? path.getPointAtLength(L / 2) : null; first = q ? [q.x, q.y] : [50, 140]; } else if (!first) first = P[0];   /* الخطأ: البدء من وسط الرقم، بعيداً عن طرفيه أياً كان الرقم */
     if (!path) { mark([50, 70]); finish(); return; } for (let s = 0; s <= L; s += 4) { const q = path.getPointAtLength(s); mark([q.x, q.y]); } finish(); };
-  AUTO({ kind: 'trace', ok: () => demo(false), wrong: () => { first = [50, 145]; demo(true); } });
+  AUTO({ kind: 'trace', ok: () => demo(false), wrong: () => demo(true) });
   return { g, p, ghost: async () => { const pts = P.length > 1 ? Array.from({ length: 12 }, (_, i) => { const q = path.getPointAtLength(path.getTotalLength() * i / 11); return [x - 50 * k + q.x * k, y - 70 * k + q.y * k]; }) : [[x, y], [x, y]]; await ghostHand(svg, pts, 1500); },
     reset: () => { ink.innerHTML = ''; hit.clear(); first = null; strokes = 0; done = false; } };
 }

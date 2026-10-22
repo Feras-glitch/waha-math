@@ -6,11 +6,13 @@ const allLessons = () => UNITS.flatMap(U => U.lessons);
 function nextLessonId() { for (const [ui, U] of UNITS.entries()) { if (!unitOpen(ui)) break; for (const [i, id] of U.lessons.entries()) if (!(PROG[id] || {}).done && lessonOpen(U, i)) return id; } return null; }
 const conceptName = (L, C) => (L.concepts || {})[C] || '';
 function statusPill(L) { const p = PROG[L.id] || {};
-  if (p.mastered) return '<span class="pill good">متقن</span>';
+  const redo = isObj(PROG.redo) && PROG.redo[L.id] ? ' <span class="pill think">يُعاد: خطآن متتاليان في المراجعة</span>' : '';
+  /* D252: إتقان مسار الشاشة «مدخل» عند الكبار حتى يُعاد الدرس بالأشياء الحقيقية، والنجمة للطفل كما هي */
+  if (p.mastered) return (p.entry ? '<span class="pill think">أتقنه على الشاشة، مدخل</span> <span class="muted">يصير تأسيساً حين يُعاد بالأشياء</span>' : '<span class="pill good">متقن</span>') + redo;
   if (p.resume) return '<span class="pill">توقّف في منتصفه</span>';
   if (!p.done) return '—';
   const def = Object.entries(p.cs || {}).filter(([, c]) => c.deferred && !c.mastered).map(([C]) => conceptName(L, C)).filter(Boolean);
-  return `<span class="pill">أُنجز</span>${p.entry ? ' <span class="pill think">مدخل: بالشاشة وحدها</span>' : ''}${def.length ? ` <span class="pill think">مؤجَّل إلى المراجعة: ${esc(def.join('، '))}</span>` : ''}${L.test && p.score != null ? ` <span class="pill">${DG(p.score)} من ${DG(p.of)}</span>` : ''}`; }
+  return redo.slice(1) + `${redo ? ' ' : ''}<span class="pill">أُنجز</span>${p.entry ? ' <span class="pill think">مدخل: بالشاشة وحدها</span>' : ''}${def.length ? ` <span class="pill think">مؤجَّل إلى المراجعة: ${esc(def.join('، '))}</span>` : ''}${L.test && p.score != null ? ` <span class="pill">${DG(p.score)} من ${DG(p.of)}</span>` : ''}`; }
 function adultCardHTML(L) { const A = L.adultCard; const saved = (PROG.adult || {})[L.id] || [];
   return `<div class="talkcard"><b>${esc(plain(L.title))}: ${esc(A.title)}</b><p class="muted">${esc(A.how)}</p>${A.qs.map((q, i) => `<div class="aq"><span>${DG(i + 1)}. ${esc(q)}</span><span class="seg">
     <button class="pick" data-ac="${L.id}" data-i="${i}" data-v="1" aria-pressed="${saved[i] === true}">نعم</button><button class="pick" data-ac="${L.id}" data-i="${i}" data-v="0" aria-pressed="${saved[i] === false}">ليس بعد</button></span></div>`).join('')}
@@ -30,7 +32,7 @@ function openPanel() {
       return `<tr><td>${esc(plain(L.title))}</td><td>${statusPill(L)}</td></tr>`; }).join('')).join('')}</tbody></table>
       <p><b>الصواب من المحاولة الأولى:</b> ${DG(fOk)} من ${DG(firsts.filter(a => a.firstTry != null).length)}</p></div>
     <details class="card"><summary><b>خريطة الإتقان</b> (لكل فكرة في الدروس المنجزة)</summary><table><tbody>${done.map(L => Object.entries(L.concepts || {}).map(([C, name]) => { const c = ((PROG[L.id] || {}).cs || {})[C] || {};
-      const st = c.mastered ? '<span class="pill good">متقن</span>' : c.entry ? '<span class="pill think">مدخل: يحكم الكبير</span>' : c.deferred ? '<span class="pill think">مؤجَّل إلى المراجعة</span>' : (L.mastery && L.mastery.concepts[C]) ? '—' : '<span class="pill">مدخل</span>';
+      const st = c.mastered ? ((PROG[L.id] || {}).entry && !c.byAdult ? '<span class="pill think">أتقنه على الشاشة، مدخل</span>' : '<span class="pill good">متقن</span>') : c.entry ? '<span class="pill think">مدخل: يحكم الكبير</span>' : c.deferred ? '<span class="pill think">مؤجَّل إلى المراجعة</span>' : (L.mastery && L.mastery.concepts[C]) ? '—' : '<span class="pill">مدخل</span>';
       return `<tr><td>${esc(name)}</td><td>${st}</td></tr>`; }).join('')).join('') || '<tr><td>تظهر بعد أول درس.</td></tr>'}</tbody></table></details>
     ${done.some(L => L.adultCard) ? `<div class="card"><b>بطاقات يحكم بها الكبير</b> (ما لا يُتعلَّم من الشاشة):${done.filter(L => L.adultCard).map(adultCardHTML).join('')}</div>` : ''}
     <div class="card"><b>بطاقات الحوار ومهام البيت</b> (بعد كل درس أُنجز):${done.filter(L => TALK[L.id]).map(L => `<div class="talkcard"><b>${esc(plain(L.title))}</b><br>${esc(G(TALK[L.id]))}${homeTask(L.id) ? `<br><span class="muted">مهمة البيت: ${esc(homeTask(L.id))}</span>` : ''}</div>`).join('') || '<br>تظهر هنا بعد أول درس.'}</div>

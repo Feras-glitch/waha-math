@@ -5,7 +5,7 @@
 const PATH_MAT = () => !!(CUR && (PROG[CUR.id] || {}).path === 'mat');
 const lessonOf = id => LDATA[id];
 const lessonsOf = uid => (UNITS.find(u => u.id === uid) || { lessons: [] }).lessons;
-function show(id) { for (const s of ['#home', '#lesson']) $(s).hidden = s !== '#' + id; for (const c of ['#exitCover']) $(c).hidden = true; if (id === 'home') stopVoice(); }
+function show(id) { for (const s of ['#home', '#lesson']) $(s).hidden = s !== '#' + id; for (const c of ['#exitCover']) $(c).hidden = true; if (id === 'home') { stopVoice(); REPLAY_HOOK = null; lastLine = null; } }   /* لا تُعاد في درس آخر جملةُ درس غادره الطفل (ومنها جملة فوضى) */
 const progOf = id => (PROG[id] = isObj(PROG[id]) ? PROG[id] : {});
 
 /* حقيبة الدرس (D238): هل الأشياء معك؟ «معي» أو «على الشاشة». المسار على الشاشة يوسم الدرس «مدخل» */
@@ -36,8 +36,8 @@ function bagIcon(svg, r, x, y) {
     hat: () => thingAt(g, { solid: 'cone', size: 80, color: '#6c7fa8' }, 0, 0), tube: () => thingAt(g, { solid: 'cylinder', size: 76, color: '#c9a072' }, 0, 0), box: () => thingAt(g, { solid: 'box', size: 84, color: BOXC }, 0, 0),
     stickers: () => { for (let i = 0; i < 4; i++) el('rect', { x: -30 + (i % 2) * 30, y: -24 + Math.floor(i / 2) * 26, width: 24, height: 20, rx: 3, fill: '#f6cf7e', stroke: '#c98f55', 'stroke-width': 2, transform: `rotate(${i * 7 - 10})` }, g); } };
   if (typeof r === 'object' && r.icon && I[r.icon]) I[r.icon]();
-  else { const s = make(typeof r === 'object' && r.mk ? r.mk : r); fitThing(g, { ...s, label: null }, 0, 0, 84); if (!lbl && s.label) label(svg, x, y + 72, s.label, 15, css('--muted')); }
-  if (lbl) label(svg, x, y + 72, lbl, 15, css('--muted')); }
+  else { const s = make(typeof r === 'object' && r.mk ? r.mk : r); fitThing(g, { ...s, label: null }, 0, 0, 84); if (!lbl) labelFit(svg, x, y + 72, s.label || BIN_NAMES[s.kind] || '', 15, css('--muted'), 112); }   /* اسم كل شيء في الحقيبة، حتى المكعب */
+  if (lbl) labelFit(svg, x, y + 72, lbl, 15, css('--muted'), 112); }
 
 async function runLesson(id, opt = {}) {
   if (TAB_LOST) { showTabLost(); return; }
@@ -58,6 +58,7 @@ async function runLesson(id, opt = {}) {
   P.done = true; P.at = Date.now(); delete P.resume; if (P.path === 'screen' && !(L.bag && L.bag.screenOnly)) P.entry = true; else if (P.path === 'mat') P.entry = false;
   if (L.review && L.review.length) srsStart(id);
   if (PROG.review === id && P.done) delete PROG.review;
+  if (isObj(PROG.redo) && PROG.redo[id]) delete PROG.redo[id];   /* أُعيد الدرس بعد خطأين في المراجعة */
   saveProg(); countLesson();
   await nextBtn(labelText('toMap')); showHome();
 }

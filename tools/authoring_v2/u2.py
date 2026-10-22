@@ -4,8 +4,12 @@ def sort(mk, **k): return {'t': 'sort', 'mk': mk, **k}
 def prop(mk, **k): return {'t': 'property', 'mk': mk, **k}
 TOUCH = G('اِلْمَسْ', 'اِلْمَسِي'); TOUCH_ = G('اِلْمَسِ', 'اِلْمَسِي'); WITHYOU = G('مَعَكَ', 'مَعَكِ'); LOOK = G('اُنْظُرْ', 'اُنْظُرِي')
 PRED = G('تَوَقَّعْ', 'تَوَقَّعِي'); COUNT = G('عُدَّ', 'عُدِّي')
-HATDOWN = {'solid': 'cone', 'kind': 'cone', 'object': 'hat', 'pose': 'tipdown', 'size': 118, 'color': '#6c7fa8'}
+# مخروط مصمت مقلوب للمس قاعدته (قبعة الحفلة مفتوحة من أسفل، فلا وجه مسطّحاً لها يُلمس)
+CONEDOWN = {'solid': 'cone', 'kind': 'cone', 'pose': 'tipdown', 'size': 118, 'color': '$neutral.3'}
 SOL = lambda k, **x: {'solid': k, 'kind': k, 'size': 130, 'color': '$solid.' + k, **x}
+# ما يُصنَّف (فوضى والفرز): لون محايد لا لون الرفيق، فلا تُحلّ السلّة بمطابقة اللون (D41)
+SN = lambda k, i, **x: {'solid': k, 'kind': k, 'size': 130, 'color': '$neutral.%d' % i, **x}
+def why3(q, ok, *bad, err='byLook', show=None): return {'t': 'reason', 'show': show, 'q': q, 'opts': [{'id': ok, 'ok': True}] + [{'id': b} for b in bad], 'err': err}
 
 # ======================= الدرس 1: المكعب والكرة =======================
 d1 = {
@@ -28,7 +32,7 @@ d1 = {
   'pose.03': 'وَهَذِهِ صُوَرُ مُجَسَّمَاتٍ؛ المُجَسَّمُ الحَقِيقِيُّ نُمْسِكُهُ بِأَيْدِينَا.',
   'wk.01': 'هَذَا مُكَعَّبٌ: وُجُوهُهُ مُسَطَّحَةٌ، وَيَقِفُ ثَابِتًا.', 'wk.02': 'هَلْ مَا زَالَ مُكَعَّبًا؟',
   'wk.03': 'مَا زَالَ يَمْلَأُ الكَفَّ، وَإِذَا أَرْسَلْنَاهُ وَقَفَ عَلَى وَجْهٍ: مَا زَالَ مُكَعَّبًا!',
-  'wk.04': 'المُرَبَّعُ الوَرَقِيُّ رَقِيقٌ بِلَا سُمْكٍ. أَمَّا المُكَعَّبُ فَيَمْلَأُ الكَفَّ.', 'wk.05': 'وَالدَّائِرَةُ الوَرَقِيَّةُ رَقِيقَةٌ بِلَا سُمْكٍ. أَمَّا الكُرَةُ فَتَمْلَأُ الكَفَّ.',
+  'wk.04': 'المُرَبَّعُ الوَرَقِيُّ رَقِيقٌ بِلَا سُمْكٍ. أَمَّا المُكَعَّبُ فَيَمْلَأُ الكَفَّ.',
   'wk.06': 'وَالبُرْتُقَالَةُ شَبِيهَةٌ بِالكُرَةِ: تَتَدَحْرَجُ، لَكِنَّهَا لَيْسَتْ كُرَةً تَامَّةً.',
   'pr.intro': 'سِلَالُنَا: لِلْمُكَعَّبَاتِ، وَلِلْكُرَاتِ، وَ«غَيْرُ ذَلِكَ». هَيَّا نَتَمَرَّنُ.',
   'pr.rolls': 'أَيُّ هَذِهِ الأَشْيَاءِ تَتَدَحْرَجُ؟ ' + G('اِلْمَسْهَا', 'اِلْمَسِيهَا') + ' كُلَّهَا، ثُمَّ «تَمَّ».', 'pr.odd': 'ثَلَاثَةٌ مِنْ هَذِهِ شَبِيهَةٌ بِالكُرَةِ، وَوَاحِدٌ مُخْتَلِفٌ. ' + TOUCH_ + ' المُخْتَلِفَ.',
@@ -40,6 +44,10 @@ d1 = {
   'ch.right': 'المُرَبَّعُ الوَرَقِيُّ رَقِيقٌ بِلَا سُمْكٍ، وَالمُكَعَّبُ يَمْلَأُ الكَفَّ.', 'ch.wrong': C('المُرَبَّعُ وَالمُكَعَّبُ شَيْءٌ وَاحِدٌ.'),
   'ms.recall6': 'المُكَعَّبُ وُجُوهُهُ مُسَطَّحَةٌ، مَهْمَا أَدَرْنَاهُ. وَالكُرَةُ سَطْحُهَا مُنْحَنٍ. وَالوَرَقُ رَقِيقٌ بِلَا سُمْكٍ.',
   'ms.recall9': 'مَا لَهُ سَطْحٌ مُنْحَنٍ يَتَدَحْرَجُ، وَمَا لَهُ وُجُوهٌ مُسَطَّحَةٌ يَقِفُ.',
+  'ms.whyS': 'كَيْفَ عَرَفْنَا أَنَّ هَذِهِ كُرَةٌ؟ ' + G('اِسْمَعِ', 'اِسْمَعِي') + ' الأَسْبَابَ الثَّلَاثَةَ، ثُمَّ ' + G('اِخْتَرْ', 'اِخْتَارِي') + '.',
+  'ms.whyS1': 'لِأَنَّ سَطْحَهَا مُنْحَنٍ كُلَّهُ، بِلَا رُؤُوسٍ.', 'ms.whyS2': 'لِأَنَّ لَوْنَهَا أَزْرَقُ مِثْلُ السَّمَاءِ.', 'ms.whyS3': 'لِأَنَّهَا صَغِيرَةٌ فِي اليَدِ.',
+  'ms.whyC': 'لِمَاذَا يَقِفُ المُكَعَّبُ وَلَا يَتَدَحْرَجُ؟ ' + G('اِسْمَعِ', 'اِسْمَعِي') + ' الأَسْبَابَ الثَّلَاثَةَ، ثُمَّ ' + G('اِخْتَرْ', 'اِخْتَارِي') + '.',
+  'ms.whyC1': 'لِأَنَّ وُجُوهَهُ مُسَطَّحَةٌ.', 'ms.whyC2': 'لِأَنَّهُ ثَقِيلٌ عَلَى الأَرْضِ.', 'ms.whyC3': 'لِأَنَّهُ كَبِيرٌ.',
   'ms.ok': 'رَائِعٌ! ' + G('أَتْقَنْتَ', 'أَتْقَنْتِ') + ' المُكَعَّبَ وَالكُرَةَ. ' + G('هَذِهِ نَجْمَتُكَ', 'هَذِهِ نَجْمَتُكِ') + '.',
   'wrap.01': 'فِي الوَاحَةِ الآنَ بُرْجٌ مِنَ المُكَعَّبَاتِ، وَكُرَةٌ تَتَدَحْرَجُ!',
   'wrap.home': C('مُهِمَّةُ البَيْتِ: ' + G('دَحْرِجْ', 'دَحْرِجِي') + ' مَعَ الكِبَارِ كُرَةً وَعُلْبَةً عَلَى الأَرْضِ: أَيُّهُمَا تَتَدَحْرَجُ؟ وَلِمَاذَا تَقِفُ الأُخْرَى؟'),
@@ -54,13 +62,12 @@ d1 = {
     [{'show': SOL('cube'), 'at': [180, 140], 'id': 'a'}, {'say': 'wk.01'}],
     [{'chaosIn': [320, 60]}, {'swap': 'a', 'to': SOL('cube', pose='tilt'), 'from': -28}, {'chaosOut': True}, {'say': 'wk.02'}, {'say': 'wk.03'}],
     [{'clear': True}, {'show': {'type': 'square', 'kind': 'flat', 'size': 100, 'color': '$id.square'}, 'at': [268, 130], 'id': 'p', 'label': 'paperSq'}, {'show': SOL('cube', size=120), 'at': [92, 130], 'id': 'c', 'label': 'cubeName'}, {'say': 'wk.04'}],
-    [{'clear': True}, {'show': {'type': 'circle', 'kind': 'flat', 'size': 104, 'color': '$id.circle'}, 'at': [268, 130], 'id': 'p', 'label': 'paperCi'}, {'show': SOL('sphere', size=120), 'at': [92, 130], 'id': 'c', 'label': 'sphereName'}, {'say': 'wk.05'}],
     [{'clear': True}, {'show': 'ball', 'at': [268, 130], 'id': 'b', 'label': 'ballName'}, {'show': 'orange', 'at': [92, 130], 'id': 'o', 'label': 'orangeName'}, {'say': 'wk.06'}]]},
   {'s': 'practice'},
   {'s': 'game', 'scene': 'feelBox', 'intro': 'game.01', 'opts': ['cube', 'sphere'], 'rounds': [{'line': 'fb.1', 'ok': 'sphere'}, {'line': 'fb.2', 'ok': 'cube'}, {'line': 'fb.3', 'ok': 'cube'}]},
   {'s': 'chaos'}, {'s': 'mastery'}, {'s': 'wrap'}],
  'sort': {'bins': ['cube', 'sphere', 'other'], 'praise': 'praiseSolid',
-  'errors': [{'when': {'tag': 'flatSquare', 'bin': 'cube'}, 'err': 'flatAsCube'}, {'when': {'tag': 'flatCircle', 'bin': 'sphere'}, 'err': 'flatAsSphere'}, {'when': {'tag': 'box'}, 'err': 'boxAsCube'},
+  'errors': [{'when': {'tag': 'flatSquare', 'bin': 'cube'}, 'err': 'flatAsCube'}, {'when': {'tag': 'flatCircle', 'bin': 'sphere'}, 'err': 'flatAsSphere'}, {'when': {'solid': False, 'bin': ['cube', 'sphere']}, 'err': 'flatAsSolid'}, {'when': {'tag': 'box'}, 'err': 'boxAsCube'},
              {'when': {'kind': 'cube', 'bin': 'sphere'}, 'err': 'cubeNotRoll'}, {'when': {'kind': 'cube'}, 'err': 'cubeTurned'}, {'when': {'kind': 'sphere'}, 'err': 'sphereNoFace'}, {'when': {'solid': True}, 'err': 'newSolid'}, {'err': 'generic'}],
   'reasons': [{'when': {'kind': 'cube', 'tag': 'cubeTurned'}, 'id': 'why.cubeTurned'}, {'when': {'kind': 'cube'}, 'id': 'why.cube'}, {'when': {'kind': 'sphere'}, 'id': 'why.sphere'}, {'when': {'tag': 'box'}, 'id': 'why.box'}, {'when': {'solid': False}, 'id': 'why.flat'}, {'id': 'why.other'}],
   'twins': {'cube': sort('cubeTilt'), 'cubeTurned': sort('cubeTurned'), 'sphere': sort('sphere'), 'flatSquare': sort('flatSquare'), '*': sort('die')}},
@@ -70,18 +77,19 @@ d1 = {
   'challenge': [sort('cubeTilt'), sort('cubeTurned'), sort('orange'), {'t': 'pickAll', 'q': 'pr.rolls', 'rolls': True, 'objs': ['sphere', 'cubeTilt', 'orange', 'die', 'cube', 'beadBall'], 'names': True, 'errs': {'miss': 'rollMissed', 'extra': 'cubeNotRoll'}},
              {'t': 'pick', 'q': ['pr.odd'], 'opts': ['beadBall', 'orange', 'cubeTurned', 'sphere'], 'ans': 2, 'err': 'newSolid'}]},
  'chaos': {'kind': 'bins', 'bins': ['cube', 'sphere', 'other'], 'check': 'thin', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong',
-  'placed': [{'mk': SOL('cube', size=64), 'bin': 'cube'}, {'mk': {'type': 'square', 'kind': 'flat', 'size': 110, 'color': '$neutral.1'}, 'bin': 'cube', 'wrong': True}, {'mk': SOL('sphere', size=62), 'bin': 'sphere'}, {'mk': SOL('sphere', size=50), 'bin': 'sphere'}, {'mk': {'type': 'triangle', 'kind': 'flat', 'size': 64, 'color': '$neutral.4'}, 'bin': 'other'}]},
- 'mastery': {'concepts': {'C006': [sort('dieTilt'), sort('flatCircle'), sort('marble')], 'C009': [prop('ball'), prop('ice'), prop('teaBox')]},
+  'placed': [{'mk': SN('cube', 0, size=64), 'bin': 'cube'}, {'mk': {'type': 'square', 'kind': 'flat', 'size': 110, 'color': '$neutral.1'}, 'bin': 'cube', 'wrong': True}, {'mk': SN('sphere', 2, size=62), 'bin': 'sphere'}, {'mk': SN('sphere', 5, size=50), 'bin': 'sphere'}, {'mk': {'type': 'triangle', 'kind': 'flat', 'size': 64, 'color': '$neutral.4'}, 'bin': 'other'}]},
+ 'mastery': {'concepts': {'C006': [sort('dieTilt'), sort('flatCircle'), why3('ms.whyS', 'ms.whyS1', 'ms.whyS2', 'ms.whyS3', show='marble')],
+                          'C009': [prop('tennis'), prop('ice'), why3('ms.whyC', 'ms.whyC1', 'ms.whyC2', 'ms.whyC3', show=SN('cube', 2, size=120))]},
   'recall': {'C006': {'auto': True, 'h': 280, 'steps': [[{'show': SOL('cube', pose='tilt', size=120), 'at': [262, 140], 'id': 'a'}, {'show': SOL('sphere', size=120), 'at': [100, 140], 'id': 'b'}, {'say': 'ms.recall6'}]]},
              'C009': {'auto': True, 'h': 280, 'steps': [[{'say': 'ms.recall9'}]]}},
   'remedial': {'C006': [sort('cubeTurned'), sort('flatSquare')], 'C009': [prop('sphere'), prop('cube')]},
-  'mixed': {'lesson': 'm1.u1.d1', 'item': sort('napkin', bins=['cube', 'sphere', 'other'])}, 'ok': 'ms.ok'},
- 'review': [sort('gift'), sort('ball'), prop('dieTilt')],
+  'mixed': {'lesson': 'm1.u1.d1', 'item': sort('coin', bins=['cube', 'sphere', 'other'])}, 'ok': 'ms.ok'},
+ 'review': [sort('gift', c='C006'), sort('beachBall', c='C006'), prop('block', c='C009'), prop('apple', c='C009')],   # القمع بدل القبعة (في تمرين d6 وصيد المجسّمات)، والمكعب اللعبة بدل النرد (في حقيبة d6 واختباره)
  'wrap': {'art': 'cubes', 'lines': ['wrap.01'], 'home': 'wrap.home'},
  'labelsX': None,
  'talk': 'دحرجوا معاً كرة وعلبة مكعبة على الأرض، واسألوا: «أيّهما يتدحرج؟ ولماذا يقف الآخر؟» واطلبوا أن يمسك كلاً منهما: «أيّهما يملأ الكفّ؟»',
 }
-d1['labels'].update({'paperSq': 'مُرَبَّعٌ مِنْ وَرَقٍ', 'cubeName': 'مُكَعَّب', 'paperCi': 'دَائِرَةٌ مِنْ وَرَقٍ', 'sphereName': 'كُرَة', 'ballName': 'كُرَةُ قَدَمٍ', 'orangeName': 'بُرْتُقَالَة'}); del d1['labelsX']
+d1['labels'].update({'paperSq': 'مُرَبَّعٌ مِنْ وَرَقٍ', 'cubeName': 'مُكَعَّب', 'ballName': 'كُرَةُ قَدَمٍ', 'orangeName': 'بُرْتُقَالَة'}); del d1['labelsX']
 
 # ======================= الدرس 2: الأسطوانة والمخروط والوجه =======================
 SHOP = {'shop.r1': ('cylinder', ['cylinder', 'cone', 'sphere']), 'shop.r2': ('cone', ['cone', 'cylinder', 'cube']), 'shop.r3': ('sphere', ['sphere', 'cylinder', 'cone']),
@@ -90,7 +98,7 @@ d2 = {
  'id': 'm1.u2.d2', 'title': 'الأُسْطُوَانَةُ وَالمَخْرُوطُ', 'icon': ['cylinder', 'cone'],
  'concepts': {'C007': 'تعرّف الأسطوانة والمخروط', 'C009': 'خصائص المجسّم: الوجوه المسطّحة'},
  'bag': {'items': [{'icon': 'tube', 'label': 'bagTube'}, {'icon': 'hat', 'label': 'bagHat'}], 'ask': 'bag.ask', 'adult': 'أسطوانة كرتونية (لفّة مناديل)، وقبعة حفلة أو قمع ورقي.', 'screenPath': 'على الشاشة الدحرجة من الأعلى ولمس الوجوه، ويُوسم «مدخل» حتى تُدحرَج الأسطوانة والقبعة الحقيقيتان.'},
- 'labels': {'bagTube': 'لَفَّةُ مَنَادِيلَ', 'bagHat': 'قُبَّعَةُ حَفْلَةٍ', 'drumName': 'طَبْلَة', 'hatName': 'قُبَّعَةُ حَفْلَةٍ', 'waffleName': 'قِمْعُ بُوظَةٍ'},
+ 'labels': {'bagTube': 'لَفَّةُ مَنَادِيلَ', 'bagHat': 'قُبَّعَةُ حَفْلَةٍ', 'drumName': 'طَبْلَة', 'hatName': 'قُبَّعَةُ حَفْلَةٍ', 'hatDownName': 'قُبَّعَةٌ مَقْلُوبَةٌ'},
  'riddles': {'u2r1': {'riddle': ['shop.r1'], 'kind': 'cylinder', 'opts': SHOP['shop.r1'][1], 'tag': 'riddle'}, 'u2r2': {'riddle': ['shop.r2'], 'kind': 'cone', 'opts': SHOP['shop.r2'][1], 'tag': 'riddle'},
              'u2r3': {'riddle': ['shop.r3'], 'kind': 'sphere', 'opts': SHOP['shop.r3'][1], 'tag': 'riddle'}, 'u2r4': {'riddle': ['shop.r4'], 'kind': 'cylinder', 'opts': SHOP['shop.r4'][1], 'tag': 'riddle'},
              'u2r5': {'riddle': ['shop.r5'], 'kind': 'cone', 'opts': SHOP['shop.r5'][1], 'tag': 'riddle'}, 'u2r6': {'riddle': ['shop.r6'], 'kind': 'cylinder', 'opts': ['sphere', 'cylinder', 'cone'], 'tag': 'riddle'}},
@@ -103,7 +111,7 @@ d2 = {
   'cyl.01': 'هَذِهِ أُسْطُوَانَةٌ نَائِمَةٌ، نَنْظُرُ إِلَيْهَا مِنْ فَوْقُ. ' + G('اِلْمَسْهَا', 'اِلْمَسِيهَا') + ' لِنُدَحْرِجَهَا.', 'cyl.02': 'تَدَحْرَجَتِ الأُسْطُوَانَةُ فِي خَطٍّ مُسْتَقِيمٍ.',
   'push.cyl': 'وَإِذَا كَانَتِ الأُسْطُوَانَةُ وَاقِفَةً، هَلْ تَتَدَحْرَجُ إِذَا دَفَعْنَاهَا؟', 'push.cyl.after': 'بَقِيَتْ وَاقِفَةً عَلَى طَرَفِهَا الدَّائِرِيِّ المُسَطَّحِ.',
   'push.end': 'وَإِذَا نَامَتْ عَلَى جَانِبِهَا؟', 'push.end.after': 'تَدَحْرَجَتْ عَلَى سَطْحِهَا المُنْحَنِي. الأُسْطُوَانَةُ تَقِفُ، وَتَتَدَحْرَجُ.',
-  'cone.01': 'وَقُبَّعَةُ الحَفْلَةِ مَخْرُوطٌ: قَاعِدَتُهُ دَائِرِيَّةٌ مُسَطَّحَةٌ، وَرَأْسُهُ مُدَبَّبٌ. وَلِسَطْحِهِ المُنْحَنِي يَتَدَحْرَجُ حَوْلَ رَأْسِهِ.',
+  'cone.01': 'وَقُبَّعَةُ الحَفْلَةِ شَكْلُهَا مَخْرُوطٌ: رَأْسُهَا مُدَبَّبٌ، وَأَسْفَلُهَا فَتْحَةٌ دَائِرِيَّةٌ. وَالمَخْرُوطُ يَتَدَحْرَجُ عَلَى سَطْحِهِ المُنْحَنِي، فَيَدُورُ حَوْلَ رَأْسِهِ.',   # القبعة مفتوحة من أسفل: لا وجه مسطّح لها (D253 (6))
   'face.cube': 'السَّطْحُ المُسَطَّحُ مِنَ المُجَسَّمِ اسْمُهُ: وَجْهٌ، نَلْمَسُهُ بِكَفِّنَا. ' + TOUCH_ + ' وُجُوهَ المُكَعَّبِ.', 'face.cube.after': 'كُلُّ وُجُوهِ المُكَعَّبِ مُسَطَّحَةٌ.',
   'face.cyl': TOUCH_ + ' وَجْهَ الأُسْطُوَانَةِ المُسَطَّحَ.', 'face.cyl.flip': 'نَقْلِبُهَا… وَهُنَاكَ وَجْهٌ آخَرُ. ' + G('اِلْمَسْهُ', 'اِلْمَسِيهِ') + '.',
   'face.cyl.after': 'لِلْأُسْطُوَانَةِ وَجْهَانِ دَائِرِيَّانِ مُسَطَّحَانِ، وَبَيْنَهُمَا سَطْحٌ مُنْحَنٍ.',
@@ -111,9 +119,9 @@ d2 = {
   'face.sphere': 'وَالكُرَةُ؟ ' + G('اِلْمَسْهَا', 'اِلْمَسِيهَا') + '.', 'face.sphere.after': 'سَطْحُ الكُرَةِ مُنْحَنٍ كُلُّهُ: لَيْسَ لَهَا وَجْهٌ مُسَطَّحٌ.',
   'wk.01': 'هَذِهِ طَبْلَةٌ: وَجْهَانِ دَائِرِيَّانِ مُسَطَّحَانِ، وَسَطْحٌ مُنْحَنٍ. إِنَّهَا أُسْطُوَانَةٌ.', 'wk.02': 'هَلْ مَا زَالَتْ أُسْطُوَانَةً؟',
   'wk.03': 'مَا زَالَ لَهَا الوَجْهَانِ الدَّائِرِيَّانِ: أُسْطُوَانَةٌ نَائِمَةٌ.',
-  'wk.04': 'قُبَّعَةُ الحَفْلَةِ وَقِمْعُ البُوظَةِ مَخْرُوطَانِ: رَأْسٌ مُدَبَّبٌ وَقَاعِدَةٌ دَائِرِيَّةٌ، حَتَّى لَوْ كَانَ الرَّأْسُ إِلَى الأَسْفَلِ.',
+  'wk.04': 'قُبَّعَةُ الحَفْلَةِ مَخْرُوطٌ: رَأْسٌ مُدَبَّبٌ، وَحَافَّةٌ دَائِرِيَّةٌ. وَإِذَا قَلَبْنَاهَا فَصَارَ رَأْسُهَا إِلَى الأَسْفَلِ، بَقِيَتْ مَخْرُوطًا.',
   'pr.intro': 'سِلَالُنَا: لِلْأُسْطُوَانَاتِ، وَلِلْمَخَارِيطِ، وَ«غَيْرُ ذَلِكَ». هَيَّا نَتَمَرَّنُ.',
-  'pr.who': 'مَنْ أَنَا؟ أَقِفُ وَأَتَدَحْرَجُ، وَلِي وَجْهَانِ دَائِرِيَّانِ.', 'pr.coneRoll': 'هَلْ يَتَدَحْرَجُ المَخْرُوطُ فِي خَطٍّ مُسْتَقِيمٍ؟',
+  'pr.coneRoll': 'هَلْ يَتَدَحْرَجُ المَخْرُوطُ فِي خَطٍّ مُسْتَقِيمٍ؟',
   'pr.coneWhy': 'يَدُورُ حَوْلَ رَأْسِهِ، لِأَنَّ رَأْسَهُ يَبْقَى فِي مَكَانِهِ.',
   'game.01': 'مَتْجَرُ المُجَسَّمَاتِ: ' + G('اِسْمَعْ', 'اِسْمَعِي') + ' طَلَبَ كُلِّ زَبُونٍ، وَ' + G('أَعْطِهِ', 'أَعْطِيهِ') + ' مَا يَطْلُبُ.',
   'shop.r1': 'زَبُونٌ يَطْلُبُ شَيْئًا يَقِفُ، وَيَتَدَحْرَجُ فِي خَطٍّ مُسْتَقِيمٍ.', 'shop.r2': 'زَبُونَةٌ تَطْلُبُ شَيْئًا رَأْسُهُ مُدَبَّبٌ، وَقَاعِدَتُهُ دَائِرِيَّةٌ.',
@@ -125,7 +133,9 @@ d2 = {
   'ch.after': 'لَهَا وَجْهَانِ دَائِرِيَّانِ: إِنَّهَا أُسْطُوَانَةٌ نَائِمَةٌ. مَكَانُهَا سَلَّةُ الأُسْطُوَانَاتِ.',
   'ch.right': 'الأُسْطُوَانَةُ النَّائِمَةُ مَا زَالَتْ أُسْطُوَانَةً: لَهَا وَجْهَانِ دَائِرِيَّانِ.', 'ch.wrong': C('النَّائِمَةُ لَيْسَتْ أُسْطُوَانَةً.'),
   'ms.cylCone': 'لِلْأُسْطُوَانَةِ وَجْهَانِ دَائِرِيَّانِ، وَاقِفَةً أَوْ نَائِمَةً. وَلِلْمَخْرُوطِ رَأْسٌ مُدَبَّبٌ وَقَاعِدَةٌ دَائِرِيَّةٌ.', 'ms.faces': 'الوَجْهُ سَطْحٌ مُسَطَّحٌ نَلْمَسُهُ بِكَفِّنَا، وَالكُرَةُ لَيْسَ لَهَا وَجْهٌ مُسَطَّحٌ.',
-  'ms.sphereFace': 'هَلْ لِلْكُرَةِ وَجْهٌ مُسَطَّحٌ؟', 'ms.cylFace': TOUCH_ + ' أَحَدَ وَجْهَيِ الأُسْطُوَانَةِ.',
+  'ms.sphereFace': 'هَلْ لِلْكُرَةِ وَجْهٌ مُسَطَّحٌ؟', 'ms.logFace': 'جِذْعُ الشَّجَرَةِ أُسْطُوَانَةٌ. ' + TOUCH_ + ' وَجْهًا مُسَطَّحًا لَهُ.', 'ms.cheeseFace': TOUCH_ + ' وَجْهًا مُسَطَّحًا لِقُرْصِ الجُبْنِ.', 'ms.cakeFace': TOUCH_ + ' وَجْهًا مُسَطَّحًا لِلْكَعْكَةِ.',
+  'ms.whyK': 'كَيْفَ عَرَفْنَا أَنَّ هَذَا مَخْرُوطٌ؟ ' + G('اِسْمَعِ', 'اِسْمَعِي') + ' الأَسْبَابَ الثَّلَاثَةَ، ثُمَّ ' + G('اِخْتَرْ', 'اِخْتَارِي') + '.',
+  'ms.whyK1': 'لِأَنَّ لَهُ رَأْسًا مُدَبَّبًا، وَقَاعِدَةً دَائِرِيَّةً.', 'ms.whyK2': 'لِأَنَّ لَوْنَهُ أَزْرَقُ مِثْلُ البَحْرِ.', 'ms.whyK3': 'لِأَنَّهُ طَوِيلٌ، وَيَقِفُ عَلَى الأَرْضِ وَحْدَهُ.',
   'ms.ok': 'رَائِعٌ! ' + G('أَتْقَنْتَ', 'أَتْقَنْتِ') + ' الأُسْطُوَانَةَ وَالمَخْرُوطَ وَالوُجُوهَ. ' + G('هَذِهِ نَجْمَتُكَ', 'هَذِهِ نَجْمَتُكِ') + '.',
   'wrap.01': 'فِي الوَاحَةِ الآنَ بُرْجُ مَاءٍ: أُسْطُوَانَةٌ فَوْقَهَا مَخْرُوطٌ!',
   'wrap.home': C('مُهِمَّةُ البَيْتِ: ' + G('اِبْحَثْ', 'اِبْحَثِي') + ' فِي البَيْتِ عَنْ أُسْطُوَانَةٍ وَمَخْرُوطٍ، وَ' + G('دَحْرِجْهُمَا', 'دَحْرِجِيهِمَا') + ': أَيُّهُمَا يَسِيرُ فِي خَطٍّ مُسْتَقِيمٍ؟'),
@@ -144,7 +154,7 @@ d2 = {
   {'s': 'worked', 'scene': 'steps', 'steps': [
     [{'show': 'drum', 'at': [180, 140], 'id': 'a', 'label': 'drumName', 'ly': 96}, {'say': 'wk.01'}],
     [{'chaosIn': [320, 60]}, {'swap': 'a', 'to': {'solid': 'cylinder', 'kind': 'cylinder', 'object': 'drum', 'pose': 'lying', 'size': 118, 'color': '#3f7fbf'}, 'from': -90}, {'chaosOut': True}, {'say': 'wk.02'}, {'say': 'wk.03'}],
-    [{'clear': True}, {'show': 'hat', 'at': [262, 140], 'id': 'h', 'label': 'hatName'}, {'show': 'waffle', 'at': [100, 130], 'id': 'w', 'label': 'waffleName'}, {'say': 'wk.04'}]]},
+    [{'clear': True}, {'show': 'hat', 'at': [262, 140], 'id': 'h', 'label': 'hatName'}, {'show': {'solid': 'cone', 'kind': 'cone', 'object': 'hat', 'pose': 'tipdown', 'size': 118, 'color': '#6c7fa8'}, 'at': [100, 140], 'id': 'w', 'label': 'hatDownName'}, {'say': 'wk.04'}]]},
   {'s': 'practice'},
   {'s': 'game', 'scene': 'items', 'mode': 'practice', 'intro': 'game.01', 'items': [sort('u2r1'), sort('u2r2'), sort('u2r3'), sort('u2r4'), sort('u2r5')]},
   {'s': 'chaos'}, {'s': 'mastery'}, {'s': 'wrap'}],
@@ -154,24 +164,24 @@ d2 = {
   'reasons': [{'when': {'tag': 'riddle'}, 'id': None}, {'when': {'tag': 'cylLying'}, 'id': 'why.cylLying'}, {'when': {'kind': 'cylinder'}, 'id': 'why.cyl'}, {'when': {'kind': 'cone'}, 'id': 'why.cone'}, {'id': 'why.other'}],
   'twins': {'cylinder': sort('cyl'), 'cylLying': sort('tube'), 'cone': sort('coneLying'), 'coneTurned': sort('cone'), 'riddle': sort('u2r4'), '*': sort('cyl')}},
  'practice': {'intro': 'pr.intro',
-  'normal': [sort('cyl'), sort('cone'), sort('tube'), sort('coneLying'), sort('u2r4', bins=None), {'t': 'faceTap', 'mk': HATDOWN}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy'}],
-  'challenge': [sort('tube'), sort('coneLying'), sort('cube'), sort('u2r5', bins=None), {'t': 'faceTap', 'mk': HATDOWN}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy'}]},
+  'normal': [sort('cyl'), sort('cone'), sort('tube'), sort('coneLying'), sort('u2r4', bins=None), {'t': 'faceTap', 'mk': CONEDOWN}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy'}],
+  'challenge': [sort('tube'), sort('coneLying'), sort('cube'), sort('u2r5', bins=None), {'t': 'faceTap', 'mk': {**CONEDOWN, 'color': '$neutral.5', 'size': 128}}, {'t': 'yesno', 'show': SOL('cone', pose='lying'), 'q': 'pr.coneRoll', 'ans': False, 'vis': 'coneRoll', 'err': 'coneTurned', 'why': 'pr.coneWhy'}]},
  'chaos': {'kind': 'bins', 'bins': ['cylinder', 'cone', 'other'], 'check': 'faces', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong',
-  'placed': [{'mk': SOL('cylinder', size=64), 'bin': 'cylinder'}, {'mk': SOL('cone', size=64), 'bin': 'cone'}, {'mk': SOL('cone', size=58, pose='tipdown'), 'bin': 'cone'},
-             {'mk': {**SOL('cylinder', size=130, pose='lying'), 'tag': 'cylLying'}, 'bin': 'other', 'wrong': True}, {'mk': SOL('cube', size=56), 'bin': 'other'}]},
+  'placed': [{'mk': SN('cylinder', 0, size=64), 'bin': 'cylinder'}, {'mk': SN('cone', 2, size=64), 'bin': 'cone'}, {'mk': SN('cone', 4, size=58, pose='tipdown'), 'bin': 'cone'},
+             {'mk': {**SN('cylinder', 3, size=130, pose='lying'), 'tag': 'cylLying'}, 'bin': 'other', 'wrong': True}, {'mk': SN('cube', 5, size=56), 'bin': 'other'}]},
  'mastery': {'concepts': {
-   'C007': [sort('cylLying'), sort('waffle'), sort('cubeTilt'), sort('u2r6', bins=None)],
-   'C009': [{'t': 'faceTap', 'mk': SOL('cone', pose='lying', size=124)}, {'t': 'faceTap', 'mk': SOL('cylinder', size=120), 'prompt': 'ms.cylFace'}, {'t': 'yesno', 'show': 'marble', 'q': 'ms.sphereFace', 'ans': False, 'vis': 'faces', 'err': 'sphereNoFace'}]},
+   'C007': [sort('logLying'), sort('waffle'), sort('cubeTilt'), why3('ms.whyK', 'ms.whyK1', 'ms.whyK2', 'ms.whyK3', show=SN('cone', 4, size=124))],
+   'C009': [{'t': 'faceTap', 'mk': SOL('cone', pose='lying', size=124)}, {'t': 'faceTap', 'mk': 'log', 'prompt': 'ms.logFace'}, {'t': 'yesno', 'show': 'marble', 'q': 'ms.sphereFace', 'ans': False, 'vis': 'faces', 'err': 'sphereNoFace'}]},
   'recall': {'C007': {'auto': True, 'h': 280, 'steps': [[{'show': SOL('cylinder', pose='lying', size=120), 'at': [100, 150], 'id': 'a'}, {'show': SOL('cone', size=120), 'at': [262, 140], 'id': 'b'}, {'say': 'ms.cylCone'}]]},
              'C009': {'auto': True, 'h': 280, 'steps': [[{'show': SOL('cylinder', size=110), 'at': [262, 140], 'id': 'a'}, {'show': SOL('sphere', size=110), 'at': [100, 140], 'id': 'b'}, {'say': 'ms.faces'}]]}},
-  'remedial': {'C007': [sort('tube'), sort('cone')], 'C009': [{'t': 'faceTap', 'mk': HATDOWN}]},
-  'mixed': {'lesson': 'm1.u2.d1', 'item': sort('dieTilt', bins=['cylinder', 'cone', 'other'])}, 'ok': 'ms.ok'},
- 'review': [sort('candle'), sort('hatTilt'), {'t': 'faceTap', 'mk': 'drum'}],
+  'remedial': {'C007': [sort('tube'), sort('cone')], 'C009': [{'t': 'faceTap', 'mk': CONEDOWN}]},
+  'mixed': {'lesson': 'm1.u2.d1', 'item': sort('ice', bins=['cylinder', 'cone', 'other'])}, 'ok': 'ms.ok'},
+ 'review': [sort('u2r6', bins=None, c='C007'), sort('funnel', c='C007'), {'t': 'faceTap', 'mk': 'cheeseWheel', 'prompt': 'ms.cheeseFace', 'c': 'C009'}, {'t': 'faceTap', 'mk': 'cake', 'prompt': 'ms.cakeFace', 'c': 'C009'}],
  'wrap': {'art': 'tower', 'lines': ['wrap.01'], 'home': 'wrap.home'},
  'talk': 'اسألوا: «أين {ترى|ترين} أسطوانة في البيت؟ وأين {ترى|ترين} مخروطاً؟» وجرّبوا دحرجة كوب ورقي: هل يسير مستقيماً أم يدور؟',
 }
 # sort with bins=None → يُحذف المفتاح (الطلب يحدّد رفّه)
-for lst in [d2['practice']['normal'], d2['practice']['challenge'], d2['mastery']['concepts']['C007']]:
+for lst in [d2['practice']['normal'], d2['practice']['challenge'], d2['mastery']['concepts']['C007'], d2['review']]:
     for it in lst:
         if it.get('bins', 1) is None: del it['bins']
 d2['sort']['reasons'] = [r for r in d2['sort']['reasons'] if r.get('id')]
@@ -219,11 +229,11 @@ d3 = {
   'normal': [cmp(6, 4), cmp(3, 5, ask='less'), {'t': 'cmpDigits', 'a': 6, 'b': 9}, {'t': 'cmpDigits', 'a': 3, 'b': 8}, cmp(4, 6, sa=40, sb=24), {'t': 'buildTower', 'ref': 5}],
   'challenge': [cmp(8, 7), cmp(9, 6, ask='less'), {'t': 'cmpDigits', 'a': 10, 'b': 7}, cmp(3, 5, sa=46, sb=24), cmp(7, 7), {'t': 'buildTower', 'ref': 6}]},
  'chaos': {'kind': 'flag', 'a': 4, 'sa': 44, 'b': 6, 'sb': 22, 'find': 'ch.find', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong'},
- 'mastery': {'concepts': {'N004': [cmp(5, 7, sa=40, sb=20), cmp(6, 6, sa=26, sb=26, tag='equal'), {'t': 'cmpDigits', 'a': 4, 'b': 7}, {'t': 'buildTower', 'ref': 5, 'want': 'more'}]},
+ 'mastery': {'concepts': {'N004': [cmp(4, 5, sa=40, sb=20), cmp(8, 8, sa=24, sb=24, tag='equal'), {'t': 'cmpDigits', 'a': 4, 'b': 7}, {'t': 'buildTower', 'ref': 5, 'want': 'more'}]},
   'recall': {'N004': {'auto': True, 'h': 270, 'steps': [[{'towers': [[6, 250, 'plain'], [4, 110, 'plain']], 'base': 250}, {'pair': True}, {'say': 'ms.recall'}]]}},
   'remedial': {'N004': [cmp(7, 4), {'t': 'cmpDigits', 'a': 2, 'b': 6}]},
   'mixed': {'lesson': 'm1.u2.d2', 'item': sort('candle', bins=['cylinder', 'cone', 'other'])}, 'ok': 'ms.ok'},
- 'review': [{'t': 'cmpDigits', 'a': 5, 'b': 2}, cmp(8, 6)],
+ 'review': [{'t': 'cmpDigits', 'a': 5, 'b': 2, 'c': 'N004'}, cmp(8, 6, c='N004')],
  'wrap': {'art': 'towers', 'lines': ['wrap.01'], 'home': 'wrap.home'},
  'talk': 'ضعوا صفّين من الملاعق، أحدهما متباعد، واسألوا: «أيّهما أكثر؟ كيف {عرفتَ|عرفتِ}؟» الجواب المنتظر: نقابل ملعقة بملعقة، أو نعدّ.',
 }
@@ -251,6 +261,7 @@ d4 = {
   'stamp.rule': 'المُسَطَّحُ نَرْسُمُهُ وَنَقُصُّهُ، وَالمُجَسَّمُ يَمْلَأُ الكَفَّ. وَوُجُوهُ المُجَسَّمِ المُسَطَّحَةُ تَتْرُكُ بَصْمَةً مُسَطَّحَةً.',
   'wk.01': G('شَاهِدْ', 'شَاهِدِي') + ': نُدِيرُ المُرَبَّعَ الوَرَقِيَّ وَالمُكَعَّبَ مَعًا.', 'wk.02': 'المُرَبَّعُ الوَرَقِيُّ صَارَ خَطًّا رَقِيقًا: لَيْسَ لَهُ سُمْكٌ. وَالمُكَعَّبُ بَقِيَ كُتْلَةً تَمْلَأُ الكَفَّ.',
   'wk.03': 'دَائِرَةٌ مِنْ وَرَقٍ، وَمُرَبَّعٌ مَرْسُومٌ، وَأُسْطُوَانَةٌ: مُسَطَّحٌ، وَمُسَطَّحٌ، وَمُجَسَّمٌ.',
+  'wk.pic': 'وَكُلُّ مَا عَلَى الشَّاشَةِ صُوَرٌ: هَذِهِ صُورَةُ مُجَسَّمٍ، وَالمُجَسَّمُ الحَقِيقِيُّ نُمْسِكُهُ بِأَيْدِينَا فَيَمْلَأُ الكَفَّ.',
   'pr.intro': 'سَلَّتَانِ: لِلْمُسَطَّحِ، وَلِلْمُجَسَّمِ. وَبَعْدَهَا البُرْجُ بِلَوْنَيْنِ.',
   'tb.01': 'هَيَّا نَبْنِي بُرْجًا مِنَ المُجَسَّمَاتِ! ' + TOUCH + ' مُجَسَّمًا فَيَنْزِلُ فَوْقَ البُرْجِ. نُرِيدُ خَمْسَةَ طَوَابِقَ.', 'tb.02': 'بُرْجٌ ثَابِتٌ!',
   'tb.03': COUNT + ': كَمْ مُجَسَّمًا فِي ' + G('بُرْجِكَ', 'بُرْجِكِ') + '؟ ' + TOUCH + ' كُلَّ طَابِقٍ.', 'tb.04': 'وَفِي القَاعِدَةِ مُجَسَّمٌ يَقِفُ ثَابِتًا، وَالكُرَاتُ لَا نُكَدِّسُهَا.',
@@ -280,7 +291,7 @@ d4 = {
     {'mk': SOL('cone'), 'print': 'circle', 'ask': 'stamp.cone', 'after': 'stamp.cone.after'}, {'mk': SOL('sphere'), 'print': 'dot', 'ask': 'stamp.sphere', 'after': 'stamp.sphere.after'}]},
   {'s': 'worked', 'scene': 'steps', 'steps': [
     [{'say': 'wk.01'}, {'edgeTurn': True}, {'say': 'wk.02'}],
-    [{'clear': True}, {'show': {'type': 'circle', 'kind': 'flat', 'size': 92, 'color': '$id.circle'}, 'at': [292, 120], 'id': 'a', 'label': 'flatName'}, {'show': 'sheetSquare', 'at': [180, 120], 'id': 'b', 'label': 'flatName'}, {'show': SOL('cylinder', size=110), 'at': [68, 120], 'id': 'c', 'label': 'solidName'}, {'say': 'wk.03'}]]},
+    [{'clear': True}, {'show': {'type': 'circle', 'kind': 'flat', 'size': 92, 'color': '$id.circle'}, 'at': [292, 120], 'id': 'a', 'label': 'flatName'}, {'show': 'sheetSquare', 'at': [180, 120], 'id': 'b', 'label': 'flatName'}, {'show': SOL('cylinder', size=110, noShadow=True), 'at': [68, 120], 'id': 'c', 'label': 'solidName'}, {'say': 'wk.03'}, {'say': 'wk.pic'}]]},
   {'s': 'practice'},
   {'s': 'explore', 'scene': 'towerBuild', 'goal': 5, 'lines': ['tb.01', 'tb.02', 'tb.03', 'tb.04'], 'sphereLine': 'tb.sphere', 'coneLine': 'tb.cone'},
   {'s': 'explore', 'scene': 'items', 'mode': 'explore', 'intro': 'sp.01', 'items': [split(5, 2), {'t': 'splitMake', 'n': 5, 'avoid': [[2, 3]]}], 'after': 'sp.02'},
@@ -295,16 +306,17 @@ d4 = {
   'normal': [sort('flatSquare'), sort('sphere'), sort('sheetSquare'), sort('cube'), sort('flatTri'), sort('cyl'), split(5, 3), split(6, 4, shelves=True), split(5, 1, cover=True)],
   'challenge': [sort('flatTri'), sort('cone'), sort('sheetSquare'), sort('cubeTurned'), sort('flatSquare'), split(7, 3), split(8, 5, shelves=True), split(6, 2, cover=True), {'t': 'splitMake', 'n': 6, 'avoid': [[0, 6], [1, 5], [3, 3]]}]},
  'chaos': {'kind': 'bins', 'bins': ['flat', 'solid'], 'check': 'thin', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong',
-  'placed': [{'mk': SOL('cube', size=60), 'bin': 'solid'}, {'mk': {'sheet': True, 'draw': 'circle', 'kind': 'flat', 'tag': 'sheet'}, 'bin': 'solid', 'wrong': True}, {'mk': SOL('cylinder', size=56), 'bin': 'solid'},
+  'placed': [{'mk': SN('cube', 0, size=60), 'bin': 'solid'}, {'mk': {'sheet': True, 'draw': 'circle', 'kind': 'flat', 'tag': 'sheet'}, 'bin': 'solid', 'wrong': True}, {'mk': SN('cylinder', 4, size=56), 'bin': 'solid'},
              {'mk': {'type': 'square', 'kind': 'flat', 'size': 60, 'color': '$neutral.1'}, 'bin': 'flat'}, {'mk': {'type': 'triangle', 'kind': 'flat', 'size': 60, 'color': '$neutral.2'}, 'bin': 'flat'}]},
  'mastery': {'entryOnly': ['C008'], 'concepts': {
-   'C008': [sort('sheetCircle'), sort('teaBox'), sort('ball')],
-   'N005': [split(5, 2, cover=True), split(6, 4, shelves=True, tag='m'), {'t': 'splitMake', 'n': 5, 'avoid': [[2, 3], [1, 4]]}]},
+   'C008': [sort('sheetBall'), sort('teaBox'), sort('ball')],
+   'N005': [split(8, 1, cover=True), split(9, 4, shelves=True, tag='m'),   # تفكيكات 6 كلها في مشهد الرفّين
+            {'t': 'splitMake', 'n': 5, 'avoid': [[2, 3], [1, 4]]}]},
   'recall': {'C008': {'auto': True, 'h': 280, 'steps': [[{'edgeTurn': True}, {'say': 'ms.recall8'}]]},
              'N005': {'auto': True, 'h': 270, 'steps': [[{'towers': [[5, 180, 'lemon']], 'base': 250}, {'say': 'ms.recall5'}]]}},
   'remedial': {'C008': [sort('flatSquare')], 'N005': [split(4, 1), split(5, 3)]},
-  'mixed': {'lesson': 'm1.u2.d3', 'item': {'t': 'cmpDigits', 'a': 9, 'b': 6}}, 'ok': 'ms.ok'},
- 'review': [split(7, 5, shelves=True), sort('flatSquareTilt')],
+  'mixed': {'lesson': 'm1.u2.d3', 'item': {'t': 'cmpDigits', 'a': 8, 'b': 5}}, 'ok': 'ms.ok'},
+ 'review': [split(7, 5, shelves=True, c='N005'), split(9, 6, c='N005'), sort('flatSquareTilt', c='C008'), sort('cup', c='C008')],
  'wrap': {'art': 'mosque', 'lines': ['wrap.01'], 'home': 'wrap.home'},
  'talk': 'ابنوا برجاً من أشياء البيت، واسألوا: «ماذا {وضعتَ|وضعتِ} في الأسفل؟ ولماذا لا نضع الكرة هناك؟» ثم ضعوا خمس ملاعق في يدين: «كم في هذه؟ وكم في تلك؟»',
 }
@@ -340,7 +352,8 @@ d5 = {
   'ch.after': 'عَلَّقْنَا البِطَاقَةَ الصَّحِيحَةَ: هَذَا مَا بَقِيَ مَعَنَا.',
   'ch.right': 'نَعُدُّ مَا بَقِيَ مَعَنَا: أَرْبَعَة.', 'ch.wrong': C('البَاقِي هُوَ مَا أَخَذْتُهُ.'),
   'ms.recall': 'الجَمْعُ ضَمٌّ نَعُدُّ فِيهِ الكُلَّ، وَالطَّرْحُ إِبْعَادٌ نَعُدُّ فِيهِ مَا بَقِيَ، وَ«يُسَاوِي» تَعْنِي أَنَّ الجَانِبَيْنِ مُتَسَاوِيَانِ.',
-  'ms.ok': 'رَائِعٌ! ' + G('صِرْتَ تَجْمَعُ وَتَطْرَحُ', 'صِرْتِ تَجْمَعِينَ وَتَطْرَحِينَ') + ' بِالمُكَعَّبَاتِ. ' + G('هَذِهِ نَجْمَتُكَ', 'هَذِهِ نَجْمَتُكِ') + '.',
+  'ms.recall7': 'نَعُدُّ عَلَى أَصَابِعِنَا: نَضُمُّ الأَصَابِعَ أَوْ نُبْعِدُهَا، ثُمَّ نَعُدُّ مَا مَعَنَا.',
+  'ms.ok': 'رَائِعٌ! ' + G('صِرْتَ تَجْمَعُ وَتَطْرَحُ', 'صِرْتِ تَجْمَعِينَ وَتَطْرَحِينَ') + ' بِالمُكَعَّبَاتِ وَبِالأَصَابِعِ. ' + G('هَذِهِ نَجْمَتُكَ', 'هَذِهِ نَجْمَتُكِ') + '.',
   'wrap.01': 'فِي الوَاحَةِ الآنَ جِسْرٌ مِنَ الأَبْرَاجِ، وَعَلَيْهِ جُمْلَةٌ عَدَدِيَّةٌ!',
   'wrap.02': 'وَمِنَ الغَدِ، فِي مُرَاجَعَةِ اليَوْمِ: قِصَصُ الوَاحَةِ، وَلُعْبَةُ أَصَابِعِي الخَمْسِ.',
   'wrap.home': C('مُهِمَّةُ البَيْتِ: عَلَى المَائِدَةِ ' + G('عُدَّ', 'عُدِّي') + ' الأَطْبَاقَ، ثُمَّ ' + G('أَضِفْ', 'أَضِيفِي') + ' طَبَقَيْنِ لِلضُّيُوفِ: كَمْ صَارَتْ؟'),
@@ -356,18 +369,21 @@ d5 = {
     [{'towers': [[5, 220, 'lemon']], 'base': 250}, {'say': 'wk.01'}, {'towers2': [[2, 220, 'white', 5]]}, {'say': 'wk.02'}, {'sentence': [5, '+', 2, 7], 'at': [180, 40]}],
     [{'clear': True}, {'towers': [[6, 180, 'lemon']], 'base': 250}, {'coverTop': [0, 3]}, {'say': 'wk.03'}, {'sentence': [6, '-', 3, 3], 'at': [180, 40]}]]},
   {'s': 'practice'},
-  {'s': 'game', 'scene': 'items', 'mode': 'practice', 'intro': 'game.01', 'items': [{'t': 'buildTo', 'target': 9, 'start': 6}, {'t': 'buildTo', 'target': 4, 'start': 7}, {'t': 'buildTo', 'target': 8, 'start': 5}]},
+  {'s': 'game', 'scene': 'items', 'mode': 'practice', 'intro': 'game.01', 'items': [{'t': 'buildTo', 'target': 9, 'start': 6}, {'t': 'buildTo', 'target': 4, 'start': 7}, {'t': 'buildTo', 'target': 7, 'start': 3}]},
   {'s': 'explore', 'scene': 'items', 'mode': 'explore', 'intro': 'fl.01', 'items': [{'t': 'fact', 'op': '+', 'a': 2, 'b': 3}, {'t': 'fact', 'op': '-', 'a': 5, 'b': 1}]},
   {'s': 'chaos'}, {'s': 'mastery'}, {'s': 'wrap'}],
  'practice': {'intro': 'pr.intro',
   'normal': [join(3, 2), rem(5, 1), sent('+', 6, 2), {'t': 'eqPair', 'n': 7, 'parts': [4, 3]}],
   'challenge': [join(6, 3), rem(9, 4), sent('-', 6, 2), {'t': 'eqPair', 'n': 8, 'parts': [5, 2]}, {'t': 'unknownStart', 'took': 3, 'left': 4, 'line': 'un.1'}]},
  'chaos': {'kind': 'card', 'tower': True, 'n': 4, 'shown': 2, 'extra': 6, 'find': 'ch.find', 'after': 'ch.after', 'right': 'ch.right', 'wrong': 'ch.wrong'},
- 'mastery': {'concepts': {'N006': [join(5, 3), rem(8, 3), sent('-', 7, 2), {'t': 'buildTo', 'target': 8, 'start': 5}]},
-  'recall': {'N006': {'auto': True, 'h': 250, 'steps': [[{'towers': [[4, 220, 'lemon']], 'base': 240}, {'towers2': [[3, 220, 'white', 4]]}, {'sentence': [4, '+', 3, 7], 'at': [180, 40], 'quiet': True}, {'say': 'ms.recall'}]]}},
-  'remedial': {'N006': [join(2, 3), rem(6, 2)]},
-  'mixed': {'lesson': 'm1.u2.d4', 'item': split(6, 2)}, 'ok': 'ms.ok'},
- 'review': [join(4, 2), rem(6, 4), sent('+', 5, 3)],
+ 'mastery': {'concepts': {'N006': [join(5, 3), rem(8, 3), sent('-', 7, 3), {'t': 'buildTo', 'target': 8, 'start': 5}],   # 7 − 2 في الإشعال والاكتشاف والمثال؛ وجملة الطرح بديلها جمعٌ يُقرأ، فمجموع عدديها ≤ 10
+   'N007': [{'t': 'fact', 'op': '+', 'a': 1, 'b': 3}, {'t': 'fact', 'op': '-', 'a': 4, 'b': 2}, {'t': 'fact', 'op': '+', 'a': 2, 'b': 2}]},
+  'recall': {'N006': {'auto': True, 'h': 250, 'steps': [[{'towers': [[4, 220, 'lemon']], 'base': 240}, {'towers2': [[3, 220, 'white', 4]]}, {'sentence': [4, '+', 3, 7], 'at': [180, 40], 'quiet': True}, {'say': 'ms.recall'}]]},
+             'N007': {'auto': True, 'h': 240, 'steps': [[{'say': 'ms.recall7'}]]}},
+  'remedial': {'N006': [join(2, 3), rem(6, 2)], 'N007': [{'t': 'fact', 'op': '+', 'a': 2, 'b': 1}]},
+  'mixed': {'lesson': 'm1.u2.d4', 'item': split(9, 2)}, 'ok': 'ms.ok'},   # 7 = 2 + 5 في مراجعة d4
+ 'review': [{**join(4, 2), 'c': 'N006'}, {**rem(6, 4), 'c': 'N006'}, {**sent('+', 5, 4), 'c': 'N006'},   # 5 + 3 ضمٌّ في الإتقان
+            {'t': 'fact', 'op': '-', 'a': 5, 'b': 3, 'c': 'N007'}, {'t': 'fact', 'op': '-', 'a': 4, 'b': 1, 'c': 'N007'}],   # N007 تأسيس هنا، فله بندا مراجعة (المبدأ 14)
  'wrap': {'art': 'bridge', 'lines': ['wrap.01', 'wrap.02'], 'home': 'wrap.home'},
  'talk': 'اسألوا على المائدة: «معنا خمسة أطباق، وجاء ضيفان. كم طبقاً نحتاج؟» واتركوه يعدّ بأصابعه؛ فالأصابع أداة لا غشّ.',
 }
@@ -390,15 +406,16 @@ d6 = {
   'fc.cube': TOUCH + ' كُلَّ وَجْهٍ مِنْ وُجُوهِ المُكَعَّبِ، فَتُلْصَقُ عَلَيْهِ قُصَاصَةٌ. وَ' + G('أَدِرْهُ', 'أَدِيرِيهِ') + ' لِتَرَى الوُجُوهَ الأُخْرَى.'.replace('لِتَرَى', G('لِتَرَى', 'لِتَرَيْ')),
   'fc.count': 'نَعُدُّ القُصَاصَاتِ:', 'fc.cube.after': 'سِتَّةُ وُجُوهٍ لِلْمُكَعَّبِ، وَكُلُّهَا مُرَبَّعَاتٌ.',
   'fc.box': 'وَعُلْبَةُ الشَّايِ؟ ' + TOUCH + ' كُلَّ وَجْهٍ مِنْ وُجُوهِهَا.', 'fc.box.after': 'لِلْعُلْبَةِ سِتَّةُ وُجُوهٍ أَيْضًا، لَكِنَّ وُجُوهَهَا لَيْسَتْ كُلُّهَا مُرَبَّعَاتٍ.',
-  'rh.intro': 'صَائِدُ المُجَسَّمَاتِ: ' + G('جِدْ', 'جِدِي') + ' مَا أَطْلُبُهُ فِي الغُرْفَةِ. ' + G('خُذْ وَقْتَكَ', 'خُذِي وَقْتَكِ') + '، فَالنَّجْمَةُ لِلْجَوَابِ الصَّحِيحِ.',
+  'rh.intro': 'صَائِدُ المُجَسَّمَاتِ: ' + G('جِدْ', 'جِدِي') + ' مَا أَطْلُبُهُ فِي الغُرْفَةِ. ' + G('خُذْ وَقْتَكَ', 'خُذِي وَقْتَكِ') + '، فَنَحْنُ نَفُوزُ بِالجَوَابِ الصَّحِيحِ.',
+  'pr.intro': 'أَرْبَعُ سِلَالٍ: لِلْمُكَعَّبَاتِ، وَلِلْكُرَاتِ، وَلِلْأُسْطُوَانَاتِ، وَلِلْمَخَارِيطِ. هَيَّا نَتَمَرَّنُ.',
   'rh.cyl': 'أَيْنَ الأُسْطُوَانَةُ؟ ' + G('اِلْمَسْهَا', 'اِلْمَسِيهَا') + '.', 'rh.cone': 'أَيْنَ المَخْرُوطُ؟ ' + G('اِلْمَسْهُ', 'اِلْمَسِيهِ') + '.',
   'rh.cube': 'أَيْنَ المُكَعَّبُ؟ ' + G('اِلْمَسْهُ', 'اِلْمَسِيهِ') + '.', 'rh.sphere': 'أَيْنَ الكُرَةُ؟ ' + G('اِلْمَسْهَا', 'اِلْمَسِيهَا') + '.',
   'rh.after': 'صَيْدٌ رَائِعٌ!',
   'ts.cube': 'أَيْنَ المُكَعَّبُ؟ ' + G('اِلْمَسْهُ', 'اِلْمَسِيهِ') + '.', 'ts.cyl': 'أَيْنَ الأُسْطُوَانَةُ؟ ' + G('اِلْمَسْهَا', 'اِلْمَسِيهَا') + '.', 'ts.cone': 'أَيْنَ المَخْرُوطُ؟ ' + G('اِلْمَسْهُ', 'اِلْمَسِيهِ') + '.',
-  'ts.flatQ': 'مُسَطَّحٌ أَمْ مُجَسَّمٌ؟', 'ts.rolls': 'هَلْ تَتَدَحْرَجُ الكُرَةُ إِذَا دَفَعْنَاهَا؟', 'ts.standRoll': 'أَيُّ هَذِهِ يَقِفُ وَيَتَدَحْرَجُ؟ ' + G('اِلْمَسْهُ', 'اِلْمَسِيهِ') + '.',
+  'ts.standRoll': 'أَيُّ هَذِهِ يَقِفُ وَيَتَدَحْرَجُ؟ ' + G('اِلْمَسْهُ', 'اِلْمَسِيهِ') + '.',
   'ts.why': 'كَيْفَ عَرَفْنَا أَنَّهَا أُسْطُوَانَةٌ؟ ' + G('اِسْمَعِ', 'اِسْمَعِي') + ' الأَسْبَابَ الثَّلَاثَةَ، ثُمَّ ' + G('اِخْتَرْ', 'اِخْتَارِي') + '.',
-  'ts.r1': 'لَهَا وَجْهَانِ دَائِرِيَّانِ، وَسَطْحٌ مُنْحَنٍ بَيْنَهُمَا.', 'ts.r2': 'لِأَنَّهَا بُنِّيَّةُ اللَّوْنِ.', 'ts.r3': 'لِأَنَّهَا طَوِيلَةٌ.',
-  'ts.story': 'فِي البُرْجِ أَرْبَعَةُ مُكَعَّبَاتٍ، وَبَنَيْنَا فَوْقَهَا ثَلَاثَةً.',
+  'ts.r1': 'لِأَنَّ لَهَا وَجْهَيْنِ دَائِرِيَّيْنِ وَسَطْحًا مُنْحَنِيًا.', 'ts.r2': 'لِأَنَّ لَوْنَهَا أَخْضَرُ مِثْلُ وَرَقِ الشَّجَرِ.', 'ts.r3': 'لِأَنَّهَا طَوِيلَةٌ، وَتَقِفُ عَلَى الطَّاوِلَةِ وَحْدَهَا.',
+  'ts.story': 'فِي البُرْجِ أَرْبَعَةُ مُكَعَّبَاتٍ، وَبَنَيْنَا فَوْقَهَا أَرْبَعَةً.',
   'ts.rem': 'نَلْعَبُ بِكِيسِ اللَّمْسِ، وَنُصَنِّفُ أَشْيَاءَ البَيْتِ: يَتَدَحْرَجُ أَمْ يَقِفُ، ثُمَّ نُرَاجِعُ هَذَا الدَّرْسَ.',
   'ts.stone': C(G('أَحْسَنْتَ', 'أَحْسَنْتِ') + '! سَأَضَعُ الحَجَرَ الثَّانِيَ فِي مَكَانِهِ.'),
   'ts.win1': G('أَنْتَ بَانِي العَالَمِ', 'أَنْتِ بَانِيَةُ العَالَمِ') + '!', 'ts.win2': 'جَرَى المَاءُ فِي جَدْوَلِ «وَرْشَةِ المُجَسَّمَاتِ»، وَاخْضَرَّتْ نَخْلَتَانِ!',
@@ -413,24 +430,28 @@ d6 = {
     {'solid': 'cube', 'ask': 'fc.cube', 'count': 'fc.count', 'after': 'fc.cube.after'}, {'solid': 'box', 'ask': 'fc.box', 'count': 'fc.count', 'after': 'fc.box.after'}]},
   {'s': 'game', 'scene': 'roomHunt', 'intro': 'rh.intro', 'n': 6, 'things': ['cyl', 'tube', 'cone', 'hat', 'cube', 'die', 'sphere', 'orange', 'teaBox', 'candle'],
    'rounds': [{'k': 'cylinder', 'ask': 'rh.cyl'}, {'k': 'cone', 'ask': 'rh.cone'}, {'k': 'cube', 'ask': 'rh.cube'}, {'k': 'sphere', 'ask': 'rh.sphere'}], 'after': 'rh.after'},
+  {'s': 'practice'},   # D239: فرز المجسّمات الأربعة بتمرين عادي أو تحدٍّ قبل الأسئلة
   {'s': 'test'}, {'s': 'wrap'}],
+ 'practice': {'intro': 'pr.intro', 'normal': [sort('drum'), sort('orange'), sort('hat'), sort('die')], 'challenge': [sort('tube'), sort('coneLying'), sort('cubeTurned'), sort('beadBall')]},
  'sort': {'bins': ['cube', 'sphere', 'cylinder', 'cone'], 'praise': 'praiseSolid',
-  'errors': [{'when': {'kind': 'flat', 'bin': 'solid'}, 'err': 'flatAsSolid'}, {'when': {'kind': 'solid', 'bin': 'flat'}, 'err': 'solidAsFlat'}, {'err': 'generic'}],
+  'errors': [{'when': {'kind': 'flat', 'bin': 'solid'}, 'err': 'flatAsSolid'}, {'when': {'kind': 'solid', 'bin': 'flat'}, 'err': 'solidAsFlat'},
+             {'when': {'kind': 'cylinder', 'bin': 'cone'}, 'err': 'cylAsCone'}, {'when': {'kind': 'cone', 'bin': 'cylinder'}, 'err': 'coneAsCyl'}, {'when': {'tag': 'cylLying'}, 'err': 'lyingCyl'}, {'when': {'kind': 'cylinder'}, 'err': 'cylOther'},
+             {'when': {'kind': 'cone'}, 'err': 'coneTurned'}, {'when': {'kind': 'cube', 'bin': 'sphere'}, 'err': 'cubeNotRoll'}, {'when': {'kind': 'cube'}, 'err': 'cubeTurned'}, {'when': {'kind': 'sphere'}, 'err': 'sphereNoFace'}, {'err': 'generic'}],
   'reasons': [{'when': {'kind': 'flat'}, 'id': 'why.flat'}, {'when': {'kind': 'solid'}, 'id': 'why.solid'}, {'when': {'kind': 'cube'}, 'id': 'why.cube'}, {'when': {'kind': 'sphere'}, 'id': 'why.sphere'}, {'when': {'kind': 'cylinder'}, 'id': 'why.cyl'}, {'when': {'kind': 'cone'}, 'id': 'why.cone'}],
-  'twins': {'*': sort('cube')}},
+  'twins': {'cylinder': sort('cyl'), 'cylLying': sort('cylLying'), 'cone': sort('cone'), 'coneTurned': sort('coneLying'), 'cube': sort('cube'), 'cubeTurned': sort('cubeTilt'), 'sphere': sort('sphere'), '*': sort('cube')}},
  'test': {'remedial': 'ts.rem', 'stoneLine': 'ts.stone', 'winLines': ['ts.win1', 'ts.win2'], 'items': [
-   {'id': 't1', 'of': 'm1.u2.d1', 'item': {'t': 'pick', 'q': ['ts.cube'], 'opts': ['cubeTilt', 'teaBox', 'flatSquareTilt'], 'ans': 0, 'err': 'cubeTurned'}},
-   {'id': 't2', 'of': 'm1.u2.d2', 'item': {'t': 'pick', 'q': ['ts.cyl'], 'opts': ['cylLying', 'coneLying', 'teaBoxTall'], 'ans': 0, 'err': 'lyingCyl'}},
-   {'id': 't3', 'of': 'm1.u2.d2', 'item': {'t': 'pick', 'q': ['ts.cone'], 'opts': ['waffle', 'candle', 'orange'], 'ans': 0, 'err': 'coneTurned'}},
-   {'id': 't4', 'of': 'm1.u2.d4', 'item': {'t': 'sort', 'mk': 'sheetSquare', 'bins': ['flat', 'solid'], 'kindOf': 'solidOrFlat'}},
-   {'id': 't5', 'of': 'm1.u2.d4', 'item': {'t': 'sort', 'mk': 'gift', 'bins': ['flat', 'solid'], 'kindOf': 'solidOrFlat'}},
+   {'id': 't1', 'of': 'm1.u2.d1', 'item': {'t': 'pick', 'q': ['ts.cube'], 'opts': ['sugar', 'teaBox', 'flatTri'], 'ans': 0, 'err': 'cubeTurned'}},
+   {'id': 't2', 'of': 'm1.u2.d2', 'item': {'t': 'pick', 'q': ['ts.cyl'], 'opts': ['battery', 'coneLying', 'teaBoxTall'], 'ans': 0, 'err': 'lyingCyl'}},
+   {'id': 't3', 'of': 'm1.u2.d2', 'item': {'t': 'pick', 'q': ['ts.cone'], 'opts': ['coneTilt', 'candle', 'orange'], 'ans': 0, 'err': 'coneTurned'}},
+   {'id': 't4', 'of': 'm1.u2.d4', 'item': {'t': 'sort', 'mk': 'sheetCube', 'bins': ['flat', 'solid'], 'kindOf': 'solidOrFlat'}},
+   {'id': 't5', 'of': 'm1.u2.d4', 'item': {'t': 'sort', 'mk': 'melon', 'bins': ['flat', 'solid'], 'kindOf': 'solidOrFlat'}},   # الهدية بند مراجعة الدرس 1
    {'id': 't6', 'of': 'm1.u2.d1', 'item': {'t': 'property', 'mk': 'marble'}},
-   {'id': 't7', 'of': 'm1.u2.d2', 'item': {'t': 'pick', 'q': ['ts.standRoll'], 'opts': ['candle', 'die', 'beadBall'], 'ans': 0, 'err': 'cylOther'}},
-   {'id': 't8', 'of': 'm1.u2.d2', 'item': {'t': 'reason', 'show': 'cyl', 'q': 'ts.why', 'opts': [{'id': 'ts.r1', 'ok': True}, {'id': 'ts.r2'}, {'id': 'ts.r3'}], 'err': 'cylOther'}},
-   {'id': 't9', 'of': 'm1.u2.d3', 'item': cmp(5, 7, sa=38, sb=22)},
-   {'id': 't10', 'of': 'm1.u2.d4', 'item': split(5, 2)},
-   {'id': 't11', 'of': 'm1.u2.d5', 'item': {'t': 'story', 'op': '+', 'a': 4, 'b': 3, 'line': 'ts.story'}},
-   {'id': 't12', 'of': 'm1.u2.d5', 'item': {'t': 'fact', 'op': '+', 'a': 3, 'b': 2}}]},
+   {'id': 't7', 'of': 'm1.u2.d2', 'item': {'t': 'pick', 'q': ['ts.standRoll'], 'opts': ['log', 'die', 'beadBall'], 'ans': 0, 'err': 'cylOther'}},
+   {'id': 't8', 'of': 'm1.u2.d2', 'item': {'t': 'reason', 'show': SN('cylinder', 2, size=120), 'q': 'ts.why', 'opts': [{'id': 'ts.r1', 'ok': True}, {'id': 'ts.r2'}, {'id': 'ts.r3'}], 'err': 'cylOther'}},
+   {'id': 't9', 'of': 'm1.u2.d3', 'item': cmp(3, 4, sa=44, sb=22)},
+   {'id': 't10', 'of': 'm1.u2.d4', 'item': split(8, 6)},
+   {'id': 't11', 'of': 'm1.u2.d5', 'item': {'t': 'story', 'op': '+', 'a': 4, 'b': 4, 'line': 'ts.story'}},   # 4 + 3 في اكتشاف d5
+   {'id': 't12', 'of': 'm1.u2.d5', 'item': {'t': 'fact', 'op': '+', 'a': 1, 'b': 4}}]},
  'wrap': {'art': 'faces', 'lines': ['wrap.01'], 'home': 'wrap.home'},
  'talk': 'اسألوا: «من أشياء مطبخنا: شيء يقف ويتدحرج معاً، ما اسمه؟» ثم عدّوا معاً وجوه علبة بقصاصات لاصقة.',
 }

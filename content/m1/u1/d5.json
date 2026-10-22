@@ -339,7 +339,7 @@
     "n": 6
    },
    {
-    "t": "digitMatch",
+    "t": "fill",
     "n": 0
    },
    {
@@ -380,13 +380,8 @@
     "n": 9
    },
    {
-    "t": "digitMatch",
-    "n": 0,
-    "opts": [
-     0,
-     6,
-     9
-    ]
+    "t": "fill",
+    "n": 0
    },
    {
     "t": "digitMatch",
@@ -412,7 +407,7 @@
   "concepts": {
    "N003": [
     {
-     "t": "digitPick",
+     "t": "digitMatch",
      "n": 6,
      "opts": [
       6,
@@ -421,7 +416,7 @@
      ]
     },
     {
-     "t": "digitMatch",
+     "t": "digitPick",
      "n": 0,
      "opts": [
       0,
@@ -502,7 +497,7 @@
    "item": {
     "t": "same",
     "mk": "stoneS",
-    "n": 5,
+    "n": 8,
     "from": "row",
     "to": "circle"
    }
@@ -517,11 +512,13 @@
     7,
     8,
     3
-   ]
+   ],
+   "c": "N003"
   },
   {
    "t": "trace",
-   "n": 2
+   "n": 2,
+   "c": "N003"
   }
  ],
  "wrap": {

@@ -9,8 +9,8 @@ ITEM.vertices = {
     await S(tries >= 3 ? 'gen.vertices.together' : 'gen.vertices.ask');
     const marks = el('g', { 'pointer-events': 'none' }, svg); let missed = false, res; const p = new Promise(r => res = r);
     g.style.cursor = 'pointer'; g.onclick = () => { if (missed) return; missed = true; SFX.soft(); AUTO_CLEAR(); res('miss'); };
-    const tg = P.map(([x, y]) => { const h = el('g', { transform: `translate(${x} ${y})` }, svg); el('circle', { r: 30, fill: 'transparent' }, h); return { g: h, p: { x, y } }; });
-    let n = 0; tapAll(tg, async t => { n++; SFX.tick(); badge(marks, t.p.x, t.p.y, n); if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); if (n === P.length) res('all'); }, { pad: false });
+    const tg = P.map(([x, y]) => { const h = el('g', { transform: `translate(${x} ${y})` }, svg); el('circle', { r: 30, fill: 'transparent' }, h); return { g: h, p: { x, y }, label: labelText('vertex') }; });
+    let n = 0; tapAll(tg, async t => { n++; SFX.tick(); badge(marks, t.p.x, t.p.y, n); if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); if (n === P.length) res('all'); }, { pad: 64 });   /* منطقة لمس حول كل رأس (≥ 56 بكسلاً) */
     AUTO({ kind: 'vertices', ok: () => tg.forEach(t => t.g.dispatchEvent(new MouseEvent('click', { bubbles: true }))), wrong: () => g.dispatchEvent(new MouseEvent('click', { bubbles: true })) });
     const ans = await gate(p); AUTO_CLEAR(); return { ans, ctx: { svg, g, P } }; },
   judge(item, a) { return a === 'all' ? { ok: true } : { ok: false, err: 'notVertex' }; },
@@ -24,7 +24,7 @@ ITEM.connect = {
   async ask(item, mode, tries) { const svg = newStage(250, { oasis: false, ground: 0 }); const lines = el('g', {}, svg); const D = item.dots; const seq = [];
     const draw = () => { lines.innerHTML = ''; for (let i = 1; i < seq.length; i++) el('line', { x1: D[seq[i - 1]][0], y1: D[seq[i - 1]][1], x2: D[seq[i]][0], y2: D[seq[i]][1], stroke: css('--triangle'), 'stroke-width': 8, 'stroke-linecap': 'round' }, lines); };
     if (tries >= 3) { seq.push(0, 1, 2); draw(); }
-    const dots = D.map(([x, y], i) => { const g = el('g', { transform: `translate(${x} ${y})` }, svg); el('circle', { r: 13, fill: css('--compass'), stroke: '#fff', 'stroke-width': 3 }, g); el('circle', { r: 34, fill: 'transparent' }, g); g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); g.setAttribute('aria-label', labelText('dot')); return g; });
+    const dots = D.map(([x, y], i) => { const g = el('g', { transform: `translate(${x} ${y})` }, svg); el('circle', { r: 13, fill: css('--compass'), stroke: '#fff', 'stroke-width': 3 }, g); el('circle', { r: 34, fill: 'transparent' }, g); g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); g.setAttribute('aria-label', labelText('dot')); hitPad(g, 68); return g; });
     if (tries >= 2) el('line', { x1: D[2][0], y1: D[2][1], x2: D[0][0], y2: D[0][1], stroke: css('--think'), 'stroke-width': 4, 'stroke-dasharray': '6 6', 'pointer-events': 'none' }, svg);
     await S(tries >= 3 ? 'gen.connect.together' : 'gen.connect.ask'); const d = doneBtn(); let res; const p = new Promise(r => res = r);
     dots.forEach((g, i) => g.onclick = () => { const last = seq[seq.length - 1]; if (last === i) return; if (seq.length >= 3 && i === seq[0]) { seq.push(i); draw(); SFX.good(); res('closed'); return; } if (seq.includes(i)) return; seq.push(i); draw(); SFX.pop(); });
@@ -59,7 +59,7 @@ ITEM.completeRect = {
 ITEM.yesno = {
   make(spec) { return { ...spec, tag: spec.tag || 'yesno', it: make(spec.show), want: spec.ans ? 'yes' : 'no' }; },
   async ask(item) { const svg = newStage(230, { oasis: false, ground: 0 }); const g = fitThing(svg, item.it, 180, 112, 150); await S(item.q);
-    const k = await choosePick([['yes', labelText('yes'), PICKICON.yes], ['no', labelText('no'), PICKICON.no]], item.want); return { ans: k, ctx: { svg, g } }; },
+    const k = await choosePick([['yes', labelText('yes'), PICKICON.yes, 'gen.opt.yes'], ['no', labelText('no'), PICKICON.no, 'gen.opt.no']], item.want); return { ans: k, ctx: { svg, g } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.err || 'generic' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { await (VIS[item.vis] || VIS.edges)(item.it, r.ctx); }, async together(item) { if (item.solve) await S(item.solve); }, async reveal(item) { if (item.why) await S(item.why); },
@@ -71,8 +71,9 @@ ITEM.property = {
   async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 0 }); floorLine(svg); const g = placeOnFloor(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, 120);
     if (item.it.label) label(svg, 120, 262, item.it.label, 16, css('--muted'));
     if (tries >= 2) { g.remove(); await pushTest(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, item.want === 'roll' ? 'roll' : (item.it.solid === 'cube' || item.it.solid === 'box' ? 'tip' : 'stay')); }
+    const nm = objClip(item.it); if (nm) await S(nm);   /* اسم الشيء المكتوب تحته يُقال (المبدأ 8) */
     await S(tries >= 3 ? 'gen.prop.together' : 'gen.prop.ask');
-    const k = await choosePick([['roll', labelText('rolls'), PICKICON.roll], ['stay', labelText('stays'), PICKICON.stay]], item.want); return { ans: k, ctx: { svg, g } }; },
+    const k = await choosePick([['roll', labelText('rolls'), PICKICON.roll, 'gen.opt.rolls'], ['stay', labelText('stays'), PICKICON.stay, 'gen.opt.stays']], item.want); return { ans: k, ctx: { svg, g } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.want === 'roll' ? 'rollMissed' : 'cubeNotRoll' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2() {}, async together() {},
   async reveal(item) { await S(item.want === 'roll' ? 'gen.prop.rolls' : 'gen.prop.stays'); }, praise: () => 'praiseThink', reason(item) { return item.why || null; }, twin: () => null,
@@ -80,7 +81,7 @@ ITEM.property = {
 /* المس الوجه المسطّح (إنتاج C009: الوجوه) — لمس السطح المنحني خطأ */
 ITEM.faceTap = {
   make(spec) { return { ...spec, it: make(spec.mk), tag: 'faceTap', want: 'face' }; },
-  async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 0 }); const g = thingAt(svg, { ...item.it, size: 160, ry: .34, label: null }, 180, 130);   /* القاعدة الدائرية ≥ 56 بكسل ليلمسها الإصبع */
+  async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 0 }); const g = thingAt(svg, { ...item.it, size: faceSize(svg, 160), ry: .34, label: null }, 180, 130);   /* القاعدة الدائرية ≥ 56 بكسل ليلمسها الإصبع */
     const faces = [...g.querySelectorAll('[data-face]')].filter(f => f.dataset.face !== 'curved'); const curved = [...g.querySelectorAll('path, circle')].filter(n => !n.dataset.face && n.closest('g') && !faces.includes(n));
     if (tries >= 2) faces.forEach(f => { f.setAttribute('stroke', css('--compass')); f.setAttribute('stroke-width', 5); f.setAttribute('stroke-dasharray', '6 5'); });
     await S(tries >= 3 ? 'gen.face.together' : (item.prompt || 'gen.face.ask')); let res; const p = new Promise(r => res = r);
@@ -98,8 +99,8 @@ ITEM.stamp = {
   async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 0 }); floorLine(svg, 236);
     if (tries >= 2) await stampTest(svg, { ...item.it, size: 84, label: null }, item.print); else placeOnFloor(svg, { ...item.it, size: 92, label: null }, 120, 236);
     await S(tries >= 3 ? 'gen.stamp.together' : 'gen.stamp.ask');
-    const opts = [['square', labelText('printSquare')], ['circle', labelText('printCircle')], ['dot', labelText('printDot')]]; if (item.print === 'rect') opts.splice(1, 0, ['rect', labelText('printRect')]);
-    const k = await choosePick(opts.map(([a, b]) => [a, b, PICKICON[a] || PICKICON.square]), item.print); return { ans: k, ctx: { svg } }; },
+    const opts = [['square', labelText('printSquare'), 'gen.opt.printSquare'], ['circle', labelText('printCircle'), 'gen.opt.printCircle'], ['dot', labelText('printDot'), 'gen.opt.printDot']]; if (item.print === 'rect') opts.splice(1, 0, ['rect', labelText('printRect'), 'gen.opt.printRect']);
+    const k = await choosePick(opts.map(([a, b, c]) => [a, b, PICKICON[a] || PICKICON.square, c]), item.print); return { ans: k, ctx: { svg } }; },
   judge(item, k) { return k === item.print ? { ok: true } : { ok: false, err: 'stampWrong' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2() {}, async together() {}, async reveal() { await S('gen.stamp.reveal'); },
   praise: () => 'praiseThink', reason(item) { return item.why || null; }, twin: () => null,
@@ -107,7 +108,7 @@ ITEM.stamp = {
 /* المس كل ما هو كذا (تعرّف بأوضاع مختلفة): يلمس الطفل الأشياء ثم «تمّ». want: نوع أو أنواع، أو rolls: true */
 const isTarget = (item, s) => item.rolls ? (s.solid === 'sphere' || (s.solid === 'cylinder' && s.pose === 'lying')) : [].concat(item.want).includes(s.kind);
 ITEM.pickAll = {
-  make(spec) { const objs = spec.objs.map(r => make(r)); return { ...spec, objs, tag: spec.tag || 'pickAll', targets: objs.map((s, i) => isTarget(spec, s) ? i : -1).filter(i => i >= 0) }; },
+  make(spec) { const objs = noShadowIfMixed(spec.objs.map(r => make(r))); return { ...spec, objs, tag: spec.tag || 'pickAll', targets: objs.map((s, i) => isTarget(spec, s) ? i : -1).filter(i => i >= 0) }; },
   async ask(item, mode, tries) { const svg = newStage(270, { oasis: false, ground: 0 }); const n = item.objs.length; const cols = n > 4 ? 3 : n; const order = item.order || (item.order = shuffle(item.objs.map((_, i) => i)));
     const sel = new Set(); const marks = el('g', { 'pointer-events': 'none' }, svg);
     const cells = order.map((oi, pos) => { const c = pos % cols, r = Math.floor(pos / cols); const x = 360 - (c + .5) * (360 / cols), y = n > cols ? 70 + r * 120 : 120;
@@ -115,9 +116,9 @@ ITEM.pickAll = {
     const redraw = () => { marks.innerHTML = ''; sel.forEach(oi => { const c = cells.find(q => q.oi === oi); el('circle', { cx: c.x, cy: c.y, r: 54, fill: 'none', stroke: css('--compass'), 'stroke-width': 5 }, marks); el('circle', { cx: c.x + 38, cy: c.y - 38, r: 13, fill: css('--compass') }, marks);
       el('path', { d: `M${c.x + 31} ${c.y - 38} l5 5 l9 -10`, stroke: '#fff', 'stroke-width': 3, fill: 'none', 'stroke-linecap': 'round' }, marks); }); };
     if (tries >= 3) { item.targets.slice(0, -1).forEach(i => sel.add(i)); redraw(); }
-    cells.forEach(c => { c.g.style.cursor = 'pointer'; c.g.setAttribute('role', 'button'); c.g.setAttribute('tabindex', 0); c.g.setAttribute('aria-label', plain(item.objs[c.oi].label || BIN_NAMES[item.objs[c.oi].kind] || '')); hitPad(c.g, 96);
+    cells.forEach(c => { c.g.style.cursor = 'pointer'; c.g.setAttribute('role', 'button'); c.g.setAttribute('tabindex', 0); c.g.setAttribute('aria-label', plain(item.objs[c.oi].label || labelText('shapeOne')));   /* لا اسم النوع المطلوب (D254 (3)) */ hitPad(c.g, 96);
       /*T*/if (TESTHOOK) c.g.dataset.ok = item.targets.includes(c.oi);/*/T*/
-      c.g.onclick = () => { if (sel.has(c.oi)) sel.delete(c.oi); else sel.add(c.oi); SFX.tick(); redraw(); }; });
+      c.g.onclick = () => { if (sel.has(c.oi)) sel.delete(c.oi); else { sel.add(c.oi); const nm = item.names && objClip(item.objs[c.oi]); if (nm) say(...lineOf(nm), { free: true, ifIdle: true }); } SFX.tick(); redraw(); }; });
     await S(tries >= 3 ? 'gen.pickAll.together' : item.q); const d = doneBtn();
     AUTO({ kind: 'pickAll', ok: () => { sel.clear(); item.targets.forEach(i => sel.add(i)); d.b.click(); }, wrong: () => { sel.clear(); item.targets.slice(1).forEach(i => sel.add(i)); d.b.click(); } });
     const ans = await gate(new Promise(res => d.b.onclick = () => { if (!sel.size) return; AUTO_CLEAR(); hush(); d.bar.remove(); res([...sel].sort()); })); return { ans, ctx: { svg, cells, marks } }; },
@@ -139,10 +140,10 @@ ITEM.paint = {
     if (tries >= 3) item.objs.slice(0, -1).forEach((s, i) => paintCell(cells[i], s.kind));
     let pot = null; const box = document.createElement('div'); box.className = 'choices icons pots'; $('#stage').appendChild(box);
     const pots = item.pots.map(k => { const b = document.createElement('button'); b.className = 'pick pot'; b.dataset.k = k; b.style.setProperty('--pot', css(IDC[k])); b.innerHTML = `<svg viewBox="0 0 40 28" width="44" height="30" aria-hidden="true"><path d="M6 8h28l-3 18H9z" fill="${css(IDC[k])}" stroke="#fff" stroke-width="2"/></svg><span>${esc(G(labelText('paint.' + k)))}</span>`; b.setAttribute('aria-label', plain(G(labelText('paint.' + k)))); b.setAttribute('aria-pressed', 'false');
-      b.onclick = () => { pot = k; pots.forEach(q => q.setAttribute('aria-pressed', q === b)); SFX.tick(); }; box.appendChild(b); return b; });
+      b.onclick = () => { pot = k; pots.forEach(q => q.setAttribute('aria-pressed', q === b)); SFX.tick(); say(...lineOf('gen.opt.paint.' + k), { free: true, ifIdle: true }); }; box.appendChild(b); return b; });   /* الوعاء ينطق لونه */
     await S(tries >= 3 ? 'gen.paint.together' : item.q);
     let res; const p = new Promise(r => res = r);
-    cells.forEach(c => { c.g.style.cursor = 'pointer'; c.g.setAttribute('role', 'button'); hitPad(c.g, 84); c.g.onclick = () => { if (!pot) { S('gen.paint.pot', { ifIdle: true, free: true }); return; } paintCell(c, pot); SFX.pop(); if (Object.keys(fill).length === n) res(); }; });
+    cells.forEach(c => { c.g.style.cursor = 'pointer'; c.g.setAttribute('role', 'button'); c.g.setAttribute('aria-label', plain(labelText('shapeOne'))); hitPad(c.g, 84); c.g.onclick = () => { if (!pot) { S('gen.paint.pot', { ifIdle: true, free: true }); return; } paintCell(c, pot); SFX.pop(); if (Object.keys(fill).length === n) res(); }; });
     AUTO({ kind: 'paint', ok: () => { cells.forEach(c => paintCell(c, item.objs[c.i].kind)); res(); }, wrong: () => { cells.forEach((c, j) => paintCell(c, j === 0 ? item.pots.find(k => k !== item.objs[0].kind) : item.objs[c.i].kind)); res(); } });
     await gate(p); AUTO_CLEAR(); hush(); box.remove(); return { ans: item.objs.map((_, i) => fill[i]).join(), ctx: { svg, cells } }; },
   judge(item, ans) { if (ans === item.want) return { ok: true }; const got = ans.split(','); const i = item.objs.findIndex((s, j) => s.kind !== got[j]); item._bad = i; const s = item.objs[i]; return { ok: false, err: (item.errs || {})[s.tag] || (s.kind === 'square' ? 'countCorners' : 'curvedEdge') }; },
@@ -154,7 +155,7 @@ ITEM.paint = {
 ITEM.reason = {
   make(spec) { return { ...spec, it: make(spec.show), tag: spec.tag || 'reason', want: 'ok' }; },
   async ask(item) { const svg = newStage(200, { oasis: false, ground: 0 }); fitThing(svg, { ...item.it, label: null }, 180, 100, 140); await S(item.q);
-    const cp = cardPick(item.opts.map((o, i) => ({ id: o.id, k: 'o' + i, ok: !!o.ok })));
+    const cp = cardPick(item.opts.map((o, i) => ({ id: o.id, k: 'o' + i, ok: !!o.ok })), { intro: item.q });   /* «أعد الجملة» يعيد السؤال ثم الأسباب */
     const c = await cp.p; cp.done(); return { ans: c.ok ? 'ok' : c.k, ctx: { svg, cp, c } }; },
   judge(item, a) { return a === 'ok' ? { ok: true } : { ok: false, err: item.err || 'generic' }; },
   onOk(item, r) { SFX.good(); r.ctx.cp.btns.find(b => b.dataset.k === r.ctx.c.k).classList.add('ok'); },

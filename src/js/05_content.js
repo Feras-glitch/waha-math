@@ -20,6 +20,9 @@ function lineOf(id, L) {
   if (v == null) throw new Error('جملة غير موجودة: ' + id + (D ? ' في ' + D.id : ''));
   const [who, text] = Array.isArray(v) ? v : ['compass', v]; return [who, id, text];
 }
+/* اسم الشيء المكتوب تحت صورته يُقال أيضاً (المبدأ 8): gen.obj.<المفتاح>، والمفتاح من مطابقة النص مع labels.obj */
+const OBJ_KEY = {}; for (const [k, v] of Object.entries(LABELS.obj || {})) OBJ_KEY[v] = k;
+const objClip = s => { const k = s && s.label && OBJ_KEY[s.label]; return k && GL['gen.obj.' + k] ? 'gen.obj.' + k : null; };
 const hasLine = (id, L) => { try { lineOf(id, L); return true; } catch (e) { return false; } };
 /* S('hook.01') يقول جملة الدرس الجاري؛ S(['a','b']) يقولها بالتتابع */
 async function S(id, opt) { if (Array.isArray(id)) { for (const x of id) await S(x, opt); return; } if (!id) return; return say(...lineOf(id), opt); }
