@@ -15,6 +15,9 @@
 #      مسألة لعبة أو بند مساعدة في درسه، والكرسي للتقييم وحده، وحلقات «ضع في الخريطة»، و`together` بمعامل باسم آخر، وحلّ روبوت لا يبلغه بند (فحص المحتوى)؛
 #      وفي المتصفح: الحلّ المشترك المرسوم موجود (لا باقٍ فقط)، وهالة اليد اليمنى عليها، وما في اليد مرفوع، والطريق لا يمرّ بقطعة منه قبل دورها،
 #      و«أعد الجملة» يعيد حركة الروبوت.
+#   5) وقواعد الفحص المستقل E: علاج «بقي كما هو» بقاءٌ خالص، والتوائم بمسار الطفل وتختلف فيه، وخطأ الجهة بانعطافة واحدة، وجملة حلّ «نعم/لا» وكلمة «آخر الطابور»،
+#      و«ضع في الخريطة» بخانة الجواب، و`together` بمعامل مفكّك؛ وفي المتصفح: جملة اليسار، والهالة تحت ما في اليد، وشارات الأصابع، و«شاهد التجربة» قبلها،
+#      والنجمة لا تبدأ في المطلوب، والمُضاف لا يلامس شيئاً، وزمن مناطق اللمس، وجدار الصندوق يمتصّ اللمس.
 # وأول تشغيل له كشف ثلاث طفرات نجت فأُصلحت الفحوص: «تبقى الحزمة بعد إعادة الفتح» لم يكن يعيد الفتح (الانتقال إلى العنوان نفسه بوسمه)،
 # وطول القطار داخل row لا يبلغه فحص الأعداد، وطفرة «حُلّت في التمرين» كانت تفترض قاعدةً غير القاعدة المكتوبة (الترتيب يُحجز بين التقييمات).
 # python3 test/mutants_run.py   (بعد البناء؛ يخرج بـ 1 إن نجت طفرة أو أخفق الأصل)
@@ -65,7 +68,8 @@ CONTENT = [
   ('جملة علاج الاختبار لا تُحيل إلى الدرس الظاهر', 'd7.json', lambda d: d['lines'].__setitem__('ts.rem', 'نَلْعَبُ بِالحَرَكَةِ وَالأَغَانِي، ثُمَّ نُعِيدُ «غُرْفَةَ الدُّمَى» وَ«طَابُورَ القِطَارِ».'), 'لا تُحيل إلى «هذا الدرس»'),
   ('جملة علاج الاختبار تسمّي درساً', '../u1/d6.json', lambda d: d['lines'].__setitem__('ts.rem', 'نُعِيدُ «صَيْدَ الأَشْكَالِ» مَعَ الكِبَارِ بِأَشْيَاءَ مِنَ البَيْتِ، ثُمَّ نُرَاجِعُ هَذَا الدَّرْسَ.'), 'تسمّي الدرس «صيد الأشكال»'),
   ('«أين هو؟» جوابه أول الكلمتين في بنود المساعدة', 'd1.json', lambda d: (d['practice']['normal'][0].__setitem__('words', ['on', 'under']), d['lines'].__setitem__('pr.1', 'القِطَّةُ فَوْقَ الطَّاوِلَةِ، أَمْ تَحْتَهَا؟'),
-     d['practice']['challenge'][0].__setitem__('words', ['in', 'on']), d['lines'].__setitem__('pr.c1', 'الدُّبُّ دَاخِلَ الصُّنْدُوقِ، أَمْ فَوْقَهُ؟')), 'بالمساعدة: الجواب في الموضع 1'),
+     d['practice']['challenge'][0].__setitem__('words', ['in', 'on']), d['lines'].__setitem__('pr.c1', 'الدُّبُّ دَاخِلَ الصُّنْدُوقِ، أَمْ فَوْقَهُ؟'),
+     d['practice']['normal'][0]['twin'].__setitem__('words', ['on', 'beside']), d['lines'].__setitem__('tw.on3', 'العُصْفُورُ فَوْقَ الشَّجَرَةِ، أَمْ بِجَانِبِهَا؟')), 'بالمساعدة: الجواب في الموضع 1'),
   # والمسار الرئيس للدرس (الفحص المستقل D، ص5: جواب د1 الكلمة الثانية في التمرين العادي والإتقان كلها)
   ('«أين هو؟» جوابه في الموضع نفسه في المسار الرئيس', 'd1.json', lambda d: (d['mastery']['concepts']['C010'][0].__setitem__('words', ['on', 'under']), d['lines'].__setitem__('ms.1', 'الدُّبُّ فَوْقَ الطَّاوِلَةِ، أَمْ تَحْتَهَا؟')), 'في كل بنود التمرين العادي والإتقان'),
   ('الخياران بغير ترتيب السؤال', 'd1.json', lambda d: d['practice']['normal'][0].__setitem__('words', ['on', 'under']), 'الخيارات تُقرأ بغير ترتيبها'),
@@ -78,10 +82,16 @@ CONTENT = [
   ('جملة العلاج تسمّي درساً بلا علامتي تنصيص', 'd7.json', lambda d: d['lines'].__setitem__('ts.rem', 'نَمْشِي مَعَ الكِبَارِ عَلَى طَرِيقِ الأَعْدَادِ، ثُمَّ نُرَاجِعُ هَذَا الدَّرْسَ.'), 'تسمّي الدرس «طريق الأعداد»'),
   ('التوأم يعيد مسألة اللعبة', 'd3.json', lambda d: d['practice']['normal'][2]['twin'].__setitem__('prog', ['F', 'R', 'F']), 'يعيد مسألة game'),
   ('التوأم يعيد مسألة لعبة بمشهدها', 'd5.json', lambda d: d['practice']['normal'][2]['twin'].__setitem__('n', 15), 'يعيد مسألة game:roadCountChaos'),
+  # الفحص المستقل E: علاج «بقي/تغيّر» كله بزيادة يمدح الخطأ الذي يعالجه
+  ('علاج «بقي كما هو» كله بزيادة', '../u1/d4.json', lambda d: d['mastery']['remedial']['N002'][0].__setitem__('add', 1), 'كلها بزيادة'),
+  ('توأما بندين في مسار واحد مسألة واحدة', 'd3.json', lambda d: next(x for x in d['practice']['normal'] if x['q'] == 'pr.3').__setitem__('twin', dict(next(x for st in d['flow'] if st.get('scene') == 'items' and st.get('mode') == 'practice' for x in st['items'] if x['q'] == 'gm.1')['twin'])), 'مسألة واحدة'),
+  ('«أيّ أمر اتّبع؟» بخطأ الجهة وانعطافتين', 'd3.json', lambda d: d['practice']['challenge'][3]['twin'].__setitem__('prog', ['L', 'F', 'R']), 'لانعطافة واحدة'),
+  ('«نعم/لا» بمساعدة بلا جملة حلّ', '../u2/d2.json', lambda d: next(x for x in d['practice']['normal'] if x.get('t') == 'yesno').pop('solve'), 'بلا جملة حلّ (solve)'),
+  ('«في آخر الطابور» وكلمة حلّه «خلف»', 'd2.json', lambda d: next(x for x in d['practice']['normal'] if x.get('twin', {}).get('q') == 'tw.last')['twin'].pop('word'), "word 'last'"),
   ('الكرسي في توأم', 'd1.json', lambda d: d['practice']['normal'][0]['twin']['pic'].__setitem__('ref', 'chair'), 'الكرسي مرجع للتقييم وحده'),
   ('«في أيّ عربة؟» جوابه الزرّ الأوسط', 'd2.json', lambda d: (d['practice']['normal'][3].__setitem__('opts', [3, 4, 5]), d['mastery']['concepts']['N008'][1].__setitem__('opts', [6, 7, 8])), '«في أيّ عربة؟» كلها: الجواب في الموضع 2'),
-  ('«ضع» في المراجعة بحلقات الإتقان وجوابه', 'd4.json', lambda d: d['review'][1].__setitem__('cands', [[1, 'front'], [0, 'front'], [2, 'front']]), 'حلقاته وحلقة جوابه'),
-  ('«بقي كما هو» جواب كل بنود الثبات', '../u1/d4.json', lambda d: (d['practice']['challenge'][4].pop('add'), d['mastery']['remedial']['N002'][0].pop('add')), '«بقي كما هو/تغيّر» كلها'),
+  ('«ضع» في المراجعة جوابه حلقة جواب الإتقان', 'd4.json', lambda d: d['review'][1].update(lay=d['mastery']['concepts']['C012'][1]['lay'], want=d['mastery']['concepts']['C012'][1]['want']), 'حلقة جوابه (1,front)'),
+  ('«بقي كما هو» جواب كل بنود الثبات', '../u1/d4.json', lambda d: d['practice']['challenge'][4].pop('add'), '«بقي كما هو/تغيّر» كلها'),
   ('التوأم يعيد مسألة الإشعال', 'd6.json', lambda d: d['practice']['challenge'][2]['twin'].update(n=8, b=11), 'يعيد مسألة hook:jumpChaosHook'),
 ]
 def gtext(v): return v[1] if isinstance(v, list) else v
@@ -92,6 +102,9 @@ CODE = [
   ('الحلّ المشترك على مسرح المحاولة السابقة (بمعامل باسم آخر)', 'src/js/43_items_place.js',
    "  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */\n  async reveal(item, r) { const m = await rowCount(r.ctx.R, item.k, item.g || 'f');",
    "  async together(item, q) { const m = await rowCount(q.ctx.R, item.k - 1, item.g || 'f'); await sleep(400); m.remove(); },\n  async reveal(item, r) { const m = await rowCount(r.ctx.R, item.k, item.g || 'f');", 'يرسم على مسرح المحاولة السابقة'),
+  ('الحلّ المشترك على مسرح المحاولة السابقة (بمعامل مفكّك)', 'src/js/43_items_place.js',
+   "  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */\n  async reveal(item, r) { const m = await rowCount(r.ctx.R, item.k, item.g || 'f');",
+   "  async together(item, { ctx }) { const m = await rowCount(ctx.R, item.k - 1, item.g || 'f'); await sleep(400); m.remove(); },\n  async reveal(item, r) { const m = await rowCount(r.ctx.R, item.k, item.g || 'f');", 'يرسم على مسرح المحاولة السابقة'),
   ('جملة حلّ «أيّ أمر اتّبع؟» لخطأ لا يبلغه بند بمساعدة', 'src/js/43_items_place.js', "const RB_WATCH = { rbTurnSide: 'gen.rb.watchSide' };", "const RB_WATCH = { rbTurnSide: 'gen.rb.watchSide', rbOrder: 'gen.rb.watchSide' };", 'لا يبلغه بند بمساعدة'),
   ('الكشف يقول «أكمل الآن»', 'src/js/43_items_place.js', "await S('gen.reveal.pos.' + item.ask); else await sleep(700); },", "await S('gen.solve.pos.' + item.ask); else await sleep(700); },", 'الكشف يقول جملة حلّ'),
 ]
@@ -118,7 +131,8 @@ try:
 finally:
   shutil.rmtree(tmp, ignore_errors=True)
 
-# ---------- 2) المتصفح ----------
+# ---------- 2) المتصفح ----------   (CONTENT_ONLY=1: فحص المحتوى وطفراته وحدها، للتكرار السريع)
+if os.environ.get('CONTENT_ONLY'): print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 RUNTIME = [
   ('حزمة الصوت لا تُحمَّل عند الفتح', 'VPACK.load().catch(() => {});', '', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL voice: pack survives reopening'),
   ('zip المضغوط لا يُفكّ', 'else if (method === 8)', 'else if (method === 88)', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL voice: four recordings imported'),
@@ -142,6 +156,16 @@ RUNTIME = [
   # الفحص المستقل D: هالة الحلّ المشترك على اليد الأخرى، والطريق يمرّ بقطعة منه قبل دورها (كان المنعطف داخلها فتُعفى)
   ('هالة الحلّ المشترك على اليد اليسرى', "const K = C.K, h = K.hand('R'), c = css('--compass');", "const K = C.K, h = K.hand('L'), c = css('--compass');", ['test/ladder_run.py'], {'ONLY': 'm1.u3.d3'}, 'FAIL lrTap: هالة'),
   ('الطريق يمرّ بقطعة منه قبل دورها', '"path":["bed","rug"]', '"path":["rug","bed"]', ['test/items_run.py'], {'ONLY': 'm1.u3.d7'}, 'قبل دوره'),
+  # الفحص المستقل E: المُضاف في «بقي كما هو» يلامس شيئاً، و«خارج الاثنين» تبدأ النجمة خارجهما
+  ('المُضاف يستقرّ عند ارتفاع ثابت', "const q = free.length ? free[R(0, free.length - 1)] : { x: 180 + R(-30, 30), y: 210 };", "const q = { x: 180 + R(-30, 30), y: 210 };", ['test/items_run.py'], {'ONLY': 'm1.u1.d4'}, 'شيئان يتلامسان'),
+  ('«خارج الاثنين» والنجمة على الرفّ', "const tr = in0 ? { x: 140, y: 116 } :", "const tr = in0 ? trayAt(svg, 316, 44) :", ['test/items_run.py'], {'ONLY': 'm1.u3.d1'}, 'النجمة تبدأ في المنطقة المطلوبة'),
+  ('مناطق اللمس تُحسب واحدةً واحدة', "const refreshPads = svg => { try { const rs = [...svg.querySelectorAll('rect.hit')]; if (!rs.length) return;",
+   "const refreshPads = svg => { svg.querySelectorAll('rect.hit').forEach(sizePad); }; const refreshPads_ = svg => { try { const rs = [...svg.querySelectorAll('rect.hit')]; if (!rs.length) return;", ['test/items_run.py'], {'ONLY': 'm1.u1.d4'}, 'FAIL حساب مناطق اللمس'),
+  ('جملة الحلّ المشترك عن اليمنى وإن طُلبت اليسرى', "await S(side === 'L' ? 'gen.lr.togetherL' : 'gen.lr.together');", "await S('gen.lr.together');", ['test/ladder_run.py'], {'ONLY': 'm1.u3.d3'}, 'FAIL اليمين واليسار'),
+  ('الهالة فوق ما في اليد', "if (held && held.parentNode === svg) svg.insertBefore(g, held);", "", ['test/ladder_run.py'], {'ONLY': 'm1.u3.d3'}, 'FAIL ما في اليد فوق'),
+  ('شارات الأصابع بارتفاع واحد', "y: t.y - (i % 2) * 30", "y: t.y", ['test/ladder_run.py'], {'ONLY': 'm1.u2.d5'}, 'FAIL شارات'),
+  ('«شاهد التجربة» بعد التجربة', "if (tries >= 3) await S('gen.prop.together');\n    if (tries >= 2) await pushTest(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, item.want === 'roll' ? 'roll' : (item.it.solid === 'cube' || item.it.solid === 'box' ? 'tip' : 'stay'));", "if (tries >= 2) await pushTest(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, item.want === 'roll' ? 'roll' : (item.it.solid === 'cube' || item.it.solid === 'box' ? 'tip' : 'stay'));\n    if (tries >= 3) await S('gen.prop.together');", ['test/ladder_run.py'], {'ONLY': 'm1.u2.d1'}, 'FAIL «شاهد التجربة»'),
+  ('جدار الصندوق بلا سطح يمتصّ اللمس', "if (P.C) { const fb = P.C.front.getBBox();", "if (false) { const fb = P.C.front.getBBox();", ['test/items_run.py'], {'ONLY': 'm1.u1.d4'}, 'FAIL لمسة على حافة جدار الصندوق'),
   ('طريق التوأم يقطع السرير', '{"k":"table","col":0,"row":"back"},{"k":"rug","col":2,"row":"front"},{"k":"bed","col":1,"row":"front"}',
    '{"k":"table","col":0,"row":"back"},{"k":"rug","col":2,"row":"front"},{"k":"bed","col":1,"row":"back"}', ['test/items_run.py'], {'ONLY': 'm1.u3.d7'}, 'يقطع bed'),
 ]

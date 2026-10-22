@@ -599,8 +599,7 @@
      "mk": "circleS",
      "n": 5,
      "from": "scatter",
-     "to": "row",
-     "add": 1
+     "to": "row"
     }
    ]
   },

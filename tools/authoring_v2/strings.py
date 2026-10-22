@@ -1,6 +1,6 @@
 # مولّد الجمل العامة والتسميات وسجلّ الأخطاء (المحتوى v2). يكتب content/strings/*.json وcontent/errors.json
 import json, os
-OUT = '/home/claude/engine/content'
+OUT = os.path.normpath(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'content'))   # محتوى المستودع الذي فيه المولّد، لا مسار ثابت (الفحص المستقل E: نسخة الفاحص كتبت في المستودع الأصلي)
 def G(m, f): return '{' + m + '|' + f + '}'
 C = lambda t: ['chaos', t]
 

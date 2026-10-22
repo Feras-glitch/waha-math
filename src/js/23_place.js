@@ -185,7 +185,7 @@ function chestAt(parent, x, y, { w = 132, h = 60, legs = 62, color = '#c9a072', 
   const g = el('g', { transform: `translate(${x} ${y})` }, parent); const d = 22, top = -legs - h;
   el('ellipse', { cx: 0, cy: 2, rx: w * .56, ry: 6, fill: '#000', 'fill-opacity': .08 }, g);
   for (const s of [-1, 1]) el('rect', { x: s * (w / 2 - 14) - 6, y: -legs - 2, width: 12, height: legs + 2, rx: 4, fill: mix(color, 'b', .3), stroke: PL_EDGE, 'stroke-width': 2.5 }, g);
-  const back = el('g', {}, g), mid = el('g', {}, g), front = el('g', {}, g), lidG = el('g', {}, g);
+  const back = el('g', {}, g), mid = el('g', {}, g), front = el('g', { 'data-front': 1 }, g), lidG = el('g', {}, g);
   const lidOpen = el('polygon', { points: `${-w / 2 + 14},${top - d} ${w / 2 + 14},${top - d} ${w / 2 + 4},${top - d - 50} ${-w / 2 + 4},${top - d - 50}`, fill: mix(color, 'w', .12), stroke: PL_EDGE, 'stroke-width': 3, 'stroke-linejoin': 'round' }, back);
   el('polygon', { points: `${-w / 2},${top} ${-w / 2 + 14},${top - d} ${w / 2 + 14},${top - d} ${w / 2},${top}`, fill: mix(color, 'b', .45), stroke: PL_EDGE, 'stroke-width': 3, 'stroke-linejoin': 'round' }, back);
   el('polygon', { points: `${w / 2},${top} ${w / 2 + 14},${top - d} ${w / 2 + 14},${-legs - d} ${w / 2},${-legs}`, fill: mix(color, 'b', .25), stroke: PL_EDGE, 'stroke-width': 3, 'stroke-linejoin': 'round' }, back);

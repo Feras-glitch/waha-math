@@ -202,7 +202,8 @@ export function lint(content, js) {
     starts.forEach((m, i) => { const body = code.slice(m.index, i + 1 < starts.length ? starts[i + 1].index : undefined), t = body.search(/(?:async )?together\(/);
       if (t < 0) return; const rest = body.slice(t), e = rest.search(/\n {2}(?:async )?\w+[(:]|, (?:async )?(?:reveal|mark|praise|twin|reason|hint2)\b/), tb = e < 0 ? rest : rest.slice(0, e);
       const pm = tb.match(/together\(\s*\w+\s*,\s*(\w+)/), rn = pm ? pm[1] : null;   /* باسم المعامل الثاني أيّاً كان (الفحص المستقل D: q.ctx لم يُرَ) */
-      if (rn && (new RegExp('\\b' + rn + '\\.ctx\\b').test(tb) || new RegExp('\\{[^}]*\\bctx\\b[^}]*\\} = ' + rn + '\\b').test(tb))) errors.push(`نوع البند ${m[1]}: الحلّ المشترك (together) يرسم على مسرح المحاولة السابقة r.ctx، فيُمحى قبل أن يجيب الطفل (D257(5)(و))`); });
+      const dz = /together\(\s*\w+\s*,\s*\{[^}]*\bctx\b/.test(tb);   /* وبمعامل مفكّك together(item, { ctx }) (الفحص المستقل E) */
+      if (dz || rn && (new RegExp('\\b' + rn + '\\.ctx\\b').test(tb) || new RegExp('\\{[^}]*\\bctx\\b[^}]*\\} = ' + rn + '\\b').test(tb))) errors.push(`نوع البند ${m[1]}: الحلّ المشترك (together) يرسم على مسرح المحاولة السابقة r.ctx، فيُمحى قبل أن يجيب الطفل (D257(5)(و))`); });
     /* الكشف لا يطلب من الطفل فعلاً (الفحص المستقل C، ن-ك5): جمل الحلّ gen.solve.* تنتهي بـ«أكمل/اختر الآن»، فلا تُقال في reveal */
     starts.forEach((m, i) => { const body = code.slice(m.index, i + 1 < starts.length ? starts[i + 1].index : undefined), r = body.search(/\n {2}async reveal\(|\n {2}reveal\(| async reveal\(/);
       if (r < 0) return; const rest = body.slice(r + 1), e = rest.search(/\n {2}(?:async )?\w+[(:]|, (?:async )?(?:mark|praise|twin|reason)\b/), rv = e < 0 ? rest : rest.slice(0, e);
@@ -247,6 +248,11 @@ export function lint(content, js) {
     const RBW = new Set([...((code.match(/const RB_WATCH = \{([^}]*)\}/) || [])[1] || '').matchAll(/(\w+):/g)].map(m => m[1])), rbUsed = new Set();
     for (const L of Object.values(lessons)) for (const v of lists(L, true)) if (v && v.t === 'robotWatch') for (const o of v.opts || []) if (!o.ok) { rbUsed.add(o.err || 'rbWrong'); if (!RBW.has(o.err || 'rbWrong')) errors.push(`${L.id}: robotWatch «${v.q}»: لا حلّ مشترك لخطئه «${o.err || 'rbWrong'}» في RB_WATCH (الحلّ بحسب الخطأ نفسه)`); }
     for (const e of RBW) if (!rbUsed.has(e)) errors.push(`RB_WATCH: الخطأ «${e}» لا يبلغه بند بمساعدة، فجملته تُسجَّل ولا تُقال`);
+    /* وحلّ خطأ الجهة («هل دار إلى جهة الشريط؟») وسؤاله لانعطافة واحدة: فبرنامج بندٍ بطاقته الخاطئة rbTurnSide فيه انعطافة واحدة (الفحص المستقل E: توأم بانعطافتين) */
+    { const rw = (v, L) => { if (Array.isArray(v)) return v.forEach(x => rw(x, L)); if (!v || typeof v !== 'object') return;
+        if (v.t === 'robotWatch' && (v.opts || []).some(o => o.err === 'rbTurnSide') && (v.prog || []).filter(c => c === 'L' || c === 'R').length !== 1) errors.push(`${L.id}: robotWatch «${v.q}» (${(v.prog || []).join('')}): خطأ الجهة وحلّه لانعطافة واحدة، وفي البرنامج ${(v.prog || []).filter(c => c === 'L' || c === 'R').length}`);
+        for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) rw(x, L); };
+      for (const L of Object.values(lessons)) rw(L, L); }
     /* الكرسي مرجعٌ للتقييم وحده (D257 (1)، الفحص المستقل A): يقيس نقل الكلمة إلى شيء لم يُتمرَّن عليه، فلا يظهر في تمرين ولا لعبة ولا توأم ولا علاج ولا اكتشاف (الفحص المستقل D) */
     for (const L of Object.values(lessons)) for (const v of [...lists(L, true), ...L.flow.filter(s => s.scene === 'items' && !['practice', 'remedial'].includes(s.mode)).flatMap(s => s.items || [])])
       if (v && (v.ref === 'chair' || (v.pic && v.pic.ref === 'chair'))) errors.push(`${L.id}: ${v.t} «${v.q}»: الكرسي مرجع للتقييم وحده، وهنا يُعرض قبله`);
@@ -260,6 +266,19 @@ export function lint(content, js) {
       for (const t of Object.keys(NAME)) { const ix = main.filter(v => v && v.t === t).map(ansIdx).filter(i => i != null && i >= 0); if (ix.length >= 3 && new Set(ix).size === 1) errors.push(`${L.id}: ${NAME[t]}: الجواب في الموضع ${ix[0] + 1} في كل بنود التمرين العادي والإتقان (${ix.length})`); } }
     for (const [k, c] of Object.entries(per)) { const n = Object.values(c).reduce((a, b) => a + b, 0), [u, t, nm] = k.split('|'), [top, m] = Object.entries(c).sort((a, b) => b[1] - a[1])[0];
       if (n >= 3 && m > 2 * n / 3) errors.push(`${u}: ${NAME[t]} ${nm}: الجواب في الموضع ${+top + 1} في ${m} من ${n}، فيكفي الطفلَ موضعُه (المطلوب ثلثا البنود على الأكثر)`); } }
+  // 4ب6) علاج «بقي كما هو/تغيّر» فيه بقاءٌ خالص (الفحص المستقل E): الخطأ الذي يعالجه «البعثرة تزيد» (N002)، فلو كانت بنوده كلها بزيادة لكان «تغيّر»
+  //      صواباً دائماً، ولمُدح الطفل على الخطأ الذي يُعالَج (كانت زيادةٌ لتوازن موضع الجواب قد وُضعت في بند العلاج الوحيد)
+  for (const L of Object.values(lessons)) for (const [c, a] of Object.entries((L.mastery || {}).remedial || {})) { const s = (a || []).filter(v => v && v.t === 'same');
+    if (s.length && s.every(v => v.add)) errors.push(`${L.id}: علاج ${c}: بنود «بقي كما هو/تغيّر» كلها بزيادة، فـ«تغيّر» صواب دائماً ولا يُعالَج خطأ البعثرة`); }
+  // 4ب7) حلٌّ مشترك له مادة (الفحص المستقل D وE): «نعم/لا» حلّه جملته solve، فبند بمساعدة بلا solve محاولته الرابعة كالأولى (هل يتدحرج المخروط؟)؛
+  //      و«ضع الدب في الطابور» جملة حلّه من كلمته، فإن سمّى السؤال «آخر الطابور» أو «أول الطابور» فكلمته last أو first لا «خلف» و«أمام»
+  { const bare = s => s.replace(/[ً-ْ]/g, '');
+    for (const L of Object.values(lessons)) { const st = L.flow.filter(s => s.scene === 'items' && ['practice', 'remedial'].includes(s.mode)); const P = L.practice || {}, M = L.mastery || {};
+      const base = [...(P.normal || []), ...(P.challenge || []), ...Object.values(M.remedial || {}).flat(), ...st.flatMap(s => s.items || [])];
+      for (const v of [...base, ...base.map(x => x && x.twin).filter(Boolean)]) { if (!v || typeof v.t !== 'string') continue;
+        if (v.t === 'yesno' && !v.solve) errors.push(`${L.id}: yesno «${v.q}» بمساعدة بلا جملة حلّ (solve): محاولته الرابعة كالأولى`);
+        if (v.t === 'place' && v.ref === 'queue') { const c = LINES.get(v.q.startsWith('gen.') ? v.q : L.id + '.' + v.q); const t = c ? bare(c.text) : '';
+          for (const [w, k] of [['آخر', 'last'], ['أول', 'first']]) if (t.includes(w + ' الطابور') && v.word !== k) errors.push(`${L.id}: «${v.q}» يسمّي «${w} الطابور» وكلمة حلّه ${v.word || 'من الفراغ'}: word '${k}'`); } } } }
   // 4ج) في بند التعليل لا يكون الصحيح أطول الأسباب بفرق ظاهر (الفحص المستقل الثالث، ن3): طوله بلا تشكيل ≤ 1.2 × أطول المشتّتين؛
   //     وكذلك بطاقتا «أيّ أمر نفّذ الروبوت؟» و«أيّ وصف يناسب الطريق؟» (S1-U3): نصّهما ظاهر كأسباب التعليل، فلا يدلّ الطول على الصحيحة
   const bare = t => String(t || '').replace(/\{([^|{}]*)\|[^{}]*\}/g, '$1').replace(/[\u064B-\u0652\u0670]/g, '').replace(/\s+/g, ' ').trim().length;

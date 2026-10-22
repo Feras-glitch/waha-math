@@ -190,13 +190,13 @@ d2 = {
   'recall': {'C010': {'scene': 'recallPic', 'pic': {'kind': 'queue', 'members': ['red', 'blue', 'green']}, 'lines': ['ms.recallQ']},
              'N008': {'scene': 'recallPic', 'pic': {'kind': 'train', 'n': 6, 'k': 3}, 'lines': ['ms.recallT1', 'ms.recallT2']}},
   'remedial': {'C010': [queue('rm.between', ['purple', 'yellow', 'green', 'red'], 'between', a=1, b=3)], 'N008': [car('rm.3', 10, 3)]},
-  'mixed': {'lesson': 'm1.u3.d1', 'item': whereThing('mx.1', 'table', [['car', 'on'], ['cat', 'under'], ['book', 'besideR']], 'under')}, 'ok': 'ms.ok'},
+  'mixed': {'lesson': 'm1.u3.d1', 'item': whereThing('mx.1', 'tree', [['cat', 'on'], ['ball', 'besideR'], ['car', 'besideL']], 'on')}, 'ok': 'ms.ok'},
  'review': [dict(queue('rv.front', ['red', 'yellow', 'green'], 'front', ref=2), c='C010'), dict(qplace('rv.place', ['purple', 'yellow'], 'blue', 'g0'), c='C010'),
             dict(car('rv.7', 10, 7), c='N008'), dict(queue('rv.q2', ['yellow', 'blue', 'purple', 'red', 'green'], 'ord', k=2), c='N008')],
  'wrap': {'art': 'train', 'lines': ['wrap.01'], 'home': 'wrap.home'},
  'talk': 'في الطابور أو على المائدة اسألوا: «من أمام من؟ ومن بين من؟»، وعدّوا الأطباق من أول المائدة: الأول، الثاني… واسألوا: «ثلاثة أطباق، أم الطبق الثالث؟»',
 }
-d1['lines']['mx.1'] = 'مَا الَّذِي تَحْتَ الطَّاوِلَةِ؟ ' + TAPIT + '.'   # البند المشتبك في الدرس 2 يُشغَّل بجمل درسه (الدرس 1)
+d1['lines']['mx.1'] = 'مَا الَّذِي فَوْقَ الشَّجَرَةِ؟ ' + TAPIT + '.'   # البند المشتبك في الدرس 2 يُشغَّل بجمل درسه (الدرس 1)؛ و«ما الذي تحت الطاولة؟» صار توأماً (الفحص المستقل E: لـ«تحت» في التحدّي بندان)
 
 # ======================= الدرس 3: يميني ويساري (والروبوت C013) =======================
 d3 = {
@@ -359,7 +359,7 @@ d4 = {
   'ms.recall1': 'نَتْبَعُ كُلَّ شَيْءٍ مِنَ الغُرْفَةِ إِلَى الخَرِيطَةِ:', 'ms.recall2': 'مَا قُرْبَ البَابِ فِي الغُرْفَةِ، قُرْبَ البَابِ فِي الخَرِيطَةِ.',
   'rm.1': 'أَيْنَ الكَنْزُ فِي الخَرِيطَةِ؟ ' + G('اِلْمَسْ مَكَانَهُ', 'اِلْمَسِي مَكَانَهُ') + '.',
   'ms.ok': 'رَائِعٌ! ' + G('صِرْتَ تَقْرَأُ', 'صِرْتِ تَقْرَئِينَ') + ' الخَرِيطَةَ كَمَا يَرَاهَا الطَّائِرُ. ' + G('هَذِهِ نَجْمَتُكَ', 'هَذِهِ نَجْمَتُكِ') + '.',
-  'rv.1': 'أَيْنَ الكَنْزُ فِي الخَرِيطَةِ؟ ' + G('اِلْمَسْ مَكَانَهُ', 'اِلْمَسِي مَكَانَهُ') + '.', 'rv.2': PUT_ + ' قِطْعَةَ الطَّاوِلَةِ فِي مَكَانِهَا عَلَى الخَرِيطَةِ.',
+  'rv.1': 'أَيْنَ الكَنْزُ فِي الخَرِيطَةِ؟ ' + G('اِلْمَسْ مَكَانَهُ', 'اِلْمَسِي مَكَانَهُ') + '.', 'rv.2': PUT_ + ' قِطْعَةَ السَّجَّادَةِ فِي مَكَانِهَا عَلَى الخَرِيطَةِ.',
   'wrap.01': 'صَارَتْ لِلْوَاحَةِ خَرِيطَةٌ، وَعَلَيْهَا طَرِيقٌ إِلَى الكَنْزِ!',
   'wrap.home': C('مُهِمَّةُ البَيْتِ: ' + G('اِرْسُمْ', 'اِرْسُمِي') + ' خَرِيطَةَ غُرْفَةِ الجُلُوسِ كَمَا يَرَاهَا الطَّائِرُ، ثُمَّ ' + G('خَبِّئْ', 'خَبِّئِي') + ' كَنْزًا، وَ' + G('أَمْلِ', 'أَمْلِي') + ' عَلَى ' + FAM + ' الطَّرِيقَ إِلَيْهِ فِي ثَلَاثِ خُطُوَاتٍ.'),
  },
@@ -382,7 +382,7 @@ d4 = {
   'recall': {'C012': {'scene': 'recallPic', 'pic': {'kind': 'map', 'lay': LR}, 'lines': ['ms.recall1', 'ms.recall2']}},
   'remedial': {'C012': [mfind('rm.1', LS, cell('treasure', 2, 'back'))]},   # خانة لا يقيسها تقييم (الإتقان والبند المشتبك في 0، قريباً منا)
   'mixed': {'lesson': 'm1.u3.d3', 'item': lrPick('mx.lr', 'car', 'R', ribbon=False, **{'raise': 'L'})}, 'ok': 'ms.ok'},
- 'review': [dict(mfind('rv.1', LT, cell('treasure', 1, 'back')), c='C012'), dict(mput('rv.2', LU, 'table', [[1, 'front'], [1, 'back'], [2, 'front']]), c='C012')],
+ 'review': [dict(mfind('rv.1', LT, cell('treasure', 1, 'back')), c='C012'), dict(mput('rv.2', LU, 'rug', [[0, 'back'], [1, 'back'], [0, 'front']]), c='C012')],   # حلقة جواب لم تكن جواب «ضع» آخر في الوحدة (الفحص المستقل E: كانت حلقة جواب الإتقان)
  'adultCard': {'title': 'خريطة غرفتي على الورق (لا تُتعلَّم من الشاشة وحدها)', 'how': 'بعد مهمة البيت، أجيبوا:', 'concept': 'C012',
                'qs': ['رسم خريطة غرفة الجلوس بالقصاصات كما يراها الطائر (مسطّحة).', 'وضع الباب علامةً على حافة الغرفة في مكانه.', 'أملى عليكم الطريق من الباب إلى الكنز بكلمات الموضع واليمين واليسار، فوصلتم.']},
  'wrap': {'art': 'map', 'lines': ['wrap.01'], 'home': 'wrap.home'},
@@ -647,11 +647,14 @@ TWINS = {
   'lines': {'tw.on3': 'العُصْفُورُ بِجَانِبِ الشَّجَرَةِ، أَمْ فَوْقَهَا؟',
             'tw.under2': 'السَّيَّارَةُ تَحْتَ الصُّنْدُوقِ، أَمْ فَوْقَهُ؟', 'tw.in3': 'مَا الَّذِي دَاخِلَ الصُّنْدُوقِ؟ ' + TAPIT + '.',
             'tw.beside5': 'مَا الَّذِي بِجَانِبِ الصُّنْدُوقِ؟ ' + TAPIT + '.',
-            'tw.none1': PUT_ + ' النَّجْمَةَ خَارِجَ الدَّائِرَةِ، وَخَارِجَ المُرَبَّعِ.'},
-  'pool': {'pos|on': [where('tw.on3', 'tree', 'bird', 'on', ['beside', 'on'])],
-           'pos|under': [where('tw.under2', 'chest', 'car', 'under', ['under', 'on'])],
-           'pos|in': [whereThing('tw.in3', 'chest', [['ball', 'in'], ['teddy', 'under'], ['car', 'besideR']], 'in')],
-           'pos|beside': [whereThing('tw.beside5', 'chest', [['car', 'besideR'], ['ball', 'on'], ['teddy', 'under']], 'beside')],   # لا «بجانب الكرسي»: سؤال في اختبار الوحدة
+            'tw.none1': PUT_ + ' النَّجْمَةَ خَارِجَ الدَّائِرَةِ، وَخَارِجَ المُرَبَّعِ.',
+            # توائم ثانية: لبندين من مهارة واحدة في مسار واحد توأمان مختلفان (الفحص المستقل E)
+            'tw.on4': 'مَا الَّذِي فَوْقَ الصُّنْدُوقِ؟ ' + TAPIT + '.', 'tw.beside6': 'الكُرَةُ تَحْتَ الطَّاوِلَةِ، أَمْ بِجَانِبِهَا؟',
+            'tw.in4': 'النَّجْمَةُ خَارِجَ المُرَبَّعِ، أَمْ دَاخِلَهُ؟', 'tw.under3': 'مَا الَّذِي تَحْتَ الطَّاوِلَةِ؟ ' + TAPIT + '.'},
+  'pool': {'pos|on': [where('tw.on3', 'tree', 'bird', 'on', ['beside', 'on']), whereThing('tw.on4', 'chest', [['ball', 'on'], ['car', 'besideR'], ['teddy', 'under']], 'on')],
+           'pos|under': [where('tw.under2', 'chest', 'car', 'under', ['under', 'on']), whereThing('tw.under3', 'table', [['cat', 'under'], ['ball', 'on'], ['car', 'besideL']], 'under')],
+           'pos|in': [whereThing('tw.in3', 'chest', [['ball', 'in'], ['teddy', 'under'], ['car', 'besideR']], 'in'), where('tw.in4', 'regions', 'star', 'inS', ['out', 'in'], want='in')],   # «داخل» في شكلٍ مرسوم: الصندوق وحده فيه «داخل»
+           'pos|beside': [whereThing('tw.beside5', 'chest', [['car', 'besideR'], ['ball', 'on'], ['teddy', 'under']], 'beside'), where('tw.beside6', 'table', 'ball', 'besideR', ['under', 'beside'])],   # لا «بجانب الكرسي»: سؤال في اختبار الوحدة
            'regions': [place('tw.none1', 'regions', 'star', 'none')]}},
  'm1.u3.d2': {
   'avoid': ['line|5|last|', 'line|4|front|2', 'line|4|behind|1', 'line|4|between|0,2', 'line|4|first|', 'line|4|last|'],
@@ -674,18 +677,21 @@ TWINS = {
   'avoid': ['lr|hand|R||1', 'lr|side|L||1', 'robot|FFR|{}'],
   'lines': {'tw.hold': 'مَا الَّذِي فِي ' + KID('يَدِهِ', 'يَدِهَا') + ' اليُمْنَى؟ ' + TAPIT + '.',
             'tw.rb': G('أَعْطِ', 'أَعْطِي') + ' الرُّوبُوتَ الأَمْرَ: «تَقَدَّمْ خُطْوَتَيْنِ، ثُمَّ انْعَطِفْ يَمِينًا، ثُمَّ تَقَدَّمْ»، ' + GO,
-            'tw.wa': '«انْعَطِفْ يَسَارًا، ثُمَّ تَقَدَّمْ، ثُمَّ انْعَطِفْ يَمِينًا».', 'tw.wb': '«انْعَطِفْ يَمِينًا، ثُمَّ تَقَدَّمْ، ثُمَّ انْعَطِفْ يَسَارًا».'},
+            'tw.rb2': G('أَعْطِ', 'أَعْطِي') + ' الرُّوبُوتَ الأَمْرَ: «انْعَطِفْ يَسَارًا، ثُمَّ تَقَدَّمْ، ثُمَّ انْعَطِفْ يَمِينًا»، ' + GO,
+            'tw.rb3': G('أَعْطِ', 'أَعْطِي') + ' الرُّوبُوتَ الأَمْرَ: «انْعَطِفْ يَمِينًا، ثُمَّ تَقَدَّمْ، ثُمَّ انْعَطِفْ يَسَارًا»، ' + GO,
+            # «أيّ أمر اتّبع؟» بانعطافة واحدة: حلّه «هل دار إلى جهة الشريط؟» وسؤال خطئه لانعطافة واحدة (الفحص المستقل E: كان بانعطافتين)
+            'tw.wa': '«تَقَدَّمْ ثَلَاثَ خُطُوَاتٍ، ثُمَّ انْعَطِفْ يَمِينًا، ثُمَّ تَقَدَّمْ».', 'tw.wb': '«تَقَدَّمْ ثَلَاثَ خُطُوَاتٍ، ثُمَّ انْعَطِفْ يَسَارًا، ثُمَّ تَقَدَّمْ».'},
   # التوائم بهيئات لم تُعرض في الدرس ولا يقيسها تقييم (الجهة واليد المرفوعة والشريط): لا تعيد بنود التمرين واللعبة والعلاج (الفحص المستقل D)
   'pool': {'lrTap|hand': [lrTap('pr.c1', 'L', up='R'), lrTap('pr.r', 'R', up='R', ribbon=False)],
            'lrTap|hold': [lrTap('tw.hold', 'R', ask='hold', hold={'R': 'cat', 'L': 'ball'})],
            'lrPick': [lrPick('pr.2', 'ball', 'L', **{'raise': 'L'}), lrPick('pr.2', 'ball', 'R', **{'raise': 'R'})],
-           'robot': [robot('tw.rb', 'FFRF')],   # لا برنامج الاكتشاف ولا اللعبة ولا التمرين
-           'robotWatch': [watch('pr.c4', 'LFR', 'tw.wa', 'tw.wb', err='rbTurnSide')]}},
+           'robot': [robot('tw.rb', 'FFRF'), robot('tw.rb2', 'LFR'), robot('tw.rb3', 'RFL')],   # لا برنامج الاكتشاف ولا اللعبة ولا التمرين، ولكل بند في المسار توأم
+           'robotWatch': [watch('pr.c4', 'FFFRF', 'tw.wa', 'tw.wb', err='rbTurnSide')]}},
  'm1.u3.d4': {
   'lines': {'tw.routeA': 'مِنَ البَابِ إِلَى الطَّاوِلَةِ، ثُمَّ إِلَى السَّجَّادَةِ.', 'tw.routeB': 'مِنَ البَابِ إِلَى السَّجَّادَةِ، ثُمَّ إِلَى الطَّاوِلَةِ.'},
   'avoid': ['map|put|bed|2,back', 'map|put|bed|0,back', 'map|put|rug|1,front', 'map|put|table|2,back', 'map|find|2,front|floor', 'map|put|table|0,front', 'route|table>bed'],
   # خانات الأرض الست كلها في بنود الدرس وتقييمات الوحدة، فتوأم «أين الكنز؟» فوق قطعة لم يُسأل عنها (طاولة أو سرير في غير خاناتهما المسؤولة)
-  'pool': {'mapFind|cell': [mfind('pr.1', LZ1, on('treasure', 'table')), mfind('pr.1', LZ1, on('treasure', 'bed'))], 'mapFind|on': [mfind('gm.2', LZ2, on('cat', 'rug'))],
+  'pool': {'mapFind|cell': [mfind('pr.1', LZ1, on('treasure', 'table')), mfind('pr.1', LZ1, on('treasure', 'bed'))], 'mapFind|on': [mfind('gm.2', LZ2, on('cat', 'rug')), mfind('gm.2', LZ5, on('cat', 'bed')), mfind('pr.1', LZ5, on('treasure', 'rug'))],   # لكل بند في المسار توأم (لعبتان وبند تمرين)
            'mapPut': [mput('ex.put', LZ3, 'table', [[1, 'back'], [0, 'back'], [2, 'back']])],
            'routePick': [route('pr.c3', LZ4, ['table', 'rug'], 'tw.routeA', 'tw.routeB')]}},
  'm1.u3.d5': {
@@ -708,9 +714,10 @@ TWINS = {
             'tw.5': TOUCH_ + ' العَرَبَةَ الخَامِسَةَ.', 'tw.add': G('قِفْ', 'قِفِي') + ' عِنْدَ ثَمَانِيَةٍ، وَ' + G('اِقْفِزْ', 'اِقْفِزِي') + ' قَفْزَتَيْنِ، ' + DONE,
             'tw.both': PUT_ + ' النَّجْمَةَ دَاخِلَ الدَّائِرَةِ وَدَاخِلَ المُرَبَّعِ مَعًا.',
             'tw.rb': G('أَعْطِ', 'أَعْطِي') + ' الرُّوبُوتَ الأَمْرَ: «تَقَدَّمْ، ثُمَّ انْعَطِفْ يَسَارًا، ثُمَّ تَقَدَّمْ خُطْوَتَيْنِ»، ' + GO,
+            'tw.rb2': G('أَعْطِ', 'أَعْطِي') + ' الرُّوبُوتَ الأَمْرَ: «انْعَطِفْ يَمِينًا، ثُمَّ تَقَدَّمْ، ثُمَّ انْعَطِفْ يَسَارًا، ثُمَّ تَقَدَّمْ»، ' + GO,
             'tw.back': G('عُدَّ', 'عُدِّي') + ' إِلَى الخَلْفِ مِنْ تِسْعَةَ عَشَرَ حَتَّى خَمْسَةَ عَشَرَ، ' + DONE},
   'pool': {'pos|under': [place('tw.under', 'chest', 'cat', 'under')], 'lrPick': [lrPick('tw.lr', 'ball', 'L')], 'line|train|ord': [car('tw.5', 8, 5)],
-           'jump+': [jump('tw.add', 8, 2)], 'regions': [place('tw.both', 'regions', 'star', 'both')], 'robot': [robot('tw.rb', 'FLFF')],
+           'jump+': [jump('tw.add', 8, 2)], 'regions': [place('tw.both', 'regions', 'star', 'both')], 'robot': [robot('tw.rb', 'FLFF'), robot('tw.rb2', 'RFLF')],
            'mapFind|cell': [mfind('pr.c3', LZ5, cell('treasure', 2, 'front'))], 'mapFind|on': [mfind('gm.1', LZ6, on('treasure', 'bed'))],
            'walk-': [walk('tw.back', 19, 15)]}},
 }
@@ -719,15 +726,64 @@ def helpItems(L):   # ما يُشغَّل بالمساعدة (فيه التوأ�
     for its in L.get('mastery', {}).get('remedial', {}).values(): yield from its
     for st in L['flow']:
         if st.get('scene') == 'items' and st.get('mode') in ('practice', 'remedial'): yield from st['items']
+def twinPaths(L):   # ما يعيشه الطفل: التمرين العادي أو التحدّي (يختار أحدهما) ومعه ألعاب الدرس، ثم العلاج بعد الإتقان إن احتاجه
+    fl = [x for st in L['flow'] if st.get('scene') == 'items' and st.get('mode') in ('practice', 'remedial') for x in st['items']]
+    return {'A': L['practice'].get('normal', []) + fl, 'B': L['practice'].get('challenge', []) + fl,
+            'C': [x for its in L.get('mastery', {}).get('remedial', {}).values() for x in its]}
 def attachTwins(L):
+    """التوأم مسألة جديدة على الطفل في ما يعيشه (الفحوص المستقلة C وD وE، والدرس 132): لا يعيد ما قبل التمرين، ولا مسألة بندٍ في مساره
+    ولا في العلاج بعده، ولا توأماً آخر في مساره؛ وتوأم العلاج لا يعيد شيئاً من المسارين ولا توائمهما. وبنود المسار الآخر مرشّحة توائمَ
+    (لا يراها هذا الطفل)، ومسائل التقييم في الوحدة كلها ممنوعة (التوائم «معروضة»). يُحلّ بالتراجع، ويحسمه build/d240.mjs."""
     T = TWINS[L['id']]
     for k, v in T['lines'].items(): assert k not in L['lines'], (L['id'], k); L['lines'][k] = v
-    helped = {fact(x) for x in helpItems(L)}   # مسائل بنود المساعدة في الدرس (التمرين والتحدّي واللعبة والعلاج): التوأم لا يعيدها (الفحص المستقل D)
-    for it in helpItems(L):
-        c = [x for x in T['pool'].get(skill(it), []) if fact(x) != fact(it) and fact(x) not in T.get('avoid', ()) and fact(x) not in helped]   # ولا ما عُرض قبل التمرين ولا مسألة بند بمساعدة آخر (يحسمه build/d240.mjs)
+    P = twinPaths(L); items = []; seen = set()
+    for k in ('A', 'B', 'C'):
+        for it in P[k]:
+            if id(it) not in seen: seen.add(id(it)); items.append(it)
+    mem = {id(it): {k for k in P if any(x is it for x in P[k])} for it in items}
+    F = {k: {fact(x) for x in P[k]} for k in P}
+    bad0 = set(T.get('avoid', ())) | ASSESS
+    def forbid(it):
+        m = mem[id(it)]; s = set(bad0) | {fact(it)} | F['C']
+        for k in ('A', 'B'):
+            if k in m or 'C' in m: s |= F[k]
+        return s
+    def cands(it):
+        c = [x for x in T['pool'].get(skill(it), [])] + [x for x in items if x is not it and skill(x) == skill(it)]
+        out, fs = [], set()
+        for x in c:
+            f = fact(x)
+            if f in forbid(it) or f in fs: continue
+            fs.add(f); out.append(x)
         # واليمين واليسار بالجهة الأخرى: الطفل يُرى من ظهره دائماً، فجواب الجهة نفسها يُحفظ من الكشف مكاناً على الشاشة
-        if it['t'] in ('lrTap', 'lrPick'): c.sort(key=lambda x: x['side'] == it['side'])
-        assert c, ('لا توأم', L['id'], it['q'], skill(it)); it['twin'] = json.loads(json.dumps(c[0]))
+        if it['t'] in ('lrTap', 'lrPick'): out.sort(key=lambda x: x['side'] == it['side'])
+        return out
+    C = {id(it): cands(it) for it in items}
+    for it in items: assert C[id(it)], ('لا توأم', L['id'], it['q'], skill(it))
+    def clash(a, fa, b, fb):   # توأما بندين في مسار واحد مسألة واحدة (والعلاج مسار بعد الإتقان: توائمه مختلفة بينها، وقد يعود فيه توأم من التمرين)
+        if fa != fb: return False
+        ma, mb = mem[id(a)], mem[id(b)]
+        return bool(ma & mb)
+    order = sorted(items, key=lambda it: len(C[id(it)])); pick = {}
+    def solve(i):
+        if i == len(order): return True
+        it = order[i]
+        for x in C[id(it)]:
+            f = fact(x)
+            if any(clash(it, f, o, fact(pick[id(o)])) for o in order[:i]): continue
+            pick[id(it)] = x
+            if solve(i + 1): return True
+            del pick[id(it)]
+        return False
+    if not solve(0):
+        for it in items: print('  ', it['q'], skill(it), sorted(mem[id(it)]), [fact(x) for x in C[id(it)]])
+        raise AssertionError(('لا توزيع للتوائم', L['id']))
+    for it in items: it['twin'] = json.loads(json.dumps(pick[id(it)]))
+    for it in items: it['twin'].pop('twin', None)
+def _assess(L):   # بنود التقييم (الإتقان والبند المشتبك والمراجعة والاختبار): مسائلها لا تكون توائم في أي درس من الوحدة
+    M = L.get('mastery', {})
+    return [x for a in M.get('concepts', {}).values() for x in a] + ([M['mixed']['item']] if M.get('mixed') else []) + L.get('review', []) + [q['item'] for q in (L.get('test') or {}).get('items', [])]
+ASSESS = {fact(x) for _L in (d1, d2, d3, d4, d5, d6, d7) for x in _assess(_L) if isinstance(x, dict) and isinstance(x.get('t'), str)}
 for _L in (d1, d2, d3, d4, d5, d6, d7): attachTwins(_L)
 
 # ======================= الوحدة =======================

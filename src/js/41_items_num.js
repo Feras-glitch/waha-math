@@ -53,7 +53,10 @@ ITEM.same = {
     const to = layoutPts(item.n, item.to || 'scatter', 180, 118, 58, CHAOS_SPOT);
     svg.querySelectorAll('g[pointer-events=none]').forEach(m => { if (m.parentNode === svg) m.remove(); });   /* العلامات كلها بمجموعاتها (لا الشارة من داخل مجموعتها) */
     await Promise.all(gs.map((g, i) => anim(g, [{ transform: `translate(${from[i].x}px,${from[i].y}px)` }, { transform: `translate(${to[i].x}px,${to[i].y}px)` }], { duration: 900, fill: 'forwards', easing: 'ease-in-out' }).done));
-    if (item.add) { const p = layoutPts(1, 'row', item.add > 0 ? 330 : 30, 40)[0]; const extra = thingAt(svg, { ...proto, size: 44, label: null }, p.x, p.y); const q = { x: 180 + R(-30, 30), y: 210 };
+    if (item.add) { const p = layoutPts(1, 'row', item.add > 0 ? 330 : 30, 40)[0]; const extra = thingAt(svg, { ...proto, size: 44, label: null }, p.x, p.y);
+      /* يستقرّ المُضاف في مكان خالٍ: بعيداً عن كل شيء (60 على الأقل) وعن فوضى (الفحص المستقل E: كان عند y ثابت فيلامس شيئاً من الدائرة في أكثر البذور) */
+      const free = []; for (let x = 52; x <= 308; x += 16) for (let y = 52; y <= 222; y += 16) if (Math.min(...to.map(t => Math.hypot(t.x - x, t.y - y))) >= 60 && Math.hypot(x - CHAOS_SPOT.x, y - CHAOS_SPOT.y) > CHAOS_SPOT.r + 30) free.push({ x, y });
+      const q = free.length ? free[R(0, free.length - 1)] : { x: 180 + R(-30, 30), y: 210 };
       await anim(extra, [{ transform: `translate(${p.x}px,${p.y}px)` }, { transform: `translate(${q.x}px,${q.y}px)` }], { duration: 900, fill: 'forwards' }).done; item._extra = q; }
     /* الحلّ المشترك (المستوى 3): «نعدّها معاً الآن» بعد البعثرة، والأعداد باقية حين يختار الطفل (D257(5)(و)) */
     if (tries >= 3) (await badgeCount(svg, [...to, ...(item._extra && item.add ? [item._extra] : [])].map(p => ({ x: p.x, y: p.y - 26 })), css('--square'))).dataset.help = 1;

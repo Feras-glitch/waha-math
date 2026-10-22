@@ -53,6 +53,32 @@ HOLDS = r"""async () => { const found = []; const walk = (v, id) => { if (Array.
       if (!(ty(th) <= feet - 12)) bad.push(side + ': على الأرض (' + ty(th) + ' من ' + feet + ')'); if (hx < t.left - 6 || hx > t.right + 6 || hy < t.top - 6 || hy > t.bottom + 6) bad.push(side + ': اليد ليست عليه'); }
     out.push([id, spec.q, bad.join('، ')]); }
   hush(); FLOW++; return out; }"""
+# و«هل بقي عددها كما هو؟» بإضافة: الأشياء لا يلامس بعضها بعضاً في العدّ (الفحص المستقل E: المُضاف يلامس شيئاً من الدائرة في 16 بذرة من 20)؛ كل بند ثماني مرات
+SAMES = r"""async () => { const found = []; const walk = (v, id) => { if (Array.isArray(v)) return v.forEach(x => walk(x, id)); if (!v || typeof v !== 'object') return;
+    if (v.t === 'same' && v.add) found.push([id, v]); for (const [k, x] of Object.entries(v)) if (k !== 'lines' && k !== 'labels') walk(x, id); };
+  for (const id of UNITS.flatMap(u => u.lessons)) walk(LDATA[id], id); const out = [];
+  for (const [id, spec] of found) for (let rep = 0; rep < 8; rep++) { hush(); FLOW++; CUR = LDATA[id]; show('lesson'); window.__auto = null; const it = ITEM.same.make(JSON.parse(JSON.stringify(spec))); ITEM.same.ask(it, 'explore', 1).catch(() => {});
+    for (let w = 0; w < 200 && !window.__auto; w++) await new Promise(r => setTimeout(r, 25));
+    const P = [...(it._to || []), ...(it._extra ? [it._extra] : [])]; let m = 1e9; for (let i = 0; i < P.length; i++) for (let j = i + 1; j < P.length; j++) m = Math.min(m, Math.hypot(P[i].x - P[j].x, P[i].y - P[j].y));
+    out.push([id, spec.mk + ' ' + spec.n + '+' + spec.add, Math.round(m), !!it._extra]); }
+  hush(); FLOW++; return out; }"""
+# و«ضع النجمة في منطقتها» لا يبدأ والنجمة في المنطقة المطلوبة (الفحص المستقل E: «خارج الدائرة وخارج المربع» والرفّ خارجهما، فالمطلوب صحيح قبل أن يُفعل شيء)
+PLACES = r"""async () => { const found = []; const walk = (v, id) => { if (Array.isArray(v)) return v.forEach(x => walk(x, id)); if (!v || typeof v !== 'object') return;
+    if (v.t === 'place' && v.ref === 'regions') found.push([id, v]); for (const [k, x] of Object.entries(v)) if (k !== 'lines' && k !== 'labels') walk(x, id); };
+  for (const id of UNITS.flatMap(u => u.lessons)) walk(LDATA[id], id); const out = [];
+  for (const [id, spec] of found) { hush(); FLOW++; CUR = LDATA[id]; show('lesson'); const it = ITEM.place.make(JSON.parse(JSON.stringify(spec))); ITEM.place.ask(it, 'explore', 0);
+    await new Promise(r => setTimeout(r, 120)); const th = document.querySelector('#stage [data-start-region]');
+    out.push([id, spec.q, spec.at, th ? th.dataset.startRegion : null]); }
+  hush(); FLOW++; return out; }"""
+# ومناطق اللمس تُعاد حين يتغيّر المسرح، فحسابها رخيص: الطريق بثلاث وعشرين منطقة على معالج أبطأ أربع مرات أقلّ من 25 م.ث (الفحص المستقل E: كان 98–116)
+PADS = r"""async () => { hush(); FLOW++; CUR = LDATA['m1.u3.d6']; show('lesson'); const spec = JSON.parse(JSON.stringify(CUR.practice.normal[2])); const T = ITEM[itemType(spec)]; T.ask(T.make(spec), 'explore', 0).catch(() => {});
+  await new Promise(r => setTimeout(r, 1200)); const svg = document.querySelector('#stage svg'); const n = svg.querySelectorAll('rect.hit').length;
+  const t0 = performance.now(); for (let i = 0; i < 10; i++) refreshPads(svg); const ms = (performance.now() - t0) / 10; hush(); FLOW++; return [n, ms]; }"""
+# ولمسة بالإصبع على حافة جدار الصندوق السفلى في «ما الذي داخل الصندوق؟» لا تُسجَّل جواباً (الفحص المستقل E: كان المتصفّح ينقلها إلى الدبّ تحت الصندوق)
+EDGE_START = r"""(px) => { const L = LDATA['m1.u3.d1']; const it = (new Function('L', 'return L.' + px))(L); hush(); CUR = L; FLOW++; show('lesson'); window.__res = null; window.__att = [];
+  if (!window.__la2) { window.__la2 = logAttempt; logAttempt = a => { (window.__att = window.__att || []).push(a); return window.__la2(a); }; }
+  runItem(JSON.parse(JSON.stringify(it)), 'practice', { scene: 'edge' }).then(r => { window.__res = r.ok; }); }"""
+EDGE_PT = r"""() => { const f = document.querySelector('#stage [data-front]'); if (!f) return null; const r = f.getBoundingClientRect(); return [(r.left + r.right) / 2, r.bottom - 5]; }"""
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(); ctx = await b.new_context(**p.devices['Pixel 5']); pg = await ctx.new_page(); errs = []
@@ -91,6 +117,30 @@ async def main():
     holds = await pg.evaluate(HOLDS); bad_holds = [r for r in holds if r[2]]
     for lid, q, why in bad_holds: check(False, '%s: «%s»: %s' % (lid, q, why))
     check(bool(holds) and not bad_holds, 'ما في اليد (%d بنود) مرفوع واليد عليه' % len(holds))
+    sames = await pg.evaluate(SAMES); bad_sames = [r for r in sames if not r[3] or r[2] < 50]
+    for lid, what, m, ex in bad_sames[:6]: check(False, '%s: «بقي كما هو» (%s): شيئان يتلامسان (أقرب مسافة %d، والحجم 44)%s' % (lid, what, m, '' if ex else '، ولا مُضاف'))
+    check(bool(sames) and not bad_sames, '«بقي كما هو» بإضافة (%d تشغيلاً): لا يتلامس شيئان' % len(sames))
+    # على iPhone SE (أضيق شاشة، والمناطق فيه أكبر بوحدات الرسم)، في صفحة مستقلة بمعالج أبطأ أربع مرات
+    c2 = await b.new_context(**p.devices['iPhone SE']); p2 = await c2.new_page(); await p2.goto('file://' + os.path.abspath(FILE) + '#fast&seed=7'); await p2.wait_for_timeout(300)
+    await p2.evaluate("""() => { localStorage.clear(); localStorage.setItem('hp_kids', JSON.stringify([{ id: 'k1', name: 'سلمى', gender: 'f' }])); localStorage.setItem('hp_kid', JSON.stringify('k1'));
+      localStorage.setItem('hp_settings:k1', JSON.stringify({ sessionMax: 0, muted: true })); localStorage.setItem('hp_prog:k1', JSON.stringify({ schema: 3, unlockAll: true })); }""")
+    await p2.reload(); await p2.wait_for_timeout(500); cdp = await c2.new_cdp_session(p2); await cdp.send('Emulation.setCPUThrottlingRate', {'rate': 4}); pads = await p2.evaluate(PADS); 
+    edges = []
+    for px in ['flow[3].items[1].twin', 'practice.challenge[3]']:   # «ما الذي داخل الصندوق؟» (التوأم)، و«ما الذي تحت الصندوق؟»
+      await p2.evaluate(EDGE_START, px)
+      for _ in range(200):
+        if await p2.evaluate("() => !!window.__auto"): break
+        await p2.wait_for_timeout(50)
+      await p2.wait_for_timeout(500); pt = await p2.evaluate(EDGE_PT)
+      if pt: await p2.touchscreen.tap(pt[0], pt[1]); await p2.wait_for_timeout(700)
+      edges.append((px, pt, await p2.evaluate("() => (window.__att || []).map(a => a.ans)")))
+    await c2.close()
+    bad_e = [e for e in edges if not e[1] or e[2]]
+    check(not bad_e, 'لمسة على حافة جدار الصندوق السفلى لا تُسجَّل جواباً (iPhone SE)%s' % ('' if not bad_e else ': ' + '; '.join('%s → %s' % (e[0], e[2] or 'لا جدار') for e in bad_e)))
+    check(pads[0] >= 20 and pads[1] < 25, 'حساب مناطق اللمس (%d منطقة على الطريق، معالج أبطأ أربع مرات): %.1f م.ث (المطلوب أقل من 25)' % tuple(pads))
+    places = await pg.evaluate(PLACES); bad_places = [r for r in places if not r[3] or r[3] == r[2]]
+    for lid, q, at, st in bad_places: check(False, '%s: «%s»: النجمة تبدأ في المنطقة المطلوبة (%s)' % (lid, q, st or 'لا علامة بداية'))
+    check(bool(places) and not bad_places, '«ضع النجمة» (%d بنود) لا يبدأ والمطلوب صحيح' % len(places))
     await b.close()
     print('items run:', ', '.join('%s %d' % kv for kv in sorted(counts.items())), '| remedial twins %d of %d' % (twins, need_twins))
     check(sum(counts.values()) == 2 * len(items), 'كل البنود (%d بنداً × صحيح وخطأ) انتهت بلا خطأ' % len(items))

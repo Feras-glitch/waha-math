@@ -70,7 +70,8 @@ function spotPick(svg, thing, home, spots, okKeys, opt = {}) {
     let d = null; const base = thing.getAttribute('transform') || '';
     thing.addEventListener('pointerdown', e => { if (done) return; d = { sx: e.clientX, sy: e.clientY }; try { thing.setPointerCapture(e.pointerId); } catch (x) {} });
     thing.addEventListener('pointermove', e => { if (!d) return; const m = svg.getScreenCTM(); thing.setAttribute('transform', `translate(${(e.clientX - d.sx) / m.a} ${(e.clientY - d.sy) / m.d}) ` + base); });
-    const up = e => { if (!d || done) { d = null; return; } const p = svgPoint(svg, e); d = null; const near = rings.map(r => ({ r, dd: Math.hypot(r.x - p.x, r.y - p.y) })).sort((a, b) => a.dd - b.dd)[0];
+    /* لمسةٌ على الشيء بلا سحب لا تُجيب (قد يبدأ الشيء قرب حلقة: النجمة داخل الدائرة، الفحص المستقل E) */
+    const up = e => { if (!d || done) { d = null; return; } if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 10) { d = null; thing.setAttribute('transform', base); return; } const p = svgPoint(svg, e); d = null; const near = rings.map(r => ({ r, dd: Math.hypot(r.x - p.x, r.y - p.y) })).sort((a, b) => a.dd - b.dd)[0];
       thing.setAttribute('transform', base); if (near && near.dd < 58) finish(near.r); };
     thing.addEventListener('pointerup', up); thing.addEventListener('pointercancel', () => { d = null; thing.setAttribute('transform', base); }); }));
   p.cancel = () => { if (!done) cleanup(); }; return p; }   /* إلغاء الانتظار (زرّ آخر أجاب): لا تبقى الحلقات ولا سحب الشيء */
@@ -84,6 +85,11 @@ ITEM.where = {
     if (item.ask === 'thing') { say(...lineOf(item.q), { free: true });
       /* ما في داخل الصندوق يطلّ نصفه فوق جداره الأمامي: اللمس على الجدار يبلغه (الفحص المستقل D: كانت لمسة وسط الكرة تقع على الجدار فلا يحدث شيء) */
       if (P.C) P.C.front.setAttribute('pointer-events', 'none');
+      /* والمرجع نفسه (الصندوق أو الطاولة) يمتصّ لمسته ولا يُجيب: كان المتصفّح يحرّك لمسةً على حافة الصندوق السفلى أو ساقه إلى أقرب شيء (الدبّ تحته)
+         فتُسجَّل جواباً خاطئاً لم يقصده الطفل (الفحص المستقل E) */
+      for (const R of [P.C, P.T]) if (R && R.g) R.g.addEventListener('click', () => {});
+      /* والجدار الأمامي لا يأخذ اللمس، فتحته سطحٌ شفاف بحجمه يمتصّه (تحت ما في الصندوق): لمسة على الجدار حول الكرة تقع عليه لا على الأرض */
+      if (P.C) { const fb = P.C.front.getBBox(); P.C.g.insertBefore(el('rect', { x: fb.x, y: fb.y, width: fb.width, height: fb.height, fill: 'transparent', 'pointer-events': 'all', 'data-absorb': 1 }), P.C.mid); }
       const k = await tapOne(P.placed.map(t => ({ g: t.g, k: posKey(t.at), label: THING_LABEL(t.k) })), { ok: item.want, pad: 64 }); hush(); return { ans: k, ctx: { svg, P } }; }
     say(...lineOf(item.q), { free: true });
     const k = await choosePick(item.words.map(o => [o, T('gen.pos.' + o), '', 'gen.pos.' + o]), item.want); hush(); return { ans: k, ctx: { svg, P } }; },
@@ -102,8 +108,11 @@ ITEM.place = {
   make(spec) { return { ...spec, tag: 'place', want: spec.at }; },
   async ask(item, mode, tries) { const svg = item.ref === 'queue' ? newStage(QH, { oasis: false, ground: 0 }) : newStage(300, null); const P = posPic(svg, { ref: item.ref, put: item.put || [], open: true, members: item.members });
     /* والرفّ في المنطقتين فوق زاوية المربع لا عليها (الفحص المستقل B: بدأت النجمة على زاويته) */
-    const tr = item.ref === 'queue' ? trayAt(svg, 60, 76) : item.ref === 'regions' ? trayAt(svg, 316, 44) : trayAt(svg); const home = { x: tr.x, y: tr.y, s: item.thing === 'star' ? 1 : .75 };
+    /* و«خارج الاثنين» تبدأ النجمة داخل الدائرة لا على الرفّ: الرفّ خارج الشكلين، فكان المطلوب صحيحاً قبل أن يُفعل شيء (الفحص المستقل E) */
+    const in0 = item.ref === 'regions' && item.want === 'none';
+    const tr = in0 ? { x: 140, y: 116 } : item.ref === 'queue' ? trayAt(svg, 60, 76) : item.ref === 'regions' ? trayAt(svg, 316, 44) : trayAt(svg); const home = { x: tr.x, y: tr.y, s: item.thing === 'star' ? 1 : .75 };
     const th = item.thing === 'star' ? starAt(svg, home.x, home.y - 24, {}) : DOLL_COLORS[item.thing] ? dollSideAt(svg, home.x, home.y, item.thing, { s: .7 }) : placeThingAt(svg, item.thing, home.x, home.y, { scale: home.s });
+    /*T*/if (TESTHOOK && P.R) { const x = home.x, y = home.y - 24; th.dataset.startRegion = P.R.inCircle(x, y) ? (P.R.inSquare(x, y) ? 'both' : 'inC') : P.R.inSquare(x, y) ? 'inS' : 'none'; }/*/T*/
     const keys = item.spots || Object.keys(P.spots).filter(k => k !== 'far');
     const spots = keys.map(k => ({ k, x: P.spots[k].x, y: bodyY(P.spots[k], item.thing) }));
     if (tries >= 3) await S('gen.solve.pos.' + placeWord(item));

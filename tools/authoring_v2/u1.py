@@ -322,7 +322,7 @@ d4 = {
    'N002': [{'t': 'same', 'mk': 'capS', 'n': 6, 'from': 'row', 'to': 'circle'}, {'t': 'same', 'mk': 'capS', 'n': 4, 'from': 'row', 'to': 'scatter', 'add': 1}, {'t': 'produce', 'mk': 'capS', 'n': 8}]},   # «ضع 7» في تحدّي التمرين
   'recall': {'C005': {'auto': True, 'h': 260, 'steps': [[{'show': CIRC(size=64), 'at': [300, 130], 'id': 'a'}, {'show': SQ(size=64), 'at': [215, 130], 'id': 'b'}, {'show': TRI(w=70, h=64), 'at': [135, 130], 'id': 'c'}, {'show': RECT(w=80, h=44), 'at': [55, 130], 'id': 'd'}, {'say': 'ms.recallC'}]]},
              'N002': {'auto': True, 'h': 240, 'steps': [[{'say': 'ms.recallN'}]]}},
-  'remedial': {'C005': [sort('rectV'), sort('triWide')], 'N002': [{'t': 'same', 'mk': 'circleS', 'n': 5, 'from': 'scatter', 'to': 'row', 'add': 1}]},
+  'remedial': {'C005': [sort('rectV'), sort('triWide')], 'N002': [{'t': 'same', 'mk': 'circleS', 'n': 5, 'from': 'scatter', 'to': 'row'}]},   # العلاج بقاءٌ خالص: الخطأ الذي يعالجه «البعثرة تزيد» (الفحص المستقل E)
   'mixed': {'lesson': 'm1.u1.d3', 'item': {'t': 'completeRect', 'corners': [[0, 0], [2, 0], [2, 3]], 'cand': [[0, 3], [1, 3], [0, 2]], 'ans': [0, 3]}}, 'ok': 'ms.ok'},
  'review': [sort('clock', c='C005'), sort('pennant', c='C005'), {'t': 'produce', 'mk': 'capS', 'n': 4, 'c': 'N002'}, {'t': 'produce', 'mk': 'stoneS', 'n': 9, 'c': 'N002'}],
  'wrap': {'art': 'garden', 'lines': ['wrap.01'], 'home': 'wrap.home'},

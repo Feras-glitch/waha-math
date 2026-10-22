@@ -269,29 +269,41 @@ export function d240(lessons, code, MAKERS) {
         if ((a && a === b) || norm(v) === norm(v.twin)) errors.push(`${L.id}: توأم البند «${v.q}» مسألته مسألة أصله${a ? ' (' + a + ')' : ''} (الفحص المستقل B)`); }
       for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkT(x, L); };
     for (const L of Object.values(lessons)) walkT(L, L);
-    /* والتوأم مسألة جديدة على الطفل (الفحص المستقل C، ن-ث9، وD): لا يعيد مسألةً حُلّت أمامه في الدرس (الإشعال والاكتشاف والمثال، وبنود المساعدة الأخرى)، وإلا كان تذكّراً لا تطبيقاً */
+    /* والتوأم مسألة جديدة على الطفل في ما يعيشه (الفحوص المستقلة C وD وE، الدرس 132)، وإلا كان تذكّراً لا تطبيقاً. يختار الطفل التمرين العادي (A)
+       أو التحدّي (B) ومعه ألعاب الدرس، ثم العلاج (C) إن احتاجه بعد الإتقان. فتوأم بندٍ في A أو B لا يعيد ما قبل التمرين (الإشعال والاكتشاف والمثال،
+       ولعبةً بمشهدها الخاص)، ولا مسألة بندٍ آخر في مساره ولا في العلاج، ولا توأماً آخر في مساره؛ وتوأم العلاج لا يعيد ما قبل التمرين ولا بنود المسارات
+       كلها، ولا توأماً آخر في العلاج. وبند المسار الآخر يصلح توأماً: لا يراه هذا الطفل (الفحص المستقل E: كان توأم واحد لكل بنود المهارة، فيُرى مرتين وثلاثاً) */
     for (const L of Object.values(lessons)) { const before = new Map(); const firstPr = L.flow.findIndex(s => ['practice', 'game'].includes(s.s) || (s.scene === 'items' && ['practice', 'remedial'].includes(s.mode)));
       const grab = (v, where) => { if (Array.isArray(v)) return v.forEach(x => grab(x, where)); if (!v || typeof v !== 'object') return; if (typeof v.t === 'string') { const f = fact(v); if (f && !before.has(f)) before.set(f, where); }
         if (typeof v.scene === 'string' && SCENE_FACTS[v.scene]) for (const f of SCENE_FACTS[v.scene](v)) if (f && !before.has(f)) before.set(f, where + ' (يعرضه المشهد)');
         for (const [k, x] of Object.entries(v)) if (!['lines', 'labels', 'twin'].includes(k)) grab(x, where); };
       L.flow.forEach((st, i) => { if (firstPr < 0 || i < firstPr) grab(st, `${st.s}${st.scene ? ':' + st.scene : ''} (${i})`); });
-      /* ولا مسألةَ بندٍ آخر يُشغَّل بالمساعدة في الدرس (التمرين والتحدّي واللعبة والعلاج): كانت التوائم تعيد برنامج لعبة الروبوت ومسائل التمرين (الفحص المستقل D) */
-      /* واللعبة بمشهدها الخاص بعد التمرين أو في أوله (سباق الطريق، وعدّ مع فوضى) مسائلها معروضة كذلك */
-      L.flow.forEach((st, i) => { if (firstPr >= 0 && i >= firstPr) { if (st.scene === 'items') grab(st.items || [], `${st.s} (${i})`); else if (st.s === 'game') grab(st, `${st.s}${st.scene ? ':' + st.scene : ''} (${i})`); } });
-      grab((L.practice || {}).normal || [], 'التمرين'); grab((L.practice || {}).challenge || [], 'التحدّي'); grab(Object.values((L.mastery || {}).remedial || {}), 'العلاج');
-      const walkW = v => { if (Array.isArray(v)) return v.forEach(walkW); if (!v || typeof v !== 'object') return;
-        if (typeof v.t === 'string' && v.twin && typeof v.twin === 'object') { const b = fact(v.twin); if (b && before.has(b)) errors.push(`${L.id}: توأم البند «${v.q}» يعيد مسألة ${before.get(b)} (${b})، والتوأم مسألة جديدة (الفحص المستقل C)`); }
-        for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkW(x); };
-      walkW(L); } }
+      /* واللعبة بمشهدها الخاص بعد التمرين أو في أوله (سباق الطريق، وعدّ مع فوضى) يعيشها الطفل في المسارين: مسائلها معروضة */
+      L.flow.forEach((st, i) => { if (firstPr >= 0 && i >= firstPr && st.scene !== 'items' && st.s === 'game') grab(st, `${st.s}${st.scene ? ':' + st.scene : ''} (${i})`); });
+      const lab = new Map(), fl = [];
+      L.flow.forEach((st, i) => { if (st.scene === 'items' && ['practice', 'remedial'].includes(st.mode)) for (const v of st.items || []) { fl.push(v); lab.set(v, `${st.s} (${i})`); } });
+      const Pr = L.practice || {}; (Pr.normal || []).forEach(v => lab.set(v, 'التمرين')); (Pr.challenge || []).forEach(v => lab.set(v, 'التحدّي'));
+      const rem = Object.values((L.mastery || {}).remedial || {}).flat(); rem.forEach(v => lab.set(v, 'العلاج'));
+      const PATH = { A: [...(Pr.normal || []), ...fl], B: [...(Pr.challenge || []), ...fl], C: rem }, PN = { A: 'التمرين العادي', B: 'التحدّي', C: 'العلاج' };
+      const mem = new Map(); for (const k of ['A', 'B', 'C']) for (const v of PATH[k]) if (v && typeof v.t === 'string') { if (!mem.has(v)) mem.set(v, new Set()); mem.get(v).add(k); }
+      const tw = [];
+      for (const [v, m] of mem) { if (!v.twin || typeof v.twin !== 'object') continue; const b = fact(v.twin); if (!b) continue; tw.push([v, m, b]);
+        if (before.has(b)) { errors.push(`${L.id}: توأم البند «${v.q}» يعيد مسألة ${before.get(b)} (${b})، والتوأم مسألة جديدة (الفحص المستقل C)`); continue; }
+        const see = new Set(['C', ...(m.has('C') ? ['A', 'B'] : [...m])]);
+        const hit = [...mem].find(([w, mw]) => w !== v && [...mw].some(k => see.has(k)) && fact(w) === b);
+        if (hit) errors.push(`${L.id}: توأم البند «${v.q}» يعيد مسألة ${lab.get(hit[0]) || 'بند'} (${b})، والتوأم مسألة جديدة (الفحص المستقل C)`); }
+      for (let x = 0; x < tw.length; x++) for (let y = x + 1; y < tw.length; y++) { const [v, mv, b] = tw[x], [w, mw, c] = tw[y]; if (b !== c) continue;
+        const both = [...mv].filter(k => mw.has(k)); if (both.length) errors.push(`${L.id}: توأما «${v.q}» و«${w.q}» مسألة واحدة (${b}) في ${PN[both[0]]}: يراها الطفل مرتين، والثانية تذكّر (الفحص المستقل E)`); } } }
   /* «ضع القطعة في مكانها على الخريطة» يُحفظ جوابه حلقةً بين حلقات بعينها (الفحص المستقل D: المراجعة كانت الإتقان بقطعة أخرى، بالحلقات الثلاث نفسها والجواب نفسه):
-     فبند «ضع» في تقييم لا تتكرّر حلقاته وحلقة جوابه في بند «ضع» آخر من الوحدة، أيّاً كانت القطعة */
-  { const ring = it => { const W = it.lay.items.find(i => (i.id || i.k) === it.want) || {}; return (it.cands || []).map(c => c.join(',')).sort().join(';') + '>' + W.col + ',' + W.row; };
+     فبند «ضع» في تقييم لا تتكرّر حلقة جوابه في بند «ضع» آخر من الوحدة، أيّاً كانت القطعة والحلقات الأخرى (الفحص المستقل E: غُيّرت حلقة واحدة
+     وبقي الجواب في الحلقة نفسها على الشاشة، فيُحفظ مكاناً) */
+  { const ring = it => { const W = it.lay.items.find(i => (i.id || i.k) === it.want) || {}; return W.col + ',' + W.row; };
     const all = [], walkP = (v, L, role) => { if (Array.isArray(v)) return v.forEach(x => walkP(x, L, role)); if (!v || typeof v !== 'object') return; if (v.t === 'mapPut') all.push({ L, role, v });
       for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkP(x, L, k === 'twin' ? 'توأم' : role); };
     for (const L of Object.values(lessons)) { const M = L.mastery || {};
       walkP(L.flow, L, 'معروض'); walkP(L.practice || {}, L, 'معروض'); walkP(M.remedial || {}, L, 'معروض'); walkP(M.concepts || {}, L, 'إتقان'); walkP(M.mixed ? M.mixed.item : null, L, 'مشتبك'); walkP(L.review || [], L, 'مراجعة'); walkP(((L.test || {}).items || []).map(q => q.item), L, 'اختبار'); }
     for (const a of all) if (a.role !== 'معروض' && a.role !== 'توأم') for (const b of all) if (b !== a && b.L.unit === a.L.unit && ring(b.v) === ring(a.v))
-      errors.push(`${a.L.id}: «ضع» في ${a.role} «${a.v.q}»: حلقاته وحلقة جوابه كما في ${b.role} «${b.v.q}» (${b.L.id})، فيُحفظ الجواب حلقةً (الفحص المستقل D)`); }
+      errors.push(`${a.L.id}: «ضع» في ${a.role} «${a.v.q}»: حلقة جوابه (${ring(a.v)}) كما في ${b.role} «${b.v.q}» (${b.L.id})، فيُحفظ الجواب مكاناً على الشاشة (الفحصان المستقلان D وE)`); }
   /* D253 (3) بالألوان الحرفية: كل مولّد له شيء ولون ثابت (لا من الألوان المحايدة) يبتعد عن لون هوية نوعه ΔE2000 ≥ 12؛ ألوان الهوية من الكود نفسه */
   { const ID = {}; for (const m of code.matchAll(/--(circle|square|triangle|rect): (#[0-9a-fA-F]{6})/g)) ID[m[1]] ??= m[2];
     const sc = code.match(/const SOLIDC = \{([^}]*)\}/); if (sc) for (const m of sc[1].matchAll(/(\w+): '(#[0-9a-fA-F]{6})'/g)) ID[m[1]] = m[2];

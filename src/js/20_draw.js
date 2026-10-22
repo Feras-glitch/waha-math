@@ -204,9 +204,15 @@ function hitPad(g, minSize = 76, minPx = 56) { try { let r = g.querySelector(':s
     sizePad(r); return r; } catch (e) { return null; } }
 /* حجم المنطقة من حجم الشيء نفسه (بلا أي منطقة لمس فيه) ومقياس الشاشة الآن؛ ويُعاد حسابه حين يتغيّر حجم المسرح (فقاعة أطول، أو تدوير الشاشة) */
 function sizePad(r) { try { const g = r.parentNode; const hs = [...g.querySelectorAll('rect.hit')].map(h => [h, h.getAttribute('display')]); hs.forEach(([h]) => h.setAttribute('display', 'none'));
-  const bb = g.getBBox(); hs.forEach(([h, d]) => d == null ? h.removeAttribute('display') : h.setAttribute('display', d)); const k = scaleIn(g);
-  const need = Math.max(+r.dataset.min, (+r.dataset.px + 2) / pxPerUnit(g.ownerSVGElement));   /* هامش بكسلين للتقريب */ const w = Math.max(bb.width + 12 / k, need / k), h = Math.max(bb.height + 12 / k, need / k);
-  r.setAttribute('x', bb.x + bb.width / 2 - w / 2); r.setAttribute('y', bb.y + bb.height / 2 - h / 2); r.setAttribute('width', w); r.setAttribute('height', h); } catch (e) {} }
+  const bb = g.getBBox(); hs.forEach(([h, d]) => d == null ? h.removeAttribute('display') : h.setAttribute('display', d)); padSet(r, bb, scaleIn(g), pxPerUnit(g.ownerSVGElement)); } catch (e) {} }
+function padSet(r, bb, k, ppu) { const need = Math.max(+r.dataset.min, (+r.dataset.px + 2) / ppu);   /* هامش بكسلين للتقريب */ const w = Math.max(bb.width + 12 / k, need / k), h = Math.max(bb.height + 12 / k, need / k);
+  r.setAttribute('x', bb.x + bb.width / 2 - w / 2); r.setAttribute('y', bb.y + bb.height / 2 - h / 2); r.setAttribute('width', w); r.setAttribute('height', h); }
 /* حجم مجسّم تُلمس وجوهه: أصغر وجه نحو 0.38 من الحجم، فيكبر على الشاشة الضيقة حتى يبلغ الوجه 60 بكسلاً (والسقف 210) */
 const faceSize = (svg, base) => Math.min(210, Math.max(base, Math.ceil(60 / (.38 * pxPerUnit(svg)))));
-const refreshPads = svg => svg.querySelectorAll('rect.hit').forEach(sizePad);
+/* إعادة حساب المناطق كلها دفعةً: تُخفى ثم تُقاس كلها ثم تُكتب، فتخطيط واحد لا تخطيط لكل منطقة (الفحص المستقل E: 98 م.ث للطريق بثلاث وعشرين منطقة
+   على معالج أبطأ أربع مرات، وتُعاد مع كل تغيّر في المسرح) */
+const refreshPads = svg => { try { const rs = [...svg.querySelectorAll('rect.hit')]; if (!rs.length) return; const ppu = new Map();
+  const disp = rs.map(h => h.getAttribute('display')); rs.forEach(h => h.setAttribute('display', 'none'));
+  const M = rs.map(r => { try { const g = r.parentNode, o = g.ownerSVGElement; if (!ppu.has(o)) ppu.set(o, pxPerUnit(o)); return [g.getBBox(), scaleIn(g), ppu.get(o)]; } catch (e) { return null; } });
+  rs.forEach((h, i) => disp[i] == null ? h.removeAttribute('display') : h.setAttribute('display', disp[i]));
+  rs.forEach((r, i) => { if (M[i]) padSet(r, ...M[i]); }); } catch (e) {} };

@@ -436,13 +436,13 @@
     "k": 5,
     "twin": {
      "t": "lineTap",
-     "q": "tw.2",
+     "q": "pr.8",
      "row": {
       "kind": "train",
       "n": 8
      },
      "ask": "ord",
-     "k": 2
+     "k": 8
     }
    },
    {
@@ -588,13 +588,13 @@
     "k": 8,
     "twin": {
      "t": "lineTap",
-     "q": "tw.2",
+     "q": "pr.5",
      "row": {
       "kind": "train",
-      "n": 8
+      "n": 10
      },
      "ask": "ord",
-     "k": 2
+     "k": 5
     }
    },
    {
@@ -863,23 +863,23 @@
     "ask": "thing",
     "q": "mx.1",
     "pic": {
-     "ref": "table",
+     "ref": "tree",
      "put": [
       [
-       "car",
+       "cat",
        "on"
       ],
       [
-       "cat",
-       "under"
+       "ball",
+       "besideR"
       ],
       [
-       "book",
-       "besideR"
+       "car",
+       "besideL"
       ]
      ]
     },
-    "want": "under"
+    "want": "on"
    }
   },
   "ok": "ms.ok"

@@ -16,11 +16,16 @@ LIST = """(only) => { const out = []; for (const id of UNITS.flatMap(u => u.less
   (P.normal || []).forEach((it, i) => add(it, 'pr' + i)); (P.challenge || []).forEach((it, i) => add(it, 'prc' + i));
   for (const [c, a] of Object.entries(M.remedial || {})) a.forEach((it, i) => add(it, 'rm.' + c + i));
   L.flow.forEach((s, j) => { if (s.scene === 'items' && ['practice', 'remedial'].includes(s.mode)) (s.items || []).forEach((it, i) => add(it, 'fl' + j + '.' + i)); }); }
-  window.__LAD = out; return out.map(([id, k, it], n) => [id, k, itemType(it), n, !!(it.row && (it.row.kind === 'train' || it.ask === 'ord'))]); }"""
+  /* وبنود من صنع الفحص لمسارات في الكود لا يبلغها محتوى اليوم (الفحص المستقل E: شارات «٥ − ١» على أربع أصابع متجاورة تراكبت، ولا بند بمساعدة في المحتوى بها) */
+  for (const [id, k, it] of [['m1.u2.d5', 'synth.fact5-1', { t: 'fact', op: '-', a: 5, b: 1 }], ['m1.u2.d5', 'synth.fact4+1', { t: 'fact', op: '+', a: 4, b: 1 }]]) if (!only.length || only.includes(id)) out.push([id, k, it]);
+  window.__LAD = out; return out.map(([id, k, it], n) => [id, k, itemType(it), n, !!(it.row && (it.row.kind === 'train' || it.ask === 'ord')), it.side || null]); }"""
 START = """(n) => { const [id, k, it] = window.__LAD[n]; hush(); CUR = LDATA[id]; FLOW++; show('lesson'); SCENE_NOW = 'ladder:' + id; window.__res = null; window.__fails = 0;
-  if (window.__mo) window.__mo.disconnect(); window.__added = [];
+  if (window.__mo) window.__mo.disconnect(); window.__added = []; window.__mark = 1e15;
+  /* أزمنة ما يُقال وأزمنة التجربة (pushTest)، لترتيب «شاهد التجربة» قبل التجربة (الفحص المستقل E) */
+  window.__clips = window.__clips || []; if (!window.__clips.__t) { const op = window.__clips.push.bind(window.__clips); window.__clips.push = (...a) => { (window.__clipT = window.__clipT || []).push([a[0], performance.now()]); return op(...a); }; window.__clips.__t = 1; }
+  if (!window.__ptw && typeof pushTest === 'function') { const op = pushTest; window.pushTest = async (...a) => { (window.__ptT = window.__ptT || []).push(performance.now()); return op(...a); }; window.__ptw = 1; }
   if (!window.__la) { window.__la = logAttempt; logAttempt = a => { const r = window.__la(a); if (a && a.ok === false && a.scene === 'ladder') { window.__fails++;
-      if (window.__fails === 3) { window.__added = []; window.__mo = new MutationObserver(ms => { for (const m of ms) for (const nd of m.addedNodes) if (nd.nodeType === 1) window.__added.push([nd, m.target]); });
+      if (window.__fails === 3) { window.__added = []; window.__mark = performance.now(); window.__mo = new MutationObserver(ms => { for (const m of ms) for (const nd of m.addedNodes) if (nd.nodeType === 1) window.__added.push([nd, m.target]); });
         window.__mo.observe(document.querySelector('#stage'), { childList: true, subtree: true }); } } return r; }; }
   runItem(JSON.parse(JSON.stringify(it)), 'practice', { scene: 'ladder' }).then(r => { window.__res = { ok: r.ok }; }, e => { window.__res = { err: String(e && e.message || e) }; }); }"""
 STATE = """() => { const a = window.__auto; const go = document.querySelector('#go');
@@ -40,7 +45,14 @@ GONE = """() => { if (window.__mo) window.__mo.disconnect(); const A = window.__
   /* وفي اليمين واليسار: هالة الحلّ المشترك على اليد اليمنى للطفل المرسوم، كما تقول جملته (الفحص المستقل D: الهالة على اليسرى لم تُخفق الفحص) */
   const halo = document.querySelector('#stage [data-help] circle'), hand = document.querySelector('#stage [data-kid] [data-hand="R"]'); let onR = null;
   if (halo && hand) { const c = e => { const r = e.getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2]; }, [x1, y1] = c(halo), [x2, y2] = c(hand); onR = Math.hypot(x1 - x2, y1 - y2) < 10; }
-  return [gone.length, A.length, [...new Set(gone.map(([e]) => name(e)))].slice(0, 6), !!document.querySelector('#stage [data-help]'), onR]; }"""
+  /* وما في اليد فوق الهالة (الهالة تحته فلا تغطّيه)، وشارات العدّ لا تتراكب، وما قيل منذ الحكم الثالث وأين قيل «شاهد التجربة» من التجربة (الفحص المستقل E) */
+  const svg = document.querySelector('#stage svg'), kidG = svg && svg.querySelector('[data-kid]'), hg = svg && svg.querySelector('[data-help]');
+  const held = kidG ? [...svg.querySelectorAll('[data-thing]')].filter(g => !kidG.contains(g)) : []; const under = hg && held.length ? held.every(t => !!(hg.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING)) : null;
+  const cs = [...document.querySelectorAll('#stage [data-help] circle[r="15"]')].map(c => { const r = c.getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2, r.width / 2]; }); let lap = 0;
+  for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) if (Math.hypot(cs[i][0] - cs[j][0], cs[i][1] - cs[j][1]) < .8 * (cs[i][2] + cs[j][2])) lap++;
+  const said = (window.__clipT || []).filter(([, t]) => t >= window.__mark), pt = (window.__ptT || []).filter(t => t >= window.__mark);
+  const tog = said.find(([c]) => /^gen\.prop\.together/.test(c)); const order = tog ? (pt.length ? tog[1] <= pt[0] : null) : null;
+  return [gone.length, A.length, [...new Set(gone.map(([e]) => name(e)))].slice(0, 6), !!document.querySelector('#stage [data-help]'), onR, under, lap, said.map(([c]) => c), order]; }"""
 # الأنواع التي حلّها المشترك رسمٌ يُعلَّم data-help في الكود: يجب أن يكون على المسرح في المحاولة الرابعة (الفحص المستقل D: حذفُه كله لم يُخفق الفحص)؛
 # و«المس العربة» في القطار وترتيب الطابور وحدهما من lineTap (مواضع الطابور حلّها كلام)
 HELP_DRAWN = {'lrTap', 'lrPick', 'linePick', 'lineTap', 'mapFind', 'mapPut', 'routePick', 'fact', 'unknownStart', 'same'}
@@ -53,7 +65,8 @@ async def main():
       localStorage.setItem('hp_settings:k1', JSON.stringify({ sessionMax: 0, muted: true })); localStorage.setItem('hp_prog:k1', JSON.stringify({ schema: 3, unlockAll: true })); }""")
     await pg.reload(); await pg.wait_for_timeout(500)
     items = await pg.evaluate(LIST, ONLY); per = {}; n_run = 0; drawn = {}; onright = {}
-    for lid, key, typ, n, rowhelp in items:
+    lrsaid = []; unders = []; laps = []; orders = []
+    for lid, key, typ, n, rowhelp, side in items:
       e0 = len(errs); await pg.evaluate(START, n); last = -1; fourth = None; res = None
       for _ in range(1500):
         st = await pg.evaluate(STATE)
@@ -73,7 +86,12 @@ async def main():
       if fourth is None: continue   # بند بلا خطأ مقصود (لا يبلغ المحاولة الرابعة)
       per.setdefault(typ, []).append((fourth, tag))
       if typ in HELP_DRAWN and (typ != 'lineTap' or rowhelp): drawn.setdefault(typ, []).append((fourth[3], tag))
-      if typ in ('lrTap', 'lrPick'): onright.setdefault(typ, []).append((fourth[4], tag))
+      if typ in ('lrTap', 'lrPick'):
+        onright.setdefault(typ, []).append((fourth[4], tag)); want = 'gen.lr.togetherL' if side == 'L' else 'gen.lr.together'
+        lrsaid.append((any(c == want or c.startswith(want + '_') for c in fourth[7]), tag, side))
+        if fourth[5] is not None: unders.append((fourth[5], tag))
+      if fourth[6]: laps.append((fourth[6], tag))
+      if typ == 'property': orders.append((fourth[8], tag))
     await b.close()
     for typ, L in sorted(per.items()):
       bad = [(g, t) for g, t in L if g[0]]
@@ -84,6 +102,13 @@ async def main():
     for typ, L in sorted(onright.items()):
       off = [t for h, t in L if h is not True]
       check(not off, '%s: هالة الحلّ المشترك على اليد اليمنى للطفل المرسوم (%d%s)' % (typ, len(L), '' if not off else '؛ في غيرها: ' + ', '.join(off[:3])))
+    bad = [(t, sd) for ok, t, sd in lrsaid if not ok]
+    check((bool(lrsaid) or ONLY) and not bad, 'اليمين واليسار: جملة الحلّ المشترك لجهة المطلوب («واليسرى في الجهة الأخرى» حين تُطلب اليسرى) (%d%s)' % (len(lrsaid), '' if not bad else '؛ بغيرها: ' + ', '.join('%s (%s)' % b2 for b2 in bad[:3])))
+    badu = [t for u, t in unders if not u]
+    check((bool(unders) or ONLY) and not badu, 'ما في اليد فوق هالة الحلّ المشترك لا تحتها (%d%s)' % (len(unders), '' if not badu else '؛ الهالة فوقه: ' + ', '.join(badu[:3])))
+    check(not laps, 'شارات الحلّ المشترك لا تتراكب%s' % ('' if not laps else ': ' + ', '.join('%s (%d)' % (t, l) for l, t in laps[:4])))
+    bado = [t for o, t in orders if o is not True]
+    check((bool(orders) or ONLY) and not bado, '«شاهد التجربة» تُقال قبل التجربة في المحاولة الرابعة (%d%s)' % (len(orders), '' if not bado else '؛ بعدها أو بلا تجربة: ' + ', '.join(bado[:3])))
     check(n_run == len(items), 'كل بنود المساعدة (%d) انتهت بلا خطأ' % len(items))
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())
