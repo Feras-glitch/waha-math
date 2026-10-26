@@ -50,15 +50,17 @@ async function chaosFlag(C) {
 /* البطاقة على غير صندوقها أو برجها: يعدّ الطفل ويختار البطاقة الصحيحة */
 async function chaosCard(C) {
   const svg = newStage(300, { oasisOpacity: .15, ground: C.tower ? 14 : 0 }); let pts;
-  if (C.tower) pts = towerAt(svg, 180, 262, C.n, { size: 28, color: CUBE.lemon });
+  /* والبرج يساراً وبطاقات الاختيار يمينه (الفحص المستقل D2 لبوابة S1-U4 (8): كانت البطاقة الوسطى على أسفل البرج وشارته «١») */
+  const TX = 84, SX = C.tower ? TX + 76 : 180, SY = C.tower ? 120 : 42;
+  if (C.tower) pts = towerAt(svg, TX, 262, C.n, { size: 28, color: CUBE.lemon });
   else pts = mailboxAt(svg, 180, 128, C.n);   /* أعلى قليلاً: تنتشر الرسائل تحته للعدّ */
-  const card = digitCard(svg, C.tower ? 260 : 180, C.tower ? 120 : 42, C.shown, { size: .9, stroke: css('--chaos') });
+  const card = digitCard(svg, SX, SY, C.shown, { size: .9, stroke: css('--chaos') });
   const fz = chaosAt(svg, 40, 60, .42); await chaosGiggle(fz); await S(C.find); fz.remove();
   if (C.tower) await towerTapCount(svg, pts); else await mailSpread(svg, pts, 250);
-  const opts = shuffle([C.n, C.shown, ...(C.extra != null ? [C.extra] : [])]); const cards = opts.map((n, i) => ({ g: digitCard(svg, 300 - i * (240 / Math.max(1, opts.length - 1)), 250, n, { size: .95 }), k: n, label: T(numw(n)) }));
+  const opts = shuffle([C.n, C.shown, ...(C.extra != null ? [C.extra] : [])]); const cards = opts.map((n, i) => ({ g: digitCard(svg, C.tower ? 324 - i * (150 / Math.max(1, opts.length - 1)) : 300 - i * (240 / Math.max(1, opts.length - 1)), 250, n, { size: .95 }), k: n, label: T(numw(n)) }));
   await S(C.ask || 'gen.chaos.whichCard');
   let tries = 0; while (true) { const k = await tapOne(cards, { ok: C.n, pad: 84 }); tries++; logAttempt({ scene: 'chaos', tag: 'card', ok: k === C.n, firstTry: tries === 1 }); if (k === C.n) break; SFX.soft(); await S('gen.count.again'); }
-  SFX.good(); card.remove(); digitCard(svg, C.tower ? 260 : 180, C.tower ? 120 : 42, C.n, { size: .9 }); if (C.after) await S(C.after);
+  SFX.good(); card.remove(); digitCard(svg, SX, SY, C.n, { size: .9 }); if (C.after) await S(C.after);
 }
 /* البطاقتان المسموعتان: الخاطئة بلا نصّ، تسبقها النغمة الثابتة و«فوضى تظنّ…» */
 async function chaosCards(C) {

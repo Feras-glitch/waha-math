@@ -119,7 +119,7 @@ function panStrip(svg, { x0 = 0, w = 360, y0, y1, contentW, step = 64, off = 0, 
   const mk = (k, x, flip) => { const b = el('g', { transform: `translate(${x} ${btnY ?? y1 + 30})`, role: 'button', tabindex: 0, 'data-panbtn': k, 'aria-label': plain(labelText(k === 'back' ? 'panBack' : 'panFwd')), style: 'cursor:pointer' }, svg);
     el('circle', { r: 24, fill: css('--paper'), stroke: css('--line'), 'stroke-width': 3 }, b); el('path', { d: flip ? 'M8 -10 L-6 0 L8 10' : 'M-8 -10 L6 0 L-8 10', fill: 'none', stroke: css('--ink'), 'stroke-width': 5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, b);
     hitPad(b, 64); const go = () => { SFX.tick(); S.setOff(S.off + (k === 'back' ? -1 : 1) * (Math.floor(w / step) - 1) * step); };
-    b.onclick = go; b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') go(); }; S.btn[k] = b; };
+    b.onclick = go; b.onkeydown = e => { if (actKey(e)) go(); }; S.btn[k] = b; };
   mk('back', x0 + 30, true); mk('fwd', x0 + w - 30, false);
   /* السحب بالإصبع: أكثر من 10 بكسلات حركة = سحب، فلا تُعدّ اللمسة لمساً لما تحتها */
   let p0 = null;

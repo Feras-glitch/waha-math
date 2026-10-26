@@ -96,5 +96,6 @@ window.addEventListener('storage', e => { if (e.key === 'hp_lock') { const o = t
 /* ---------- ماسك الأخطاء العام: لا شاشة بيضاء، ورسالة وعودة إلى الخريطة ---------- */
 let onCrash = () => {};
 function recordCrash(err) { try { LOG.errors.push({ t: Date.now(), msg: String(err && (err.stack || err.message) || err).slice(0, 600), scene: (CUR ? CUR.id : '') + ':' + SCENE_NOW }); if (LOG.errors.length > 30) LOG.errors.shift(); store.set(kk('hp_log'), LOG); } catch (e) {} try { onCrash(err); } catch (e) {} }
+/*T*/function testBug(msg) { try { LOG.errors.push({ t: Date.now(), msg: String(msg).slice(0, 600), scene: (CUR ? CUR.id : '') + ':' + SCENE_NOW }); store.set(kk('hp_log'), LOG); } catch (e) {} }/*/T*/   /* خللٌ تراه نسخة الفحص وحدها، بلا شاشة عطل */
 window.addEventListener('error', e => recordCrash(e.error || e.message));
 window.addEventListener('unhandledrejection', e => recordCrash(e.reason));

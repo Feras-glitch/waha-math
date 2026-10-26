@@ -96,23 +96,28 @@ function resumeAsk(id) { const c = cover('exitCover', `<div class="breakbox">${c
   $('#rsGo').onclick = () => { hush(); c.hidden = true; runLesson(id, { resume: true }); };
   $('#rsNew').onclick = () => { hush(); c.hidden = true; delete (PROG[id] || {}).resume; saveProg(); runLesson(id); }; }
 /* الخروج الآمن من الدرس (D246): يُحفظ المكان، ويُسأل الطفل بالصوت */
-$('#mapBtn').onclick = () => { if (!CUR) { FLOW++; hush(); showHome(); return; } SFX.tick(); hush();
+/* والدرس تحت الغطاء لا يُلمس ولا يُبلغ بالمفتاح (inert)، والتركيز على «نبقى»، والزرّ لا يُفتح مرتين (الفحص المستقل G2 (3): Enter على الخريطة مرتين جعل سؤال الخروج
+   «آخر جملة» فقالته «نبقى»، وEnter على هدف المسرح تحت الغطاء حُسب جواباً) */
+const lessonInert = on => { const l = $('#lesson'); if (l) l.inert = on; };
+$('#mapBtn').onclick = () => { if (!CUR) { FLOW++; hush(); showHome(); return; } if (!$('#exitCover').hidden) return; SFX.tick(); pauseLesson();   /* يوقف الدرس ولا يُنهي جملته (F2 (3)) */
   const c = cover('exitCover', `<div class="breakbox">${coverHead()}<div class="choices icons big">
     <button class="pick" id="exStay">${ICON.play.replace('<svg', '<svg width="40" height="40"')}<span>${esc(G(labelText('stay')))}</span></button>
     <button class="pick" id="exLeave">${ICON.map.replace('<svg', '<svg width="40" height="40"')}<span>${esc(G(labelText('toMap')))}</span></button></div></div>`);
-  const prev = lastLine; coverSay(c, 'gen.exit.ask');   /* «نبقى» يعيد ما كان قبل السؤال، لا سؤال الخروج (الفحص المستقل B) */
-  $('#exStay').onclick = () => { hush(); c.hidden = true; lastLine = prev; replayLine(); };
-  $('#exLeave').onclick = () => { hush(); c.hidden = true; logAttempt({ scene: 'exit', tag: SCENE_NOW, ok: true }); showHome(); }; };
+  lessonInert(true); const prev = lastLine; coverSay(c, 'gen.exit.ask');   /* «نبقى» يعيد ما كان قبل السؤال، لا سؤال الخروج (الفحص المستقل B) */
+  $('#exStay').onclick = () => { cutNow(); c.hidden = true; lessonInert(false); lastLine = prev; resumeBack(); try { $('#mapBtn').focus({ preventScroll: true }); } catch (e) {} };   /* resumeBack في الصوت */
+  $('#exLeave').onclick = () => { hush(); c.hidden = true; lessonInert(false); logAttempt({ scene: 'exit', tag: SCENE_NOW, ok: true }); showHome(); };
+  try { $('#exStay').focus({ preventScroll: true }); } catch (e) {} };
 $('#meBtn').onclick = () => { stopVoice(); openKids(false); };
 $('#galBtn').onclick = () => { SFX.tick(); openGallery(); };
 
 /* تبويبان مفتوحان: لا يمحو أحدهما عمل الآخر */
-function showTabLost() { FLOW++; hush(); const c = cover('tabCover', `<div class="breakbox"><p class="big">${esc(labelText('tabLost'))}</p><button class="go" id="tabHere">${esc(labelText('tabHere'))}</button></div>`);
+function showTabLost() { FLOW++; hush(); disarmIdle(); if (PAUSED) { resumeLesson(); $('#confetti').innerHTML = ''; }   /* الدرس تحته انتهى: لا يبقى موقوفاً (الفحص المستقل I2 (2)) */
+  const c = cover('tabCover', `<div class="breakbox"><p class="big">${esc(labelText('tabLost'))}</p><button class="go" id="tabHere">${esc(labelText('tabHere'))}</button></div>`);
   $('#tabHere').onclick = () => { tabClaim(); location.reload(); }; }
-onTabLost = () => { if (CUR) showTabLost(); };
+onTabLost = () => { if (!$('#lesson').hidden) showTabLost(); };   /* والورشة و«مراجعة اليوم» بلا CUR (الفحص المستقل J2 (6)) */
 /* ماسك الأخطاء: لا شاشة بيضاء، ورسالة مسموعة وعودة إلى الخريطة */
 let crashShown = false;
-onCrash = err => { if (crashShown) return; crashShown = true; FLOW++; try { hush(); } catch (e) {}
+onCrash = err => { if (crashShown) return; crashShown = true; FLOW++; try { hush(); disarmIdle(); if (PAUSED) { resumeLesson(); $('#confetti').innerHTML = ''; } } catch (e) {}   /* ولا مهلة فانوس تحت الغطاء (الفحص المستقل J2 (3)) */
   const c = cover('crashCover', `<div class="breakbox">${coverHead()}<button class="go big" id="crashOk" aria-label="${esc(labelText('toMap'))}">${ICON.map}</button></div>`);
   try { coverSay(c, 'gen.crash'); } catch (e) {}
   $('#crashOk').onclick = () => { crashShown = false; c.hidden = true; try { showHome(); } catch (e) { location.reload(); } }; };

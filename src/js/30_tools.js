@@ -9,10 +9,33 @@ function tapOne(targets, opt = {}) { const mine = [];
   const okT = targets.find(t => opt.ok != null && [].concat(opt.ok).includes(t.k)) || targets[0], badT = targets.find(t => !(opt.ok != null && [].concat(opt.ok).includes(t.k)));
   AUTO({ kind: 'tap', ok: () => okT.g.dispatchEvent(new MouseEvent('click', { bubbles: true })), wrong: () => (badT || okT).g.dispatchEvent(new MouseEvent('click', { bubbles: true })) });
   const off = opt.pulse === false ? () => {} : pulse(targets.map(t => t.g));
-  return gate(new Promise(res => { const act = t => { off(); AUTO_CLEAR(); targets.forEach(x => { x.g.onclick = null; x.g.onkeydown = null; }); mine.forEach(r => r.remove()); res(t.k); };
+  return gate(new Promise(res => { const act = t => { off(); AUTO_CLEAR(); /*T*/window.__actG = t.g;/*/T*/ targets.forEach(x => { x.g.onclick = null; x.g.onkeydown = null; delete x.g.__route; }); mine.forEach(r => r.remove()); res(t.k); };   /* والسائق يقارن ما اختاره المفتاح بهدفه (الفحص المستقل D2) */
     targets.forEach(t => { t.g.__route = (x, y) => tapRoute(targets, x, y, t).g;   /* D255: اللمسة لما يراه الطفل تحت إصبعه، لا لمنطقة لمس شيء رُسم بعده */
-      t.g.onclick = e => act(e && e.clientX ? tapRoute(targets, e.clientX, e.clientY, t) : t); t.g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(t); }; }); }));
+      t.g.onclick = e => act(e && e.clientX ? tapRoute(targets, e.clientX, e.clientY, t) : t); t.g.onkeydown = e => { if (actKey(e)) act(t); }; }); }));
 }
+/* أهدافٌ متجاورة لكلٍّ منها onclick ومنطقة لمس تتجاوز رسمه (على أضيق شاشة 56 بكسلاً أوسع من البلاطة والعربة): اللمسة للهدف المرسوم تحت الإصبع، لا لصاحب
+   المنطقة العليا (D255؛ الفحص المستقل B لبوابة S1-U4 كشف ثغرة الفحص: كان يلمس المراكز وحدها، فلمسة قرب حافّة البلاطة أو العربة ذهبت إلى جارتها). تُستدعى بعد إسناد onclick */
+/* هدفٌ يُبلغ بلوحة المفاتيح: Tab ثم Enter أو المسافة تفعل ما تفعله اللمسة (الفحص المستقل B لبوابة S1-U4: أهداف بلا لوحة مفاتيح في أربعة مشاهد) */
+function keyOn(g, fn) { g.setAttribute('tabindex', 0); g.onkeydown = e => { if (actKey(e)) { e.preventDefault(); fn(); } }; }
+/* لوحة المفاتيح لكل هدف على المسرح (مواصفة المحرّك 8: «تركيز مرئي» وبديل بلوحة المفاتيح؛ الفحص المستقل B لبوابة S1-U4، والنمط في الوحدات كلها):
+   كل ما دوره زرّ يُبلغ بـ Tab (يُعطى tabindex حين يظهر، kbdStage)، وEnter أو المسافة عليه تلمسه كالإصبع إن لم يكن له مفتاحه الخاص.
+   واللمسة بلا موضع (clientX = 0) تذهب إلى الهدف نفسه لا إلى ما تحت إصبع (tapRoute) */
+let STAGE_KO = null, STAGE_FOC = null;
+/* وبعد إعادة رسم الهدف المركّز (المجموعة نفسها بعددها) يعود التركيز إلى بديله بموضعه (الفحص المستقل D2 لبوابة S1-U4 (6): مكعب «فكّك العدد» بعد المسافة أو Enter
+   يُعاد رسم برجه فيضيع التركيز إلى BODY، فلا يستطيع الطفل أن يضغط مرة ثانية) */
+function kbdStage(svg) { const T = () => [...svg.querySelectorAll('[role=button]')];
+  const fix = () => { svg.querySelectorAll('[role=button]:not([tabindex])').forEach(g => g.setAttribute('tabindex', 0));
+    const F = STAGE_FOC, A = document.activeElement; if (F && F.svg === svg && !F.el.isConnected && (!A || A === document.body)) { const L = T(); if (L.length === F.n && L[F.i]) { STAGE_FOC = null; L[F.i].focus({ preventScroll: true }); } } };
+  fix(); svg.addEventListener('focusin', e => { const L = T(), i = L.indexOf(e.target); if (i >= 0) STAGE_FOC = { svg, el: e.target, i, n: L.length }; });
+  try { if (STAGE_KO) STAGE_KO.disconnect(); STAGE_KO = new MutationObserver(fix); STAGE_KO.observe(svg, { childList: true, subtree: true, attributes: true, attributeFilter: ['role'] }); } catch (e) {} }
+/* ومفتاح الفعل مضغوطاً لا يُكرَّر (الفحص المستقل H2 (8): Enter مضغوطاً على زرّ الخريطة قلّب الغطاء تسع مرات في 300 م.ث، وعلى «التالي» يتخطّى شاشات): keydown المكرَّر
+   يُسقط قبل كل مستمع، إلا في حقل كتابة */
+window.addEventListener('keydown', e => { if (e.repeat && isActKey(e) && !(e.target && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))) { e.preventDefault(); e.stopImmediatePropagation(); /*T*/if (TESTHOOK) window.__keyRep = (window.__keyRep || 0) + 1;/*/T*/ } }, true);
+document.addEventListener('keydown', e => { if (!isActKey(e)) return; const g = e.target;
+  if (!(g instanceof SVGElement) || g.getAttribute('role') !== 'button' || !g.closest('#stage') || g.onkeydown || g.dataset.keys) return;
+  e.preventDefault(); g.dispatchEvent(new MouseEvent('click', { bubbles: true })); });   /* ويفحصه السائق بـ Enter حقيقي (auto_run: KEYOK) */
+function routeClicks(gs) { const T = gs.filter(Boolean).map(g => ({ g, f: g.onclick })); T.forEach(t => { t.g.__route = (x, y) => tapRoute(T, x, y, t).g;
+    t.g.onclick = e => { const r = e && e.clientX ? tapRoute(T, e.clientX, e.clientY, t) : t; return r.f && r.f.call(r.g, e); }; }); }
 /* ما انتهى دوره ليس هدفاً (بوابة S1-U4): تُنزع لمسته ودوره ومنطقته، فلا يأخذ لمسة جاره ولا لمسة زرّ بعده، ولا يحسبه فحص اللمس هدفاً
    (بقيت قطع «نكوّن العشرة» أزراراً تحت خيارات «كم صار؟»، فسرقت مناطقها لمسات الخيارات على أضيق شاشة) */
 function untarget(gs) { for (const g of gs) { if (!g) continue; g.onclick = null; g.onkeydown = null; delete g.__route; g.removeAttribute('role'); g.removeAttribute('tabindex'); g.style.cursor = ''; g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); } }
@@ -22,7 +45,10 @@ const blankEl = e => { if (e.matches('rect.hit')) return true; const cs = getCom
   if (+cs.opacity === 0) return true; return (clear(cs.fill) || +cs.fillOpacity === 0) && (clear(cs.stroke) || +cs.strokeOpacity === 0 || parseFloat(cs.strokeWidth) === 0); };
 function drawnBox(g) { let r = null; for (const e of [g, ...g.querySelectorAll('*')]) { if (!(e instanceof SVGGeometryElement || e instanceof SVGTextElement) || blankEl(e)) continue;
     const b = e.getBoundingClientRect(); if (!b.width && !b.height) continue; r = r ? { l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom) } : { l: b.left, t: b.top, r: b.right, b: b.bottom }; } return r; }
-function tapRoute(targets, x, y, t0) { const own = e => { for (let n = e; n && n !== document; n = n.parentNode) { const t = targets.find(t => t.g === n); if (t) return t; } return null; }; const pads = [];   /* أعمق هدف يحوي العنصر */
+/* موضع اللمس الحقيقي: كروم يعدّل موضع click نحو هدفٍ قريب منطقتُه أعلى (الفحص المستقل C2 لبوابة S1-U4: لمسة داخل حافّة العربة وصلت click بها إلى جارتها
+   على iPhone SE وGalaxy S5)، فيُوجَّه بموضع pointerdown الأخير إن كان قريباً زمناً ومكاناً */
+let DOWNAT = null; document.addEventListener('pointerdown', e => { DOWNAT = { x: e.clientX, y: e.clientY, t: performance.now() }; }, true);
+function tapRoute(targets, x, y, t0) { if (DOWNAT && performance.now() - DOWNAT.t < 700 && Math.hypot(DOWNAT.x - x, DOWNAT.y - y) < 32) { x = DOWNAT.x; y = DOWNAT.y; } const own = e => { for (let n = e; n && n !== document; n = n.parentNode) { const t = targets.find(t => t.g === n); if (t) return t; } return null; }; const pads = [];   /* أعمق هدف يحوي العنصر */
   for (const e of document.elementsFromPoint(x, y)) { const t = own(e); if (!t) { if (e instanceof SVGElement && e.closest('#stage') && e.tagName !== 'svg' && !blankEl(e)) break; continue; } if (!blankEl(e)) return t; if (!pads.includes(t)) pads.push(t); }
   if (pads.length < 2) return pads[0] || t0;
   let best = pads[0], d = Infinity; for (const t of pads) { const r = drawnBox(t.g); if (!r) continue; const dd = Math.hypot(Math.max(r.l - x, 0, x - r.r), Math.max(r.t - y, 0, y - r.b)) + Math.hypot(x - (r.l + r.r) / 2, y - (r.t + r.b) / 2) / 1000;
@@ -44,9 +70,9 @@ function tapAll(targets, onTouch, opt = {}) {
   const nearest = (x, y, t0) => { const cand = new Set(); for (const e of document.elementsFromPoint(x, y)) { const t = owner(e); if (t) cand.add(t); } if (!cand.size) return t0;
     let best = t0, d = Infinity; for (const t of cand) { const dd = dist(t, x, y) + (done.has(t) ? 24 : 0); if (dd < d) { d = dd; best = t; } } return best; };
   return gate(new Promise(res => targets.forEach((t0, i0) => { const act = async t => { const i = targets.indexOf(t); if (done.has(t)) { if (opt.onAgain) opt.onAgain(t); return; } done.add(t); off(); if (onTouch) await onTouch(t, done.size, i);
-      if (done.size === targets.length) { AUTO_CLEAR(); targets.forEach(x => { x.g.onclick = null; x.g.onkeydown = null; x.g.removeAttribute('role'); x.g.removeAttribute('tabindex'); x.g.style.cursor = ''; x.g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); }); res(done.size); } };   /* انتهى العدّ: النقاط لم تعد أهدافاً، فلا تبقى أزراراً بلا عمل */
+      if (done.size === targets.length) { AUTO_CLEAR(); targets.forEach(x => { x.g.onclick = null; x.g.onkeydown = null; delete x.g.__route; x.g.removeAttribute('role'); x.g.removeAttribute('tabindex'); x.g.style.cursor = ''; x.g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); }); res(done.size); } };   /* انتهى العدّ: النقاط لم تعد أهدافاً، فلا تبقى أزراراً بلا عمل */
     t0.g.__route = (x, y) => nearest(x, y, t0).g;
-    t0.g.onclick = e => act(e && e.clientX ? nearest(e.clientX, e.clientY, t0) : t0); t0.g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(t0); }; })));
+    t0.g.onclick = e => act(e && e.clientX ? nearest(e.clientX, e.clientY, t0) : t0); t0.g.onkeydown = e => { if (actKey(e)) act(t0); }; })));
 }
 
 /* ① تتبّع الحافة: يجد الطفل الرؤوس بإصبعه (العدّ من الأعلى على اليمين، D232)، ثم يلمس الأضلاع ليعدّها */
@@ -99,12 +125,19 @@ async function traceTool(svg, shapes, opt = {}) {
   }
 }
 
+/* موضع شارة العدّ: فوق الشيء، وإن لم تتّسع فوقه (حدّ المسرح) فبجانبه أو تحته حيث تبعد أكثر عن الأشياء الأخرى وشاراتها (الفحص المستقل C2 لبوابة S1-U4:
+   الشارة المقلوبة تحت الشيء الأعلى غطّت شارة الذي تحته، فرأى الطفل عدّه يقفز عن رقم) */
+function badgeSpot(pts, p, by, d = Math.abs(by)) { const C = [[0, by], [d, 0], [-d, 0], [0, -by]], fit = ([dx, dy]) => p.y + dy >= 18 && p.x + dx >= 16 && p.x + dx <= 344;
+  if (fit(C[0])) return { x: p.x, y: p.y + by };
+  const O = pts.filter(q => q !== p).flatMap(q => [[q.x, q.y], [q.x, q.y + by]]), clear = ([dx, dy]) => Math.min(Infinity, ...O.map(([x, y]) => Math.hypot(x - p.x - dx, y - p.y - dy)));
+  const s = C.slice(1).filter(fit).sort((a, b) => clear(b) - clear(a))[0] || C[3]; return { x: p.x + s[0], y: p.y + s[1] }; }
 /* ② العدّ باللمس (N001): كل شيء يُلمس مرة واحدة، فيضيء ويُقال عدده؛ وآخر عدد هو «كم» */
 async function countTouch(svg, pts, opt = {}) {   // pts: [{x, y, g?}] — g عنصر الشيء إن وُجد
   const marks = el('g', { 'pointer-events': 'none' }, svg); let n = 0;
   const targets = pts.map(p => { const g = p.g || el('g', { transform: `translate(${p.x} ${p.y})` }, svg); if (!p.g) el('circle', { r: 24, fill: 'transparent' }, g); g.dataset.twin = 'count'; return { g, p, label: p.label || opt.label || labelText('countPoint') }; });   /* اسم مسموع لكل نقطة عدّ؛ ونقاط العدّ متماثلة (أيّها لُمس يُعدّ واحداً) */
   await tapAll(targets, async (t) => { n++; SFX.tick(); buzz(20); const { x, y } = t.p;
-    el('circle', { cx: x, cy: y, r: opt.halo || 30, fill: css('--rect'), opacity: .28 }, marks); badge(marks, x + (opt.bx ?? 0), y + (opt.by ?? -(opt.halo || 30)), n, opt.color);
+    /* والشارة فوق الشيء، إلا ما لا تتّسع فوقه فبجانبه (badgeSpot)، فلا تخرج من المسرح (clipped texts: شارة «١» على الطبق الأعلى في دائرة من تسعة) ولا تغطّي شارة غيره */
+    const by = opt.by ?? -(opt.halo || 30), s = badgeSpot(pts, t.p, by); el('circle', { cx: x, cy: y, r: opt.halo || 30, fill: css('--rect'), opacity: .28 }, marks); badge(marks, s.x + (opt.bx ?? 0), s.y, n, opt.color);
     if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); if (opt.onCount) opt.onCount(n); },
     { pad: opt.pad ?? 70, onAgain: opt.onAgain });
   return n;

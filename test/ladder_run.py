@@ -18,7 +18,7 @@ LIST = """(only) => { const out = []; for (const id of UNITS.flatMap(u => u.less
   L.flow.forEach((s, j) => { if (s.scene === 'items' && ['practice', 'remedial'].includes(s.mode)) (s.items || []).forEach((it, i) => add(it, 'fl' + j + '.' + i)); }); }
   /* وبنود من صنع الفحص لمسارات في الكود لا يبلغها محتوى اليوم (الفحص المستقل E: شارات «٥ − ١» على أربع أصابع متجاورة تراكبت، ولا بند بمساعدة في المحتوى بها) */
   for (const [id, k, it] of [['m1.u2.d5', 'synth.fact5-1', { t: 'fact', op: '-', a: 5, b: 1 }], ['m1.u2.d5', 'synth.fact4+1', { t: 'fact', op: '+', a: 4, b: 1 }]]) if (!only.length || only.includes(id)) out.push([id, k, it]);
-  window.__LAD = out; return out.map(([id, k, it], n) => [id, k, itemType(it), n, !!(it.row && (it.row.kind === 'train' || it.ask === 'ord')), it.side || null]); }"""
+  window.__LAD = out; return out.map(([id, k, it], n) => [id, k, itemType(it), n, !!(it.row && (it.row.kind === 'train' || it.ask === 'ord')), it.side || null, it.t === 'makeTen' ? (it.ask === 'moved' ? 10 - it.a : null) : it.n ?? null, it.ask || null]); }"""
 START = """(n) => { const [id, k, it] = window.__LAD[n]; hush(); CUR = LDATA[id]; FLOW++; show('lesson'); SCENE_NOW = 'ladder:' + id; window.__res = null; window.__fails = 0;
   if (window.__mo) window.__mo.disconnect(); window.__added = []; window.__mark = 1e15;
   /* أزمنة ما يُقال وأزمنة التجربة (pushTest)، لترتيب «شاهد التجربة» قبل التجربة (الفحص المستقل E) */
@@ -49,15 +49,18 @@ GONE = r"""() => { if (window.__mo) window.__mo.disconnect(); const A = window._
   const svg = document.querySelector('#stage svg'), kidG = svg && svg.querySelector('[data-kid]'), hg = svg && svg.querySelector('[data-help]');
   const held = kidG ? [...svg.querySelectorAll('[data-thing]')].filter(g => !kidG.contains(g)) : []; const under = hg && held.length ? held.every(t => !!(hg.compareDocumentPosition(t) & Node.DOCUMENT_POSITION_FOLLOWING)) : null;
   const cs = [...document.querySelectorAll('#stage [data-help] circle[r="15"]')].map(c => { const r = c.getBoundingClientRect(); return [(r.left + r.right) / 2, (r.top + r.bottom) / 2, r.width / 2]; }); let lap = 0;
-  for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) if (Math.hypot(cs[i][0] - cs[j][0], cs[i][1] - cs[j][1]) < .8 * (cs[i][2] + cs[j][2])) lap++;
+  for (let i = 0; i < cs.length; i++) for (let j = i + 1; j < cs.length; j++) if (Math.hypot(cs[i][0] - cs[j][0], cs[i][1] - cs[j][1]) < cs[i][2] + cs[j][2] + 2) lap++;   /* تتلامس بحدّها الأبيض (الفحص المستقل B لبوابة S1-U4: الحدّ 0.8 سمح بتراكب 4–7 وحدات) */
+  /* وشارة الحلّ المشترك لا تغطّي كلمة مرسومة («عشرة» تحت الإطار؛ الفحص المستقل B لبوابة S1-U4) */
+  const words = [...document.querySelectorAll('#stage svg text')].filter(t => t.textContent.trim() && !t.parentNode.querySelector(':scope > circle[r="15"]')).map(t => t.getBoundingClientRect()).filter(b => b.width);
+  let cover = 0; for (const [x, y, r] of cs) for (const b of words) if (x + r > b.left + 2 && x - r < b.right - 2 && y + r > b.top + 2 && y - r < b.bottom - 2) cover++;
   const said = (window.__clipT || []).filter(([, t]) => t >= window.__mark), pt = (window.__ptT || []).filter(t => t >= window.__mark);
   const tog = said.find(([c]) => /^gen\.prop\.together/.test(c)); const order = tog ? (pt.length ? tog[1] <= pt[0] : null) : null;
-  return [gone.length, A.length, [...new Set(gone.map(([e]) => name(e)))].slice(0, 6), !!document.querySelector('#stage [data-help]'), onR, under, lap, said.map(([c]) => c), order]; }"""
+  return [gone.length, A.length, [...new Set(gone.map(([e]) => name(e)))].slice(0, 6), !!document.querySelector('#stage [data-help]'), onR, under, lap, said.map(([c]) => c), order, cs.length, cover]; }"""
 # الأنواع التي حلّها المشترك رسمٌ يُعلَّم data-help في الكود: يجب أن يكون على المسرح في المحاولة الرابعة (الفحص المستقل D: حذفُه كله لم يُخفق الفحص)؛
 # و«المس العربة» في القطار وترتيب الطابور وحدهما من lineTap (مواضع الطابور حلّها كلام)
 HELP_DRAWN = {'lrTap', 'lrPick', 'linePick', 'lineTap', 'mapFind', 'mapPut', 'routePick', 'fact', 'unknownStart', 'same',
               # S1-U4: كلها حلّها رسم (خطوط عند النهايات، وشارات الترتيب الأولى، والسهم إلى الكفّة الأنزل، والعدّ، والوحدات الموضوعة، وعلامات الخطأ، والشبران، والمربعات، والعمود، والإطار)
-              'lenPick', 'orderBy', 'sizePick', 'balance', 'unitCount', 'unitLay', 'unitCheck', 'spanPick', 'spanSort', 'barRead', 'barBuild', 'rodCount', 'rodBuild', 'rodMatch',
+              'lenPick', 'orderBy', 'sizePick', 'balance', 'unitCount', 'unitLay', 'unitCheck', 'spanPick', 'spanSort', 'transPick', 'barRead', 'barBuild', 'rodCount', 'rodBuild', 'rodMatch',
               'teenCmp', 'teenTrace', 'frameNeed', 'framePaint', 'frameGlance', 'makeTen', 'backTen'}
 async def main():
   async with async_playwright() as p:
@@ -68,8 +71,8 @@ async def main():
       localStorage.setItem('hp_settings:k1', JSON.stringify({ sessionMax: 0, muted: true })); localStorage.setItem('hp_prog:k1', JSON.stringify({ schema: 3, unlockAll: true })); }""")
     await pg.reload(); await pg.wait_for_timeout(500)
     items = await pg.evaluate(LIST, ONLY); per = {}; n_run = 0; drawn = {}; onright = {}
-    lrsaid = []; unders = []; laps = []; orders = []
-    for lid, key, typ, n, rowhelp, side in items:
+    lrsaid = []; unders = []; laps = []; orders = []; counted = []; covers = []
+    for lid, key, typ, n, rowhelp, side, ans, ask in items:
       e0 = len(errs); await pg.evaluate(START, n); last = -1; fourth = None; res = None
       for _ in range(1500):
         st = await pg.evaluate(STATE)
@@ -94,7 +97,10 @@ async def main():
         lrsaid.append((any(c == want or c.startswith(want + '_') for c in fourth[7]), tag, side))
         if fourth[5] is not None: unders.append((fourth[5], tag))
       if fourth[6]: laps.append((fourth[6], tag))
+      if fourth[10]: covers.append((fourth[10], tag))
       if typ == 'property': orders.append((fourth[8], tag))
+      # والحلّ المشترك في «كم مكعباً طوله؟» يعدّ القطع إلا آخرها، فيعدّها الطفل (D240؛ الفحص المستقل A لبوابة S1-U4: كان يعدّ حتى الجواب ثم يسأل)
+      if typ == 'unitCount' or (typ == 'makeTen' and ask == 'moved'): counted.append((fourth[9], ans, tag))   # و«كم قطعة أخذت؟» يعدّ ما نُقل إلا آخره
     await b.close()
     for typ, L in sorted(per.items()):
       bad = [(g, t) for g, t in L if g[0]]
@@ -110,6 +116,9 @@ async def main():
     badu = [t for u, t in unders if not u]
     check((bool(unders) or ONLY) and not badu, 'ما في اليد فوق هالة الحلّ المشترك لا تحتها (%d%s)' % (len(unders), '' if not badu else '؛ الهالة فوقه: ' + ', '.join(badu[:3])))
     check(not laps, 'شارات الحلّ المشترك لا تتراكب%s' % ('' if not laps else ': ' + ', '.join('%s (%d)' % (t, l) for l, t in laps[:4])))
+    check(not covers, 'شارات الحلّ المشترك لا تغطّي كلمة مرسومة%s' % ('' if not covers else ': ' + ', '.join('%s (%d)' % (t, l) for l, t in covers[:4])))
+    badc = [(c, a, t) for c, a, t in counted if c != a - 1]
+    check((bool(counted) or ONLY) and not badc, '«كم مشبكاً/مكعباً طوله؟» و«كم قطعة أخذت؟»: الحلّ المشترك يعدّ القطع إلا آخرها (%d%s)' % (len(counted), '' if not badc else '؛ ' + ', '.join('%s: %d شارة والجواب %d' % (t, c, a) for c, a, t in badc[:3])))
     bado = [t for o, t in orders if o is not True]
     check((bool(orders) or ONLY) and not bado, '«شاهد التجربة» تُقال قبل التجربة في المحاولة الرابعة (%d%s)' % (len(orders), '' if not bado else '؛ بعدها أو بلا تجربة: ' + ', '.join(bado[:3])))
     check(n_run == len(items), 'كل بنود المساعدة (%d) انتهت بلا خطأ' % len(items))

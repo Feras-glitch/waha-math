@@ -5,7 +5,8 @@
 const PATH_MAT = () => !!(CUR && (PROG[CUR.id] || {}).path === 'mat');
 const lessonOf = id => LDATA[id];
 const lessonsOf = uid => (UNITS.find(u => u.id === uid) || { lessons: [] }).lessons;
-function show(id) { for (const s of ['#home', '#lesson']) $(s).hidden = s !== '#' + id; for (const c of ['#exitCover']) $(c).hidden = true; if (id === 'home') { stopVoice(); REPLAY_HOOK = null; lastLine = null; } }   /* لا تُعاد في درس آخر جملةُ درس غادره الطفل (ومنها جملة فوضى) */
+function show(id) { if (PAUSED) { hush(); resumeLesson(); $('#confetti').innerHTML = ''; } { const l = $('#lesson'); if (l) l.inert = false; } MAT_AVOID = null;   /* شاشة أخرى والدرس موقوف (الخريطة من غطاء الخروج، أو العطل): يسقط ما وقف (FLOW++ بعده) */
+  for (const s of ['#home', '#lesson']) $(s).hidden = s !== '#' + id; for (const c of ['#exitCover']) $(c).hidden = true; if (id === 'home') { stopVoice(); REPLAY_HOOK = null; lastLine = null; } }   /* لا تُعاد في درس آخر جملةُ درس غادره الطفل (ومنها جملة فوضى) */
 const progOf = id => (PROG[id] = isObj(PROG[id]) ? PROG[id] : {});
 
 /* حقيبة الدرس (D238): هل الأشياء معك؟ «معي» أو «على الشاشة». المسار على الشاشة يوسم الدرس «مدخل» */
@@ -13,7 +14,9 @@ async function bagStage(L) {
   const P = progOf(L.id); const B = L.bag;
   if (!B || B.screenOnly) { P.path = 'screen'; saveProg(); return; }
   const svg = newStage(250, { oasisOpacity: .2 });
-  B.items.forEach((r, i, a) => { const x = a.length === 1 ? 180 : 300 - i * (240 / (a.length - 1)); bagIcon(svg, r, x, 104); });
+  /* وأربعة أشياء (الفحص المستقل D1 لبوابة S1-U4 (13): الدوائر الورقية): أوسع مدى، وكل رسم بأربعة أخماسه، وتسميته بعرض ما بينها */
+  const n = B.items.length, W4 = n > 3, SP = n > 1 ? (W4 ? 264 : 240) / (n - 1) : 0;
+  B.items.forEach((r, i) => bagIcon(svg, r, n === 1 ? 180 : (W4 ? 312 : 300) - i * SP, 104, W4 ? .8 : 1, W4 ? SP - 6 : 112));
   say(...lineOf(B.ask), { free: true });
   const k = await choosePick([['mat', labelText('withMe'), PICKICON.mat], ['screen', labelText('onScreen'), PICKICON.screen]], null); hush();
   P.path = k; saveProg(); logAttempt({ scene: 'bag', tag: k, ok: true });
@@ -21,8 +24,8 @@ async function bagStage(L) {
 }
 
 /* صور حقيبة الدرس: مولّد بالاسم، أو رمز بسيط لما ليس شكلاً (أعواد، أغطية، رمل…) واسمه من labels الدرس */
-function bagIcon(svg, r, x, y) {
-  const lbl = r.label ? labelText(r.label) : ''; const g = el('g', { transform: `translate(${x} ${y})` }, svg);
+function bagIcon(svg, r, x, y, sc = 1, maxW = 112) {
+  const lbl = r.label ? labelText(r.label) : ''; const g = el('g', { transform: `translate(${x} ${y})` + (sc !== 1 ? ` scale(${sc})` : '') }, svg);
   const I = { bag: () => { const b = bagAt(g, 0, 0); b.setAttribute('transform', 'scale(.62)'); },
     sticks: () => { for (const [dx, a] of [[-14, -18], [0, 0], [14, 18]]) el('rect', { x: -4, y: -44, width: 8, height: 88, rx: 4, fill: MAT.wood, transform: `translate(${dx} 0) rotate(${a})` }, g); el('circle', { cx: 26, cy: 30, r: 12, fill: '#d98c6a' }, g); },
     caps: () => { for (let i = 0; i < 5; i++) el('circle', { cx: -32 + i * 16, cy: (i % 2) * 14 - 6, r: 9, fill: ['#5c9bb0', '#d9483b', '#f2b33d', '#7e9a4e', '#6c7fa8'][i], stroke: '#fff', 'stroke-width': 2 }, g); },
@@ -49,7 +52,7 @@ function bagIcon(svg, r, x, y) {
     ballStone: () => { weighAt(g, 'beachBall', 18, 40, .9); weighAt(g, 'stone', -40, 40, 1); },
     bookFeather: () => { weighAt(g, 'book', 14, 20, 1); weighAt(g, 'feather', -16, -8, .9); },
     clips: () => unitRow(g, 'clip', 3, 45, 0, { u: 30 }),
-    circles: () => [30, 22, 14].forEach((r, i) => sizeThingAt(g, 'circle', r, 36 - i * 34 - (i ? 10 : 0), 20 - r, css('--circle'))),
+    circles: () => [[24, 22], [17, -12], [11, -38]].forEach(([r, cx]) => sizeThingAt(g, 'circle', r, cx, 20 - r, css('--circle'))),
     hand: () => handSpanAt(g, 48, 30, 96, '#3d7cc0'),
     cards: () => { [[-16, -8, 1], [16, 8, 7]].forEach(([dx, a, n]) => { const c = el('g', { transform: `translate(${dx} 6) rotate(${a})` }, g); el('rect', { x: -20, y: -28, width: 40, height: 52, rx: 7, fill: '#fffdf6', stroke: '#3d7cc0', 'stroke-width': 3 }, c);
       el('text', { y: 10, 'text-anchor': 'middle', 'font-size': 26, 'font-weight': 800, fill: '#1b3440', 'font-family': css('--f') }, c).textContent = DG(n); }); },
@@ -57,8 +60,10 @@ function bagIcon(svg, r, x, y) {
     frame: () => { const F = frameAt(g, 0, 0, { cell: 20 }); F.fill(6, CUBE.lemon); },
     squares: () => { for (let i = 0; i < 5; i++) el('rect', { x: 48 - (i + 1) * 19, y: -9, width: 19, height: 19, fill: i % 2 ? '#5c9bb0' : CUBE.lemon, stroke: '#fff', 'stroke-width': 2 }, g); } };
   if (typeof r === 'object' && r.icon && I[r.icon]) I[r.icon]();
-  else { const s = make(typeof r === 'object' && r.mk ? r.mk : r); fitThing(g, { ...s, label: null }, 0, 0, 84); if (!lbl) labelFit(svg, x, y + 72, s.label || BIN_NAMES[s.kind] || '', 15, css('--muted'), 112); }   /* اسم كل شيء في الحقيبة، حتى المكعب */
-  if (lbl) labelFit(svg, x, y + 72, lbl, 15, css('--muted'), 112); }
+  else { const s = make(typeof r === 'object' && r.mk ? r.mk : r); fitThing(g, { ...s, label: null }, 0, 0, 84); if (!lbl) labelFit(svg, x, y + 72, s.label || BIN_NAMES[s.kind] || '', 15, css('--muted'), maxW); }   /* اسم كل شيء في الحقيبة، حتى المكعب */
+  /* وفي الأربعة يسع كلُّ رسمٍ مكانه بعرضه الفعلي ويتوسّطه (الميزان وكرة الشاطئ والحجر أعرض من مكانهم بأربعة أخماسهم) */
+  if (sc !== 1) { try { const b = g.getBBox(), k = Math.min(sc, (maxW - 4) / Math.max(1, b.width)); g.setAttribute('transform', `translate(${x - (b.x + b.width / 2) * k} ${y}) scale(${k})`); } catch (e) {} }
+  if (lbl) labelFit(svg, x, y + 72, lbl, 15, css('--muted'), maxW); }
 
 async function runLesson(id, opt = {}) {
   if (TAB_LOST) { showTabLost(); return; }
@@ -70,6 +75,7 @@ async function runLesson(id, opt = {}) {
   if (!opt.resume) await bagStage(L);
   for (let i = resumeAt; i < L.flow.length; i++) {
     const st = L.flow[i]; setStep(i); SCENE_NOW = st.s + (st.scene ? ':' + st.scene : ''); /*T*/window.__scene = id + ':' + SCENE_NOW;/*/T*/
+    if (!(i > 0 && L.flow[i - 1].auto && MAT_AVOID)) MAT_AVOID = null;   /* أعداد «معي» للشاشة التي تخدمها وما يمضي بعدها وحده، كما في 4ب18 */
     P.resume = { stage: i, t: Date.now() }; saveProg();
     await runStage(L, st);
     if (st.s === 'test' && !P.mastered) { await nextBtn(); await facesAsk(L); break; }   // لم يبلغ العتبة: نشاط علاجي ومراجعة الدرس الأضعف، بلا ختام الشارة
@@ -101,6 +107,7 @@ async function practiceStage(L, st) {
   let k = 'normal';
   if (P.challenge && P.challenge.length) { say(...lineOf('gen.choice.ask'), { free: true });
     k = await choosePick([['normal', labelText('normal'), PICKICON.normal], ['challenge', labelText('challenge'), PICKICON.challenge]], null); hush(); logAttempt({ scene: 'choice', tag: k, ok: true }); }
+  progOf(L.id).chose = k;   /* يعرفه الختام: «تستطيع أن تختار التحدّي» لا تُقال لمن اختاره (الفحص المستقل C1 لبوابة S1-U4) */
   await S(P.intro || 'gen.practice.intro');
   for (const it of P[k]) await runItem(it, 'practice', { scene: 'practice' });
 }

@@ -20,6 +20,8 @@ function layoutPts(n, layout, cx = 180, cy = 118, sp = 58, avoid = null) {
 const numBtn = (r, n) => r.ctx.np && r.ctx.np.btns.find(b => +b.dataset.k === n);
 const markNum = (r, n, cls) => { const b = numBtn(r, n); if (b) b.classList.add(cls); };
 const numItem = { onOk(item, r) { SFX.good(); markNum(r, r.ans, 'ok'); }, onWrong(item, r) { SFX.soft(); markNum(r, r.ans, 'no'); }, mark(item, r) { markNum(r, item.want, 'ok'); }, praise: () => 'praiseCount' };
+/* شارات عدّ مكعبات البرج متعرّجة: المكعب أقصر من الشارة، فكانت الشارات المتتالية فوق بعضها تتراكب (حدّ فحص التراكب صار بالحدّ الأبيض؛ الفحص المستقل B لبوابة S1-U4) */
+const zig = (pts, dx = 26) => pts.map((p, i) => i % 2 ? { x: p.x + dx, y: p.y } : p);
 async function badgeCount(svg, pts, col, from = 1) { const m = el('g', { 'pointer-events': 'none' }, svg); for (const [i, p] of pts.entries()) { badge(m, p.x, p.y, from + i, col); SFX.tick(); await S(numw(from + i), { noGap: true, num: true }); } return m; }
 
 /* ① العدّ (N001): يلمس كل شيء مرة، ثم يختار «كم» من كلمات مسموعة */
@@ -31,7 +33,7 @@ ITEM.count = { ...numItem,
     if (item.shapeObj) { const s = { ...item.shapeObj, x: 180, y: 122 }; shapeAt(svg, s, 180, 122); const P = worldPoly(s);
       pts = item.what === 'sides' ? P.map((a, i) => { const b = P[(i + 1) % P.length]; return { x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2 }; }) : P.map(([x, y]) => ({ x, y })); }
     else { pts = layoutPts(item.n, item.layout || 'row', 180, 122); const proto = make(item.objs); pts.forEach(p => { p.g = thingAt(svg, { ...proto, size: item.size || 48, label: null, rot: proto.rot }, p.x, p.y); }); }
-    if (tries >= 3) { await S('gen.count.together'); await badgeCount(svg, pts.map(p => ({ x: p.x, y: p.y - 26 }))); }       // الحل المشترك: نعدّ معاً، والطفل يختار «كم»
+    if (tries >= 3) { await S('gen.count.together'); await badgeCount(svg, pts.map(p => badgeSpot(pts, p, -26))); }       // الحل المشترك: نعدّ معاً، والطفل يختار «كم»
     else { await S(item.prompt || (item.what === 'sides' ? 'gen.count.sides' : item.what === 'vertices' ? 'gen.count.vertices' : 'gen.count.touch')); await countTouch(svg, pts, { halo: item.shapeObj ? 20 : 28, by: -28 }); }
     await S(item.how || 'gen.count.how'); const np = numberPick(nearNums(item.want), item.want); return { ans: await np.p, ctx: { svg, pts, np } }; },
   judge(item, ans) { return ans === item.want ? { ok: true } : { ok: false, err: 'lastNumber' }; },
@@ -100,16 +102,23 @@ ITEM.produce = {
   praise: () => 'praiseCount', twin(item) { return { ...item.spec, n: Math.max(3, Math.min(8, item.spec.n + (rand() < .5 ? -1 : 1))) }; },
 };
 
+/* عين «انظر مرة أخرى» (D233): تكشف اللمحة لحظة. مرة واحدة في التقييم فلا تصير عدّاً (الفحص المستقل A لبوابة S1-U4)، وبلوحة المفاتيح،
+   وتسكت بعد الجواب، وتُسجَّل باسم مشهدها لا «review» دائماً (الفحص المستقل B لبوابة S1-U4) */
+function glanceEye(svg, cover, cx, cy, mode, tag) { const once = ['mastery', 'review', 'test'].includes(mode); let off = false;
+  const again = el('g', { transform: `translate(${cx} ${cy})`, 'data-eye': 1 }, svg); again.innerHTML = ICON.eye.replace('<svg', '<svg x="-22" y="-22" width="44" height="44"'); again.style.cursor = 'pointer'; again.setAttribute('role', 'button'); again.setAttribute('tabindex', 0); again.setAttribute('aria-label', plain(G(labelText('lookAgain')))); hitPad(again, 80);
+  const peek = async () => { if (off) return; cover.style.display = 'none'; again.style.display = 'none'; logAttempt({ scene: SCENE_NOW || mode, tag: tag + '-peek', ok: true }); await psleep(FAST ? 150 : 1400);   /* مدّة اللمحة تقف مع الدرس (الفحص المستقل G2 (4)) */
+    cover.style.display = ''; if (once) { off = true; again.remove(); } else if (!off) again.style.display = ''; };
+  again.onclick = peek; again.onkeydown = e => { if (actKey(e)) peek(); };
+  return { off: () => { off = true; again.remove(); } }; }
 /* ④ اللمحة السريعة حتى 5 (تنتقل إلى «مراجعة اليوم»، D248): تُرى ثم تُخفى، والجواب بلا زمن (D233) */
 ITEM.glance = { ...numItem,
   make(spec) { return { ...spec, tag: 'glance', want: spec.n }; },
   async ask(item, mode, tries) {
     const svg = newStage(250, { oasis: false, ground: 0 }); const show = () => { const d = diceAt(svg, 180, 118, item.n); return d; };
     if (tries >= 3) { const d = show(); await S('gen.glance.together'); await badgeCount(svg, DICE[item.n].map(([u, v]) => ({ x: 180 + u * 34, y: 118 + v * 34 }))); }
-    else { await S('gen.glance.look'); const d = show(); await new Promise(r => setTimeout(r, FAST ? 150 : 1400)); const cover = el('rect', { x: 110, y: 48, width: 140, height: 140, rx: 18, fill: css('--paper'), stroke: css('--line'), 'stroke-width': 3 }, svg);
-      const again = el('g', { transform: 'translate(180 118)' }, svg); again.innerHTML = ICON.eye.replace('<svg', '<svg x="-22" y="-22" width="44" height="44"'); again.style.cursor = 'pointer'; again.setAttribute('role', 'button'); again.setAttribute('aria-label', plain(G(labelText('lookAgain')))); hitPad(again, 80);
-      again.onclick = async () => { cover.style.display = 'none'; again.style.display = 'none'; logAttempt({ scene: 'review', tag: 'glance-peek', ok: true }); await new Promise(r => setTimeout(r, FAST ? 150 : 1400)); cover.style.display = ''; again.style.display = ''; }; }
-    await S('gen.glance.ask'); const np = numberPick(nearNums(item.n, 6).filter(x => x > 0), item.n); return { ans: await np.p, ctx: { svg, np } }; },
+    let eye = null; if (tries < 3) { await S('gen.glance.look'); const d = show(); await gate(psleep(FAST ? 150 : 1400)); const cover = el('rect', { x: 110, y: 48, width: 140, height: 140, rx: 18, fill: css('--paper'), stroke: css('--line'), 'stroke-width': 3 }, svg);
+      eye = glanceEye(svg, cover, 180, 118, mode, 'glance'); }
+    await S('gen.glance.ask'); const np = numberPick(nearNums(item.n, 6, 1), item.n); const ans = await np.p; if (eye) eye.off(); return { ans, ctx: { svg, np } }; },
   judge(item, ans) { return ans === item.n ? { ok: true } : { ok: false, err: 'glance' }; },
   async hint2(item, r) { const d = diceAt(r.ctx.svg, 180, 118, item.n); await sleep(FAST ? 100 : 1600); d.remove(); },
   async together() {}, async reveal(item) { await S(numw(item.n)); }, twin(item) { return { ...item.spec, n: item.spec.n === 5 ? 4 : item.spec.n + 1 }; },
@@ -259,8 +268,11 @@ ITEM.splitMake = {
     /* مكعبات مكدّسة: منطقة لكل مكعب تغطي جاره على الشاشة الصغيرة، فاللمس يذهب إلى أقرب مكعب إلى موضعه (D255)، والمكعب أكبر ما يسمح به المسرح */
     const toggle = i => { if (lemon.has(i)) lemon.delete(i); else lemon.add(i); T.g.remove(); T = towerAt(svg, 180, 240, item.n, { size: sz, colors: colors() }); bind(); SFX.pop(); };
     const nearest = y => { let best = 0, d = Infinity; T.cubes.forEach((c, i) => { const r = c.getBoundingClientRect(), dy = Math.abs(r.top + r.height / 2 - y); if (dy < d) { d = dy; best = i; } }); return best; };
-    const route = el('rect', { class: 'route', fill: 'transparent', 'pointer-events': 'all' }, svg); route.style.cursor = 'pointer'; route.onclick = e => toggle(nearest(e.clientY));
-    route.__route = (x, y) => T.cubes[nearest(y)];
+    /* والمكعب المرسوم تحت الإصبع أولاً (tapRoute)، ثم الأقرب: الأقرب بمركز الإطار وحده أخذ أسفل المكعب لجاره، لأن وجهه الأعلى يرفع مركز إطاره
+       (السائق بنقاط الحواف، الفحص المستقل B لبوابة S1-U4) */
+    const under = (x, y) => { const L = T.cubes.map((c, i) => ({ g: c, i })); return tapRoute(L, x, y, L[nearest(y)]).i; };
+    const route = el('rect', { class: 'route', fill: 'transparent', 'pointer-events': 'all' }, svg); route.style.cursor = 'pointer'; route.onclick = e => toggle(e && e.clientX ? under(e.clientX, e.clientY) : nearest(e.clientY));
+    route.__route = (x, y) => T.cubes[under(x, y)];
     const bind = () => { T.cubes.forEach((c, i) => { c.style.cursor = 'pointer'; c.setAttribute('role', 'button'); c.setAttribute('aria-label', plain(labelText('cubeOne'))); c.dataset.routed = 1; c.onclick = () => toggle(i); });
       const bb = T.g.getBBox(), w = Math.max(bb.width + 24, 60 / pxPerUnit(svg)); Object.entries({ x: 180 - w / 2, y: bb.y - 4, width: w, height: bb.height + 8 }).forEach(([k, v]) => route.setAttribute(k, v)); svg.appendChild(route); };
     bind(); await S(tries >= 3 ? 'gen.splitMake.together' : 'gen.splitMake.ask');
@@ -280,10 +292,10 @@ ITEM.join = { ...numItem,
     const B = towerAt(svg, Bx, 240, item.b, { size: 24, color: CUBE.white });
     await S('gen.join.tap'); await tapOne([{ g: B.g, k: 'b', label: labelText('addCube') }], { ok: 'b', pad: 76 });
     await anim(B.g, [{ transform: 'translate(0px,0px)' }, { transform: `translate(${180 - Bx}px,${-(item.a) * A.step}px)` }], { duration: 800, fill: 'forwards', easing: 'cubic-bezier(.3,1.2,.6,1)' }).done;
-    if (tries >= 3) { await S('gen.join.together'); await badgeCount(svg, Array.from({ length: item.b }, (_, i) => ({ x: 214, y: A.baseY - A.size * .62 - (item.a + i) * A.step })), css('--square'), item.a + 1); }
+    if (tries >= 3) { await S('gen.join.together'); await badgeCount(svg, zig(Array.from({ length: item.b }, (_, i) => ({ x: 214, y: A.baseY - A.size * .62 - (item.a + i) * A.step }))), css('--square'), item.a + 1); }
     await S('gen.join.ask'); const np = numberPick(nearNums(item.a + item.b), item.a + item.b); return { ans: await np.p, ctx: { svg, A, np } }; },
   judge(item, ans) { return ans === item.a + item.b ? { ok: true } : { ok: false, err: 'joinCount' }; },
-  async hint2(item, r) { await S(numw(item.a), { noGap: true }); await badgeCount(r.ctx.svg, Array.from({ length: item.b }, (_, i) => ({ x: 214, y: r.ctx.A.baseY - r.ctx.A.size * .62 - (item.a + i) * r.ctx.A.step })), css('--square'), item.a + 1); },
+  async hint2(item, r) { await S(numw(item.a), { noGap: true }); await badgeCount(r.ctx.svg, zig(Array.from({ length: item.b }, (_, i) => ({ x: 214, y: r.ctx.A.baseY - r.ctx.A.size * .62 - (item.a + i) * r.ctx.A.step }))), css('--square'), item.a + 1); },
   async together() {}, async reveal(item, r) { markNum(r, item.want, 'ok'); await readSentence(item.a, '+', item.b, item.want); },
   twin(item) { return { ...item.spec, b: Math.max(1, item.spec.b + (rand() < .5 ? -1 : 1)) }; },
 };
@@ -294,10 +306,10 @@ ITEM.remove = { ...numItem,
     const top = T.cubes.slice(item.a - item.b); if (fz) await chaosGiggle(fz);
     await Promise.all(top.map((c, i) => anim(c, [{ transform: c.getAttribute('transform') }, { transform: `translate(${300 - i * 10}px,${70 + i * 6}px) scale(.6)`, opacity: .9 }], { duration: 800, fill: 'forwards', delay: i * 80 }).done));
     const bag = el('path', { d: 'M270 48 q30 -14 60 0 l-6 40 q-24 10 -48 0z', fill: '#c98f55' }, svg);
-    if (tries >= 3) { await S('gen.remove.together'); await badgeCount(svg, T.cubes.slice(0, item.a - item.b).map((c, i) => ({ x: 214, y: T.baseY - T.size * .62 - i * T.step })), css('--square')); }
+    if (tries >= 3) { await S('gen.remove.together'); await badgeCount(svg, zig(T.cubes.slice(0, item.a - item.b).map((c, i) => ({ x: 214, y: T.baseY - T.size * .62 - i * T.step }))), css('--square')); }
     await S('gen.remove.ask'); const np = numberPick(nearNums(item.a - item.b), item.a - item.b); return { ans: await np.p, ctx: { svg, T, np } }; },
   judge(item, ans) { return ans === item.a - item.b ? { ok: true } : { ok: false, err: ans === item.b ? 'countedRemoved' : 'removeCount' }; },
-  async hint2(item, r) { await badgeCount(r.ctx.svg, r.ctx.T.cubes.slice(0, item.a - item.b).map((c, i) => ({ x: 214, y: r.ctx.T.baseY - r.ctx.T.size * .62 - i * r.ctx.T.step })), css('--square')); },
+  async hint2(item, r) { await badgeCount(r.ctx.svg, zig(r.ctx.T.cubes.slice(0, item.a - item.b).map((c, i) => ({ x: 214, y: r.ctx.T.baseY - r.ctx.T.size * .62 - i * r.ctx.T.step }))), css('--square')); },
   async together() {}, async reveal(item, r) { markNum(r, item.want, 'ok'); await readSentence(item.a, '-', item.b, item.want); },
   twin(item) { return { ...item.spec, b: Math.max(1, Math.min(item.spec.a - 1, item.spec.b + (rand() < .5 ? -1 : 1))) }; },
 };
@@ -311,7 +323,7 @@ ITEM.sentence = {
     const plus = { a: item.a, b: item.b, c: item.a + item.b }, minus = { a: item.a, b: item.b, c: item.a - item.b };
     const box = document.createElement('div'); box.className = 'choices cards sentences'; $('#stage').appendChild(box);
     const opts = shuffle([['+', plus], ['-', minus]]); let answered = false;
-    const btns = opts.map(([op, v]) => { const b = document.createElement('button'); b.className = 'pick card'; b.dataset.k = op; b.innerHTML = `<bdo class="sent" dir="${NUM_DIR()}">${esc(sentenceText(v.a, op, v.b, v.c))}</bdo>`; b.setAttribute('aria-label', sentenceText(v.a, op, v.b, v.c)); /*T*/if (TESTHOOK) b.dataset.ok = op === item.op;/*/T*/ box.appendChild(b); return b; });
+    const btns = opts.map(([op, v]) => { const b = document.createElement('button'); b.className = 'pick card'; b.dataset.k = op; b.innerHTML = `<bdo class="sent" dir="ltr">${esc(visualLine(sentenceToks(v.a, op, v.b, v.c)))}</bdo>`; b.setAttribute('aria-label', sentenceText(v.a, op, v.b, v.c)); /*T*/if (TESTHOOK) b.dataset.ok = op === item.op;/*/T*/ box.appendChild(b); return b; });
     AUTO({ kind: 'sentence', ok: () => btns.find(b => b.dataset.k === item.op).click(), wrong: () => btns.find(b => b.dataset.k !== item.op).click() });
     const p = gate(new Promise(res => btns.forEach(b => b.onclick = () => { if (answered) return; answered = true; box.dataset.done = 1; AUTO_CLEAR(); hush(); res(b.dataset.k); })));
     readChoices(btns.map((b, i) => { const [op, v] = opts[i]; return { lines: sentenceLines(v.a, op, v.b, v.c), el: b }; }), { host: box, intro: [lineOf(tries >= 3 ? 'gen.sentence.together' : 'gen.sentence.ask')] });   /* البطاقتان خياران: ناتج آخر بطاقة لا يبقى في الفقاعة، و«أعد الجملة» يعيد السؤال ثم البطاقتين */
@@ -329,7 +341,7 @@ ITEM.eqPair = {
     const colors = Array.from({ length: item.parts[0] + item.parts[1] }, (_, i) => i < item.parts[0] ? CUBE.lemon : CUBE.white); const Rt = towerAt(svg, 270, 240, colors.length, { size: 22, colors });
     const t = el('text', { x: 180, y: 160, 'text-anchor': 'middle', 'font-size': 56, 'font-weight': 800, fill: css('--compass'), 'font-family': css('--f') }, svg); t.textContent = '=';
     el('text', { x: 90, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f') }, svg).textContent = DG(item.n);
-    el('text', { x: 270, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f'), direction: NUM_DIR(), 'unicode-bidi': 'bidi-override' }, svg).textContent = `${DG(item.parts[0])} + ${DG(item.parts[1])}`;
+    el('text', { x: 270, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f'), direction: 'ltr', 'unicode-bidi': 'bidi-override', 'data-sent': 1 }, svg).textContent = visualLine([DG(item.parts[0]), '+', DG(item.parts[1])]);
     if (tries >= 3) { await S('gen.eq.together'); await pairLines(svg, Rt, L, 500); }
     await S('gen.eq.ask'); const k = await choosePick([['yes', labelText('yes'), PICKICON.yes, 'gen.opt.yes'], ['no', labelText('no'), PICKICON.no, 'gen.opt.no']], item.want); return { ans: k, ctx: { svg, L, Rt } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'eqMeaning' }; },
@@ -346,7 +358,7 @@ ITEM.buildTo = {
     const ans = await gate(new Promise(res => bp.done.onclick = () => { AUTO_CLEAR(); hush(); bp.bar.remove(); res(bp.n); })); return { ans, ctx: { svg, T: bp.tower() } }; },
   judge(item, n) { return n === item.target ? { ok: true } : { ok: false, err: n > item.target ? 'tooMany' : 'tooFew' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
-  async hint2(item, r) { await badgeCount(r.ctx.svg, r.ctx.T.cubes.map((c, i) => ({ x: 176, y: r.ctx.T.baseY - r.ctx.T.size * .62 - i * r.ctx.T.step })), css('--square')); },
+  async hint2(item, r) { await badgeCount(r.ctx.svg, zig(r.ctx.T.cubes.map((c, i) => ({ x: 176, y: r.ctx.T.baseY - r.ctx.T.size * .62 - i * r.ctx.T.step }))), css('--square')); },
   async together() {}, async reveal(item) { await S('gen.build.reveal'); await S(numw(item.target), { append: true }); }, praise: () => 'praiseCount', twin(item) { return { ...item.spec, target: Math.max(2, Math.min(10, item.spec.target + 1)) }; },
 };
 /* المجهول في أول الجملة (مدخل غير مُختبَر، في «التحدّي» وحده) */
@@ -356,7 +368,7 @@ ITEM.unknownStart = { ...numItem,
     const tk = tries === 2 ? towerAt(svg, 300, 150, item.took, { size: 24, color: CUBE.lemon }) : null;   /* وفي الرابعة يعود ما أُخذ فوق البرج (لا يُرسم ثم يُمحى) */
     /* الحلّ المشترك (المستوى 3) على مسرح هذه المحاولة، فتبقى الأعداد أمام الطفل حين يختار (D257(5)(و)؛ كان العدّ على المسرح السابق ثم يُرسم غيره) */
     if (tries >= 3) { await unknownReturn(item, { svg, L, tk }); await S('gen.count.together'); const pts = [];
-      for (let i = 0; i < item.want - 1; i++) pts.push({ x: L.x + 26, y: L.baseY - L.size * .62 - i * L.step }); (await badgeCount(svg, pts)).dataset.help = 1; }
+      for (let i = 0; i < item.want - 1; i++) pts.push({ x: L.x + 26, y: L.baseY - L.size * .62 - i * L.step }); (await badgeCount(svg, zig(pts))).dataset.help = 1; }
     await S(item.line); const np = numberPick(nearNums(item.want), item.want); return { ans: await np.p, ctx: { svg, np, L, tk } }; },
   judge(item, ans) { return ans === item.want ? { ok: true } : { ok: false, err: 'unknownStart' }; },
   /* المستوى 2: فوضى تعيد ما أخذته فوق البرج (حركة الأداة)، والمستوى 3: نعدّ معاً البرج ثم ما عاد، ونقف قبل الأخير */
@@ -377,7 +389,7 @@ ITEM.fact = { ...numItem,
     if (tries >= 3) { const tips = item.op === '+' ? [...hands[0].tips, ...hands[1].tips] : hands[0].tips.slice(0, item.a - item.b);
       if (item.op === '-') hands[0].fingers.slice(item.a - item.b).forEach(f => f.setAttribute('opacity', .25)); await S('gen.count.together');
       /* الشارات متناوبة الارتفاع: الأصابع متقاربة فكانت تتراكب ويختفي نصف «٢» (الفحص المستقل D) */
-      (await badgeCount(svg, tips.slice(0, item.want - 1).map((t, i) => ({ x: t.x, y: t.y - (i % 2) * 30 })))).dataset.help = 1; }
+      (await badgeCount(svg, tips.slice(0, item.want - 1).map((t, i) => ({ x: t.x, y: t.y - (i % 2) * 36 })))).dataset.help = 1; }
     const intro = [...sentenceLines(item.a, item.op, item.b), [...lineOf('gen.fact.ask'), { append: true }]]; for (const l of intro) await say(l[0], l[1], l[2], l[3] || {});
     const np = numberPick(nearNums(item.want, 5), item.want, { intro }); return { ans: await np.p, ctx: { svg, np, hands } }; },
   judge(item, ans) { return ans === item.want ? { ok: true } : { ok: false, err: 'factWrong' }; },

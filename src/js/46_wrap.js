@@ -55,9 +55,9 @@ const WRAP_ART = {
   worms(svg) { startLineAt(svg, 170, 270, { label: false }); [150, 200, 120].forEach((L, i) => { const o = lenAt(svg, { kind: 'worm', len: L, color: ['#e98aa0', '#d9a441', '#9cb86a'][i] }, MS_X, 190 + i * 30); anim(o.g, [{ transform: `translate(${MS_X + 200}px,${190 + i * 30}px)` }, { transform: `translate(${MS_X}px,${190 + i * 30}px)` }], { duration: 900 + i * 200, fill: 'both', easing: 'ease-out' }); }); },
   balance(svg) { const B = balanceAt(svg, 180, 276); B.put('R', 'apple'); B.put('L', 'feather'); B.set(0); B.to(1, 1400); },
   measure(svg) { lenAt(svg, { kind: 'pencil', len: 196, color: NEUTRAL[3] }, MS_X, 200); const U = unitRow(svg, 'clip', 7, MS_X, 240); U.forEach((u, i) => { u.g.setAttribute('opacity', 0); anim(u.g, [{ opacity: 0 }, { opacity: 1 }], { duration: 300, delay: 300 + i * 160, fill: 'forwards' }); }); },
-  board(svg) { const Bd = barBoardAt(svg, ['short', 'same', 'long'], [0, 0, 0], { baseY: 230 }); [3, 2, 4].forEach((n, i) => { for (let j = 0; j < n; j++) setTimeout(() => { try { Bd.cols[i].add(); } catch (e) {} }, 300 + (i * 4 + j) * 140); }); },
+  board(svg) { const Bd = barBoardAt(svg, ['short', 'same', 'long'], [0, 0, 0], { baseY: 230 }); [3, 2, 4].forEach((n, i) => { for (let j = 0; j < n; j++) psleep(300 + (i * 4 + j) * 140).then(() => { try { Bd.cols[i].add(); } catch (e) {} }); }); },
   rods(svg) { const T = teenAt(svg, 17, { baseY: 270 }); anim(T.g, [{ opacity: 0, transform: 'translateY(30px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 700, delay: 200, fill: 'both' }); digitCard(svg, 180, 120, 17, { size: 1 }); },
-  frames(svg) { [[180, 160, 7], [180, 242, 4]].forEach(([x, y, a], i) => { const F = frameAt(svg, x, y, { cell: 34 }); setTimeout(() => { try { F.fill(a, CUBE.lemon); F.fill(10 - a, COUNTER2, a); } catch (e) {} }, 300 + i * 500); }); },
+  frames(svg) { [[180, 160, 7], [180, 242, 4]].forEach(([x, y, a], i) => { const F = frameAt(svg, x, y, { cell: 34 }); psleep(300 + i * 500).then(() => { try { F.fill(a, CUBE.lemon); F.fill(10 - a, COUNTER2, a); } catch (e) {} }); }); },
   bus(svg) { busAt(svg, 180, 200); const F = frameAt(svg, 170, 194, { cell: 40 }); F.fill(10, i => i < 8 ? CUBE.lemon : COUNTER2); },
   medal(svg) { const g = el('g', { transform: 'translate(180 180)' }, svg); el('path', { d: 'M-22 -90 L0 -40 L22 -90', fill: 'none', stroke: '#c94f3d', 'stroke-width': 12 }, g); el('circle', { r: 50, fill: '#f2b33d', stroke: '#c98f55', 'stroke-width': 5, filter: 'url(#pp)' }, g);
     lenAt(g, { kind: 'strip', len: 60, color: NEUTRAL[0] }, 30, -12); lenAt(g, { kind: 'strip', len: 40, color: NEUTRAL[3] }, 30, 12); el('line', { x1: 30, y1: -26, x2: 30, y2: 26, stroke: '#1b3440', 'stroke-width': 2, 'stroke-dasharray': '3 3' }, g);
@@ -72,7 +72,7 @@ async function facesAsk(L) {
   say(...lineOf('gen.faces.ask'), { free: true });
   const k = await choosePick([['easy', labelText('faceEasy'), FACE_ICON.easy], ['ok', labelText('faceOk'), FACE_ICON.ok], ['hard', labelText('faceHard'), FACE_ICON.hard]], null, { cls: 'faces' }); hush();
   LOG.faces.push({ t: Date.now(), lesson: L.id, k }); if (LOG.faces.length > 120) LOG.faces.shift(); store.set(kk('hp_log'), LOG); progOf(L.id).face = k; saveProg();
-  await S('gen.faces.' + k);
+  await S('gen.faces.' + k + (k === 'easy' && progOf(L.id).chose === 'challenge' ? 'Chal' : ''));
 }
 async function wrapStage(L) {
   const W = L.wrap; const P = progOf(L.id);

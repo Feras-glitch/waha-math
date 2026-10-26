@@ -13,4 +13,8 @@ never = [l for l in lines if l not in said]
 fam = collections.Counter(re.sub(r'\.[^.]+$', '', l) for l in never)
 print('runs: %d · lines: %d · spoken in some run: %d · never spoken: %d' % (len(glob.glob(os.path.join(d, '*.json'))), len(lines), len(lines) - len(never), len(never)))
 for k, n in sorted(fam.items(), key=lambda x: (-x[1], x[0])): print('  %-40s %d' % (k, n))
+# وكل جملة توأم في الدروس (tw.*) تُنطق في تشغيلٍ ما: deepall وremedialdeep يبلغان كشف كل بند بمساعدة ثم توأمه، فالتوأم غير المنطوق بندٌ لم يُقَد إلى كشفه
+# (بوابة S1-U4: بند قصة بلا q تشارك عدّاد deepall مع غيره فلم يبلغ كشفه، ونجح عدّاد twins missing). تفحصه خلاصة run_all.sh
+tw = [l for l in never if re.match(r'^m\d+\.u\d+\.d\d+\.tw\.', l)]
+print('twin lines never spoken:', len(tw)); [print(' ', l) for l in tw]
 print('--- القائمة'); [print(' ', l) for l in never]

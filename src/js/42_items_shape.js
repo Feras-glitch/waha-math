@@ -68,7 +68,7 @@ ITEM.yesno = {
 /* توقّع الدفع (تعليل بالخاصية، C009) */
 ITEM.property = {
   make(spec) { const it = make(spec.mk); return { ...spec, it, tag: 'prop-' + (it.tag || it.solid), want: spec.want || (it.solid === 'sphere' || (it.solid === 'cylinder' && it.pose === 'lying') ? 'roll' : 'stay') }; },
-  async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 0 }); floorLine(svg);
+  async ask(item, mode, tries) { const svg = newStage(280, { oasis: false, ground: 0 }); floorLine(svg);   /* 280: تسمية الشيء (y = 262) داخل المسرح (كانت تُقصّ بحدّه على Pixel 5: clipped texts) */
     /* من المحاولة الثالثة تُعاد التجربة: الدفع يرسم الشيء نفسه (لا يُرسم ثم يُمحى) */
     const g = tries >= 2 ? null : placeOnFloor(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, 120);
     if (item.it.label) label(svg, 120, 262, item.it.label, 16, css('--muted'));

@@ -30,7 +30,7 @@ const T = id => G(lineOf(id)[2]);                       // النص المعرو
 
 /* بنوك التنويع (M6): لا تتكرّر الصيغة نفسها مرتين متتاليتين */
 const BANK_LAST = {};
-function bank(name) { const b = GEN.banks[name]; if (!b || !b.length) return null; let id = pick(b); if (b.length > 1) while (id === BANK_LAST[name]) id = pick(b); BANK_LAST[name] = id; return id; }
+function bank(name) { const b = GEN.banks[name]; if (!b || !b.length) { /*T*/if (TESTHOOK) throw new Error('bank: لا بنك «' + name + '»');/*/T*/ return null; }   /* في نسخة الفحص يُعلن البنك الغائب (الفحص المستقل F2 (6): كان يسقط صامتاً إلى gen.correct.02، ونجت أسماء موصولة من lint) */ let id = pick(b); if (b.length > 1) while (id === BANK_LAST[name]) id = pick(b); BANK_LAST[name] = id; return id; }
 const numw = n => 'gen.numw.' + String(n).padStart(2, '0');           // العدد كلمةً: «خَمْسَة»
 const numw2 = n => GL['gen.numw2.' + String(n).padStart(2, '0')] ? 'gen.numw2.' + String(n).padStart(2, '0') : numw(n);   // بعد «ناقص» و«يساوي»: «اثْنَيْن»
 

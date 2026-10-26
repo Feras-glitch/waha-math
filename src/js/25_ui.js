@@ -15,7 +15,7 @@ function newStage(H = 300, bg = {}, aria) { const st = $('#stage'); st.innerHTML
   /* وحين تظهر الخيارات تحت المسرح أو تزول يصغر أو يكبر قبل أن يُبلغ ResizeObserver: يُعاد الحساب فوراً، فلا تبقى منطقة لمس دون حدّها لحظةً
      (الفحصان المستقلان C وD: زرّ تحريك الطريق 55 بكسلاً، وقطعة الورشة 61، على iPhone SE) */
   try { if (STAGE_MO) STAGE_MO.disconnect(); STAGE_MO = new MutationObserver(() => refreshPads(svg)); STAGE_MO.observe(st, { childList: true }); } catch (e) {}
-  if (bg !== null) backdrop(svg, H, bg); return svg; }
+  kbdStage(svg); if (bg !== null) backdrop(svg, H, bg); return svg; }
 function label(svgOrKey, x, y, text, size = 19, color) {
   if (typeof svgOrKey === 'string') return labelText(svgOrKey);
   const t = el('text', { x, y, 'text-anchor': 'middle', 'font-size': size, 'font-weight': 800, fill: color || css('--ink'), 'font-family': css('--f'), 'paint-order': 'stroke', stroke: css('--paper'), 'stroke-width': 5 }, svgOrKey); t.textContent = G(text); return t; }
@@ -25,7 +25,7 @@ function labelFit(svg, x, y, text, size, color, maxW) { if (!text) return null; 
   [w.slice(0, mid).join(' '), w.slice(mid).join(' ')].forEach((s, i) => { const sp = el('tspan', { x, dy: i ? size * 1.15 : -size * .2 }, t); sp.textContent = s; }); } catch (e) {} return t; }
 function labelText(k) { const D = CUR ? LDATA[CUR.id] : null; return (D && D.labels && D.labels[k]) || LABELS.ui[k] || k; }
 /* شارة العدّ: لون النص يُختار بحسب الخلفية (T10) */
-function badge(parent, x, y, n, col) { const bg = col || css('--compass'); const m = el('g', { transform: `translate(${x} ${y})`, 'pointer-events': 'none' }, parent);
+function badge(parent, x, y, n, col) { const bg = col || css('--compass'); const m = el('g', { transform: `translate(${x} ${y})`, 'pointer-events': 'none', 'data-badge': 1 }, parent);
   el('circle', { r: 15, fill: bg, stroke: '#fff', 'stroke-width': 3 }, m);
   if (digitsShown()) { const t = el('text', { y: 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 800, fill: onColor(bg), 'font-family': css('--f') }, m); t.textContent = DG(n); }
   else el('circle', { r: 4.5, fill: onColor(bg) }, m);   /* قبل «أرقام الواحة» لا رقم مكتوباً: الشارة نقطة، والعدد مسموع */
@@ -40,17 +40,17 @@ help.innerHTML = ICON.lantern;
 
 /* ---------- خطافات الفحص الآلي: كل انتظار لفعل الطفل يسجّل حلّه الصحيح وخطأً مقصوداً (تُحذف من نسخة الأطفال) ---------- */
 function AUTO(d) { /*T*/if (TESTHOOK) { window.__autoN = (window.__autoN || 0) + 1; window.__auto = { ...d, n: window.__autoN, scene: SCENE_NOW }; }/*/T*/ }
-function AUTO_CLEAR() { /*T*/if (TESTHOOK) window.__auto = null;/*/T*/ }
+function AUTO_CLEAR() { STAGE_FOC = null; /*T*/if (TESTHOOK) window.__auto = null;/*/T*/ }   /* وانتهاء الانتظار ينهي إعادة التركيز (الفحص المستقل E2: قفز التركيز بوهجه إلى كفّة الميزان بعد التوقّع، وEnter ثانية تجيب بالتوقّع) */
 
 /* ---------- الفانوس (M3، M4): ظاهر في كل لحظة تفاعل، ويتوهّج بعد الخمول، ولمسه يعطي المساعدة فوراً ---------- */
 let idleTimer = null, idleHandler = null;
 function armIdle(h, opt = {}) { idleHandler = h; help.hidden = false; help.classList.remove('glow');
-  help.onclick = () => { help.classList.remove('glow'); clearTimeout(idleTimer); const f = idleHandler; if (f) Promise.resolve(f()).then(() => { if (idleHandler === f) resetIdle(opt); }); };
+  help.onclick = () => { help.classList.remove('glow'); if (idleTimer) idleTimer.cancel(); const f = idleHandler; if (f) Promise.resolve(f()).then(() => { if (idleHandler === f) resetIdle(opt); }); };
   resetIdle(opt); }
-function resetIdle(opt = {}) { clearTimeout(idleTimer); if (!idleHandler) return;
+function resetIdle(opt = {}) { if (idleTimer) idleTimer.cancel(); idleTimer = null; if (!idleHandler) return;
   const wait = FAST ? 1500 : (opt.first ? 10000 : 20000);   // T9: أقصر في أول لقاء بالأداة
-  idleTimer = setTimeout(async () => { if (speechBusy()) { resetIdle(opt); return; } help.classList.add('glow'); await S('gen.hintOffer.01', { ifIdle: true, free: true, aside: true }); }, wait); }
-function disarmIdle() { idleHandler = null; clearTimeout(idleTimer); help.hidden = true; help.classList.remove('glow'); }
+  idleTimer = ptimeout(async () => { if (speechBusy() || PAUSED) { resetIdle(opt); return; }   /* ولا يعرض المساعدة تحت غطاء الخروج (F2 (3)) */ help.classList.add('glow'); await S('gen.hintOffer.01', { ifIdle: true, free: true, aside: true }); }, wait); }
+function disarmIdle() { idleHandler = null; if (idleTimer) idleTimer.cancel(); idleTimer = null; help.hidden = true; help.classList.remove('glow'); }
 document.addEventListener('pointerdown', e => { if (idleHandler && !help.contains(e.target)) { help.classList.remove('glow'); resetIdle(); } }, true);
 /* أول لقاء بأداة (M4): عرض تلقائي قصير، ثم يبدأ الطفل. يُحفظ لكل طفل */
 function firstTime(tool) { if (SET.seen[tool]) return false; SET.seen[tool] = 1; saveSet(); return true; }
@@ -77,7 +77,7 @@ function choosePick(options, okKey, opt = {}) {
   AUTO({ kind: 'pick', ok: () => (btns.find(b => okKey == null || (Array.isArray(okKey) ? okKey.includes(b.dataset.k) : b.dataset.k === okKey)) || btns[0]).click(), wrong: () => (btns.find(b => okKey != null && !(Array.isArray(okKey) ? okKey.includes(b.dataset.k) : b.dataset.k === okKey)) || btns[0]).click() });
   const r = gate(new Promise(res => btns.forEach(b => b.onclick = () => { if (box.dataset.done) return; box.dataset.done = 1; AUTO_CLEAR(); hush();
     b.classList.add(okKey == null || (Array.isArray(okKey) ? okKey.includes(b.dataset.k) : b.dataset.k === okKey) ? 'ok' : 'no'); SFX.tick(); res(b.dataset.k); })))
-    .then(k => { setTimeout(() => box.remove(), FAST ? 30 : 700); return k; });
+    .then(k => { psleep(FAST ? 30 : 700).then(() => box.remove()); return k; });
   if (options.every(o => o[3])) readChoices(options.map((o, i) => ({ line: lineOf(o[3]), el: btns[i] })), { host: box });
   return r;
 }
@@ -99,7 +99,7 @@ function cardPick(cards, opt = {}) {   // cards: [{id(line), k, ok, icon, hide, 
   const readAll = async withIntro => { const me = ++run; btns.forEach(x => x.classList.remove('reading'));
     if (withIntro && intro) { await say(...intro, { free: true }); if (answered || me !== run) return;
       if (opt.replayPre) { await opt.replayPre(); if (answered || me !== run) return; } }   /* replayPre: ما يُعاد مع السؤال، كحركة الروبوت في «أيّ أمر اتّبع؟» */
-    for (const [i, b] of btns.entries()) { if (answered || me !== run) break; b.classList.add('reading'); const c = list[i]; if (c.pre) await c.pre(); if (answered || me !== run) break;
+    for (const [i, b] of btns.entries()) { if (PAUSED) await PAUSED.p; if (answered || me !== run) break; b.classList.add('reading'); const c = list[i]; if (c.pre) await c.pre(); if (answered || me !== run) break;   /* والدرس موقوف لا تضيء البطاقة التالية ولا تدقّ نغمتها (H2 (4أ)) */
       await say(...lines[i], { hideText: c.hide && !opt.keepQ, keep: !!opt.keepQ, free: true }); b.classList.remove('reading'); } };   /* keepQ: بطاقات الأعداد المسموعة تُقرأ والسؤال باقٍ في الفقاعة (S1-U3) */
   /* الخطّاف حيّ ما دامت البطاقات على الشاشة في المسار نفسه: الخروج إلى الخريطة أو مسرح جديد يُسقطه (الدرس الآخر لا يسمع بطاقات هذا) */
   REPLAY_HOOK = () => readAll(true); REPLAY_HOOK.live = () => !answered && !box.dataset.done && flow === FLOW && box.isConnected;
@@ -111,16 +111,19 @@ function cardPick(cards, opt = {}) {   // cards: [{id(line), k, ok, icon, hide, 
    و«أعد الجملة» ما دامت الخيارات على الشاشة يعيد السؤال ثم الخيارات (D254 (5))، لا اسم آخر خيار وحده (فهو أحياناً الجواب وأحياناً الخطأ).
    items: [{line, el}]؛ opt.intro: جمل السؤال، وإلا آخر جملة قيلت قبل أول خيار؛ opt.host: ما يزول بزوال الخيارات أو يُعلَّم done عند الجواب */
 function readChoices(items, opt = {}) {
-  let intro = opt.intro || null, run = 0; const flow = FLOW, host = opt.host;
+  /* والسؤال آخر جملة دخلت الطابور ساعة الإنشاء (الفحص المستقل G2 (1): كان يُعرف عند بدء الخيار الأول، فالغطاء بعد السؤال وقبله يعيد الخيارين بلا سؤالهما) */
+  let intro = opt.intro || (LASTQ ? [LASTQ] : null), run = 0; const flow = FLOW, host = opt.host;
   const dead = () => flow !== FLOW || !!(host && (!host.isConnected || host.dataset.done));
+  /* والخيار المخفيّ (زرّ أداةٍ أدّت عملها: «اُفْرُدِي» و«حاذِ البدايات» بـ barGone) لا يُقرأ، والخطّاف بلا خيارٍ ظاهر ميت (الفحص المستقل H2 (6): قالت «أعد» و«نبقى» اسم زرٍّ غير ظاهر) */
+  const shown = it => !it.el || (it.el.isConnected && getComputedStyle(it.el).visibility !== 'hidden' && !it.el.closest('[hidden]'));
   const readAll = async withIntro => { const me = ++run, g0 = speechGen; const stop = () => me !== run || speechGen !== g0 || dead();   /* لمسة تُسكت القراءة (hush) توقف ما بقي منها */
     items.forEach(it => it.el && it.el.classList.remove('reading'));
     if (withIntro && intro) for (const l of intro) { await say(l[0], l[1], l[2], { free: true, ...(l[3] || {}) }); if (stop()) return; }   /* l[3]: خيارات الجملة (append) */
-    for (const it of items) { if (stop()) break; const seq = it.lines || [it.line];   /* الخيار جملة واحدة، أو جمل متتابعة (بطاقة جملة عددية) */
+    for (const it of items) { if (PAUSED) await PAUSED.p; if (stop()) break; if (!shown(it)) continue; const seq = it.lines || [it.line];   /* الخيار جملة واحدة، أو جمل متتابعة (بطاقة جملة عددية) */
       for (const [j, l] of seq.entries()) { await say(l[0], l[1], l[2], { free: true, keep: true, noGap: j < seq.length - 1 || opt.noGap, onStart: j ? undefined : () => { if (!intro && lastLine) intro = [[lastLine.who, lastLine.id, lastLine.text]]; items.forEach(x => x.el && x.el.classList.remove('reading')); if (it.el) it.el.classList.add('reading'); } });
         if (stop()) break; }
       if (it.el) it.el.classList.remove('reading'); } };
-  REPLAY_HOOK = () => readAll(true); REPLAY_HOOK.live = () => !dead();
+  REPLAY_HOOK = () => readAll(true); REPLAY_HOOK.live = () => !dead() && (!items.length || items.some(shown));   /* وبلا خيارات (السؤال وحده يُعاد) حيّ */
   readAll(false);
 }
 /* اختيار عدد: الكلمة مسموعة دائماً، والرقم مكتوب بعد أن يتعلّمه الطفل (D229) */
@@ -133,6 +136,7 @@ const tallyText = n => '•'.repeat(n);
    داخل الدرس بموضعه من المنهاج (فتدريب الفحص بفتح كل الدروس لا يغيّره)، وخارجه بإنجاز درس الجسر */
 const teenDigits = () => { const S = LESSON_SEQ(), d = S.indexOf('m1.u4.d5'); if (d < 0) return false; if (CUR && S.includes(CUR.id)) return S.indexOf(CUR.id) >= d; return !!(PROG['m1.u4.d5'] || {}).done; };
 function numberPick(nums, ok, opt = {}) {
+  /*T*/if (TESTHOOK && new Set(nums).size < 3) testBug('numberPick بأقلّ من ثلاثة خيارات: ' + nums.join(','));/*/T*/   /* (الفحص المستقل J2 (5): ترشيحٌ بعد nearNums أنقصها في موضع ندائه، فالحارس يراها في كل موضع) */
   const box = document.createElement('div'); box.className = 'choices nums'; (opt.host || $('#stage')).appendChild(box);
   const showDigits = opt.digits ?? digitsKnown(), teens = teenDigits();
   const btns = nums.map(n => { const b = document.createElement('button'); b.className = 'pick num'; b.dataset.k = n;
@@ -145,7 +149,15 @@ function numberPick(nums, ok, opt = {}) {
   return { box, btns, p };
 }
 /* خيارات عددية حول الجواب: ثلاثة أعداد متجاورة غير سالبة، مخلوطة */
-function nearNums(n, max = 10) { const set = new Set([n]); for (const d of shuffle([-1, 1, -2, 2])) { if (set.size >= 3) break; const v = n + d; if (v >= 0 && v <= max) set.add(v); } return shuffle([...set]); }
+/* أعداد «معي» التي فعلها الطفل بيديه للتوّ لا تكون مشتّتاً مولَّداً في أسئلة الشاشة التي تخدمها (الفحص المستقل H1 (10أ): قال «أربعة عشر» ثم سُئل عن ثلاثة عشر
+   وخياراه 14 و4)؛ يملؤها مشهد «معي» من mat.avoid (يكتبها البناء من مسائلها)، ويُفرغها المسار عند الخطوة التالية غير الموصولة. والمشتّت المشخِّص (العمود
+   واحداً في teenOpts، وerrs في optsWith) كذلك: مَن اختاره وهو عددٌ من «معي» لا يُعرف أخطأ أم تذكّر، فيُترك تشخيصه في هذا السؤال وحده (كان «4» في د5 عموداً
+   واحداً وثلاثة، وهو منفردات «معي»: السائق، «mat distractors»). والعشرة ليست في mat.avoid */
+let MAT_AVOID = null; const avoidOk = v => !MAT_AVOID || !MAT_AVOID.has(v);
+/* وثلاثة خيارات دائماً: إن لم تبلغها المسافات القريبة (أعداد «معي» أو حدّ المدى) تُوسَّع، ثم يُقبل عددٌ من «معي» آخراً (الفحص المستقل I2 (7): nearNums(0) بأعداد «معي»
+   من واحد إلى ستة أعطت خياراً واحداً). وما بلغ ثلاثة لا يمرّ هنا، فلا يتغيّر ما يُولَّد اليوم */
+function fillOpts(s, n, lo, hi) { for (const strict of [true, false]) for (let d = 1; s.size < 3 && d <= hi - lo; d++) for (const v of shuffle([n - d, n + d])) if (s.size < 3 && v >= lo && v <= hi && (!strict || avoidOk(v))) s.add(v); return s; }
+function nearNums(n, max = 10, lo = 0) { const set = new Set([n]); for (const d of [...shuffle([-1, 1, -2, 2]), ...shuffle([-3, 3])]) { if (set.size >= 3) break; const v = n + d; if (v >= lo && v <= max && avoidOk(v)) set.add(v); } return shuffle([...fillOpts(set, n, lo, max)]); }   /* lo: أصغر خيار (1 حيث لا صفر)، لا ترشيحٌ بعده يُنقص الثلاثة (الفحص المستقل J2 (5)) */
 /* زرّ «تمّ» على المسرح للمهام المفتوحة (الإخراج والبناء) */
 function doneBtn(onClick) { const b = document.createElement('button'); b.className = 'pick done'; b.innerHTML = ICON.check + `<span>${esc(G(labelText('done')))}</span>`; b.setAttribute('aria-label', plain(labelText('done')));
   const bar = document.createElement('div'); bar.className = 'choices donebar'; bar.appendChild(b); $('#stage').appendChild(bar); b.onclick = onClick; return { bar, b }; }

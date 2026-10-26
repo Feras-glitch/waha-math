@@ -175,6 +175,7 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .wsbar { position: absolute; top: 8px; inset-inline-start: 8px; display: flex; gap: 6px; padding: 0; }
 .wsbar .pick { min-height: var(--tap); padding: 4px 12px; font-size: 16px; grid-auto-flow: column; gap: 6px; }
 .wsbar.mid { inset-inline-start: 50%; transform: translateX(50%); }
+.wsbar.end { inset-inline-start: auto; inset-inline-end: 8px; }
 .wssel { filter: drop-shadow(0 0 6px var(--compass)) drop-shadow(0 0 2px var(--compass)); }
 
 /* ===== الأغطية ===== */
@@ -254,6 +255,9 @@ details.adult input[type=text]:focus { outline: none; border-color: var(--compas
 
 /* احتفال: قصاصات من الأشكال نفسها */
 .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+/* الإيقاف يوقف حركات CSS بالأنماط لا بالكود (حركةٌ أوقفها الكود وبعثها لا تقف بإزالة صنفها)، إلا في الأغطية وبوابة الكبار؛ والقصاصات تُخفى تحته */
+html.lpause body > :not(.cover):not(.panel), html.lpause body > :not(.cover):not(.panel) *, html.lpause body > :not(.cover):not(.panel) *::before, html.lpause body > :not(.cover):not(.panel) *::after { animation-play-state: paused !important; }
+html.lpause #confetti { visibility: hidden; }
 .confetti i { position: absolute; top: -30px; width: 16px; height: 16px; animation: fall 1.7s cubic-bezier(.3,.6,.5,1) forwards; }
 @keyframes fall { to { transform: translate(var(--dx), 110vh) rotate(var(--r)); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } .confetti { display: none; } }

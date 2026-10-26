@@ -6,6 +6,7 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { lint } from './lint.mjs';
+import { matNums } from './d240.mjs';
 import { loadContent, readModules } from './content.mjs';
 import { writeScript } from './script.mjs';
 
@@ -54,6 +55,8 @@ export function embedFonts(head, texts) {
 export function build({ dev = false } = {}) {
   const content = loadContent(); const modules = readModules();
   const L = lint(content, modules); if (L.errors.length) { console.error(L.summary); for (const e of L.errors) console.error('  مخالفة:', e); throw new Error('أوقف البناءَ فحصُ المحتوى'); }
+  /* «معي» بأعداد مسائلها (mat.avoid): لا تكون مشتّتاً مولَّداً في أسئلة الشاشة التي تخدمها (الفحص المستقل H1 (10أ)؛ nearNums وoptsWith وteenOpts) */
+  for (const u of content.units) for (const Ls of u.lessons) for (const st of Ls.flow || []) if (st && st.mat && Array.isArray(st.mat.facts)) st.mat.avoid = [...matNums(st.mat.facts).nums].filter(n => n !== 10).sort((a, b) => a - b);
   const body = read(join(SRC, 'body.html')), tail = read(join(SRC, 'tail.html'));
   const font = embedFonts(read(join(SRC, 'head.html')).replace('@@STYLES@@', read(join(SRC, 'styles.css'))), [JSON.stringify(content), modules, body, tail]);
   const js = stripHooks(modules, dev);

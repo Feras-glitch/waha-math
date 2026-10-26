@@ -8,7 +8,7 @@ const SCENES = {};
 SCENES.items = async c => { if (c.intro) await S(c.intro); for (const it of c.items) await runItem(it, c.mode || 'explore', { scene: c.stage || 'explore' }); if (c.after) await S(c.after); };
 /* مسار المواد (D238): يظهر في مسار «معي» وحده؛ صورة الأشياء وتعليمة وزرّ «تمّ» */
 SCENES.material = async c => {
-  if (!PATH_MAT()) return; const svg = newStage(260, { oasis: false, ground: 0 });
+  if (!PATH_MAT()) return; MAT_AVOID = new Set(c.avoid || []); const svg = newStage(260, { oasis: false, ground: 0 });   /* أعداد مسائلها لا تكون مشتّتاً في الشاشة التي تخدمها (H1 (10أ)) */
   (c.show || []).forEach((r, i, a) => fitThing(svg, make(r), 300 - i * (240 / Math.max(1, a.length - 1 || 1)), 120, 96));
   if (c.icon) { const g = el('g', { transform: 'translate(180 120)' }, svg); g.innerHTML = PICKICON.mat.replace('<svg', '<svg x="-60" y="-42" width="120" height="84"'); }
   await S(c.prompt); const d = doneBtn(); AUTO({ kind: 'material', ok: () => d.b.click() });
@@ -61,10 +61,10 @@ async function stepOp(st, op) {
   if (op.edgeTurn) await edgeTurn(svg);
   if (op.towers) { st.towers = op.towers.map(([n, x, colorKey, size]) => towerAt(svg, x, op.base || 250, n, { size: size || 26, color: CUBE[colorKey || 'plain'] })); }
   if (op.towers2) for (const [n, x, colorKey, from] of op.towers2) { const T = st.towers.find(t => t.x === x) || st.towers[0]; const add = towerAt(svg, x, T.baseY - from * T.step, n, { size: T.size, color: CUBE[colorKey || 'white'] });
-    await anim(add.g, [{ transform: 'translate(-90px,0px)' }, { transform: 'translate(0px,0px)' }], { duration: 700, easing: 'cubic-bezier(.3,1.2,.6,1)' }).done; await badgeCount(svg, add.cubes.map((c, i) => ({ x: x + T.size * .9, y: T.baseY - T.size * .62 - (from + i) * T.step })), css('--square'), from + 1); }
+    await anim(add.g, [{ transform: 'translate(-90px,0px)' }, { transform: 'translate(0px,0px)' }], { duration: 700, easing: 'cubic-bezier(.3,1.2,.6,1)' }).done; await badgeCount(svg, zig(add.cubes.map((c, i) => ({ x: x + T.size * .9, y: T.baseY - T.size * .62 - (from + i) * T.step }))), css('--square'), from + 1); }
   if (op.coverTop) { const [ti, k] = op.coverTop; const T = st.towers[ti]; const n = T.cubes.length; el('rect', { x: T.x - T.size * .8, y: T.baseY - n * T.step - 4, width: T.size * 1.6, height: k * T.step + 4, rx: 8, fill: '#c98f55', opacity: .92 }, svg); }
   if (op.pair) await pairLines(svg, st.towers[0], st.towers[1], 800);
-  if (op.countTower != null) { const T = st.towers[op.countTower]; await badgeCount(svg, T.cubes.map((c, i) => ({ x: T.x + T.size * .9, y: T.baseY - T.size * .62 - i * T.step })), css('--compass')); }
+  if (op.countTower != null) { const T = st.towers[op.countTower]; await badgeCount(svg, zig(T.cubes.map((c, i) => ({ x: T.x + T.size * .9, y: T.baseY - T.size * .62 - i * T.step }))), css('--compass')); }
   if (op.sentence) { const [a, o, b, cc] = op.sentence; sentenceAt(svg, op.at ? op.at[0] : 180, op.at ? op.at[1] : 40, a, o, b, cc); if (!op.quiet) await readSentence(a, o, b, cc); }
   if (op.wait) await sleep(op.wait);
   if (op.waitSay && st.along) { await st.along; st.along = null; }
@@ -97,7 +97,7 @@ SCENES.cartsRace = async c => {
   anim(top.g, [{ transform: 'translate(250px,118px)' }, { transform: 'translate(70px,118px)' }], { duration: 3200, fill: 'forwards', easing: 'linear' });
   top.ws.forEach(w => anim(w, [{ transform: `translate(${w.dataset.wx}px,0px) rotate(0deg)` }, { transform: `translate(${w.dataset.wx}px,0px) rotate(-720deg)` }], { duration: 3200, fill: 'forwards' }));
   const hops = []; for (let k = 0; k <= 8; k++) hops.push({ transform: `translate(${250 - k * 10}px, ${250 - (k % 2 ? 12 : 0)}px) rotate(${k % 2 ? -4 : 0}deg)` });
-  setTimeout(() => SFX.soft(), FAST ? 50 : 900); await anim(bot.g, hops, { duration: 3200, fill: 'forwards', easing: 'steps(8, end)' }).done;
+  sleep(900).then(() => SFX.soft());   /* بالبوابة: تقف مع الدرس ولا تُدقّ بعد الخروج على الخريطة (الفحص المستقل I2 (4)) */ await anim(bot.g, hops, { duration: 3200, fill: 'forwards', easing: 'steps(8, end)' }).done;
   await S(c.lines.slice(4));
 };
 /* تتبّع الحافة: {shapes:[{type,size,color:'--circle',x,y,caption}], sides, pairColors, intro, sidesIntro, after} */
@@ -148,12 +148,12 @@ SCENES.houseMatch = async c => {
   const auto = () => AUTO({ kind: 'house', ok: async () => { const p = shown.filter(q => !q.done).sort((a, b) => shapeArea(b.s) - shapeArea(a.s))[0]; if (!p) return; p.g.dispatchEvent(new MouseEvent('click', { bubbles: true })); const i = slots.findIndex(s => (s.id || s.k) === (p.id || p.k) && !s.filled); slotG[i].dispatchEvent(new MouseEvent('click', { bubbles: true })); } });
   auto();
   await gate(new Promise(res => {
-    shown.forEach(p => { const act = () => { if (p.done) return; sel = p; shown.forEach(q => q.g.style.opacity = q === p || q.done ? 1 : .55); SFX.tick(); }; p.g.onclick = act; p.g.onkeydown = e => { if (e.key === 'Enter') act(); }; });
+    shown.forEach(p => { const act = () => { if (p.done) return; sel = p; shown.forEach(q => q.g.style.opacity = q === p || q.done ? 1 : .55); SFX.tick(); }; p.g.onclick = act; p.g.onkeydown = e => { if (actKey(e)) act(); }; });
     /* المكان الملموس: أصغر مكان فارغ يقع اللمس داخل رسمه (النافذة داخل الجدار)، وإلا صاحب منطقة اللمس (D255: منطقة النافذة الواسعة لا تأخذ لمس الجدار) */
     const target = (i, e) => { const p = e && isFinite(e.clientX) && e.clientX ? svgPoint(svg, e) : null; if (!p) return i;
       const hit = slots.map((sl, j) => j).filter(j => !slots[j].filled && insideShape(slots[j].s, p.x - slots[j].x, p.y - slots[j].y)).sort((a, b) => shapeArea(slots[a].s) - shapeArea(slots[b].s)); return hit.length ? hit[0] : i; };
     slotG.forEach((g, i0) => { g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.setAttribute('aria-label', plain(labelText('houseSlot'))); g.dataset.slot = slots[i0].id || slots[i0].k; hitPad(g, 76); g.__route = (x, y) => slotG[target(i0, { clientX: x, clientY: y })];
-      g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') g.onclick(); };
+      g.onkeydown = e => { if (actKey(e)) g.onclick(); };
       g.onclick = async e => { const i = target(i0, e); if (!sel) { await S('gen.house.pick'); return; }
       const sl = slots[i];
       if ((sl.id || sl.k) === (sel.id || sel.k) && !sl.filled) { sl.filled = true; sel.done = true; placed++; SFX.good(); logAttempt({ scene: 'game', tag: 'house-' + sel.k, ok: true });
@@ -192,7 +192,7 @@ SCENES.compareAlign = async c => {
   const stick = (y, len, x0, col) => { const g = el('g', { transform: `translate(${x0} ${y})` }, svg); el('rect', { x: -len, y: -22, width: len, height: 44, rx: 22, fill: col, stroke: '#fff', 'stroke-width': 3, filter: 'url(#pp)' }, g);
     el('circle', { cx: -14, cy: 0, r: 7, fill: '#fff', opacity: .6 }, g); return g; };
   const A = stick(90, 200, 300, MAT.wood), B = stick(180, 170, 260, '#7f9fb0');   // ألوان مادّية لا ألوان الهوية (M7)
-  B.style.cursor = 'grab'; hitPad(B, 64, 64); B.setAttribute('tabindex', 0); B.setAttribute('role', 'button'); B.setAttribute('aria-label', labelText('stickDrag'));
+  B.style.cursor = 'grab'; hitPad(B, 64, 64); B.setAttribute('tabindex', 0); B.setAttribute('role', 'button'); B.setAttribute('aria-label', plain(G(labelText('stickDrag'))));
   B.dataset.align = 'no'; B.dataset.alignX = 300;   /* كما في dragAlign: ما يُحاذى وخطّه، للمس الحقيقي وفحص بديل السحب (realtap_run، D246) */
   await S(c.lines[0]); if (firstTime('align')) await ghostHand(svg, [[160, 180], [200, 180]], 900);
   await gate(new Promise(res => { let d = null, x = 260, x0 = 260; const snap = () => { if (d === 'done') return; d = 'done'; B.setAttribute('transform', 'translate(300 180)'); B.dataset.align = 'yes'; SFX.good(); AUTO_CLEAR(); res(); };
@@ -201,7 +201,7 @@ SCENES.compareAlign = async c => {
     B.addEventListener('pointermove', e => { if (d == null || d === 'done') return; const ctm = svg.getScreenCTM(); x = Math.max(200, Math.min(320, x0 + (e.clientX - d) / ctm.a)); B.setAttribute('transform', `translate(${x} 180)`); });
     const up = () => { if (d === 'done') return; d = null; if (Math.abs(x - 300) < 18) snap(); }; B.addEventListener('pointerup', up); B.addEventListener('pointercancel', () => { d = null; });
     B.addEventListener('click', () => { if (d !== 'done' && Math.abs(x - 300) >= 18) { anim(B, [{ transform: `translate(${x}px,180px)` }, { transform: 'translate(300px,180px)' }], 500).done.then(snap); } });   // بديل النقر (D246)
-    B.addEventListener('keydown', e => { if (e.key === 'Enter') snap(); });
+    B.addEventListener('keydown', e => { if (actKey(e)) snap(); }); B.dataset.keys = 1;
     armIdle(async () => { await S(c.lines[1]); await anim(B, [{ transform: 'translate(260px,180px)' }, { transform: 'translate(300px,180px)' }], 700).done; snap(); }); }));
   disarmIdle(); await S(c.lines[2]);
   let tries = 0; while (true) { const k = await tapOne([{ g: A, k: 'A', label: labelText('stickA') }, { g: B, k: 'B', label: labelText('stickB') }], { ok: 'A', pad: 64 }); tries++;
@@ -214,7 +214,7 @@ SCENES.scatterHook = async c => { const svg = newStage(300, { oasisOpacity: .2 }
   const fz = chaosAt(svg, 320, 250, .45); await chaosGiggle(fz); await S(c.lines); };
 /* الصيد والتصنيف في أربع سلال (C005)، ثم «كم في كل سلّة؟» */
 SCENES.huntSort = async c => {
-  const svg = newStage(330, { oasis: false, ground: 0 }); const bins = c.bins; const binX = k => 360 - (bins.indexOf(k) + .5) * 90;
+  const svg = newStage(344, { oasis: false, ground: 0 }); const bins = c.bins; const binX = k => 360 - (bins.indexOf(k) + .5) * 90;   /* 344: أسماء السلال (y = 325) داخل المسرح (clipped texts) */
   bins.forEach(k => { const g = el('g', { transform: `translate(${binX(k) - 40} 242) scale(.73)` }, svg); g.innerHTML = basketSVG(k).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, ''); label(svg, binX(k), 325, plain(BIN_NAMES[k]), 14); });
   const objs = c.objects.map((ref, i) => { const s = make(ref); const p = { x: 360 - (i % 4 + .5) * 90, y: 60 + Math.floor(i / 4) * 92 }; const g = fitAt(svg, { ...s, label: null }, p.x, p.y, 72); return { s, g, p }; });   // مربع ثابت لكل شيء: الظرف والمستطيل الكبيران لا يغطّيان جيرانهما
   await S(c.lines[0]); const inBin = {}; bins.forEach(k => inBin[k] = []);
@@ -375,12 +375,14 @@ SCENES.towerBuild = async c => {
   const svg = newStage(300, { oasis: false }); floorLine(svg, 214);
   const stack = []; const base = el('g', {}, svg); const tray = el('g', {}, svg); el('rect', { x: -360, y: 246, width: 1080, height: 60, fill: css('--paper'), opacity: .92 }, tray);
   const kinds = ['cube', 'cylinder', 'cone', 'sphere']; let warned = {}, busy = false;
+  /* البرج كله داخل المسرح: القطعة تصغر حين يطول البرج (فحص النصوص المقصوصة بعد الفحص المستقل B لبوابة S1-U4: شارة «٥» والقطعة الخامسة خارج المسرح) */
+  const PS = Math.min(58, Math.floor(190 / (c.goal || 4) / .82));
   const topY = () => 214 - stack.reduce((h, p) => h + p.h, 0);
   say(...lineOf(c.lines[0]), { free: true });
   const buttons = kinds.map((k, i) => { const x = 315 - i * 90; const g = thingAt(tray, { solid: k, size: 52, color: SOLIDC[k] }, x, 276); g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.setAttribute('aria-label', plain(BIN_NAMES[k])); hitPad(g, 80); g.dataset.solid = k; return g; });
   AUTO({ kind: 'towerBuild', ok: async () => { for (let i = 0; i < c.goal; i++) { buttons[0].dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 120)); } } });
   await gate(new Promise(res => buttons.forEach(g => { const k = g.dataset.solid; const act = async () => { if (busy || stack.length >= c.goal) return; busy = true; hush(); SFX.tick();
-      const top = stack[stack.length - 1]; const piece = thingAt(base, { solid: k, size: 58, color: SOLIDC[k] }, 180, 0); const bb = piece.getBBox(); const yEnd = topY() - (bb.y + bb.height) + 3;
+      const top = stack[stack.length - 1]; const piece = thingAt(base, { solid: k, size: PS, color: SOLIDC[k] }, 180, 0); const bb = piece.getBBox(); const yEnd = topY() - (bb.y + bb.height) + 3;
       await anim(piece, [{ transform: 'translate(180px,-40px)' }, { transform: `translate(180px,${yEnd}px)` }], { duration: 450, fill: 'forwards', easing: 'cubic-bezier(.4,0,.8,1)' }).done;
       if (top && top.k === 'sphere') { SFX.soft(); logAttempt({ scene: 'build', tag: 'onSphere', ok: false, err: 'sphereBase' });
         anim(top.g, [{ transform: `translate(180px,${top.y}px)` }, { transform: `translate(420px,${top.y + 10}px) rotate(400deg)` }], { duration: 900, fill: 'forwards' });
@@ -389,9 +391,9 @@ SCENES.towerBuild = async c => {
       if (top && top.k === 'cone') { SFX.soft(); logAttempt({ scene: 'build', tag: 'onCone', ok: false, err: 'coneTop' });
         await anim(piece, [{ transform: `translate(180px,${yEnd}px)` }, { transform: `translate(250px,184px) rotate(80deg)`, opacity: 0 }], { duration: 800, fill: 'forwards' }).done;
         piece.remove(); if (!warned.c) { warned.c = 1; await S(c.coneLine); } busy = false; return; }
-      piece.style.transform = `translate(180px,${yEnd}px)`; stack.push({ k, g: piece, h: bb.height - 10, y: yEnd }); SFX.pop(); logAttempt({ scene: 'build', tag: 'place-' + k, ok: true });
+      piece.style.transform = `translate(180px,${yEnd}px)`; stack.push({ k, g: piece, h: bb.height - 10 * PS / 58, y: yEnd }); SFX.pop(); logAttempt({ scene: 'build', tag: 'place-' + k, ok: true });
       busy = false; if (stack.length >= c.goal) { AUTO_CLEAR(); res(); } };
-    g.onclick = act; g.onkeydown = e => { if (e.key === 'Enter') act(); }; })));
+    g.onclick = act; g.onkeydown = e => { if (actKey(e)) act(); }; })));
   hush(); SFX.good(); await S(c.lines[1]);
   await S(c.lines[2]); await countTouch(svg, stack.map(p => ({ x: 236, y: p.y - 6, g: p.g })), { halo: 16, by: 0, pad: 56 });   /* المجسّمات نفسها أهداف العدّ */
   await S('gen.count.how'); let tries = 0;
@@ -425,7 +427,7 @@ SCENES.mosque = async c => {
 SCENES.takeHook = async c => { const svg = newStage(270, { oasisOpacity: .2, ground: 14 }); const T = towerAt(svg, 180, 250, c.a, { size: 26, color: CUBE.lemon }); const fz = chaosAt(svg, 310, 90, .45);
   await sleep(500); await chaosGiggle(fz); const top = T.cubes.slice(c.a - c.b);
   await Promise.all(top.map((cb, i) => anim(cb, [{ transform: cb.getAttribute('transform') }, { transform: `translate(${300 - i * 12}px,${110 + i * 6}px) scale(.6)` }], { duration: 800, fill: 'forwards', delay: i * 100 }).done));
-  await anim(fz, [{ opacity: 1 }, { opacity: 0 }], 500).done; top.forEach(cb => cb.remove());
+  await anim(fz, [{ opacity: 1 }, { opacity: 0 }], { duration: 500, fill: 'forwards' }).done; fz.remove(); top.forEach(cb => cb.remove());   /* وتختبئ فوضى معهما (الفحص المستقل D2: كانت تعود بعد الخفوت) */
   await S(c.lines[0]); const np = numberPick(nearNums(c.a - c.b), c.a - c.b); const k = await np.p; np.box.remove(); logAttempt({ scene: 'hook', tag: 'predict', ok: k === c.a - c.b }); await S(c.lines[1]); };
 /* عدّ الأوجه (مدخل C318، D245): يدير المكعب ويلصق قصاصة على كل وجه يلمسه، فلا يُعدّ وجه مرتين */
 SCENES.facesCount = async c => {

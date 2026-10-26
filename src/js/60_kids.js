@@ -2,8 +2,8 @@
    أطفال الجهاز (D200)، وأول تشغيل بلا قراءة (D246)، والمعرض وصيد الكاميرا (D201)
    ===================================================================== */
 /* غطاء بنصّ ظاهر يطابق المسموع (المبدأ 13): الأغطية تحجب فقاعة المرشد، فتحمل فقاعتها */
-function cover(id, html) { const c = $('#' + id); c.innerHTML = html; c.hidden = false; return c; }
-function coverSay(box, id) { const p = box.querySelector('.coversay'); const [who, , text] = lineOf(id); if (p) p.textContent = G(text); return say(who, id, text, { cover: box }); }
+function cover(id, html) { const c = $('#' + id); c.innerHTML = html; delete c.dataset.ask; c.hidden = false; return c; }   /* وسؤاله المحفوظ (يُعاد عند ظهور الصفحة) يُمحى إذا أُعيد بناؤه */
+function coverSay(box, id) { box.dataset.ask = id; const p = box.querySelector('.coversay'); const [who, , text] = lineOf(id); if (p) p.textContent = G(text); return say(who, id, text, { cover: box }); }
 const coverHead = () => `<div class="talk"><div class="who">${compassSVG()}</div><div class="bubble"><span class="coversay" aria-live="polite"></span></div></div>`;
 
 /* أول تشغيل: زرّ تشغيل كبير بلا كلمات (يفتح الصوت)، ثم يختار الطفل صورته وهو يسمع، والاسم اختياري يكتبه الكبير */
@@ -82,7 +82,7 @@ async function openGallery() {
   let want = null;
   open.forEach(([k]) => { const b = document.createElement('button'); b.className = 'bin'; b.dataset.hunt = k; b.innerHTML = basketSVG(k) + `<span>${esc(BIN_NAMES[k])}</span>`; b.setAttribute('aria-label', plain(BIN_NAMES[k]));
     b.onclick = () => { SFX.tick(); want = k; hush(); coverSay(c, 'gen.hunt.' + k); $('#huntIn').value = ''; $('#huntIn').click(); }; $('#huntGrid').appendChild(b); });
-  $('#huntIn').onchange = e => { const f = e.target.files && e.target.files[0]; if (!f || !want) return; const rd = new FileReader();
+  $('#huntIn').onchange = e => { const f = e.target.files && e.target.files[0]; if (!f || !want) return; hush(); const rd = new FileReader();   /* عاد بصورة: لا تُعاد التعليمة التي قطعتها الكاميرا (الفحص المستقل J2 (7)) */
     rd.onload = () => { const img = new Image(); img.onload = async () => { const Z = 360, k = Math.min(1, Z / Math.max(img.width, img.height)); const cv = document.createElement('canvas');
       cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
       await IDB.put({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kid: KID, k: want, t: Date.now(), data: cv.toDataURL('image/jpeg', .72) });   // rng-ok: معرّف الصورة

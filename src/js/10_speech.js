@@ -12,25 +12,62 @@ const GAP = () => FAST ? 0 : (SET.slow ? 750 : 350);       // وقفة قصير�
 /* طابور الكلام: جملة واحدة في كل لحظة، ولا تبدأ جملة قبل أن تنتهي سابقتها فعلاً.
    ينتهي الكلام بحدث النهاية الحقيقي، ومعه مراقبة لحالة القارئ ومهلة أمان طويلة لا تُستعمل إلا إذا تعطّل الجهاز.
    لا يقطع جملةً إلا: الخروج، أو الكتم، أو «hush» عند الإجابة، أو زرّ «أعد الجملة» (يبدؤها من أولها). */
-let speechChain = Promise.resolve(), speechGen = 0, speaking = false, queued = 0, currentFinish = null, pendingNum = null;
+let speechChain = Promise.resolve(), speechGen = 0, speaking = false, queued = 0, currentFinish = null, pendingNum = null, NOW_ITEM = null, LASTQ = null;
 const inLine = new Map();                                 // جمل تُقال الآن أو تنتظر: لا تتكرر الجملة نفسها إن كرّر الطفل اللمس (المفتاح ← صاحبه)
 function speechBusy() { return speaking || queued > 0; }
-function hush() { speechGen++; inLine.clear(); try { speechSynthesis.cancel(); } catch (e) {} if (currentAudio) { currentAudio.pause(); currentAudio = null; } if (currentFinish) currentFinish(); }   /* ما قُطع لا يحجز مفتاحه: «أعد الجملة» بعده مباشرة يبدؤها من أولها */
+function cutNow() { try { speechSynthesis.cancel(); } catch (e) {} if (currentAudio) { currentAudio.pause(); currentAudio = null; } if (currentFinish) currentFinish(); }   /* يقطع الجملة الجارية وحدها */
+function hush() { speechGen++; inLine.clear(); cutNow(); }   /* ما قُطع لا يحجز مفتاحه: «أعد الجملة» بعده مباشرة يبدؤها من أولها */
+/* غطاء الخروج يوقف الدرس ولا يُنهي جملته (الفحص المستقل F2 (1)(ب) و(3): كان hush() فيمضي الدرس تحت الغطاء، ويضيع سؤال الحلّ المشترك في التعدّي):
+   الجملة الجارية تُقطع وتبقى في مكانها من الطابور ومعها ما بعدها، وكل انتظار بالبوابة (gate) ينتظر؛ و«نبقى» (resumeLesson) تعيدها من أولها ثم يمضي الطابور،
+   و«الخريطة» مسارٌ جديد (show) يُسقطها. وجملة الغطاء نفسه تُقال خارج الطابور الموقوف */
+/* ويوقف معه الحركة والمؤقّتات (الفحص المستقل G2 (4)): حركات الصفحة كلها تقف وتمضي بعد «نبقى»، وpsleep وtween في النواة لا تعدّ زمن الإيقاف */
+function pauseLesson() { if (PAUSED) return; let r; const p = new Promise(x => { r = x; }); PAUSED = { p, resolve: r, gen: speechGen, cut: !!(NOW_ITEM && speaking), held: false, anims: [], t: performance.now() };
+  if (PAUSED.cut) NOW_ITEM.cut = true; cutNow();
+  try { document.documentElement.classList.add('lpause'); PAUSED.anims = document.getAnimations().filter(a => a.playState === 'running' && !cssOwned(a)); PAUSED.anims.forEach(a => a.pause()); } catch (e) {}
+  SLEEPERS.forEach(s => s.stop()); }
+/* يعيد true إن كان في الطابور ما يُقال (الجملة المقطوعة أو التالية)، فلا يُعاد غيره */
+/* والحركة التي أُلغيت أثناء الإيقاف (وهج الفانوس ونبض الأهداف تُسقطها أول لمسة) لا تُبعث: play() على الملغاة يشغّلها بلا صنفها فلا يوقفها شيء (الفحص المستقل H2 (3)).
+   وحركات CSS لا يوقفها الكود أصلاً بل الأنماط (html.lpause): حركة CSS أوقفها الكود ثم بعثها تصير في كروميوم لا تقف بإزالة صنفها، فتبقى يتيمةً بعد أول لمسة
+   (الفحصان المستقلان I2 (1) وJ2 (1): الغطاء بالمفتاح ثم اللمس، وإطفاء الشاشة ثم اللمس). فتبقى ملكيتها لصنفها: ما أُزيل صنفه تحت الإيقاف يزول، وما بقي يمضي؛
+   والقصاصات تُخفى تحت الإيقاف فلا تقف فوق الغطاء */
+const cssOwned = a => (window.CSSAnimation && a instanceof CSSAnimation) || (window.CSSTransition && a instanceof CSSTransition);
+function resumeLesson() { const P = PAUSED; if (!P) return false; PAUSE_MS += performance.now() - P.t; PAUSED = null; document.documentElement.classList.remove('lpause'); P.anims.forEach(a => { try { if (a.playState === 'paused') a.play(); } catch (e) {} }); SLEEPERS.forEach(s => s.go()); P.resolve();
+  return (P.cut || P.held) && P.gen === speechGen; }
+/* العودة بعد الإيقاف (غطاء الخروج، وإطفاء الشاشة): ما على الشاشة بخطّاف إعادة (البطاقات المسموعة، والخيارات المقروءة، وحلّ التعدّي) يُعاد بتمهيده وبنوده كلها،
+   فلا يُستأنف من البطاقة المقطوعة بلا سؤالها ولا تمهيد فوضى (الفحص المستقل G2 (1)؛ D236)؛ وإلا تُعاد الجملة المقطوعة من أولها ويمضي الطابور، وإن لم يكن ما يُقال فآخر جملة */
+function resumeBack() { if (REPLAY_HOOK && REPLAY_HOOK.live && REPLAY_HOOK.live()) { hush(); resumeLesson(); replayLine(); return; } if (!resumeLesson()) replayLine(); }
 const stopVoice = hush;
-document.addEventListener('visibilitychange', () => { if (document.hidden) hush(); });   // الشاشة أُطفئت أو بُدّل التطبيق
+/* الشاشة أُطفئت أو بُدّل التطبيق: الدرس يقف كما تحت الغطاء، ويعود حين تظهر (الفحص المستقل G2 (5): كان hush() وحده فيمضي الدرس والشاشة مطفأة) */
+/* وكل ما في #lesson الظاهر، بدرسٍ أو بغيره (الورشة وجداول «مراجعة اليوم» بلا CUR: الفحص المستقل H2 (2)، كانت تتكلّم والشاشة مطفأة)؛ وسؤال الغطاء يُقطع ويُعاد عند
+   الظهور، ولا يُستأنف الدرس والغطاء مفتوح («نبقى» تستأنفه) */
+/* وكل غطاء لا غطاء الخروج وحده (الفحص المستقل I2 (2)(3)): غطاء التبويب الآخر فوق الدرس لا يُستأنف الدرس تحته، وسؤال كل غطاء («نكمل؟» والاستراحة والأطفال…) يُقطع
+   بالإخفاء ويُعاد عند الظهور (coverSay يحفظه في الغطاء) */
+/* وغطاءٌ خارج الدرس أو الخريطة، والطابور غير موقوف: الجملة الجارية تُقطع وتبقى في مكانها، ولا تبدأ جملة حتى تظهر الصفحة، ثم تُعاد المقطوعة من أولها ويمضي ما بعدها
+   (كان hush() فيمضي تسلسل الغطاء والصفحة مخفية: «أرقامي» تعدّ الأرقام والشاشة مطفأة، ثم يُعاد سؤاله في غير موضعه) */
+let HELD = 0;   /* جملٌ تنتظر ظهور الصفحة */
+const shownP = () => new Promise(r => { const f = () => { if (!document.hidden) { document.removeEventListener('visibilitychange', f); r(); } }; document.addEventListener('visibilitychange', f); });
+let VIS_PAUSE = false, VIS_COVER = null;
+const openCover = () => [...document.querySelectorAll('.cover, #panel')].reverse().find(c => !c.hidden) || null;   /* الأعلى: الأغطية بطبقة واحدة فآخرها في الصفحة أعلاها، وبوابة الكبار فوقها (الفحص المستقل J2 (2)) */
+document.addEventListener('visibilitychange', () => { const cov = openCover(), live = !$('#lesson').hidden;
+  if (document.hidden) { if (live && !PAUSED && !cov) { pauseLesson(); VIS_PAUSE = true; } else if (PAUSED) { cutNow(); if (cov) VIS_COVER = cov; } else { if (NOW_ITEM && speaking) NOW_ITEM.cut = true; cutNow(); if (cov) VIS_COVER = cov; } }
+  else { if (VIS_PAUSE) { VIS_PAUSE = false; if (PAUSED && !openCover()) resumeBack(); }
+    if (VIS_COVER) { const c = VIS_COVER; VIS_COVER = null; if (!c.hidden && c.dataset.ask && (PAUSED || !HELD)) coverSay(c, c.dataset.ask); } } });   /* وسؤال الغطاء يُعاد إن لم تنتظر جملةٌ ظهورَ الصفحة (تُعاد المقطوعة ويمضي تسلسل الغطاء من موضعه) */
 function say(who, id, text, opt = {}) {
   const key = (id.startsWith('gen.') ? '' : (CUR ? CUR.id + '.' : '')) + id;
   if (opt.ifIdle && speechBusy()) return Promise.resolve();
+  if (opt.cover && PAUSED) { if (document.hidden) { VIS_COVER = opt.cover; return Promise.resolve(); } return speakNow(who, id, text, opt); }   /* سؤال غطاء الخروج والدرس موقوف: لا ينتظر الطابور ولا البوابة؛ والصفحة مخفية: يُسأل عند ظهورها */
   if (inLine.has(key)) return opt.free ? Promise.resolve() : gate(Promise.resolve());
-  const gen = speechGen, item = { skip: false }; inLine.set(key, item);
+  const gen = speechGen, item = { skip: false }; inLine.set(key, item); if (!opt.keep && !opt.num && !opt.aside) LASTQ = [who, id, text];   /* آخر جملة دخلت الطابور (سؤال الخيارات المقروءة) */
   if (opt.num) { if (pendingNum) pendingNum.skip = true; pendingNum = item; }     // العدّ: يكفي آخر رقم ينتظر
   queued++;
   const p = speechChain.then(async () => {
     queued--; if (pendingNum === item) pendingNum = null;
-    try { if (gen !== speechGen || item.skip) return;
-      await speakNow(who, id, text, opt);
-      if (gen === speechGen && !opt.noGap) await new Promise(r => setTimeout(r, GAP()));
-    } finally { if (inLine.get(key) === item) inLine.delete(key); }   /* لا يمحو مفتاح جملة جديدة بالمعرّف نفسه بعد hush */
+    try { for (;;) { for (;;) { if (PAUSED && !opt.cover) { PAUSED.held = true; await PAUSED.p; } else if (document.hidden) { HELD++; try { await shownP(); } finally { HELD--; } } else break; }   /* ولا تبدأ جملةٌ والصفحة مخفية (غطاءٌ خارج الدرس أو الخريطة) */
+        if (gen !== speechGen || item.skip) return;
+        item.cut = false; NOW_ITEM = item; await speakNow(who, id, text, opt); if (NOW_ITEM === item) NOW_ITEM = null;
+        if (!item.cut) break; }   /* قطعها غطاء الخروج: تُعاد من أولها بعد «نبقى» */
+      if (gen === speechGen && !opt.noGap) await psleep(GAP());   /* والفاصل يقف مع الدرس: انتهى تحت الغطاء فمضت قراءة البطاقات إلى التالية ونغمتها (الفحص المستقل H2 (4أ)) */
+    } finally { if (NOW_ITEM === item) NOW_ITEM = null; if (inLine.get(key) === item) inLine.delete(key); }   /* لا يمحو مفتاح جملة جديدة بالمعرّف نفسه بعد hush */
   });
   speechChain = p.catch(() => {});
   return opt.free ? p : gate(p);
@@ -48,10 +85,12 @@ function speakNow(who, id, text, opt = {}) {
   if (!opt.cover && !opt.keep && !opt.num) { const sy = $('#say'); if (sy) { sy.scrollTop = 0; bubbleMore(); } }
   const talk = $('#talk'); talk.classList.add('speaking');
   const full = (id.startsWith('gen.') ? id : (CUR ? CUR.id : 'm1.u1') + '.' + id) + gSuffix(raw);
-  /*T*/if (TESTHOOK) { (window.__clips = window.__clips || []).push(full); (window.__voiceSrc = window.__voiceSrc || []).push([full, CLIPS[full] ? 'human' : 'device']); }/*/T*/   // للفحص: مطابقة الجمل المنطوقة مع جدول التسجيل، ومصدر كل جملة (حزمة الصوت أو صوت الجهاز)
+  /*T*/if (TESTHOOK) { const cv = openCover(); if (document.hidden) testBug('جملةٌ تبدأ والصفحة مخفية: ' + full); if (cv && !opt.cover) testBug('جملةٌ لغير الغطاء الظاهر (' + cv.id + '): ' + full); if (STALE) testBug('جملةٌ بعد مهلةٍ من شاشةٍ تُركت: ' + full); }/*/T*/   /* حارس التشغيل (الفحص المستقل J2 (8)) */
+  /*T*/if (TESTHOOK) { (window.__clips = window.__clips || []).push(full); (window.__voiceSrc = window.__voiceSrc || []).push([full, CLIPS[full] ? 'human' : 'device']); (window.__clipT = window.__clipT || []).push([full, 's', performance.now(), !$('#exitCover').hidden]); }/*/T*/   // للفحص: مطابقة الجمل المنطوقة مع جدول التسجيل، ومصدر كل جملة (حزمة الصوت أو صوت الجهاز)
   return new Promise(resolve => {
     speaking = true; let done = false, poll = null, safety = null, silent = null;
     const finish = () => { if (done) return; done = true; clearInterval(poll); clearTimeout(safety); clearTimeout(silent); speaking = false; currentFinish = null; talk.classList.remove('speaking');
+      /*T*/if (TESTHOOK) (window.__clipT = window.__clipT || []).push([full, 'e', performance.now(), !$('#exitCover').hidden]);/*/T*/
       if (!opt.cover && !opt.keep && !opt.num) { const sy = $('#say'); if (sy && sy.scrollHeight > sy.clientHeight + 8) try { sy.scrollTo({ top: sy.scrollHeight, behavior: RM ? 'auto' : 'smooth' }); } catch (e) { sy.scrollTop = sy.scrollHeight; } }   /* آخر الجملة (المطلوب غالباً) يبقى ظاهراً */
       resolve(); };
     currentFinish = finish;
@@ -93,7 +132,7 @@ function replayLine(cover) {
 
 /* ---------- أصوات قصيرة واحتفال ---------- */
 let AC = null;
-function tone(seq) { if (SET.muted) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); let t = AC.currentTime;
+function tone(seq) { /*T*/if (TESTHOOK) { if (document.hidden) testBug('نغمةٌ والصفحة مخفية'); if (STALE) testBug('نغمةٌ بعد مهلةٍ من شاشةٍ تُركت'); }/*/T*/ if (SET.muted) return; try { AC = AC || new (window.AudioContext || window.webkitAudioContext)(); let t = AC.currentTime;
   for (const [f, d] of seq) { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'triangle'; o.frequency.value = f;
     g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.16, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + d);
     o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + .02); t += d * .8; } } catch (e) {} }
@@ -108,5 +147,5 @@ function confetti(n = 28) {
     c.style.left = (drand() * 100) + 'vw'; c.style.setProperty('--dx', (drand() * 120 - 60) + 'px'); c.style.setProperty('--r', (drand() * 720 - 360) + 'deg');
     c.style.animationDelay = (drand() * .35) + 's';
     c.innerHTML = `<svg viewBox="0 0 16 16" width="16" height="16">${k === 0 ? `<circle cx="8" cy="8" r="7" fill="${col}"/>` : k === 1 ? `<rect x="1" y="1" width="14" height="14" fill="${col}"/>` : k === 2 ? `<polygon points="8,1 15,15 1,15" fill="${col}"/>` : `<rect x="0" y="4" width="16" height="9" fill="${col}"/>`}</svg>`;
-    box.appendChild(c); setTimeout(() => c.remove(), 2300); }
+    box.appendChild(c); psleep(2300).then(() => c.remove()); }   /* يقف مع الدرس: يعود الطفل من الغطاء والقصاصات تسقط (الفحص المستقل I2 (5)) */
 }

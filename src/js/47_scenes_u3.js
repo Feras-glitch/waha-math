@@ -111,7 +111,7 @@ SCENES.bodyMoves = async c => { const svg = newStage(300, null); roomBg(svg, 300
   for (const mv of c.moves) { if (!mat && !mv.show) continue; K.g.remove(); K = kidBackAt(svg, 180, 286, { ribbon: 'R', raise: mv.raise || null, s: 1.08 });
     if (mv.cross) { const h = K.hand('R'); const e = el('ellipse', { cx: 180 - 24 * 1.08, cy: 286 - 132 * 1.08, rx: 8, ry: 12, fill: 'none', stroke: css('--compass'), 'stroke-width': 4, 'pointer-events': 'none' }, svg);
       const arm = el('path', { d: `M${180 + 26 * 1.08} ${286 - 96 * 1.08} Q180 ${286 - 170 * 1.08} ${180 - 22 * 1.08} ${286 - 138 * 1.08}`, stroke: css('--compass'), 'stroke-width': 5, 'stroke-dasharray': '7 6', fill: 'none', 'pointer-events': 'none' }, svg);
-      setTimeout(() => { e.remove(); arm.remove(); }, FAST ? 30 : 5000); }
+      psleep(FAST ? 30 : 5000).then(() => { e.remove(); arm.remove(); }); }   /* يقف مع الدرس: زال الدليل تحت الغطاء فأُعيدت الجملة بلا دليل (الفحص المستقل H2 (4ب)) */
     if (!mat) { await S(mv.show); continue; }
     await S(mv.say); const d = doneBtn(); AUTO({ kind: 'material', ok: () => d.b.click() }); await gate(new Promise(r => d.b.onclick = () => { AUTO_CLEAR(); hush(); d.bar.remove(); r(); }));
     logAttempt({ scene: 'explore', tag: 'move:' + (mv.raise || (mv.cross ? 'cross' : 'none')), ok: true }); }
@@ -190,9 +190,9 @@ SCENES.roadListen = async c => { const svg = newStage(270, { oasis: false, groun
   const tiles = S0.tiles.filter(t => t.n > 10); tiles.forEach(t => { t.g.style.cursor = 'pointer'; t.g.setAttribute('role', 'button'); t.g.setAttribute('aria-label', plain(T(numw(t.n)))); hitPad(t.g, 56); });
   /*T*/window.__road = { seq: tiles.slice(0, want).map(t => t.n), done: false };/*/T*/
   AUTO({ kind: 'road', ok: async () => { for (const t of tiles.slice(0, want)) { await S0.show(S0.tileX(t.n) - 29, S0.tileX(t.n) + 29); t.g.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 30)); } } });
-  await gate(new Promise(res => tiles.forEach(t => t.g.onclick = () => { if (S0.dragged) return; SFX.tick(); say(...lineOf(numw(t.n)), { free: true, num: true }); heard.add(t.n);
-    el('rect', { x: -25, y: -25, width: 50, height: 50, rx: 10, fill: css('--compass'), 'fill-opacity': .15, 'pointer-events': 'none' }, t.g); if (heard.size >= want) res(); })));
-  AUTO_CLEAR(); tiles.forEach(t => { t.g.onclick = null; t.g.removeAttribute('role'); t.g.style.cursor = ''; t.g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); });
+  await gate(new Promise(res => { tiles.forEach(t => t.g.onclick = () => { if (S0.dragged) return; SFX.tick(); say(...lineOf(numw(t.n)), { free: true, num: true }); heard.add(t.n);
+    el('rect', { x: -25, y: -25, width: 50, height: 50, rx: 10, fill: css('--compass'), 'fill-opacity': .15, 'pointer-events': 'none' }, t.g); if (heard.size >= want) res(); }); routeClicks(tiles.map(t => t.g)); }));
+  AUTO_CLEAR(); tiles.forEach(t => { t.g.onclick = null; delete t.g.__route; t.g.removeAttribute('role'); t.g.style.cursor = ''; t.g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); });
   logAttempt({ scene: 'explore', tag: 'roadListen', ok: true }); await S(c.lines.slice(1)); };
 /* «عدّ مع فوضى» (لعبة الدرس 5): تقفز فوضى بلاطةً بلاطة، ويختار الطفل في كل قفزة العدد من بطاقتين مسموعتين */
 SCENES.roadCountChaos = async c => { const svg = newStage(270, { oasis: false, ground: 0 }); el('rect', { x: -360, y: 196, width: 1080, height: 80, fill: css('--floor'), opacity: .55 }, svg);

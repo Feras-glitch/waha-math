@@ -20,9 +20,10 @@ async function numUntil(make, ok, opt = {}) { let t = 0, np = null;
 SCENES.pencilHook = async c => { const svg = newStage(260, { oasis: false, ground: 0 }); el('rect', { x: -360, y: 150, width: 1080, height: 110, fill: MAT.wood, opacity: .35 }, svg);
   const fz = chaosAt(svg, 330, 176, .38); const cp = compassAt(svg, 330, 70, .38);
   const A = lenAt(svg, { kind: 'pencil', len: c.lens[0], color: NEUTRAL[3] }, 300, 78), B = lenAt(svg, { kind: 'pencil', len: c.lens[1], color: '#c0564a' }, 300, 184);
-  await chaosGiggle(fz); await alignTo(B, 300 - (c.push || 70), 1100); SFX.chaos();
+  /* التوقّع أولاً، ثم تدفع فوضى قلمها إلى الأمام (المواصفة؛ الفحص المستقل A لبوابة S1-U4: كان الدفع قبل التوقّع) */
   const k = await predictTap([{ g: A.g, k: 'compass', label: labelText('pencilCompass') }, { g: B.g, k: 'chaos', label: labelText('pencilChaos') }], c.lines[0]);
-  logAttempt({ scene: 'hook', tag: 'predictLen', ok: k === (c.lens[0] > c.lens[1] ? 'compass' : 'chaos') }); await S(c.lines.slice(1)); };
+  logAttempt({ scene: 'hook', tag: 'predictLen', ok: k === (c.lens[0] > c.lens[1] ? 'compass' : 'chaos') });
+  await chaosGiggle(fz); await alignTo(B, 300 - (c.push || 70), 1100); SFX.chaos(); await S(c.lines.slice(1)); };
 /* الاكتشاف: يحاذي الطفل الشريطين عند خط البداية ثم يحكم؛ ثم يتحرّك شريطٌ ولا يتغيّر طوله (حفظ الطول، فابل B) */
 SCENES.alignExplore = async c => { const svg = newStage(270, { oasis: false, ground: 0 }); startLineAt(svg, 30, 236);
   const A = lenAt(svg, { kind: 'strip', len: c.lens[0], color: NEUTRAL[0] }, MS_X, 86), B = lenAt(svg, { kind: 'strip', len: c.lens[1], color: NEUTRAL[3] }, MS_X - c.shift, 170);
@@ -30,7 +31,8 @@ SCENES.alignExplore = async c => { const svg = newStage(270, { oasis: false, gro
   say(...lineOf(c.lines[0]), { free: true }); if (firstTime('alignStrip')) await ghostHand(svg, [[MS_X - c.shift - 40, 170], [MS_X - 30, 170]], 900);
   await gate(new Promise(res => { const dz = dragAlign(svg, T, { onAlign: () => { dz.off(); AUTO_CLEAR(); res(); } }); alignBar(dz, { read: false });
     AUTO({ kind: 'align', ok: () => T[0].align() }); armIdle(async () => { await S(c.lines[1], { aside: true }); await T[0].align(); }); }));
-  disarmIdle(); document.querySelectorAll('#stage .choices').forEach(b => b.remove()); hush(); logAttempt({ scene: 'explore', tag: 'align', ok: true });
+  /* وبعد انتهاء الانتظار يُزال الصفّ المخفيّ (يُخفى وسطه فلا يقفز الرسم تحت الإصبع، الفحص المستقل B)، ثم مهلة قبل الانتظار التالي (الفحص المستقل C2: بقي فصغُر المسرح) */
+  disarmIdle(); document.querySelectorAll('#stage .choices').forEach(b => b.remove()); hush(); logAttempt({ scene: 'explore', tag: 'align', ok: true }); await sleep(250);
   say(...lineOf(c.lines[2]), { free: true });
   const longer = c.lens[0] > c.lens[1] ? 'A' : 'B';
   await tapUntil([{ g: A.g, k: 'A', label: labelText('stripTop') }, { g: B.g, k: 'B', label: labelText('stripBottom') }], longer, c.lines[3], 'compareAligned', { show: async () => { const m = endLines(svg, [{ o: A }, { o: B }]); await sleep(1500); m.remove(); } }); hush();
@@ -50,8 +52,9 @@ SCENES.wormRace = async c => { if (c.intro) await S(c.intro);
     let tries = 0; while (true) { const k = await tapOne(T.map(t => ({ g: t.o.g, k: t.k, label: t.label })), { ok: want, pad: 56 }); hush(); tries++;
       const aligned = T.every(t => Math.abs(t.o.x0 - MS_X) < .5); logAttempt({ scene: 'game', tag: 'worm' + i, ok: k === want, firstTry: tries === 1, err: k === want ? null : (aligned ? 'lenWrong' : 'fromEnd') });
       if (k === want) break; SFX.soft(); await S(aligned ? 'gen.err.lenWrong.01' : 'gen.err.fromEnd.01'); if (tries >= 2) { await dz.all(); const m = endLines(svg, T); await sleep(1200); m.remove(); } }
-    dz.off(); ab.bar.remove(); SFX.good(); okRing(svg, T[want].o.g);
-    await tween(900, q => T[want].o.setX(MS_X - q * 120)); await S(rd.ok || 'gen.worm.win'); }
+    /* الفائزة تجري ورأسها داخل المسرح، ثم الحلقة حولها حيث وقفت (الفحص المستقل E2: كانت الحلقة على الذيل وفراغ، والرأس خارج الحافّة) */
+    dz.off(); ab.bar.remove(); SFX.good(); const run = Math.max(0, Math.min(120, MS_X - rd.lens[want] - 16));
+    await tween(900, q => T[want].o.setX(MS_X - q * run)); okRing(svg, T[want].o.g); await S(rd.ok || 'gen.worm.win'); }
   if (c.after) await S(c.after); };
 /* «صحّح لفوضى»: علّمت فوضى بنجمة الشريط الذي نهايته أبعد، وبدايته متأخرة عن الخط؛ يجده الطفل، ثم يحاذي وينقل النجمة إلى الأطول */
 function starMark(svg, x, y) { const g = el('g', { transform: `translate(${x} ${y})`, 'pointer-events': 'none' }, svg); el('path', { d: 'M0 -14 L4 -4 L15 -4 L6 3 L9 14 L0 7 L-9 14 L-6 3 L-15 -4 L-4 -4 Z', fill: '#f2b33d', stroke: '#c98f55', 'stroke-width': 1.5 }, g); return g; }
@@ -63,7 +66,7 @@ SCENES.chaosEnds = async c => { const svg = newStage(270, { oasis: false, ground
   SFX.good(); fz.remove(); await S(c.fix);
   const T = [{ o: B, label: labelText('stripMove') }];
   await gate(new Promise(res => { const dz = dragAlign(svg, T, { onAlign: () => { dz.off(); AUTO_CLEAR(); res(); } }); alignBar(dz, { read: false }); AUTO({ kind: 'align', ok: () => T[0].align() }); }));
-  document.querySelectorAll('#stage .choices').forEach(b => b.remove()); star.setAttribute('transform', `translate(${B.end() - 18} 170)`);
+  document.querySelectorAll('#stage .choices').forEach(b => b.remove()); await sleep(250); star.setAttribute('transform', `translate(${B.end() - 18} 170)`);
   await S(c.ask); const longer = c.lens[0] > c.lens[1] ? 'A' : 'B';
   await tapUntil([{ g: A.g, k: 'A', label: labelText('stripTop') }, { g: B.g, k: 'B', label: labelText('stripBottom') }], longer, 'gen.err.lenWrong.01', 'chaosFix', { scene: 'chaos' });
   const L = longer === 'A' ? A : B; await anim(star, [{ transform: star.getAttribute('transform') }, { transform: `translate(${L.end() - 18}px,${L.y}px)` }], { duration: 700, fill: 'forwards' }).done; if (c.after) await S(c.after); };
@@ -72,18 +75,24 @@ SCENES.chaosEnds = async c => { const svg = newStage(270, { oasis: false, ground
 /* الإشعال: فوضى ترفع الكرة الكبيرة بإصبع وتعجز عن الحجر الصغير؛ «أيّهما أثقل؟» توقّعاً */
 SCENES.ballStoneHook = async c => { const svg = newStage(280, { oasis: false, ground: 14 }); const ball = weighAt(svg, 'beachBall', 250, 266, 1.2), stone = weighAt(svg, 'stone', 100, 266, 1);
   const fz = chaosAt(svg, 250, 150, .42); await chaosGiggle(fz);
+  /* التوقّع أولاً، ثم ترفع فوضى الكرة بسهولة ولا ترفع الحجر (المواصفة؛ الفحص المستقل A لبوابة S1-U4: كان الدليل قبل التوقّع)؛
+     ومع تقليل الحركة صورتان ثابتتان: الكرة مرفوعة لحظة، ثم الحجر وعلامات الجهد (الفحص المستقل B: لم يُرَ شيء والجملة تقول «رفعت») */
+  const k = await predictTap([{ g: ball, k: 'beachBall', label: labelText('w.beachBall') }, { g: stone, k: 'stone', label: labelText('w.stone') }], c.lines[0]);
+  logAttempt({ scene: 'hook', tag: 'predictWeight', ok: k === 'stone' });
+  if (RM) { ball.setAttribute('transform', 'translate(250 206) scale(1.2)'); await sleep(1100); ball.setAttribute('transform', 'translate(250 266) scale(1.2)'); fz.setAttribute('transform', 'translate(110 210)');
+    const ef = el('g', { 'pointer-events': 'none' }, svg); for (const [x1, y1, x2, y2] of [[78, 236, 70, 224], [100, 228, 100, 214], [122, 236, 130, 224]]) el('line', { x1, y1, x2, y2, stroke: css('--chaos'), 'stroke-width': 3, 'stroke-linecap': 'round' }, ef);
+    await sleep(1100); ef.remove(); await chaosGiggle(fz); }
+  else {
   await anim(ball, [{ transform: 'translate(250px,266px) scale(1.2)' }, { transform: 'translate(250px,206px) scale(1.2)' }, { transform: 'translate(250px,266px) scale(1.2)' }, { transform: 'translate(250px,226px) scale(1.2)' }, { transform: 'translate(250px,266px) scale(1.2)' }], { duration: 1400 }).done;
   await anim(fz, [{ transform: 'translate(250px,150px)' }, { transform: 'translate(110px,210px)' }], { duration: 800, fill: 'forwards' }).done; fz.setAttribute('transform', 'translate(110 210)');
   await anim(stone, [{ transform: 'translate(100px,266px)' }, { transform: 'translate(97px,266px) rotate(-4deg)' }, { transform: 'translate(103px,266px) rotate(4deg)' }, { transform: 'translate(100px,266px)' }], { duration: 400, iterations: 3 }).done; await chaosGiggle(fz);
-  const k = await predictTap([{ g: ball, k: 'beachBall', label: labelText('w.beachBall') }, { g: stone, k: 'stone', label: labelText('w.stone') }], c.lines[0]);
-  logAttempt({ scene: 'hook', tag: 'predictWeight', ok: k === 'stone' }); await S(c.lines.slice(1)); };
+  }
+  await S(c.lines.slice(1)); };
 /* الاكتشاف (ب): الطفل يضع الشيئين في الكفّتين فيميل الميزان، ويلمس الأثقل؛ ثم زوج «الأكبر ليس دائماً الأثقل» */
 SCENES.balanceLab = async c => { for (const [i, pr] of c.pairs.entries()) { const svg = newStage(290, { oasis: false, ground: 14 }); const B = balanceAt(svg, 180, 276);
-    const P = [{ k: pr[0], x: 300 }, { k: pr[1], x: 60 }].map(p => ({ ...p, g: weighAt(svg, p.k, p.x, 276, .8) }));
+    const P = weighShelf(svg, pr);
     say(...lineOf(c.lines[i * 3]), { free: true });
-    await gate(new Promise(res => { let n = 0; const put = p => { if (p.done) return; p.done = true; hush(); p.g.remove(); B.put(!B.pans.R.k ? 'R' : 'L', p.k); SFX.pop(); if (++n === 2) { AUTO_CLEAR(); res(); } };
-      P.forEach(p => { p.g.style.cursor = 'pointer'; p.g.setAttribute('role', 'button'); p.g.setAttribute('tabindex', 0); p.g.setAttribute('aria-label', plain(G(labelText('w.' + p.k)))); p.g.dataset.put = 1; hitPad(p.g, 64); p.g.onclick = () => put(p); });
-      AUTO({ kind: 'weighPut', ok: () => P.forEach(p => put(p)) }); }));
+    await gate(shelfPut(B, P));
     await B.to(tiltOf(B.pans.R.k, B.pans.L.k), 1300); say(...lineOf(c.lines[i * 3 + 1]), { free: true });
     const h = heavier(pr[0], pr[1]); await tapUntil(['R', 'L'].map(s => ({ g: B.pans[s].bowl, k: B.pans[s].k, label: labelText('w.' + B.pans[s].k) })), h, 'gen.err.panUp.01', 'weighLab' + i); hush();
     await S(c.lines[i * 3 + 2]); }
@@ -91,10 +100,10 @@ SCENES.balanceLab = async c => { for (const [i, pr] of c.pairs.entries()) { cons
 /* لعبة «ميزان الحديقة»: يتوقّع الطفل الأثقل، ثم يضعهما الميزان ويُرى */
 SCENES.gardenBalance = async c => { if (c.intro) await S(c.intro); let hits = 0;
   for (const [i, pr] of c.rounds.entries()) { const svg = newStage(290, { oasis: false, ground: 14 }); el('rect', { x: -360, y: 0, width: 1080, height: 276, fill: '#cfe0c3', opacity: .35 }, svg); const B = balanceAt(svg, 180, 276);
-    const P = [{ k: pr[0], x: 290 }, { k: pr[1], x: 70 }].map(p => ({ ...p, g: weighAt(svg, p.k, p.x, 276, .8) }));
-    const k = await predictTap(P.map(p => ({ g: p.g, k: p.k, label: labelText('w.' + p.k) })), i === 0 ? c.q : 'gen.garden.again');
+    const P = weighShelf(svg, pr);
+    const k = await predictTap(P.map(p => ({ g: p.g, k: p.k, label: labelText('w.' + p.k) })), i === 0 ? c.q : 'gen.garden.again' + WEIGH_G(pr[0], pr[1]));   /* «وَهَاتَانِ» لشيئين مؤنثين (الفحص المستقل E1 (6)) */
     const h = heavier(pr[0], pr[1]); logAttempt({ scene: 'game', tag: 'garden' + i, ok: k === h, firstTry: true }); if (k === h) hits++;
-    P.forEach(p => p.g.remove()); B.put('R', pr[0]); B.put('L', pr[1]); await B.to(tiltOf(pr[0], pr[1]), 1300);
+    P.forEach(p => p.g.remove()); P.shelf.remove(); B.put('R', pr[0]); B.put('L', pr[1]); await B.to(tiltOf(pr[0], pr[1]), 1300);
     okRing(svg, B.pans[B.pans.R.k === h ? 'R' : 'L'].bowl, 4); await S(k === h ? 'gen.garden.right' : 'gen.garden.scale'); await sleep(400); }
   await S(c.after); };
 /* «صحّح لفوضى»: علّقت فوضى وسام «الأثقل» على الكرة الكبيرة؛ يجدها الطفل، ثم يجرّب بالميزان وينقل الوسام */
@@ -104,10 +113,8 @@ SCENES.chaosHeavyBadge = async c => { const svg = newStage(290, { oasis: false, 
   let tries = 0; while (true) { const k = await tapOne([{ g: big, k: 'big', label: labelText('w.' + c.big) }, { g: small, k: 'small', label: labelText('w.' + c.small) }], { ok: 'big', pad: 64 }); tries++;
     logAttempt({ scene: 'chaos', tag: 'find', ok: k === 'big', firstTry: tries === 1 }); if (k === 'big') break; SFX.soft(); await S('gen.chaos.no'); }
   SFX.good(); fz.remove(); big.remove(); small.remove(); md.remove(); const B = balanceAt(svg, 180, 276);
-  const P = [{ k: c.big, x: 300 }, { k: c.small, x: 60 }].map(p => ({ ...p, g: weighAt(svg, p.k, p.x, 276, .8) })); say(...lineOf(c.fix), { free: true });
-  await gate(new Promise(res => { let n = 0; const put = p => { if (p.done) return; p.done = true; hush(); p.g.remove(); B.put(!B.pans.R.k ? 'R' : 'L', p.k); SFX.pop(); if (++n === 2) { AUTO_CLEAR(); res(); } };
-    P.forEach(p => { p.g.style.cursor = 'pointer'; p.g.setAttribute('role', 'button'); p.g.setAttribute('aria-label', plain(G(labelText('w.' + p.k)))); p.g.dataset.put = 1; hitPad(p.g, 64); p.g.onclick = () => put(p); });
-    AUTO({ kind: 'weighPut', ok: () => P.forEach(p => put(p)) }); }));
+  const P = weighShelf(svg, [c.big, c.small]); say(...lineOf(c.fix), { free: true });
+  await gate(shelfPut(B, P));
   await B.to(tiltOf(c.big, c.small), 1300); await S(c.ask);
   await tapUntil(['R', 'L'].map(s => ({ g: B.pans[s].bowl, k: B.pans[s].k, label: labelText('w.' + B.pans[s].k) })), c.small, 'gen.err.panUp.01', 'chaosFix', { scene: 'chaos' });
   const S0 = B.pans.R.k === c.small ? B.pans.R : B.pans.L; medalAt(S0.bowl, 0, -4).setAttribute('transform', 'translate(0 -40)'); if (c.after) await S(c.after); };
@@ -132,7 +139,7 @@ SCENES.clipLay = async c => { for (const [i, unit] of ['clip', 'cube'].entries()
     await gate(new Promise(res => { tb.b.plus.onclick = () => { if (laid >= n) return; laid++; draw(); SFX.pop(); hush(); if (laid === n) { AUTO_CLEAR(); res(); } }; AUTO({ kind: 'layAll', ok: () => { while (laid < n) tb.b.plus.click(); } }); }));
     tb.bar.remove(); logAttempt({ scene: 'explore', tag: 'lay-' + unit, ok: true }); await S(c.lines[i * 4 + 1]);
     const U = unitRow(el('g', {}, svg), unit, n, MS_X, UNIT_Y); rowG.remove(); await rowTapCount(svg, U, { label: 'countUnits' });
-    await S(c.lines[i * 4 + 2]); await numUntil(() => nearNums(n, 10).filter(x => x > 0), n, { tag: 'count-' + unit, wrong: () => 'gen.err.lastNumber.01' });
+    await S(c.lines[i * 4 + 2]); await numUntil(() => nearNums(n, 10, 1), n, { tag: 'count-' + unit, wrong: () => 'gen.err.lastNumber.01' });
     await S(c.lines[i * 4 + 3]); }
   if (c.after) await S(c.after); };
 /* الاكتشاف (ب): فوضى وفرجار يقيسان الطاولة نفسها بشبريهما: ستة وخمسة؛ «شبر مَن أطول؟» (C017، المعنى الثاني) */
@@ -168,7 +175,7 @@ SCENES.contractorBoard = async c => { const got = { short: 0, same: 0, long: 0 }
   for (const [i, [k, len]] of c.house.entries()) { const svg = newStage(250, { oasis: false, ground: 0 }); startLineAt(svg, 30, 222); houseAt(svg, k, len, MS_X, 176); const sp = spanTool(svg, MS_X - 50 - (i % 3) * 20, 92);
     const dz = dragAlign(svg, [{ o: sp, label: labelText('spanTool') }], { tap: true }); if (i === 0) say(...lineOf(c.lines[1]), { free: true }); else say(...lineOf('gen.board.next'), { free: true });
     const want = spanCat(len); let t = 0; while (true) { const ans = await choosePick(CAT_OPTS(), want); t++; logAttempt({ scene: 'explore', tag: 'ssort' + i, ok: ans === want, firstTry: t === 1 }); if (ans === want) break;
-      SFX.soft(); await S(Math.abs(sp.x0 - MS_X) < .5 ? 'gen.err.ssortWrong.01' : 'gen.err.fromEnd.01'); await dz.all(); }
+      SFX.soft(); await S(Math.abs(sp.x0 - MS_X) < .5 ? 'gen.err.ssortWrong.01' : 'gen.err.ssortAlign.01'); await dz.all(); }
     dz.off(); got[want]++; SFX.good(); await sleep(250); }
   if (c.trans) await transTap(c);
   /* الأعمدة: مربع لكل شيء، من خط واحد */
@@ -184,10 +191,12 @@ SCENES.contractorBoard = async c => { const got = { short: 0, same: 0, long: 0 }
   await S(c.lines.slice(7)); };
 /* الشبر يقارن شيئين لم يتجاورا (التعدّي، مراجعة فابل B): شيئان من سلّتين مختلفتين، كلٌّ في سلّته برسمٍ صغير بالحجم نفسه (رمزٌ في السلّة لا قياس،
    فلا يدلّ الرسم على الأطول)، والشبر فوقهما؛ «أيّهما أطول؟» يُعرف من السلّتين، ثم الجملة: أطول من الشبر، والشبر أطول من الآخر. وبعد خطأين حلقةٌ على الأطول */
-async function transTap(c) { const L = Object.fromEntries(c.house), [a, b] = c.trans.pair, long = spanCat(L[a]) === 'long' ? a : b; const svg = newStage(250, { oasis: false, ground: 0 });
-  spanTool(svg, 180 + SPAN_S / 2, 46);
-  const T = [[a, 266], [b, 94]].map(([k, x]) => { const g = el('g', { 'data-trans': k }, svg); el('rect', { x: x - 72, y: 92, width: 144, height: 132, rx: 14, fill: css('--paper'), stroke: css('--basket-dk'), 'stroke-width': 2.5 }, g);
-    catIconAt(g, spanCat(L[k]), x, 130, .9); houseAt(g, k, 84, x + 42, 196); return { g, k, label: labelText('h.' + k) }; });
+/* الأطول في التعدّي على اللوحة من الطولين كالبند (الفحص المستقل D1: كان باسم السلّة)، ويفحصه TRANSW (الفحص المستقل E1 (14)) */
+const transLong = c => { const L = Object.fromEntries(c.house), [a, b] = c.trans.pair; return ITEM.transPick.make({ a, la: L[a], b, lb: L[b], ask: 'longer' }).want; };
+async function transTap(c) { const L = Object.fromEntries(c.house), [a, b] = c.trans.pair, long = transLong(c); const svg = newStage(250, { oasis: false, ground: 0 });
+  spanBadge(svg, 180, 62);   /* رمز الشبر لا الشبر بطوله فوق رسمين بطول واحد (الفحص المستقل C1 لبوابة S1-U4)؛ وداخل المسرح (الفحص المستقل B: قُصّت اليد عند y=46) */
+  const T = [[a, 266], [b, 94]].map(([k, x]) => { const g = el('g', { 'data-trans': k }, svg); el('rect', { x: x - 72, y: 104, width: 144, height: 132, rx: 14, fill: css('--paper'), stroke: css('--basket-dk'), 'stroke-width': 2.5 }, g);
+    catIconAt(g, spanCat(L[k]), x, 142, .9); houseAt(g, k, 84, x + 42, 208); return { g, k, label: labelText('h.' + k) }; });
   say(...lineOf(c.trans.lines[0]), { free: true });
   await tapUntil(T, long, 'gen.err.transWrong.01', 'transTap', { pad: 76, show: async () => okRing(svg, T.find(t => t.k === long).g, 4) }); hush();
   await S(c.trans.lines.slice(1)); }
@@ -218,19 +227,22 @@ SCENES.rodMaker = async c => { const svg = newStage(270, { oasis: false, ground:
   say(...lineOf(c.lines[0]), { free: true }); let k = 0; const inRod = el('g', {}, svg);
   await gate(new Promise(res => { const act = p => { if (p.done || k >= 10) return; p.done = true; hush(); p.g.remove(); el('rect', { x: 96 - TEN_C / 2 - 2, y: 236 - (k + 1) * TEN_C, width: TEN_C + 4, height: TEN_C, fill: CUBE.lemon, stroke: '#fff', 'stroke-width': 1.4 }, inRod); k++; SFX.pop();
       if (!SET.muted && !FAST) say(...lineOf(numw(k)), { num: true, noGap: true, free: true }); if (k === 10) { AUTO_CLEAR(); setTimeout(res, FAST ? 30 : 500); } };
-    pile.forEach(p => { p.g.style.cursor = 'pointer'; p.g.setAttribute('role', 'button'); p.g.setAttribute('aria-label', plain(labelText('cubeOne'))); hitPad(p.g, 52); p.g.dataset.rodin = 1; p.g.dataset.twin = 'cube'; p.g.onclick = () => act(p); });
+    pile.forEach(p => { p.g.style.cursor = 'pointer'; p.g.setAttribute('role', 'button'); p.g.setAttribute('aria-label', plain(labelText('cubeOne'))); hitPad(p.g, 52); p.g.dataset.rodin = 1; p.g.dataset.twin = 'cube'; p.g.onclick = () => act(p); keyOn(p.g, () => act(p)); });
     AUTO({ kind: 'rodFill', ok: () => pile.filter(p => !p.done).slice(0, 10 - k).forEach(p => p.g.dispatchEvent(new MouseEvent('click', { bubbles: true }))) }); }));
   inRod.remove(); slot.remove(); rodAt(svg, 96, 236); SFX.good(); pile.filter(p => !p.done).forEach(p => p.g.style.cursor = ''); logAttempt({ scene: 'explore', tag: 'rodFill', ok: true });
   await S(c.lines[1]); const rest = pile.filter(p => !p.done); await Promise.all(rest.map((p, j) => { const x = 306 - (j % 5) * 26, y = 222 - Math.floor(j / 5) * 26; const t0 = p.g.getAttribute('transform'); return anim(p.g, [{ transform: t0 }, { transform: `translate(${x}px,${y}px)` }], { duration: 600, fill: 'forwards' }).done; }));
   await S(c.lines[2]); await numUntil(() => teenOpts(n), n, { intro: [lineOf(c.lines[2])], tag: 'rodCount', err: a => teenErr(n, a), wrong: a => teenErr(n, a) === 'rodAsOne' ? 'gen.err.rodAsOne.01' : 'gen.err.teenCount.01' });
-  await S(c.lines.slice(3, 5));
-  /* العشرون عمودان */
-  const s2 = newStage(270, { oasis: false, ground: 0 }); for (const [i, m] of c.show.entries()) { s2.innerHTML = ''; backdrop(s2, 270, { oasis: false, ground: 0 }); teenAt(s2, m, { baseY: 236 }); digitCard(s2, 180, 50, m, { size: .9 }); await S(numw(m)); await sleep(600); }
+  /* كل جملة على صورتها (الدرس 130؛ الفحص المستقل A لبوابة S1-U4): «عشرة وثلاثة» و«كل عدد بعد العشرة: عمود ومنفردات» على بناء العدد، و«والعشرون؟ عمودان» على العشرين */
+  await S(c.lines[3]); await S(c.lines[5]);
+  const s2 = newStage(270, { oasis: false, ground: 0 }); for (const [i, m] of c.show.entries()) { s2.innerHTML = ''; backdrop(s2, 270, { oasis: false, ground: 0 }); teenAt(s2, m, { baseY: 236 }); digitCard(s2, 180, 50, m, { size: .9 }); await S(m === 20 ? c.lines[4] : numw(m)); await sleep(600); }
   /* وعلى طريق الأعداد (N009 استدعاء، المواصفة د5 (3)): نقف عند العشرة ونقفز بالآحاد، فنسمع أعدادها حتى العدد الذي بنيناه */
   if (c.road) { const s3 = newStage(270, { oasis: false, ground: 0 }); el('rect', { x: -360, y: 196, width: 1080, height: 80, fill: css('--floor'), opacity: .55 }, s3);
+    /* يقفز الطفل بنفسه: يلمس البلاطة التالية فيقفز إليها ويسمع عددها، حتى العدد الذي بناه (المواصفة «يقف على العشرة ويقفز»؛ الفحص المستقل A لبوابة S1-U4: كان القفز يجري وحده) */
     const R = roadAt(s3, { y: 170, at: 10, btnY: 236 }), kid = roadToken(R, 'kid', 10); await S(c.road[0]);
-    await kid.hop(n, async m => { await S(numw(m), { num: true, noGap: true }); }); await S(c.road.slice(1)); }
-  await S(c.lines.slice(5)); };
+    for (let m = 11; m <= n; m++) { await R.show(R.tileX(m) - 29, R.tileX(m + 1) + 29); if (c.roadIdle) armIdle(() => S(c.roadIdle, { aside: true }));   /* وتذكيرٌ عند السكوت (الفحص المستقل C2) */
+      await tapOne([{ g: R.tiles[m].g, k: m, label: T(numw(m)) }], { ok: m, pad: 56 }); disarmIdle(); hush();
+      await kid.hop(m, async q => { await S(numw(q), { num: true, noGap: true }); }); }
+    untarget(R.tiles.map(t => t.g)); await S(c.road.slice(1)); } };
 /* كتابة العدد برقمين: رقم العشرات على اليسار (العمود)، ورقم الآحاد على اليمين (المنفردات)، بالكتابة التي اختارها الطفل */
 SCENES.teenWrite = async c => { const svg = newStage(290, { oasis: false, ground: 0 }); const n = c.n, T = teenAt(svg, n, { baseY: 270, rodX: 110, onesX: 300 });
   const card = el('g', { transform: 'translate(180 56)' }, svg); el('rect', { x: -70, y: -40, width: 140, height: 80, rx: 14, fill: '#fffdf6', stroke: css('--compass'), 'stroke-width': 3.5 }, card);
@@ -239,9 +251,9 @@ SCENES.teenWrite = async c => { const svg = newStage(290, { oasis: false, ground
   el('text', { x: 26, y: 22, 'text-anchor': 'middle', 'font-size': 60, 'font-weight': 800, fill: CARD_INK, 'font-family': css('--f') }, oD).textContent = DG(n % 10);
   tD.setAttribute('opacity', 0); oD.setAttribute('opacity', 0);
   await S(c.lines[0]); anim(tD, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, fill: 'forwards' }); el('path', { d: 'M154 96 Q130 130 116 132', fill: 'none', stroke: css('--compass'), 'stroke-width': 3.5, 'stroke-dasharray': '5 4' }, svg); await S(c.lines[1]);
-  anim(oD, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, fill: 'forwards' }); el('path', { d: 'M206 96 Q250 150 270 196', fill: 'none', stroke: css('--square'), 'stroke-width': 3.5, 'stroke-dasharray': '5 4' }, svg); await S(c.lines[2]);
+  anim(oD, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, fill: 'forwards' }); el('path', { d: 'M206 96 Q250 150 274 234', fill: 'none', stroke: css('--square'), 'stroke-width': 3.5, 'stroke-dasharray': '5 4' }, svg); await S(c.lines[2]);
   /* «أيّ رقم نكتبه على اليسار؟»: يلمس الطفل رقم العشرات */
-  say(...lineOf(c.lines[3]), { free: true }); await tapUntil([{ g: tD, k: 't', label: labelText('tensDigit') }, { g: oD, k: 'o', label: labelText('onesDigit') }], 't', 'gen.err.onesFirst.01', 'tensLeft', { pad: 64 }); hush();
+  say(...lineOf(c.lines[3]), { free: true }); await tapUntil([{ g: tD, k: 't', label: labelText('tensDigit') }, { g: oD, k: 'o', label: labelText('onesDigit') }], 't', 'gen.err.tensMeaning.01', 'tensLeft', { pad: 64 }); hush();
   await S(c.lines.slice(4)); };
 /* لعبة «مصنع الأعمدة»: تنزل المكعبات على الحزام إلى العمود، وكلما اكتمل عمود من عشرة أُغلق وأُرسل؛ وعند كل محطة «كم الآن؟» */
 SCENES.rodFactory = async c => { if (c.intro) await S(c.intro); const svg = newStage(270, { oasis: false, ground: 0 }); el('rect', { x: 150, y: 236, width: 220, height: 12, rx: 6, fill: '#8d7a62' }, svg);
@@ -257,9 +269,11 @@ SCENES.rodFactory = async c => { if (c.intro) await S(c.intro); const svg = newS
 /* «صحّح لفوضى»: كتبت فوضى «ثلاثة عشر» هكذا: 31؛ يبني فرجار ما كتبت فإذا هو ثلاثة أعمدة ومكعب (نرى البناء ولا نسمّي عدده: الأعداد فوق العشرين في S1-U5 د4) */
 SCENES.chaos31 = async c => { const svg = newStage(290, { oasis: false, ground: 0 }); const n = c.n, w = (n % 10) * 10 + Math.floor(n / 10);
   const card = digitCard(svg, 270, 54, w, { size: 1, stroke: css('--chaos') }); const fz = chaosAt(svg, 330, 130, .38); await chaosGiggle(fz); await S(c.find);
-  const cp = compassAt(svg, 40, 110, .38); const Tw = el('g', {}, svg); for (let i = 0; i < Math.floor(w / 10); i++) rodAt(Tw, 70 + i * 26, 270, { c: 12 }); for (let i = 0; i < w % 10; i++) oneAt(Tw, 160 + i * 20, 260, { c: 15 });
-  await S(c.see); const Tr = el('g', {}, svg); rodAt(Tr, 240, 270, { c: 12 }); for (let i = 0; i < n % 10; i++) oneAt(Tr, 290 - (i % 3) * 20, 260 - Math.floor(i / 3) * 18, { c: 15 }); await S(c.see2);
-  fz.remove(); card.remove(); const cards = shuffle([w, n]).map((m, i) => ({ g: digitCard(svg, 250 - i * 110, 56, m, { size: .9 }), k: m, label: labelText('cardOne') }));
+  /* كل بطاقة فوق بنائها، والبناءان في جهتين بالقرعة (الفحص المستقل B لبوابة S1-U4: البطاقتان كانتا تُخلطان فوق بناءين ثابتين، فكانت «١٣» فوق ثلاثة أعمدة) */
+  const X0 = shuffle([56, 214]), build = (m, x0) => { const g = el('g', { 'data-build': m }, svg), t = Math.floor(m / 10), o = m % 10; for (let i = 0; i < t; i++) rodAt(g, x0 + i * 24, 270, { c: 12 });
+    for (let i = 0; i < o; i++) oneAt(g, x0 + t * 24 + 18 + (i % 3) * 20, 260 - Math.floor(i / 3) * 18, { c: 15 }); return x0 + (t * 24 + 18 + Math.min(o, 3) * 20) / 2 - 6; };
+  const cp = compassAt(svg, 30, 110, .34); const cw = build(w, X0[0]); await S(c.see); const cn = build(n, X0[1]); await S(c.see2);
+  fz.remove(); card.remove(); const cards = [[w, cw], [n, cn]].map(([m, x]) => { const g = digitCard(svg, x, 56, m, { size: .9 }); g.dataset.card = m; return { g, k: m, label: labelText('cardOne') }; });
   say(...lineOf(c.ask), { free: true }); await tapUntil(cards, n, 'gen.err.onesFirst.01', 'chaosFix', { scene: 'chaos', pad: 84 }); hush(); cards.filter(x => x.k !== n).forEach(x => x.g.remove()); if (c.after) await S(c.after); };
 
 /* ---------- الدرس 6: أصدقاء العشرة (N011) ---------- */
@@ -267,7 +281,7 @@ SCENES.chaos31 = async c => { const svg = newStage(290, { oasis: false, ground: 
 SCENES.fingersHook = async c => { const svg = newStage(250, { oasis: false, ground: 0 }); const cp = compassAt(svg, 330, 50, .36);
   let H = [handAtN(svg, 250, 120, 5, 1.4), handAtN(svg, 110, 120, 5, 1.4)]; await S(c.lines[0]); await sleep(300);
   H.forEach(h => h.remove()); H = [handAtN(svg, 250, 120, Math.max(0, 5 - c.fold), 1.4), handAtN(svg, 110, 120, 5 - Math.max(0, c.fold - 5), 1.4)]; SFX.pop();   /* يضمّ أصابع اليمنى أولاً ثم اليسرى */
-  await S(c.lines[1]); const want = 10 - c.fold; await numUntil(() => nearNums(want, 10), want, { intro: [lineOf(c.lines[1])], scene: 'hook', tag: 'fingers', wrong: () => 'gen.err.friendWrong.02' });
+  await S(c.lines[1]); const want = 10 - c.fold; await numUntil(() => nearNums(want, 10), want, { intro: [lineOf(c.lines[1])], scene: 'hook', tag: 'fingers', wrong: () => 'gen.err.friendFingers.01' });
   await S(c.lines.slice(2)); };
 /* الاكتشاف: يضع الطفل سبع قطع في الإطار فيرى الفراغات ثلاثاً؛ ثم الأصدقاء كلهم، واليدان إطار عشرة */
 SCENES.frameFriends = async c => { const svg = newStage(270, { oasis: false, ground: 0 }); const F = frameAt(svg, 180, 96); let k = 0;
@@ -315,10 +329,10 @@ SCENES.tenBus = async c => { if (c.intro) await S(c.intro);
     const need = 10 - rd.a; const out = Array.from({ length: rd.b }, (_, j) => ({ x: 330 - j * 30, y: 222 })); out.forEach(o => { o.g = counterAt(svg, o.x, o.y, 13, COUNTER2); });
     say(...lineOf(i === 0 ? c.q : 'gen.bus.again'), { free: true }); let moved = 0;
     await gate(new Promise(res => { out.forEach(o => { o.g.style.cursor = 'pointer'; o.g.setAttribute('role', 'button'); o.g.setAttribute('aria-label', plain(labelText('counterOne'))); hitPad(o.g, 52); o.g.dataset.move = 1; o.g.dataset.twin = 'out';
-        o.g.onclick = () => { if (o.inF || moved >= need) return; o.inF = true; o.g.remove(); F.put(F.firstEmpty(), COUNTER2); moved++; SFX.pop(); hush(); if (moved === need) { AUTO_CLEAR(); setTimeout(res, FAST ? 30 : 400); } }; });
+        o.g.onclick = () => { if (o.inF || moved >= need) return; o.inF = true; o.g.remove(); F.put(F.firstEmpty(), COUNTER2); moved++; SFX.pop(); hush(); if (moved === need) { AUTO_CLEAR(); setTimeout(res, FAST ? 30 : 400); } }; keyOn(o.g, () => o.g.onclick()); });
       AUTO({ kind: 'frameMove', ok: () => out.filter(o => !o.inF).slice(0, need - moved).forEach(o => o.g.dispatchEvent(new MouseEvent('click', { bubbles: true }))) }); }));
     untarget(out.map(o => o.g)); await S('gen.bus.full'); const want = rd.a + rd.b; await S('gen.bus.ask');
-    await numUntil(() => optsWith(want, [10]), want, { intro: [lineOf('gen.bus.ask')], scene: 'game', tag: 'bus' + i, err: a => a === 10 ? 'tenOnly' : 'joinCount', wrong: a => a === 10 ? 'gen.err.tenOnly.01' : 'gen.err.joinCount.01' });
+    await numUntil(() => optsWith(want, [10]), want, { intro: [lineOf('gen.bus.ask')], scene: 'game', tag: 'bus' + i, err: a => a === 10 ? 'tenOnly' : 'tenJoinBus', wrong: a => a === 10 ? 'gen.err.tenOnly.01' : 'gen.err.tenJoinBus.01' });
     await readSentence(rd.a, '+', rd.b, want); }
   if (c.after) await S(c.after); };
 /* «صحّح لفوضى»: الإطار فيه ثمانية وفراغان، فأخذت فوضى من الخمسة ثلاثاً، فبقيت قطعة فوق الإطار؛ يعيدها الطفل إلى الخارج */
@@ -329,22 +343,25 @@ SCENES.chaosTakeMore = async c => { const svg = newStage(250, { oasis: false, gr
     logAttempt({ scene: 'chaos', tag: 'find', ok: k === 'over', firstTry: tries === 1 }); if (k === 'over') break; SFX.soft(); await S('gen.chaos.no'); }
   SFX.good(); fz.remove(); await anim(over, [{ transform: 'translate(0px,0px)' }, { transform: `translate(${300 - rest * 36 - F.cx - 4}px,${OUT_Y - F.cy + 58}px)` }], { duration: 700, fill: 'forwards' }).done; await S(c.fix);
   await S('gen.makeTen.ask'); const want = c.a + c.b;
-  await numUntil(() => optsWith(want, [10]), want, { intro: [lineOf('gen.makeTen.ask')], scene: 'chaos', tag: 'chaosFix', wrong: a => a === 10 ? 'gen.err.tenOnly.01' : 'gen.err.joinCount.01' });
+  await numUntil(() => optsWith(want, [10]), want, { intro: [lineOf('gen.makeTen.ask')], scene: 'chaos', tag: 'chaosFix', wrong: a => a === 10 ? 'gen.err.tenOnly.01' : 'gen.err.tenJoin.01' });
   if (c.after) await S(c.after); };
 
 /* ---------- المحطة: «سباق القياس» ---------- */
 /* الإبداع «شريط الوحدات» (D248: من الدرس 4 إلى المراجعة): يصنع الطفل شريطاً من مربعات متساوية بلا أرقام، ويلوّنها كما يشاء، ثم يقيس به قلماً */
 SCENES.unitStrip = async c => { const svg = newStage(260, { oasis: false, ground: 0 }); const u = 28; let n = 0; const strip = el('g', {}, svg); const cols = [CUBE.lemon, '#5c9bb0', '#ee9a7e'];
-  const sq = []; const draw = () => { strip.innerHTML = ''; sq.forEach((cIx, i) => { const g = el('g', { 'data-sq': i }, strip); el('rect', { x: MS_X - (i + 1) * u, y: 60, width: u, height: u, fill: cols[cIx], stroke: '#fff', 'stroke-width': 2 }, g); g.style.cursor = 'pointer'; g.onclick = () => { sq[i] = (sq[i] + 1) % cols.length; SFX.tick(); draw(); }; }); };
+  /* المربّع يُلوَّن بلمسه قبل «تمّ»: هدفٌ بمنطقة 56 واسمٍ، واللمسة للمربّع المرسوم تحت الإصبع بين جيرانه (الفحص المستقل B لبوابة S1-U4: 22 بكسلاً بلا دور، والدعوة إلى التلوين بعد أن تعطّل) */
+  const sq = []; let open = true; const draw = () => { strip.innerHTML = ''; const TG = []; sq.forEach((cIx, i) => { const g = el('g', { 'data-sq': i }, strip); el('rect', { x: MS_X - (i + 1) * u, y: 60, width: u, height: u, fill: cols[cIx], stroke: '#fff', 'stroke-width': 2 }, g); TG.push({ g, i }); });
+    if (!open) return; TG.forEach(t => { const g = t.g; g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.setAttribute('aria-label', plain(G(labelText('stripSquare')))); hitPad(g, 56);
+      const act = r => { sq[r.i] = (sq[r.i] + 1) % cols.length; SFX.tick(); hush(); draw(); }; g.__route = (x, y) => tapRoute(TG, x, y, t).g; g.onclick = e => act(e && e.clientX ? tapRoute(TG, e.clientX, e.clientY, t) : t); g.onkeydown = e => { if (actKey(e)) act(t); }; }); };
   const tb = toolBar([['plus', 'addSquare', '<svg viewBox="0 0 40 28" width="40" height="28" aria-hidden="true"><rect x="12" y="6" width="16" height="16" fill="currentColor"/></svg>', 'gen.opt.addSquare'], ['done', 'done', TOOL_IC.done]]);
   await S(c.lines[0]); tb.read([lineOf(c.lines[0])]);
-  await gate(new Promise(res => { tb.b.plus.onclick = () => { if (sq.length >= 9) return; sq.push(sq.length % 2); draw(); SFX.pop(); hush(); }; tb.b.done.onclick = () => { if (sq.length < 6) { S('gen.strip.more', { ifIdle: true, free: true }); return; } AUTO_CLEAR(); tb.bar.remove(); res(); };
+  await gate(new Promise(res => { tb.b.plus.onclick = () => { if (sq.length >= 9) return; sq.push(sq.length % 2); draw(); SFX.pop(); hush(); }; tb.b.done.onclick = () => { if (sq.length < 6) { S('gen.strip.more', { ifIdle: true, free: true }); return; } AUTO_CLEAR(); open = false; draw(); tb.bar.remove(); res(); };
     AUTO({ kind: 'strip', ok: () => { while (sq.length < 8) sq.push(sq.length % 2); draw(); tb.b.done.click(); } }); }));
-  logAttempt({ scene: 'explore', tag: 'unitStrip', ok: true }); strip.querySelectorAll('g').forEach(g => g.onclick = null);
+  logAttempt({ scene: 'explore', tag: 'unitStrip', ok: true });
   await S(c.lines[1]); const L = c.n * u; lenAt(svg, { kind: 'pencil', len: L, color: NEUTRAL[3] }, MS_X, 150); startMark(svg, MS_X, 150, 44);
   await anim(strip, [{ transform: 'translate(0px,0px)' }, { transform: 'translate(0px,58px)' }], { duration: 800, fill: 'forwards' }).done;
   const U = sq.slice(0, c.n).map((_, i) => ({ g: strip.children[i], x: MS_X - (i + .5) * u, y: 132, u })); await rowTapCount(svg, U, { label: 'countUnits', by: 30, alt: 20 });   /* الشريط فوق القلم: الشارات فوقه */
-  await S(c.lines[2]); await numUntil(() => nearNums(c.n, 10).filter(x => x > 0), c.n, { tag: 'stripMeasure', wrong: () => 'gen.err.lastNumber.01' });
+  await S(c.lines[2]); await numUntil(() => nearNums(c.n, 10, 1), c.n, { tag: 'stripMeasure', wrong: () => 'gen.err.lastNumber.01' });
   await S(c.lines.slice(3)); };
 
 /* ---------- التذكّر بصورة في الدورة الثانية من الإتقان (S1-U4) ---------- */

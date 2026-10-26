@@ -15,7 +15,7 @@ URL = 'file://' + os.path.abspath(FILE) + '#fast&seed=' + SEED
 STATE = """() => { const q = s => document.querySelector(s); const vis = s => { const e = q(s); return !!e && !e.hidden; };
   const a = window.__auto; return { scene: window.__scene || '', home: vis('#home'), lesson: vis('#lesson'), covers: [...document.querySelectorAll('.cover')].filter(c => !c.hidden).map(c => c.id),
     go: !!(q('#go') && !q('#go').disabled && !q('#go').classList.contains('idle')), auto: a ? { kind: a.kind, n: a.n, scene: a.scene } : null, mode: window.__itemMode || '', itype: window.__item ? window.__item.itype : '',
-    say: q('#say') ? q('#say').textContent : '', crash: (q('#crashCover') && !q('#crashCover').hidden), q: window.__item ? String(window.__item.q) : '', twin: !!window.__itemTwin }; }"""
+    say: q('#say') ? q('#say').textContent : '', crash: (q('#crashCover') && !q('#crashCover').hidden), q: window.__item ? String(window.__item.q || window.__item.story || (() => { try { return JSON.stringify(window.__item.spec); } catch (e) { return ''; } })()) : '',   /* هويّة البند: بلا q (قصة) بقصته أو ببياناته، فلا يتشارك بندان عدّاد deepall (بوابة S1-U4: بند القصة في التحدّي لم يبلغ كشفه ولا توأمه) */ twin: !!window.__itemTwin }; }"""
 SMALL = """() => { const out = []; for (const e of document.querySelectorAll('button, [role=button], input, svg g[style*="grab"], svg rect.route')) {   /* وما يُسحب: 64 (D250)؛ والمكدّس يُقاس بمنطقة توجيهه (route) */ const r = e.getBoundingClientRect(); if (!r.width || !r.height || e.closest('[hidden]') || e.dataset.routed) continue;
   if (getComputedStyle(e).visibility === 'hidden' || +getComputedStyle(e).opacity < .5) continue;   
   if (e instanceof SVGElement && getComputedStyle(e).cursor !== 'grab' && !e.onclick) continue;   /* عنصر SVG لم يصر هدفاً بعد (لا فعل له الآن) */   /* ما يختفي بعد الجواب (حركة خروج) ليس هدفاً */
@@ -23,16 +23,22 @@ SMALL = """() => { const out = []; for (const e of document.querySelectorAll('bu
   if (m < need - 0.5) out.push([e.id || (e.getAttribute('class') || e.tagName), Math.round(r.width), Math.round(r.height), need]); } return out; }"""
 NONAME = """() => [...document.querySelectorAll('button, [role=button]')].filter(e => { const r = e.getBoundingClientRect(); return r.width && !e.closest('[hidden]') && getComputedStyle(e).visibility !== 'hidden' && !e.disabled && (e.tagName === 'BUTTON' || e.onclick) && !(e.getAttribute('aria-label') || '').trim() && !(e.textContent || '').trim(); }).map(e => e.id || e.getAttribute('class') || e.tagName)"""   # لكل هدف اسم مسموع لقارئ الشاشة
 # D255: مركز كل هدف يذهب إليه هو. «سُرق» إن أخذ اللمسَ هدفٌ آخر (إلا قطعة متماثلة في مكانها، data-twin)، و«حُجب» إن وقع على شيء ليس هدفاً، و«وُجّه خطأ» إن وجّهته منطقة مشتركة (route) إلى غيره
-TAPS = """() => { const svg = document.querySelector('#stage svg'); if (!svg) return []; const tg = [...svg.querySelectorAll('[role=button]')].filter(g => (g.onclick || getComputedStyle(g).cursor === 'grab') && !g.closest('[hidden]') && +getComputedStyle(g).opacity >= .5);
+# والأهداف الباهتة (الظلال بشفافية .22) أهدافٌ كغيرها، وتُلمس في مركز رسمها وقرب حوافّه الأربع حيث الرسم نفسه تحت الإصبع (الفحص المستقل B لبوابة S1-U4:
+# كان الفحص يستبعد ما شفافيته دون .5 ويلمس المراكز وحدها، فلم يرَ منطقة ظلٍّ تغطّي الظلّ فوقه، ولا منطقة شريط تغطّي ثلث الشريط فوقه)
+TAPS = """() => { const svg = document.querySelector('#stage svg'); if (!svg) return []; const tg = [...svg.querySelectorAll('[role=button]')].filter(g => (g.onclick || g.__route || getComputedStyle(g).cursor === 'grab') && !g.closest('[hidden]') && +getComputedStyle(g).opacity > .1 && getComputedStyle(g).pointerEvents !== 'none');
   const owner = e => { while (e && e !== svg) { if (tg.includes(e)) return e; e = e.parentNode; } return null; }; const name = g => g.dataset.slot || g.getAttribute('aria-label') || g.tagName; const out = [];
   for (const g of tg) { let r = null; if (g.tagName === 'line') { const b = g.getBoundingClientRect(); r = { l: b.left, t: b.top, r: b.right, b: b.bottom }; }   /* هدف هو خطّ (ضلع): منتصفه */
     for (const c of g.querySelectorAll('circle,ellipse,rect,polygon,path,line,polyline,text')) { if (c.matches('rect.hit')) continue; const f = c.getAttribute('fill'), s = c.getAttribute('stroke'); if ((f === 'transparent' || f === 'none') && (!s || s === 'none')) continue;
       const b = c.getBoundingClientRect(); if (!b.width && !b.height) continue; r = r ? { l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom) } : { l: b.left, t: b.top, r: b.right, b: b.bottom }; }
-    if (!r) continue; const x = (r.l + r.r) / 2, y = (r.t + r.b) / 2; if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue; const e = document.elementFromPoint(x, y); if (!e) continue;
-    if (e.__route) { if (e.__route(x, y) !== g) out.push(['routed-wrong', name(g)]); continue; }
-    const o = owner(e); if (o === g) continue;
-    if (o) { if (o.__route && o.__route(x, y) === g) continue; if (!(g.dataset.twin && g.dataset.twin === o.dataset.twin && name(g) === name(o))) out.push(['stolen', name(g), name(o)]); }
-    else if (svg.contains(e) || e === svg) out.push(['blocked', name(g), (e.getAttribute('class') || e.tagName)]); }
+    if (!r) continue; const cx = (r.l + r.r) / 2, cy = (r.t + r.b) / 2, w = r.r - r.l, h = r.b - r.t;
+    /* نقطة الحافّة تُفحص حيث يرى الطفل هذا الهدف نفسه أعلى ما هو مرسوم: أول عنصر مرسوم (لا منطقة لمس ولا شفاف) في المسرح تحت الإصبع منه */
+    const onBody = (x, y) => { const e = document.elementsFromPoint(x, y).find(e => e instanceof SVGElement && svg.contains(e) && e !== svg && !blankEl(e)); return !!e && (e === g || g.contains(e)); };
+    const pts = [[cx, cy, 'centre'], ...(w > 16 && h > 16 ? [[cx, r.t + 4, 'top'], [cx, r.b - 4, 'bottom'], [r.l + 4, cy, 'left'], [r.r - 4, cy, 'right']] : [])];
+    for (const [x, y, where] of pts) { if (x < 0 || y < 0 || x > innerWidth || y > innerHeight) continue; if (where !== 'centre' && !onBody(x, y)) continue; const e = document.elementFromPoint(x, y); if (!e) continue; const at = where === 'centre' ? '' : ' (' + where + ')';
+      if (e.__route) { if (e.__route(x, y) !== g) out.push(['routed-wrong' + at, name(g)]); continue; }
+      const o = owner(e); if (o === g) continue;
+      if (o) { if (o.__route && o.__route(x, y) === g) continue; if (!(g.dataset.twin && g.dataset.twin === o.dataset.twin && name(g) === name(o))) out.push(['stolen' + at, name(g), name(o)]); }
+      else if (where === 'centre' && (svg.contains(e) || e === svg)) out.push(['blocked', name(g), (e.getAttribute('class') || e.tagName)]); } }
   return out; }"""
 # ما يُسحب في المسرح (g بمؤشّر السحب) ولا رسم مرئياً فيه: منطقة سحب حول لا شيء (كانت في لغز المتجر منطقة سحب فارغة في زاوية المسرح؛ الفحص المستقل الخامس).
 # (أهداف اللمس الشفافة فوق رسم ليس هدفاً، كنقاط العدّ ورفّ «أين أكثر؟»، مقصودة فلا تُعدّ هنا)
@@ -45,6 +51,62 @@ EMPTY = """() => { const svg = document.querySelector('#stage svg'); if (!svg) r
 # وأشرطته على 25 نقطة بعضها من بعض، فسرقت منطقة لمسٍ لمسة جارتها؛ وصفوف «كم؟» تراكمت تحت المسرح). مقياس الرسم إلى مقياس عرضه (preserveAspectRatio meet): أقل من 0.75 مضغوط
 # (أصغر ما في الدروس الأخرى 0.76: مسرح تتبّع الرقم في S1-U1 د3، وأحجامه كبيرة)
 # وحدّان (بوابة S1-U4 على أضيق شاشة): 0.75 لمسرحٍ فيه أهداف لمس (تتقارب فتسرق بعضها)، و0.6 لمسرحٍ يُرى ولا يُلمس (الأزرار تحته: الروبوت 0.75 على 320×568، وكان التعليل 0.52 تحت ثلاث بطاقات فصُغّرت البطاقات)
+# وكل هدف حيّ يُبلغ بلوحة المفاتيح (tabindex)، كما يُلمس (الفحص المستقل B لبوابة S1-U4: أهداف بلا لوحة مفاتيح في أربعة مشاهد، وعين اللمحة)
+# هدف يُلمس ولا يبلغه المفتاح: بلا tabindex (kbdStage يعطيه لكل هدف)؛ وأن المفتاح يلمسه حقاً يفحصه Enter الحقيقي أدناه (KEYOK)
+KEYLESS = """() => { const s = document.querySelector('#stage svg'); if (!s) return []; return [...s.querySelectorAll('[role=button]')].filter(g => (g.onclick || g.__route) && !g.closest('[hidden]') && getComputedStyle(g).pointerEvents !== 'none' && g.getAttribute('tabindex') == null).map(g => g.getAttribute('aria-label') || g.tagName); }"""
+# ولوحة المفاتيح بالمفتاح الحقيقي (الفحص المستقل C2 لبوابة S1-U4: كان العدّاد يعدّ ما بلا مفتاح بشرطٍ لا يصدق أبداً، فنجت طفرة حذف اللمس من مستمع Enter العامّ):
+# في كل انتظار ثانٍ يُجاب بالصواب، يُشغَّل حلّه الآلي واللمسُ فيه موقوف، فإن كان لمسةً واحدة على هدف في المسرح أخذ الهدفُ التركيز وضُغط Enter الحقيقي
+# وانتُظر أن ينتهي الانتظار (فيُفحص المفتاح الخاص والمستمع العامّ كلاهما)؛ وما سوى ذلك تُعاد لمساته الموقوفة كما كانت
+KEYOK = """() => { const a = window.__auto; window.__keyAsync = false; if (!a || !a.ok) return 0; const cap = [], D = EventTarget.prototype.dispatchEvent, C = HTMLElement.prototype.click, LOOP = {}; let r;
+  /* حلٌّ آلي يلمس حتى يتغيّر شيء («while (laid < n) plus.click()») يدور بلا نهاية واللمس موقوف فيتجمّد الصفحة (بوابة S1-U4): بعد أربعين لمسة يُقطع ويُشغَّل الحلّ كما هو */
+  const grab = (el, how) => { cap.push([el, how]); if (cap.length > 40) throw LOOP; };
+  EventTarget.prototype.dispatchEvent = function (ev) { if (ev && ev.type === 'click') { grab(this, 'e'); return true; } return D.call(this, ev); };
+  HTMLElement.prototype.click = function () { grab(this, 'c'); };
+  try { r = a.ok(); } catch (x) { if (x !== LOOP) throw x; EventTarget.prototype.dispatchEvent = D; HTMLElement.prototype.click = C; a.ok(); return 0; } finally { EventTarget.prototype.dispatchEvent = D; HTMLElement.prototype.click = C; }
+  const replay = () => cap.forEach(([e, how]) => how === 'c' ? e.click() : e.dispatchEvent(new MouseEvent('click', { bubbles: true })));
+  const e = cap.length === 1 && cap[0][0]; if (!e || !(e instanceof SVGElement) || !e.closest('#stage') || e.getAttribute('role') !== 'button') { replay(); return 0; }
+  /* والحلّ المتتابع (async: يلمس الأول ثم ينتظر ويلمس ما بعده وحده، كطريق الأعداد والعدّ باللمس والوجوه) يمضي بعد 30 م.ث فأكثر بلمساتٍ حقيقية،
+     فما يتغيّر بعدها ليس من مفتاحٍ يُضغط: يُعلَّم، فيُضغط مفتاح الفعل فوراً كما قبل J2 بلا المفاتيح الأخرى (بوابة S1-U4 بعد J: سبق الحلّ المفاتيح الأخرى
+     في طريق الأعداد، وظهر بلا أي مفتاح؛ ولا انتظار هنا ولا ذهاب وإياب زائد، فيبقى مفتاح الفعل قبل لمسته الثانية كما كان) */
+  window.__keyAsync = !!(r && typeof r.then === 'function'); window.__keyEl = e; e.focus(); return document.activeElement === e ? 1 : -1; }"""
+# وأعداد «معي» لا تكون خياراً غير الجواب في أسئلة الشاشة التي تخدمها (الفحص المستقل H1 (10أ): قالت «أربعة عشر» ثم سُئل الطفل عن ثلاثة عشر وخياراه 14 و4)،
+# مولَّدةً كانت أو مشتّتاً مشخِّصاً (فالمشخِّص يُعرف بخطئه لا بذاكرة «معي»). والمتوقَّع يُحسب من بيانات الدروس بـ matNums نفسها في d240 (لا من MAT_AVOID في
+# الصفحة)، للخطوة التي فيها «معي» وما يمضي بعدها: فيُرى البناء إن لم يكتب mat.avoid، والمسار إن أبقى الأعداد بعد شاشتها أو أفرغها قبل نهايتها
+MATAV = """() => { const P = CUR && (PROG[CUR.id] || {}), b = [...document.querySelectorAll('.choices.nums .pick.num')].filter(x => !x.closest('[hidden]') && !x.closest('[data-done]'));
+  if (!P || !b.length) return null; return { id: CUR.id, i: (P.resume || {}).stage, mat: PATH_MAT(), avoid: MAT_AVOID ? [...MAT_AVOID].sort((x, y) => x - y) : null,
+    all: b.map(x => +x.dataset.k), ok: b.filter(x => x.dataset.ok === 'true').map(x => +x.dataset.k) }; }"""
+MATEXP_JS = """import { matNums } from './build/d240.mjs'; import fs from 'fs'; const out = {};
+for (const u of fs.readdirSync('content/m1')) for (const f of fs.readdirSync('content/m1/' + u)) { if (!/^d\\d+\\.json$/.test(f)) continue; const L = JSON.parse(fs.readFileSync('content/m1/' + u + '/' + f, 'utf8'));
+  (L.flow || []).forEach((st, i) => { if (!st || !st.mat || !Array.isArray(st.mat.facts)) return; const N = [...matNums(st.mat.facts).nums].filter(n => n !== 10).sort((a, b) => a - b);
+    const S = [i]; for (let j = i; L.flow[j] && L.flow[j].auto && j + 1 < L.flow.length; j++) S.push(j + 1); for (const j of S) (out[L.id] = out[L.id] || {})[j] = N; }); }
+console.log(JSON.stringify(out));"""
+TRACE = os.environ.get('TRACE')   # كل فعلٍ للسائق سطراً (لتتبّع انتظارٍ لا ينتهي)
+# والهدف خارج نافذة الشريط المتحرّك (عربة القطار، بلاطة الطريق) مخفيّ لا يأخذ التركيز، كما يجب: فيحرّك السائق الشريط بزرّيه بلوحة المفاتيح أولاً
+# كما يفعل الطفل، ثم يضغط Enter على الهدف (المجموعة كاملة بعد الفحص المستقل C2: العربة الجواب خارج النافذة في ثلاثة بنود من S1-U3)
+KEYFOCUS = """() => { const e = window.__keyEl; if (!e) return false; e.focus(); return document.activeElement === e; }"""
+PANKEY = """(k) => { const b = document.querySelector('#stage [data-panbtn=' + k + ']'); if (!b || getComputedStyle(b).visibility === 'hidden') return false; b.focus(); return document.activeElement === b; }"""
+KEYGO = """() => { const e = window.__keyEl; window.__keyEl = null; if (e) e.dispatchEvent(new MouseEvent('click', { bubbles: true })); }"""
+# والكلام المرسوم داخل المسرح: نصٌّ يخرج من إطار الرسم يُقصّ (الفحص المستقل B لبوابة S1-U4: «خطّ البداية» قُصّ من الأسفل على الشاشات العريضة)
+CLIPT = """() => { const s = document.querySelector('#stage svg'); if (!s) return []; const R = s.getBoundingClientRect(); if (!R.width) return [];
+  return [...s.querySelectorAll('text')].filter(t => t.textContent.trim() && !t.closest('[hidden]') && !t.closest('[clip-path]') && getComputedStyle(t).visibility !== 'hidden' && +getComputedStyle(t).opacity > .05).map(t => [t, t.getBoundingClientRect()])
+    .filter(([t, b]) => { if (!b.width) return false; const fs = parseFloat(getComputedStyle(t).fontSize) * (s.getScreenCTM() ? s.getScreenCTM().a : 1);   /* إطار الخطّ أعلى من الحروف (الحركات): يُتسامح بثلثه أعلى وربعه أسفل */
+    return b.left < R.left - 2 || b.right > R.right + 2 || b.top < R.top - .35 * fs || b.bottom > R.bottom + .25 * fs; }).map(([t, b]) => t.textContent.trim().slice(0, 24))
+    /* وحلقة الجواب (okRing) داخل المسرح كلها (الفحص المستقل D2 لبوابة S1-U4 (10)) */
+    .concat([...s.querySelectorAll('[data-ring]')].filter(g => { const b = g.getBoundingClientRect(); return b.width && (b.left < R.left - 1 || b.right > R.right + 1 || b.top < R.top - 1 || b.bottom > R.bottom + 1); }).map(() => 'حلقة الجواب')); }"""
+# ولا يغطّي هدفٌ شارةَ عدٍّ تحته (الفحص المستقل D2 لبوابة S1-U4 (8): بطاقة الاختيار الوسطى على أسفل البرج وشارته «١» في فوضى S1-U2 د5): هدفٌ مرسوم بعد
+# الشارة ولا يحويها يغطّي ربعها أو أكثر
+COVERB = """() => { const s = document.querySelector('#stage svg'); if (!s) return []; const vis = e => !e.closest('[hidden]') && +getComputedStyle(e).opacity >= .5 && getComputedStyle(e).visibility !== 'hidden';
+  const B = [...s.querySelectorAll('[data-badge]')].filter(vis), T = [...s.querySelectorAll('[role=button]')].filter(vis), out = [];
+  /* وما يُرسم من الهدف وحده: منطقة لمسٍ شفّافة (خطّ شفّاف عريض، rect.hit) لا تغطّي شيئاً */
+  const no = c => !c || c === 'none' || c === 'transparent' || /rgba\\([^)]*,\\s*0\\)$/.test(c);
+  const painted = e => { if (e.matches('rect.hit') || e.closest('rect.hit')) return false; const cs = getComputedStyle(e); if (+cs.opacity < .05) return false;
+    return (!no(cs.fill) && +cs.fillOpacity > .05 && !/^(line|polyline|g|svg|text)$/i.test(e.tagName)) || (!no(cs.stroke) && parseFloat(cs.strokeWidth) > 0 && +cs.strokeOpacity > .05) || /^(text|image)$/i.test(e.tagName); };
+  const box = g => { let r = null; for (const e of [g, ...g.querySelectorAll('*')]) { if (/^(g|svg|title|desc)$/i.test(e.tagName) || !painted(e)) continue; const b = e.getBoundingClientRect(); if (!b.width && !b.height) continue;
+      r = r ? { left: Math.min(r.left, b.left), top: Math.min(r.top, b.top), right: Math.max(r.right, b.right), bottom: Math.max(r.bottom, b.bottom) } : { left: b.left, top: b.top, right: b.right, bottom: b.bottom }; } return r; };
+  for (const b of B) { const r = b.getBoundingClientRect(); if (!r.width) continue; for (const g of T) { if (g.contains(b) || !(b.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+      const q = box(g); if (!q) continue; const w = Math.min(r.right, q.right) - Math.max(r.left, q.left), h = Math.min(r.bottom, q.bottom) - Math.max(r.top, q.top);
+      if (w > 0 && h > 0 && w * h >= .25 * r.width * r.height) out.push((g.getAttribute('aria-label') || g.tagName).slice(0, 24) + ' على شارة «' + (b.textContent || '•') + '»'); } }
+  return out; }"""
 SQUEEZE = """() => { const s = document.querySelector('#stage svg'); if (!s) return null; const r = s.getBoundingClientRect(), vb = s.viewBox.baseVal; if (!vb || !vb.width || !r.width) return null;
   const live = [...s.querySelectorAll('[role=button]')].some(g => (g.onclick || getComputedStyle(g).cursor === 'grab') && !g.closest('[hidden]') && +getComputedStyle(g).opacity >= .5);
   const k = s.getScreenCTM().a, kw = r.width / vb.width; return k / kw < (live ? .75 : .6) ? [Math.round(100 * k / kw), Math.round(r.width), Math.round(r.height), (document.querySelector('#say') || {}).textContent.length, live ? 'targets' : 'view'] : null; }"""
@@ -65,6 +127,7 @@ async def font_fallbacks(cdp):
     if other: out.append((tuple(other), (await cdp.send('DOM.getOuterHTML', {'nodeId': i}))['outerHTML'][:90]))
   return out
 
+MATEXP = json.loads(__import__('subprocess').run(['node', '--input-type=module', '-e', MATEXP_JS], cwd=os.path.join(HERE, '..'), capture_output=True, text=True, check=True).stdout)
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch(); ctx = await b.new_context(**p.devices[os.environ.get('DEVICE', 'Pixel 5')],   # DEVICE: جهاز آخر (الشاشة القصيرة: iPhone SE، Galaxy S5)
@@ -83,7 +146,7 @@ async def main():
     ONLY_SET = {x for x in ONLY if not x.startswith('ws:')}
     tw_seen = {}; prev_twin = False
     if ONLY: await pg.evaluate("() => { PROG.unlockAll = true; saveProg(); showHome(); }"); await pg.wait_for_timeout(300)
-    small = {}; noname = {}; empty = {}; squeeze = {}; taps = {}; leaks = []; failed_rev = {}; redo_seen = set(); replay_q = None; crashes = 0; seen_types = set(); deep = {}; failed_test = {}; shots = set(); report = []; lessons = 0
+    matd = {}; matq = [0]; small = {}; noname = {}; empty = {}; squeeze = {}; clipt = {}; coverb = {}; keyless = {}; knon = [0]; kasync = [0]; kpress = [0]; kspace = [0]; kpan = [0]; taps = {}; leaks = []; failed_rev = {}; redo_seen = set(); replay_q = None; crashes = 0; seen_types = set(); deep = {}; failed_test = {}; shots = set(); report = []; lessons = 0
     visits = 0   # MAXL يعدّ الدروس وحدها (لا المراجعة ولا الورشة)، وسقف الزيارات كلها 200 حارس من حلقة
     while lessons < MAXL and visits < 200:
       if os.environ.get('ONLY'):
@@ -121,6 +184,18 @@ async def main():
           for x in await pg.evaluate(SMALL): small.setdefault(tuple(x[:1]) + (a['kind'],), (sc, x))   # كل انتظار لفعل الطفل: أهدافه الآن
           for x in await pg.evaluate(NONAME): noname.setdefault((x, a['kind']), sc)
           for x in await pg.evaluate(EMPTY): empty.setdefault((sc, a['kind'], x), 0)
+          for x in await pg.evaluate(CLIPT): clipt.setdefault((sc, a['kind'], x), 0)
+          for x in await pg.evaluate(COVERB): coverb.setdefault((sc, a['kind'], x), 0)
+          for x in await pg.evaluate(KEYLESS): keyless.setdefault((sc, a['kind'], x), 0)   # لوحة المفاتيح لكل هدف في الوحدات كلها (مواصفة المحرّك 8؛ كان للوحدة الرابعة ثم صار عامّاً بـ kbdStage)
+          if a['kind'] == 'num':
+            mv = await pg.evaluate(MATAV)
+            if mv:
+              exp = (MATEXP.get(mv['id'], {}).get(str(mv['i'])) or None) if mv['mat'] else None; have = mv['avoid'] or None
+              if exp: matq[0] += 1
+              if exp != have: matd.setdefault((tid, sc, 'MAT_AVOID %s والمتوقَّع %s' % (have, exp)), 0)
+              hit = [k for k in mv['all'] if exp and k in exp and k not in mv['ok']]
+              if hit: matd.setdefault((tid, sc, 'الخيارات %s، وأعداد «معي» %s: %s' % (mv['all'], exp, hit)), 0)
+              if exp and len(mv['all']) < 3: matd.setdefault((tid, sc, 'الخيارات %s أقلّ من ثلاثة بعد تجنّب أعداد «معي» %s' % (mv['all'], exp)), 0)   # الفحص المستقل I2 (7)
           sq = await pg.evaluate(SQUEEZE)
           if sq: squeeze.setdefault((sc, a['kind'], st['q']), sq)
           for x in await pg.evaluate(TAPS): taps.setdefault((sc, a['kind']) + tuple(x), 0); taps[(sc, a['kind']) + tuple(x)] += 1
@@ -150,9 +225,45 @@ async def main():
               await pg.wait_for_timeout(25)
             lk = await pg.evaluate(LEAKED)
             if lk: leaks.append((sc, lk))
-          if how == 'bag': await pg.evaluate("""(p) => { const b = [...document.querySelectorAll('.choices .pick')]; (b.find(x => x.dataset.k === p) || b[0]).click(); }""", PATH)
+          ko = await pg.evaluate(KEYOK) if how == 'ok' and a['n'] % 2 == 0 else None
+          if ko == -1 and await pg.evaluate("() => !!document.querySelector('#stage [data-panbtn]')"):
+            for k in ('fwd', 'back'):
+              for _ in range(8):
+                if not await pg.evaluate(PANKEY, k): break
+                await pg.keyboard.press('Enter'); kpan[0] += 1; await pg.wait_for_timeout(500)
+                if await pg.evaluate(KEYFOCUS): ko = 1; break
+              if ko == 1: break
+          if ko == 1:
+            # والمسافة في نصف الضغطات، ثم ما سُجّل بعد المفتاح جوابٌ صحيح (الفحص المستقل D2 لبوابة S1-U4 (3، 4): لا مسافة في أي فحص، وطفرة «المفتاح يلمس الهدف التالي»
+            # نجت لأن الانتظار انتهى بلمسةٍ خاطئة)
+            key = 'Space' if kpress[0] % 2 else 'Enter'; na, asy = await pg.evaluate("() => { window.__actG = undefined; return [LOG.attempts.length, !!window.__keyAsync]; }")
+            # ومفتاحٌ غير مفتاحي الفعل لا يفعل شيئاً: حرفٌ وEscape وTab، ثم يعود التركيز إلى الهدف (الفحص المستقل J2 (8): صيغ قراءة المفتاح في lint تُحصى ولا تُغلق،
+            # و«!==» جعلت كل مفتاحٍ غير المذكور مفتاحَ فعل؛ فالحارس في التشغيل يرى ما فعله المفتاح أياً كانت صيغته)
+            moved = None; kasync[0] += asy
+            for nk in (() if asy else ('KeyA', 'Escape', 'Tab')):
+              await pg.keyboard.press(nk); await pg.wait_for_timeout(80); knon[0] += 1
+              if await pg.evaluate("([n, k]) => !window.__auto || window.__auto.n !== n || LOG.attempts.length !== k", [a['n'], na]): moved = nk; break
+            if moved: keyless.setdefault((sc, a['kind'], moved + ' (غير مفتاح الفعل) فعل شيئاً'), 0); acts.append((sc, a['kind'], how)); idle = 0; await pg.wait_for_timeout(40); continue
+            if not asy and not await pg.evaluate(KEYFOCUS): keyless.setdefault((sc, a['kind'], 'لا يعود إليه التركيز بعد Tab'), 0); await pg.evaluate(KEYGO); acts.append((sc, a['kind'], how)); idle = 0; await pg.wait_for_timeout(40); continue
+            await pg.keyboard.press(key); kdone = False; kpress[0] += 1; kspace[0] += key == 'Space'
+            for _ in range(60):
+              if await pg.evaluate("(n) => !window.__auto || window.__auto.n !== n", a['n']): kdone = True; break
+              await pg.wait_for_timeout(25)
+            if not kdone: keyless.setdefault((sc, a['kind'], key + ' لا يجيب: ' + (await pg.evaluate("() => window.__keyEl && (window.__keyEl.getAttribute('aria-label') || window.__keyEl.tagName)") or '')), 0); await pg.evaluate(KEYGO)
+            else:
+              # ما اختاره المفتاح: في «المس واحداً» (tapOne) الهدفُ نفسه الذي يلمسه الحلّ (والتوقّع لا جواب له، فلا يُحكم بما سُجّل)؛ وفي غيره لا خطأ يُسجَّل بعده
+              same = await pg.evaluate("() => window.__actG === undefined ? null : window.__actG === window.__keyEl")
+              if same is False: keyless.setdefault((sc, a['kind'], key + ' لمس غير هدفه'), 0)
+              elif same is None:
+                wr = await pg.evaluate("(n) => LOG.attempts.slice(n).filter(x => x.ok === false).map(x => x.scene + ':' + (x.tag || ''))", na)
+                if wr: keyless.setdefault((sc, a['kind'], key + ' لمس غير الحلّ: ' + ','.join(wr)[:60]), 0)
+          elif ko == -1: keyless.setdefault((sc, a['kind'], 'لا يأخذ التركيز'), 0); await pg.evaluate(KEYGO)
+          elif ko == 0: pass                              # حلّه الآلي شُغّل (ولمساته الموقوفة أُعيدت)
+          elif how == 'bag': await pg.evaluate("""(p) => { const b = [...document.querySelectorAll('.choices .pick')]; (b.find(x => x.dataset.k === p) || b[0]).click(); }""", PATH)
           else: await pg.evaluate("(h) => { const a = window.__auto; if (a) (h === 'wrong' && a.wrong ? a.wrong : a.ok)(); }", how)
-          acts.append((sc, a['kind'], how)); idle = 0; await pg.wait_for_timeout(40); continue
+          acts.append((sc, a['kind'], how)); idle = 0
+          if TRACE: print('  >', tid, sc, a['kind'], a['n'], how, ko, flush=True)
+          await pg.wait_for_timeout(40); continue
         if st['go']: await pg.click('#go'); idle = 0; await pg.wait_for_timeout(30); continue
         idle += 1; await pg.wait_for_timeout(50)
         if idle > 300: stuck = True; report.append([tid, 'STUCK', sc, st['say'][:60], st['auto']]); await pg.screenshot(path=OUT + '/stuck_%s.png' % tid.replace('.', '_')); break
@@ -188,9 +299,19 @@ async def main():
     print('small targets:', len(small)); [print(' ', *v) for v in list(small.values())[:30]]
     print('empty drags:', len(empty)); [print(' ', *k) for k in list(empty)[:20]]
     print('squeezed stages:', len(squeeze)); [print(' ', *k, v) for k, v in list(squeeze.items())[:30]]
+    print('clipped texts:', len(clipt)); [print(' ', *k) for k in list(clipt)[:20]]
+    print('covered badges:', len(coverb)); [print(' ', *k) for k in list(coverb)[:20]]
+    if lessons and not kpress[0]: keyless.setdefault(('-', 'tap', 'لم يُضغط Enter حقيقي على أي هدف'), 0)   # فلا ينجح العدّاد فارغاً
+    if lessons and kpress[0] > 1 and not kspace[0]: keyless.setdefault(('-', 'tap', 'لم تُضغط المسافة على أي هدف'), 0)
+    if lessons and kpress[0] and not knon[0]: keyless.setdefault(('-', 'tap', 'لم يُضغط مفتاحٌ غير مفتاح الفعل على أي هدف'), 0)
+    print('keyless targets:', len(keyless), '(مفتاح حقيقي على %d هدفاً، منها %d بالمسافة، وعلى زرّي الشريط %d مرة، ومفتاحٌ غير مفتاح الفعل %d مرة، وهدفٌ حلُّه متتابع بمفتاح الفعل وحده %d مرة)' % (kpress[0], kspace[0], kpan[0], knon[0], kasync[0])); [print(' ', *k) for k in list(keyless)[:60]]
+    if PATH == 'mat' and lessons > 3 and not matq[0]: matd.setdefault(('-', '-', 'لم يُرَ سؤال عددي بعد «معي»'), 0)
+    print('mat distractors:', len(matd), '(أسئلة عددية بعد «معي»: %d)' % matq[0]); [print('  «معي»:', *k) for k in list(matd)[:20]]
     print('blocked lessons:', len(blocked)); [print(' ', *r) for r in blocked[:20]]
     print('lessons not done:', len(not_done) if MAXL >= len(all_ids) else 0, not_done if MAXL >= len(all_ids) else '(MAXL)')
     # STRICT=1 (لفحص الفحوص، الدرس 98): يخرج بـ 1 إن كان في العدّادات شيء، كما تحكم خلاصة المجموعة
-    return int(bool(errs or errlog or small or empty or squeeze or blocked or taps or noname or leaks or fontfb or miss))
+    # والعدّادان الجديدان والتوائم المفقودة كما في الخلاصة (طفرة «تسمية الشيء تحت المسرح» نجت لأن STRICT لم يعدّ النصوص المقصوصة)
+    # وأخطاء التقييم في نمط «ok» (كل جواب صحيح فيه): خطأٌ هنا لمسةٌ ذهبت إلى غير هدفها (الفحص المستقل D2 لبوابة S1-U4 (4))
+    return int(bool(errs or errlog or small or empty or squeeze or blocked or taps or noname or leaks or fontfb or miss or clipt or coverb or keyless or missing or matd or (bad and MODE == 'ok')))
 rc = asyncio.run(main())
 if os.environ.get('STRICT') == '1': sys.exit(rc or 0)

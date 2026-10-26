@@ -64,14 +64,17 @@ function spotPick(svg, thing, home, spots, okKeys, opt = {}) {
   AUTO({ kind: 'place', ok: () => okR.g.dispatchEvent(new MouseEvent('click', { bubbles: true })), wrong: () => badR.g.dispatchEvent(new MouseEvent('click', { bubbles: true })) });
   const off = pulse(rings.map(r => r.g)); let done = false, cleanup = null;
   const p = gate(new Promise(res => {
-    cleanup = () => { done = true; off(); rings.forEach(q => q.g.remove()); thing.style.cursor = ''; thing.removeAttribute('role'); thing.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); };
+    cleanup = () => { done = true; off(); rings.forEach(q => q.g.remove()); thing.style.cursor = ''; thing.removeAttribute('role'); delete thing.__route; thing.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); };
     const finish = r => { if (done) return; cleanup(); AUTO_CLEAR(); hush(); SFX.tick(); res(r.k); };
-    rings.forEach(r => { r.g.onclick = () => finish(r); r.g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') finish(r); }; });
+    rings.forEach(r => { r.g.onclick = () => finish(r); r.g.onkeydown = e => { if (actKey(e)) finish(r); }; }); routeClicks(rings.map(r => r.g));
     let d = null; const base = thing.getAttribute('transform') || '';
     thing.addEventListener('pointerdown', e => { if (done) return; d = { sx: e.clientX, sy: e.clientY }; try { thing.setPointerCapture(e.pointerId); } catch (x) {} });
     thing.addEventListener('pointermove', e => { if (!d) return; const m = svg.getScreenCTM(); thing.setAttribute('transform', `translate(${(e.clientX - d.sx) / m.a} ${(e.clientY - d.sy) / m.d}) ` + base); });
     /* لمسةٌ على الشيء بلا سحب لا تُجيب (قد يبدأ الشيء قرب حلقة: النجمة داخل الدائرة، الفحص المستقل E) */
-    const up = e => { if (!d || done) { d = null; return; } if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 10) { d = null; thing.setAttribute('transform', base); return; } const p = svgPoint(svg, e); d = null; const near = rings.map(r => ({ r, dd: Math.hypot(r.x - p.x, r.y - p.y) })).sort((a, b) => a.dd - b.dd)[0];
+    /* لمسةٌ بلا سحب على حافّة حلقةٍ تغطّيها منطقة الشيء: للحلقة المرسومة تحت الإصبع (D255؛ فحص الحوافّ بعد الفحص المستقل B لبوابة S1-U4) */
+    const ringAt = (x, y) => { const els = document.elementsFromPoint(x, y); return rings.find(r => els.some(el => r.g.contains(el) && !el.matches('rect.hit'))); };
+    thing.__route = (x, y) => { const r = ringAt(x, y); return r ? r.g : thing; };
+    const up = e => { if (!d || done) { d = null; return; } if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 10) { d = null; thing.setAttribute('transform', base); const r = ringAt(e.clientX, e.clientY); if (r) finish(r); return; } const p = svgPoint(svg, e); d = null; const near = rings.map(r => ({ r, dd: Math.hypot(r.x - p.x, r.y - p.y) })).sort((a, b) => a.dd - b.dd)[0];
       thing.setAttribute('transform', base); if (near && near.dd < 58) finish(near.r); };
     thing.addEventListener('pointerup', up); thing.addEventListener('pointercancel', () => { d = null; thing.setAttribute('transform', base); }); }));
   p.cancel = () => { if (!done) cleanup(); }; return p; }   /* إلغاء الانتظار (زرّ آخر أجاب): لا تبقى الحلقات ولا سحب الشيء */
@@ -207,10 +210,10 @@ ITEM.lineTap = {
 /* «لوّن ثلاث عربات»: يلمس الطفل العربات فتتلوّن (ولمسة ثانية تمحو)، ثم «تمّ» */
 async function paintN(svg, R, item) { const set = new Set(); say(...lineOf(item.q), { free: true });
   const marks = new Map(); const tog = M => { if (set.has(M.k)) { set.delete(M.k); marks.get(M.k).remove(); } else { set.add(M.k); const p = el('rect', { x: M.x - 28, y: M.y - 34, width: 56, height: 24, rx: 4, fill: '#f2b33d', 'pointer-events': 'none' }, R.S.g); marks.set(M.k, p); } SFX.pop(); };
-  R.members.forEach(M => { M.g.style.cursor = 'pointer'; M.g.setAttribute('role', 'button'); M.g.setAttribute('aria-label', plain(labelText('car'))); hitPad(M.g, 60); M.g.onclick = () => tog(M); });
+  R.members.forEach(M => { M.g.style.cursor = 'pointer'; M.g.setAttribute('role', 'button'); M.g.setAttribute('aria-label', plain(labelText('car'))); hitPad(M.g, 60); M.g.onclick = () => tog(M); }); routeClicks(R.members.map(M => M.g));
   const d = doneBtn(); AUTO({ kind: 'paint', ok: () => { for (let i = item.k - 1; i >= 0; i--) if (!set.has(i)) tog(R.members[i]); d.b.click(); }, wrong: () => { if (!set.size) { tog(R.members[0]); tog(R.members[1]); } d.b.click(); } });
   await gate(new Promise(res => d.b.onclick = () => { AUTO_CLEAR(); hush(); d.bar.remove(); res(); }));
-  R.members.forEach(M => { M.g.onclick = null; }); return [...set].sort((a, b) => a - b); }
+  R.members.forEach(M => { M.g.onclick = null; delete M.g.__route; }); return [...set].sort((a, b) => a - b); }
 /* ================= أيّ عربة؟ (تعرّف N008): العدد الترتيبي من خيارات مسموعة ================= */
 ITEM.linePick = {
   make(spec) { const it = { ...spec, tag: 'line:which' }; it.want = spec.k; return it; },
@@ -427,6 +430,7 @@ function treasureAt(parent, x, y, s = .8) { const g = el('g', { transform: `tran
 /* keep (الحلّ المشترك): يبقى على كل شيء مرّ به رقمُ ترتيبه، فيرى الطفل ما نمرّ به أولاً وما بعده حين يختار الوصف */
 async function routeWalk(ctx, item, stop, keep = false) { const { kid, pts, M, svg } = ctx; if (!kid || !pts) return; const at = p => `translate(${p.x}px,${p.y + 20}px)`; let n = 0;
   for (let i = 1; i < pts.length; i++) { await anim(kid, [{ transform: at(pts[i - 1]) }, { transform: at(pts[i]) }], { duration: 520, easing: 'ease-in-out' }).done; kid.setAttribute('transform', `translate(${pts[i].x} ${pts[i].y + 20})`);
+    if (RM) await sleep(450);   /* ومع تقليل الحركة يقف عند كل نقطة فيُرى الطريق خطوةً خطوة (الفحص المستقل E2: كان يقفز النقاط في نصف ثانية) */
     const id = (item.path || []).find(id => { const it = item.lay.items.find(q => (q.id || q.k) === id); return Math.abs(M.colX(it.col) - pts[i].x) < 3 && Math.abs(M.rowY(it.row) - pts[i].y) < 3; });
     if (id) { const g = M.pieces[id]; SFX.tick(); if (keep && svg) badge(el('g', { 'pointer-events': 'none', 'data-help': 1 }, svg), pts[i].x + 26, pts[i].y - 26, ++n, css('--compass'));
       if (g) await anim(g, [{ opacity: 1 }, { opacity: .35 }, { opacity: 1 }], { duration: stop ? 900 : 500 }).done; } }
@@ -473,7 +477,7 @@ async function roadHops(R, item, mode, pre = []) { const path = [R.tok.n]; const
   const targets = R.S.tiles.map(t => ({ g: t.g, n: t.n }));
   targets.forEach(t => { t.g.style.cursor = 'pointer'; t.g.setAttribute('role', 'button'); t.g.setAttribute('aria-label', plain(T(numw(t.n)))); hitPad(t.g, 56);
     t.g.onclick = () => { if (R.S.dragged) return; if (t.n === last()) { if (!busy) say(...lineOf(numw(t.n)), { free: true, num: true }); return; }
-      if (busy) { if (pend.length < 6) pend.push(t.n); return; } hopTo(t.n); }; });
+      if (busy) { if (pend.length < 6) pend.push(t.n); return; } hopTo(t.n); }; }); routeClicks(targets.map(t => t.g));
   const d = doneBtn(); const want = item.b != null ? item.b : item.a + (item.dir || 1) * item.n;
   const seq = item.b != null ? Array.from({ length: Math.abs(item.b - item.a) }, (_, i) => item.a + Math.sign(item.b - item.a) * (i + 1)) : Array.from({ length: item.n }, (_, i) => item.a + (item.dir || 1) * (i + 1));
   const wrongSeq = seq.slice(0, -1);   /* يقف قبل الهدف بخطوة (أو يعدّ بلاطته قفزة) */
@@ -482,7 +486,7 @@ async function roadHops(R, item, mode, pre = []) { const path = [R.tok.n]; const
     wrong: async () => { for (const m of wrongSeq) { R.S.tiles[m].g.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 30)); while (busy) await new Promise(r => setTimeout(r, 20)); } d.b.click(); } });
   /* و«تمّ» أثناء القفز تنتظر انتهاء ما لُمس قبلها */
   let fin = false; await gate(new Promise(res => d.b.onclick = async () => { if (fin) return; fin = true; while (busy) await new Promise(r => setTimeout(r, 30)); AUTO_CLEAR(); hush(); d.bar.remove(); res(); }));
-  targets.forEach(t => { t.g.onclick = null; t.g.removeAttribute('role'); t.g.style.cursor = ''; t.g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); }); hops.remove();
+  targets.forEach(t => { t.g.onclick = null; delete t.g.__route; t.g.removeAttribute('role'); t.g.style.cursor = ''; t.g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); }); hops.remove();
   return { path, want }; }
 function roadErr(item, path) { const a = item.a, fin = path[path.length - 1];
   if (item.b != null) { const dir = Math.sign(item.b - a);

@@ -65,15 +65,20 @@ function towerTapCount(svg, T, opt = {}) {
       badge(marks, T.x + T.size * .9, T.baseY - T.size * .62 - (k - 1) * T.step, k, opt.color);
       if (!SET.muted && !FAST) say(...lineOf(numw(k)), { num: true, noGap: true, free: true });
       if (k === n) { AUTO_CLEAR(); g.remove(); res(n); } };
-    g.onclick = act; g.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') act(); }; }));
+    g.onclick = act; g.onkeydown = e => { if (actKey(e)) act(); }; }));
 }
 /* جملة عددية تُكتب بالكتابة المختارة: «٤ + ٣ = ٧». واتجاهها يتبع الكتابة (D251): من اليمين مع الأرقام المشرقية كما في الكتب المشرقية
    فتُقرأ كما تُنطق، ومن اليسار مع الغربية. والصوت واحد. (طريق الأعداد وشبكة المئة من اليسار دائماً، D229 (6).) */
 const NUM_DIR = () => SET.digits === 'west' ? 'ltr' : 'rtl';
 function sentenceText(a, op, b, c) { return `${DG(a)} ${op === '+' ? '+' : '−'} ${DG(b)} = ${c == null ? '؟' : DG(c)}`; }
+/* السطر بترتيب عرضه (D251، D229 (6)): الرموز من اليمين مع المشرقية ومن اليسار مع الغربية، وكل عدد برقميه كما يُكتب (العشرات على اليسار في الكتابتين).
+   فيُرسم من اليسار بلا إعادة ترتيب (ltr مع bidi-override) والرموز مقلوبة الترتيب للمشرقية. لا يُرسم من اليمين بـ bidi-override: هذا يقلب رقمي العدد نفسه
+   فيصير ١٣ «٣١» وهو خطأ فوضى في درس العشرة بعينه (الفحص المستقل A لبوابة S1-U4، حاجب: «٨ + ٥ = ٣١» في اكتشاف الدرس 7) */
+const visualLine = toks => (NUM_DIR() === 'rtl' ? [...toks].reverse() : toks).join(' ');
+const sentenceToks = (a, op, b, c) => [DG(a), op === '+' ? '+' : '−', DG(b), '=', c == null ? '؟' : DG(c)];
 function sentenceAt(parent, x, y, a, op, b, c, opt = {}) { const g = el('g', { transform: `translate(${x} ${y})` }, parent);
   if (opt.box !== false) el('rect', { x: -96, y: -30, width: 192, height: 52, rx: 14, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 3 }, g);
-  const t = el('text', { y: 8, 'text-anchor': 'middle', 'font-size': 34, 'font-weight': 800, fill: opt.box === false ? css('--ink') : CARD_INK, 'font-family': css('--f'), direction: NUM_DIR(), 'unicode-bidi': 'bidi-override' }, g); t.textContent = sentenceText(a, op, b, c); return g; }
+  const t = el('text', { y: 8, 'text-anchor': 'middle', 'font-size': 34, 'font-weight': 800, fill: opt.box === false ? css('--ink') : CARD_INK, 'font-family': css('--f'), direction: 'ltr', 'unicode-bidi': 'bidi-override', 'data-sent': 1 }, g); t.textContent = visualLine(sentenceToks(a, op, b, c)); t.setAttribute('aria-label', sentenceText(a, op, b, c)); return g; }
 /* قراءة الجملة بالكلمات: «أَرْبَعَة» «زَائِد» «ثَلَاثَة» «يُسَاوِي» «سَبْعَة» */
 /* والجملة جملٌ قصيرة تُكتب في الفقاعة متتابعة (append)، فتظهر الجملة كلها لا آخر كلمة؛ وsentenceLines تعطيها لـ readChoices وخطّاف «أعد الجملة» */
 function sentenceLines(a, op, b, c) { const L = [[...lineOf(numw(a)), { noGap: true }], [...lineOf(op === '+' ? 'gen.op.plus' : 'gen.op.minus'), { noGap: true, append: true }], [...lineOf(numw2(b)), { noGap: true, append: true }]];

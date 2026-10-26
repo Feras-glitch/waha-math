@@ -22,7 +22,7 @@ async function westIntro() {
     opts.forEach(o => { const b = document.createElement('button'); b.className = 'pick num'; b.innerHTML = `<b>${o}</b>`; b.setAttribute('aria-label', plain(T(numw(o)))); /*T*/if (TESTHOOK) b.dataset.ok = o === d;/*/T*/
       b.onclick = async () => { if (o === d) { b.classList.add('ok'); SFX.good(); logAttempt({ scene: 'digits', tag: 'match' + d, ok: true }); await sleep(400); res(); } else { b.classList.add('no'); SFX.soft(); logAttempt({ scene: 'digits', tag: 'match' + d, ok: false, err: 'digitOther' }); say(...lineOf(numw(d)), { cover: c }); } };
       m.querySelector('.opts').appendChild(b); });
-    say(...lineOf(numw(d)), { cover: c }); await p; }
+    c.dataset.ask = numw(d); say(...lineOf(numw(d)), { cover: c }); await p; }   /* وبعد إطفاء الشاشة يُعاد الرقم المطلوب لا تمهيد اللعبة (الفحص المستقل J2 (7)) */
   m.innerHTML = ''; SET.seen.westIntro = 1; SET.digits = 'west'; saveSet(); renderDigits();
   await coverSay(c, 'gen.digits.done'); $('#dDone').hidden = false; $('#dDone').onclick = () => { hush(); c.hidden = true; showHome(); };
 }

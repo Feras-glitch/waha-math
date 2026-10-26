@@ -1,12 +1,14 @@
 /* =====================================================================
    «مراجعة اليوم» (المبدأ 14، D182، D237، D240، D248): من مخزون المراجعة المحجوز لكل درس حان موعده،
-   مخلوطاً بين الوحدات، ومعه الجداول اليومية: اللمحة السريعة (بعد S1-U1 د4)، والطلاقة وقصص الواحة (بعد S1-U2 د5).
+   مخلوطاً بين الوحدات، ومعه الجداول اليومية: اللمحة السريعة (بعد S1-U1 د4)، والطلاقة وقصص الواحة (بعد S1-U2 د5)، وأصدقاء العشرة (بعد S1-U4 د6).
    أول لقاء بكل جدول يعرضه فرجار نموذجاً. والنجوم للمراجعة والإتقان (D239)
    ===================================================================== */
 const STREAMS = [
   { id: 'glance', after: 'm1.u1.d4', model: 'gen.stream.glance.model', items: () => [{ t: 'glance', n: R(2, 5) }] },
   { id: 'fluency', after: 'm1.u2.d5', model: 'gen.stream.fluency.model', items: () => { const op = rand() < .6 ? '+' : '-'; if (op === '+') { const a = R(1, 4); return [{ t: 'fact', op, a, b: R(1, 5 - a) }]; } const a = R(2, 5); return [{ t: 'fact', op, a, b: R(1, a - 1) }]; } },
   { id: 'story', after: 'm1.u2.d5', model: 'gen.stream.story.model', items: () => [pick(GEN.stories)] },
+  /* طلاقة أصدقاء العشرة بعد درسها (المواصفة في لعبة S1-U4 د6، D212؛ الفحص المستقل A لبوابة S1-U4: لم تكن تدخل «مراجعة اليوم») */
+  { id: 'friends', after: 'm1.u4.d6', model: 'gen.stream.friends.model', items: () => [{ t: 'frameNeed', n: R(1, 9) }] },
 ];
 const streamOpen = s => !!(PROG[s.after] || {}).done || !!PROG.unlockAll;
 function reviewDue() { return UNITS.flatMap(u => u.lessons).map(id => LDATA[id]).filter(L => L.review && L.review.length && srsDue(PROG.srs[L.id])); }
@@ -46,6 +48,7 @@ async function runReview() {
 async function streamModel(s) {
   if (s.id === 'glance') { const svg = newStage(250, { oasis: false, ground: 0 }); const d = diceAt(svg, 180, 118, 3); await S(s.model); await sleep(900); d.remove(); await S('gen.stream.glance.model2'); return; }
   if (s.id === 'fluency') { const svg = newStage(250, { oasis: false, ground: 0 }); handAtN(svg, 250, 110, 2, 1.3); handAtN(svg, 110, 110, 1, 1.3); sentenceAt(svg, 180, 214, 2, '+', 1, 3); await S(s.model); await readSentence(2, '+', 1, 3); return; }
+  if (s.id === 'friends') { const svg = newStage(230, { oasis: false, ground: 0 }); const F = frameAt(svg, 180, 104); F.fill(7, CUBE.lemon); await S(s.model); F.fill(3, COUNTER2, 7); await S('gen.stream.friends.model2'); return; }
   const svg = newStage(260, { oasis: false, ground: 14 }); await S(s.model); const T = towerAt(svg, 180, 240, 3, { size: 24, color: CUBE.lemon }); await sleep(500); towerAt(svg, 180, 240 - 3 * T.step, 2, { size: 24, color: CUBE.white });
   sentenceAt(svg, 180, 40, 3, '+', 2, 5); await readSentence(3, '+', 2, 5); await S('gen.stream.story.model2');
 }
@@ -66,7 +69,7 @@ let gateUntil = 0, gateWait = 0;
 function adultGate(then, onBack) {
   if (Date.now() < gateUntil) return then();
   const a = R(6, 9), b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
-  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="${NUM_DIR()}">${DG(a)} × ${DG(b)} = ؟</bdo></p>
+  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="ltr">${visualLine([DG(a), '×', DG(b), '=', '؟'])}</bdo></p>
     <form id="gateForm"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit" id="gateGo">متابعة</button></form><p id="gateMsg" class="msg" role="status"></p><button class="pick" id="gateBack">رجوع</button></div>`;
   P.hidden = false; setTimeout(() => { try { $('#gateIn').focus(); } catch (e) {} }, 50);
   $('#gateBack').onclick = () => { P.hidden = true; if (onBack) onBack(); };
