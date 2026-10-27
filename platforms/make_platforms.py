@@ -5,6 +5,11 @@
 # الاستعمال من جذر المستودع: python3 platforms/make_platforms.py [مجلد الإخراج=out]
 import hashlib, os, re, shutil, sys
 
+try:
+    sys.stdout.reconfigure(encoding='utf-8')   # ويندوز: الطباعة بالعربية
+except Exception:
+    pass
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 P = os.path.join(ROOT, 'platforms')
 OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'out'))
@@ -32,7 +37,7 @@ def once(s, a, b):
 
 
 html = read(SRC)
-assert '<head>\n' in html and html.count('</head>') == 1
+assert '<head>\n' in html and html.count('</head>') == 1, 'نهايات أسطر غير LF؟ (git autocrlf)'
 assert 'TESTHOOK' not in html, 'نسخة الفحص لا تُوزَّع: المصدر نسخة الأطفال'
 V = version()
 H = hashlib.sha256(html.encode('utf-8')).hexdigest()[:10]

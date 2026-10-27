@@ -23,6 +23,9 @@ concurrency:
   group: build-all-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  PYTHONUTF8: '1'   # ويندوز: الطباعة والملفات بالعربية بـ UTF-8 لا بصفحة رموز النظام
+
 jobs:
   checks:
     runs-on: ubuntu-24.04
@@ -195,6 +198,8 @@ jobs:
       run:
         shell: bash
     steps:
+      # git في ويندوز يحوّل نهايات الأسطر عند السحب (autocrlf)، فلا تبقى الصفحة كما فُحصت بايتاً بايتاً
+      - run: git config --global core.autocrlf false
       - uses: actions/checkout@v5
       - uses: actions/setup-python@v5
         with:
