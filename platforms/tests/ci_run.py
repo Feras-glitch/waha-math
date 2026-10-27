@@ -9,10 +9,14 @@ except Exception:
     pass
 
 title, cmd = sys.argv[1], sys.argv[2:]
-p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=(len(cmd) == 1))
-out = p.stdout.decode('utf-8', 'replace')
+# بلا صدفة: الأمر وحججه قائمة (وفي ويندوز npm.cmd وnpx.cmd باسميهما)
+try:
+    p = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    out, rc = p.stdout.decode('utf-8', 'replace'), p.returncode
+except OSError as e:
+    out, rc = 'لم يبدأ الأمر %r: %s' % (cmd, e), 127
 sys.stdout.write(out); sys.stdout.flush()
-if p.returncode == 0:
+if rc == 0:
     sys.exit(0)
 
 
@@ -33,4 +37,4 @@ for i, l in enumerate(lines):
 for h in hits[:8]:
     print('::error title=%s::%s' % (esc(title), esc(h[:3500])))
 print('::error title=%s (آخر السجل)::%s' % (esc(title), esc('\n'.join(lines[-40:])[-3500:])))
-sys.exit(p.returncode)
+sys.exit(rc)

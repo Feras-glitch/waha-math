@@ -29,9 +29,10 @@ android {
         if (ks) {
             release {
                 storeFile file(ks)
-                storePassword System.getenv("WAHA_KEYSTORE_PASSWORD")
-                keyAlias System.getenv("WAHA_KEY_ALIAS")
-                keyPassword System.getenv("WAHA_KEY_PASSWORD")
+                // تُحذف المسافات والأسطر الزائدة حول القيم (تدخل أحياناً مع النسخ واللصق في صفحة الأسرار)
+                storePassword System.getenv("WAHA_KEYSTORE_PASSWORD")?.trim()
+                keyAlias System.getenv("WAHA_KEY_ALIAS")?.trim()
+                keyPassword System.getenv("WAHA_KEY_PASSWORD")?.trim()
             }
         }
     }
