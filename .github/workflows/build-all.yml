@@ -234,9 +234,11 @@ jobs:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
         run: |
           python ../tests/ci_run.py "Windows playwright" npm.cmd install --no-save --no-audit --no-fund playwright@1.49.1
-          (dist/win-unpacked/WahaMath.exe --remote-debugging-port=9333 > /dev/null 2>&1 &)
-          node ../tests/desktop_smoke.js
-          taskkill //IM WahaMath.exe //F || true
+          EXE="$(ls dist/win-unpacked/*.exe | head -1)"; echo "::notice title=Windows::$(ls dist | tr '\n' ' ') — $EXE"
+          ("$EXE" --remote-debugging-port=9333 > /dev/null 2>&1 &)
+          cp ../tests/desktop_smoke.js ./desktop_smoke.js   # يجد playwright في node_modules هنا
+          python ../tests/ci_run.py "Windows app walk-through" node desktop_smoke.js
+          taskkill //IM "$(basename "$EXE")" //F || true
       - uses: actions/upload-artifact@v4
         with:
           name: windows

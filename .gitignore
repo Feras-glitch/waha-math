@@ -12,3 +12,4 @@ platforms/desktop/dist/
 platforms/desktop/app/
 platforms/desktop/icon.ico
 node_modules/
+platforms/desktop/desktop_smoke.js
