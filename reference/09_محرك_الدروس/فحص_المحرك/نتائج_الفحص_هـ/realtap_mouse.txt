@@ -1,0 +1,2 @@
+Pixel 5 mouse waits tried: {'tap': 84, 'tapAll': 37, 'sort': 66, 'house': 4, 'produce': 4, 'fill': 6, 'splitMake': 2} | incomplete: [] | errors: []
+FAILS: 0

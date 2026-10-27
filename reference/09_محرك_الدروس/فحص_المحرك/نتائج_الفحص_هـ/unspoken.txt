@@ -1,0 +1,358 @@
+runs: 11 · lines: 966 · spoken in some run: 733 · never spoken: 233
+  gen.hunt                                 11
+  gen.solve                                9
+  gen.ws                                   9
+  gen.ws.p                                 6
+  gen.chaos                                4
+  gen.faces                                4
+  gen.digits                               3
+  gen.house.slot                           3
+  gen.obj                                  3
+  gen.prop                                 3
+  gen.splitMake                            3
+  gen.stamp                                3
+  gen.story                                3
+  m1.u1.d6.why                             3
+  gen.err.boxAsCube                        2
+  gen.err.byLook                           2
+  gen.err.byShape                          2
+  gen.err.coneAsCyl                        2
+  gen.err.countedRemoved                   2
+  gen.err.cubeNotRoll                      2
+  gen.err.cubeTurned                       2
+  gen.err.curved                           2
+  gen.err.cylAsCone                        2
+  gen.err.cylOther                         2
+  gen.err.digit23                          2
+  gen.err.digit62                          2
+  gen.err.digit78                          2
+  gen.err.drawnFlat                        2
+  gen.err.equalSides                       2
+  gen.err.flatAsCube                       2
+  gen.err.flatAsSolid                      2
+  gen.err.flatAsSphere                     2
+  gen.err.flipped                          2
+  gen.err.fourCorners                      2
+  gen.err.generic                          2
+  gen.err.glance                           2
+  gen.err.lyingCyl                         2
+  gen.err.missedAdd                        2
+  gen.err.missingSide                      2
+  gen.err.newSolid                         2
+  gen.err.notMore                          2
+  gen.err.notRightQuad                     2
+  gen.err.notVertex                        2
+  gen.err.open                             2
+  gen.err.otherSolid                       2
+  gen.err.rectAsOther                      2
+  gen.err.rectAsSquare                     2
+  gen.err.riddle                           2
+  gen.err.rollMissed                       2
+  gen.err.rotated                          2
+  gen.err.rotatedRect                      2
+  gen.err.rotatedSquare                    2
+  gen.err.solidAsFlat                      2
+  gen.err.sphereNoFace                     2
+  gen.err.stampWrong                       2
+  gen.err.standingRect                     2
+  gen.err.taller                           2
+  gen.err.thin                             2
+  gen.err.tooFew                           2
+  gen.err.triRejected                      2
+  gen.err.unknownStart                     2
+  gen.err.zeroNotNumber                    2
+  gen.gallery                              2
+  gen.match                                2
+  gen.opt.paint                            2
+  gen.same                                 2
+  m1.u1.d2.why                             2
+  m1.u1.d3.c                               2
+  m1.u2.d1.why                             2
+  m1.u2.d4.tb                              2
+  m1.u2.d6.why                             2
+  gen                                      1
+  gen.arch                                 1
+  gen.connect                              1
+  gen.correct                              1
+  gen.count                                1
+  gen.demo                                 1
+  gen.eq                                   1
+  gen.err.compare                          1
+  gen.err.coneTurned                       1
+  gen.err.eqMeaning                        1
+  gen.err.factWrong                        1
+  gen.err.joinCount                        1
+  gen.err.lastNumber                       1
+  gen.err.miscount                         1
+  gen.err.opConfuse                        1
+  gen.err.ovalAsCircle                     1
+  gen.exit                                 1
+  gen.fact                                 1
+  gen.feel                                 1
+  gen.fill                                 1
+  gen.first                                1
+  gen.glance                               1
+  gen.hint                                 1
+  gen.hint2                                1
+  gen.hintOffer                            1
+  gen.house                                1
+  gen.join                                 1
+  gen.kids                                 1
+  gen.ms                                   1
+  gen.opt                                  1
+  gen.paint                                1
+  gen.practice                             1
+  gen.resume                               1
+  gen.sentence                             1
+  gen.session                              1
+  gen.test                                 1
+  gen.trace                                1
+  gen.unknown                              1
+  gen.vertices                             1
+  m1.u1.d1.hook                            1
+  m1.u1.d1.why                             1
+  m1.u1.d2.hook                            1
+  m1.u1.d2.n                               1
+  m1.u1.d2.rv                              1
+  m1.u1.d3.acc                             1
+  m1.u1.d3.hook                            1
+  m1.u1.d4.acc                             1
+  m1.u1.d6.acc                             1
+  m1.u1.d6.rb                              1
+  m1.u2.d1.game                            1
+  m1.u2.d5.un                              1
+  m1.u2.d6.rh                              1
+--- القائمة
+  gen.arch.no
+  gen.chaos.countFirst
+  gen.chaos.listenAgain
+  gen.chaos.no
+  gen.chaos.together
+  gen.connect.reveal
+  gen.correct.02
+  gen.count.again
+  gen.crash
+  gen.demo.01
+  gen.digits.done
+  gen.digits.intro
+  gen.digits.match
+  gen.eq.no
+  gen.err.boxAsCube.01
+  gen.err.boxAsCube.02
+  gen.err.byLook.01
+  gen.err.byLook.02
+  gen.err.byShape.01
+  gen.err.byShape.02
+  gen.err.compare.02
+  gen.err.coneAsCyl.01
+  gen.err.coneAsCyl.02
+  gen.err.coneTurned.02
+  gen.err.countedRemoved.01
+  gen.err.countedRemoved.02
+  gen.err.cubeNotRoll.01
+  gen.err.cubeNotRoll.02
+  gen.err.cubeTurned.01
+  gen.err.cubeTurned.02
+  gen.err.curved.01
+  gen.err.curved.02
+  gen.err.cylAsCone.01
+  gen.err.cylAsCone.02
+  gen.err.cylOther.01
+  gen.err.cylOther.02
+  gen.err.digit23.01
+  gen.err.digit23.02
+  gen.err.digit62.01
+  gen.err.digit62.02
+  gen.err.digit78.01
+  gen.err.digit78.02
+  gen.err.drawnFlat.01
+  gen.err.drawnFlat.02
+  gen.err.eqMeaning.01
+  gen.err.equalSides.01
+  gen.err.equalSides.02
+  gen.err.factWrong.01
+  gen.err.flatAsCube.01
+  gen.err.flatAsCube.02
+  gen.err.flatAsSolid.01
+  gen.err.flatAsSolid.02
+  gen.err.flatAsSphere.01
+  gen.err.flatAsSphere.02
+  gen.err.flipped.01
+  gen.err.flipped.02
+  gen.err.fourCorners.01
+  gen.err.fourCorners.02
+  gen.err.generic.01
+  gen.err.generic.02
+  gen.err.glance.01
+  gen.err.glance.02
+  gen.err.joinCount.02
+  gen.err.lastNumber.01
+  gen.err.lyingCyl.01
+  gen.err.lyingCyl.02
+  gen.err.miscount.02
+  gen.err.missedAdd.01
+  gen.err.missedAdd.02
+  gen.err.missingSide.01
+  gen.err.missingSide.02
+  gen.err.newSolid.01
+  gen.err.newSolid.02
+  gen.err.notMore.01
+  gen.err.notMore.02
+  gen.err.notRightQuad.01
+  gen.err.notRightQuad.02
+  gen.err.notVertex.01
+  gen.err.notVertex.02
+  gen.err.opConfuse.01
+  gen.err.open.01
+  gen.err.open.02
+  gen.err.otherSolid.01
+  gen.err.otherSolid.02
+  gen.err.ovalAsCircle.02
+  gen.err.rectAsOther.01
+  gen.err.rectAsOther.02
+  gen.err.rectAsSquare.01
+  gen.err.rectAsSquare.02
+  gen.err.riddle.01
+  gen.err.riddle.02
+  gen.err.rollMissed.01
+  gen.err.rollMissed.02
+  gen.err.rotated.01
+  gen.err.rotated.02
+  gen.err.rotatedRect.01
+  gen.err.rotatedRect.02
+  gen.err.rotatedSquare.01
+  gen.err.rotatedSquare.02
+  gen.err.solidAsFlat.01
+  gen.err.solidAsFlat.02
+  gen.err.sphereNoFace.01
+  gen.err.sphereNoFace.02
+  gen.err.stampWrong.01
+  gen.err.stampWrong.02
+  gen.err.standingRect.01
+  gen.err.standingRect.02
+  gen.err.taller.01
+  gen.err.taller.02
+  gen.err.thin.01
+  gen.err.thin.02
+  gen.err.tooFew.01
+  gen.err.tooFew.02
+  gen.err.triRejected.01
+  gen.err.triRejected.02
+  gen.err.unknownStart.01
+  gen.err.unknownStart.02
+  gen.err.zeroNotNumber.01
+  gen.err.zeroNotNumber.02
+  gen.exit.ask
+  gen.faces.already
+  gen.faces.hard
+  gen.faces.ok
+  gen.faces.turn
+  gen.fact.fingers
+  gen.feel.again
+  gen.fill.zero
+  gen.first.edit
+  gen.gallery.empty
+  gen.gallery.intro
+  gen.glance.together
+  gen.hint.look
+  gen.hint2.01
+  gen.hintOffer.01
+  gen.house.pick
+  gen.house.slot.circle
+  gen.house.slot.square
+  gen.house.slot.triangle
+  gen.hunt.circle
+  gen.hunt.cone
+  gen.hunt.cube
+  gen.hunt.cylinder
+  gen.hunt.look
+  gen.hunt.rect
+  gen.hunt.rotated
+  gen.hunt.saved
+  gen.hunt.sphere
+  gen.hunt.square
+  gen.hunt.triangle
+  gen.join.together
+  gen.kids.who
+  gen.match.empty
+  gen.match.emptyHint
+  gen.ms.ok
+  gen.obj.napkin
+  gen.obj.sign
+  gen.obj.wheel
+  gen.opt.paint.circle
+  gen.opt.paint.square
+  gen.opt.printRect
+  gen.paint.pot
+  gen.practice.intro
+  gen.prop.rolls
+  gen.prop.stays
+  gen.prop.together
+  gen.resume.ask
+  gen.same.changed
+  gen.same.same
+  gen.sentence.removed
+  gen.session.break
+  gen.solve.circle
+  gen.solve.cone
+  gen.solve.cube
+  gen.solve.cylinder
+  gen.solve.flat
+  gen.solve.rect
+  gen.solve.solid
+  gen.solve.sphere
+  gen.solve.triangle
+  gen.splitMake.reveal
+  gen.splitMake.seen
+  gen.splitMake.together
+  gen.stamp.ask
+  gen.stamp.reveal
+  gen.stamp.together
+  gen.story.hintAdd
+  gen.story.hintRemove
+  gen.story.s02
+  gen.test.remedial
+  gen.trace.more
+  gen.unknown.return
+  gen.vertices.together
+  gen.ws.again
+  gen.ws.free
+  gen.ws.freeOasis
+  gen.ws.hint
+  gen.ws.intro
+  gen.ws.more
+  gen.ws.p.castle
+  gen.ws.p.fish
+  gen.ws.p.rocket
+  gen.ws.p.snow
+  gen.ws.p.train
+  gen.ws.p.tree
+  gen.ws.pickFirst
+  gen.ws.saved
+  gen.ws.turn
+  m1.u1.d1.hook.03b
+  m1.u1.d1.why.other
+  m1.u1.d2.hook.02
+  m1.u1.d2.n.05
+  m1.u1.d2.rv.howS
+  m1.u1.d2.why.other
+  m1.u1.d2.why.sq
+  m1.u1.d3.acc.sq
+  m1.u1.d3.c.02
+  m1.u1.d3.c.04
+  m1.u1.d3.hook.03
+  m1.u1.d4.acc.sq
+  m1.u1.d6.acc.sq
+  m1.u1.d6.rb.02
+  m1.u1.d6.why.c
+  m1.u1.d6.why.sq
+  m1.u1.d6.why.t
+  m1.u2.d1.game.01
+  m1.u2.d1.why.box
+  m1.u2.d1.why.other
+  m1.u2.d4.tb.cone
+  m1.u2.d4.tb.sphere
+  m1.u2.d5.un.1
+  m1.u2.d6.rh.intro
+  m1.u2.d6.why.flat
+  m1.u2.d6.why.solid

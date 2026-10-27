@@ -1,0 +1,62 @@
+.. m1.u1.d1 done 9.7 acts=33 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u1.d2 done 16.0 acts=63 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u1.d3 done 10.1 acts=36 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u1.d4 done 11.1 acts=36 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. review done 1.8 acts=4 null
+.. m1.u1.d5 done 12.5 acts=42 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u1 done 0.7 acts=2 null
+.. m1.u1.d6 done 7.5 acts=32 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 11, "of": 11}
+.. m1.u2.d1 done 10.0 acts=40 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u2.d2 done 12.9 acts=52 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u2.d3 done 9.1 acts=32 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u2.d4 done 14.9 acts=56 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u2.d5 done 12.1 acts=44 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. review done 2.1 acts=7 null
+.. m1.u2 done 0.6 acts=2 null
+.. m1.u2.d6 done 8.9 acts=34 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 12, "of": 12}
+.. m1.u3.d1 done 8.2 acts=38 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d2 done 11.7 acts=56 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d3 done 9.3 acts=37 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d4 done 7.6 acts=31 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d5 done 10.7 acts=33 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d6 done 9.8 acts=31 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3 done 0.7 acts=2 null
+.. m1.u3.d7 done 6.4 acts=26 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 11, "of": 11}
+unnamed targets: 0
+tap conflicts: 0
+chaos leaks: 0
+font fallbacks: 0
+assessment misses: 0
+twins: 0 twin items in 0 lessons; items revealed: 0
+twins missing: 0
+clips spoken: 882 unique, 882 of 2166 recording ids; NOT in script: 0
+m1.u1.d1 done 9.7 acts=33 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u1.d2 done 16.0 acts=63 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u1.d3 done 10.1 acts=36 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u1.d4 done 11.1 acts=36 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+review done 1.8 acts=4 null
+m1.u1.d5 done 12.5 acts=42 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u1 done 0.7 acts=2 null
+m1.u1.d6 done 7.5 acts=32 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 11, "of": 11}
+m1.u2.d1 done 10.0 acts=40 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u2.d2 done 12.9 acts=52 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u2.d3 done 9.1 acts=32 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u2.d4 done 14.9 acts=56 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u2.d5 done 12.1 acts=44 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+review done 2.1 acts=7 null
+m1.u2 done 0.6 acts=2 null
+m1.u2.d6 done 8.9 acts=34 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 12, "of": 12}
+m1.u3.d1 done 8.2 acts=38 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d2 done 11.7 acts=56 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d3 done 9.3 acts=37 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d4 done 7.6 acts=31 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d5 done 10.7 acts=33 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d6 done 9.8 acts=31 {"done": true, "mastered": true, "deferred": false, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3 done 0.7 acts=2 null
+m1.u3.d7 done 6.4 acts=26 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 11, "of": 11}
+errors: 0
+LOG.errors: 0
+small targets: 0
+empty drags: 0
+blocked lessons: 0
+lessons not done: 0 []

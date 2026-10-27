@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <!-- واحة الرياضيات: نخلة على كثيب، وتحتها بركة ماء، وثمارها الأشكال الثلاثة بألوان هويتها (الدائرة والمربع والمثلث) -->
+  <rect width="108" height="108" fill="#F6D58E"/>
+  <circle cx="80" cy="24" r="8" fill="#FBEBC2"/>
+  <path d="M0,80 Q30,66 58,72 Q84,78 108,70 L108,108 L0,108 Z" fill="#D9BB8C"/>
+  <ellipse cx="62" cy="84" rx="20" ry="5.5" fill="#3F9FD0"/>
+  <ellipse cx="57" cy="83" rx="8" ry="1.6" fill="#A6E0F4"/>
+  <path d="M41,77 Q42,58 49,40 L53.5,41 Q47,58 46.5,77 Z" fill="#8A6235"/>
+  <g fill="none" stroke="#4F9A4A" stroke-width="5" stroke-linecap="round">
+    <path d="M51,40 Q39,31 27,38"/>
+    <path d="M51,40 Q63,30 76,37"/>
+    <path d="M51,40 Q44,26 34,26"/>
+    <path d="M51,40 Q59,25 69,25"/>
+    <path d="M51,40 Q51,29 48,21"/>
+  </g>
+  <circle cx="37.5" cy="49.5" r="5.6" fill="#EE7A5F"/>
+  <rect x="55.5" y="44.5" width="9.6" height="9.6" rx="1" fill="#2A9D8F"/>
+  <path d="M68,52 L74.5,63 L61.5,63 Z" fill="#8E6BBF"/>
+</svg>

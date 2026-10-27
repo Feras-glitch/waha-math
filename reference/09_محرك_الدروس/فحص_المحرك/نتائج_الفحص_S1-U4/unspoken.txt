@@ -1,0 +1,405 @@
+runs: 15 · lines: 2194 · spoken in some run: 1941 · never spoken: 253
+  gen.hunt                                 11
+  gen.ws                                   10
+  gen.ws.p                                 9
+  gen.chaos                                5
+  gen.ord.m                                5
+  gen.faces                                4
+  gen.rb                                   4
+  gen.solve.pos                            4
+  gen.digits                               3
+  gen.house.slot                           3
+  gen.obj                                  3
+  gen.praiseNewWay                         3
+  gen.stamp                                3
+  m1.u1.d6.why                             3
+  m1.u3.d1.hook                            3
+  m1.u4.d1.al                              3
+  gen.err.boxAsCube                        2
+  gen.err.byLook                           2
+  gen.err.countedRemoved                   2
+  gen.err.cubeTurned                       2
+  gen.err.curved                           2
+  gen.err.digit23                          2
+  gen.err.digit62                          2
+  gen.err.flatAsSphere                     2
+  gen.err.generic                          2
+  gen.err.glance                           2
+  gen.err.layShort                         2
+  gen.err.moreWrong                        2
+  gen.err.noRod                            2
+  gen.err.notMore                          2
+  gen.err.notVertex                        2
+  gen.err.orderSkip                        2
+  gen.err.posBetween                       2
+  gen.err.rbOrder                          2
+  gen.err.rbSteps                          2
+  gen.err.rectAsOther                      2
+  gen.err.rotatedRect                      2
+  gen.err.ssortWrong                       2
+  gen.err.stampWrong                       2
+  gen.err.standingRect                     2
+  gen.err.tenJoinBus                       2
+  gen.err.tensMeaning                      2
+  gen.err.triRejected                      2
+  gen.err.twoParts                         2
+  gen.err.wavyShort                        2
+  gen.err.zeroNotNumber                    2
+  gen.gallery                              2
+  gen.match                                2
+  gen.opt.paint                            2
+  gen.ord                                  2
+  gen.praiseCheckStart                     2
+  gen.praiseRoute                          2
+  gen.reveal.pos                           2
+  gen.ssort.reveal                         2
+  gen.story                                2
+  m1.u1.d2.why                             2
+  m1.u1.d3.c                               2
+  m1.u2.d1.why                             2
+  m1.u2.d4.tb                              2
+  m1.u2.d6.why                             2
+  gen                                      1
+  gen.arch                                 1
+  gen.backTen                              1
+  gen.bar.reveal                           1
+  gen.bar.together                         1
+  gen.connect                              1
+  gen.correct                              1
+  gen.count                                1
+  gen.demo                                 1
+  gen.err.barCount                         1
+  gen.err.bigHeavy                         1
+  gen.err.coneTurned                       1
+  gen.err.cylOther                         1
+  gen.err.digit78                          1
+  gen.err.flipped                          1
+  gen.err.friendFingers                    1
+  gen.err.gapOk                            1
+  gen.err.lyingCyl                         1
+  gen.err.mapMirror                        1
+  gen.err.mapPiece                         1
+  gen.err.mapSide                          1
+  gen.err.missedAdd                        1
+  gen.err.moreDiff                         1
+  gen.err.movedAll                         1
+  gen.err.movedWrong                       1
+  gen.err.newSolid                         1
+  gen.err.ordFirstLast                     1
+  gen.err.ordFromBack                      1
+  gen.err.ordKamAyn                        1
+  gen.err.ordKamCount                      1
+  gen.err.otherSolid                       1
+  gen.err.panDown                          1
+  gen.err.rbTurnMove                       1
+  gen.err.rbWrong                          1
+  gen.err.roadDir                          1
+  gen.err.roadHops                         1
+  gen.err.roadRestart                      1
+  gen.err.rodAsOne                         1
+  gen.err.spanWrong                        1
+  gen.err.startOk                          1
+  gen.err.teenCount                        1
+  gen.err.totalPart                        1
+  gen.err.unknownStart                     1
+  gen.exit                                 1
+  gen.feel                                 1
+  gen.first                                1
+  gen.glance                               1
+  gen.hint                                 1
+  gen.hint2                                1
+  gen.hintOffer                            1
+  gen.house                                1
+  gen.kids                                 1
+  gen.lay.together.cube                    1
+  gen.ms                                   1
+  gen.opt                                  1
+  gen.order.reveal.len                     1
+  gen.paint                                1
+  gen.pos                                  1
+  gen.practice                             1
+  gen.praiseCheckGap                       1
+  gen.resume                               1
+  gen.session                              1
+  gen.size.together.big                    1
+  gen.ssort.reveal.long                    1
+  gen.strip                                1
+  gen.test                                 1
+  gen.trace                                1
+  gen.vertices                             1
+  gen.weigh.ask                            1
+  gen.weigh.reveal                         1
+  m1.u1.d1.hook                            1
+  m1.u1.d1.why                             1
+  m1.u1.d2.hook                            1
+  m1.u1.d2.n                               1
+  m1.u1.d2.rv                              1
+  m1.u1.d3.acc                             1
+  m1.u1.d3.hook                            1
+  m1.u1.d4.acc                             1
+  m1.u1.d6.acc                             1
+  m1.u1.d6.rb                              1
+  m1.u2.d1.game                            1
+  m1.u2.d2.pr                              1
+  m1.u2.d6.rh                              1
+  m1.u3.d2.hook                            1
+  m1.u3.d3.hook                            1
+  m1.u3.d4.hook                            1
+  m1.u4.d2.rv                              1
+  m1.u4.d3.sp                              1
+  m1.u4.d5.rd                              1
+twin lines never spoken: 0
+--- القائمة
+  gen.arch.no
+  gen.backTen.takeOne
+  gen.bar.reveal.least
+  gen.bar.together.least
+  gen.chaos.countFirst
+  gen.chaos.listenAgain
+  gen.chaos.no
+  gen.chaos.notThis
+  gen.chaos.together
+  gen.connect.reveal
+  gen.correct.02
+  gen.count.again
+  gen.crash
+  gen.demo.01
+  gen.digits.done
+  gen.digits.intro
+  gen.digits.match
+  gen.err.barCount.02
+  gen.err.bigHeavy.01
+  gen.err.boxAsCube.01
+  gen.err.boxAsCube.02
+  gen.err.byLook.01
+  gen.err.byLook.02
+  gen.err.coneTurned.01
+  gen.err.countedRemoved.01
+  gen.err.countedRemoved.02
+  gen.err.cubeTurned.01
+  gen.err.cubeTurned.02
+  gen.err.curved.01
+  gen.err.curved.02
+  gen.err.cylOther.01
+  gen.err.digit23.01
+  gen.err.digit23.02
+  gen.err.digit62.01
+  gen.err.digit62.02
+  gen.err.digit78.02
+  gen.err.flatAsSphere.01
+  gen.err.flatAsSphere.02
+  gen.err.flipped.02
+  gen.err.friendFingers.01
+  gen.err.gapOk.02
+  gen.err.generic.01
+  gen.err.generic.02
+  gen.err.glance.01
+  gen.err.glance.02
+  gen.err.layShort.01
+  gen.err.layShort.02
+  gen.err.lyingCyl.02
+  gen.err.mapMirror.02
+  gen.err.mapPiece.01
+  gen.err.mapSide.01
+  gen.err.missedAdd.02
+  gen.err.moreDiff.02
+  gen.err.moreWrong.01
+  gen.err.moreWrong.02
+  gen.err.movedAll.02
+  gen.err.movedWrong.02
+  gen.err.newSolid.02
+  gen.err.noRod.01
+  gen.err.noRod.02
+  gen.err.notMore.01
+  gen.err.notMore.02
+  gen.err.notVertex.01
+  gen.err.notVertex.02
+  gen.err.ordFirstLast.01
+  gen.err.ordFromBack.01
+  gen.err.ordKamAyn.01
+  gen.err.ordKamCount.02
+  gen.err.orderSkip.01
+  gen.err.orderSkip.02
+  gen.err.otherSolid.01
+  gen.err.panDown.01
+  gen.err.posBetween.01
+  gen.err.posBetween.02
+  gen.err.rbOrder.01
+  gen.err.rbOrder.02
+  gen.err.rbSteps.01
+  gen.err.rbSteps.02
+  gen.err.rbTurnMove.01
+  gen.err.rbWrong.01
+  gen.err.rectAsOther.01
+  gen.err.rectAsOther.02
+  gen.err.roadDir.01
+  gen.err.roadHops.01
+  gen.err.roadRestart.01
+  gen.err.rodAsOne.02
+  gen.err.rotatedRect.01
+  gen.err.rotatedRect.02
+  gen.err.spanWrong.02
+  gen.err.ssortWrong.01
+  gen.err.ssortWrong.02
+  gen.err.stampWrong.01
+  gen.err.stampWrong.02
+  gen.err.standingRect.01
+  gen.err.standingRect.02
+  gen.err.startOk.02
+  gen.err.teenCount.02
+  gen.err.tenJoinBus.01
+  gen.err.tenJoinBus.02
+  gen.err.tensMeaning.01
+  gen.err.tensMeaning.02
+  gen.err.totalPart.01
+  gen.err.triRejected.01
+  gen.err.triRejected.02
+  gen.err.twoParts.01
+  gen.err.twoParts.02
+  gen.err.unknownStart.02
+  gen.err.wavyShort.01
+  gen.err.wavyShort.02
+  gen.err.zeroNotNumber.01
+  gen.err.zeroNotNumber.02
+  gen.exit.ask
+  gen.faces.already
+  gen.faces.hard
+  gen.faces.ok
+  gen.faces.turn
+  gen.feel.again
+  gen.first.edit
+  gen.gallery.empty
+  gen.gallery.intro
+  gen.glance.together
+  gen.hint.look
+  gen.hint2.01
+  gen.hintOffer.01
+  gen.house.pick
+  gen.house.slot.circle
+  gen.house.slot.square
+  gen.house.slot.triangle
+  gen.hunt.circle
+  gen.hunt.cone
+  gen.hunt.cube
+  gen.hunt.cylinder
+  gen.hunt.look
+  gen.hunt.rect
+  gen.hunt.rotated
+  gen.hunt.saved
+  gen.hunt.sphere
+  gen.hunt.square
+  gen.hunt.triangle
+  gen.kids.who
+  gen.lay.together.cube.f
+  gen.match.empty
+  gen.match.emptyHint
+  gen.ms.ok
+  gen.obj.napkin
+  gen.obj.sign
+  gen.obj.wheel
+  gen.opt.paint.circle
+  gen.opt.paint.square
+  gen.opt.printRect
+  gen.ord.fromFront
+  gen.ord.fromShop
+  gen.ord.m.06
+  gen.ord.m.07
+  gen.ord.m.08
+  gen.ord.m.09
+  gen.ord.m.10
+  gen.order.reveal.len.down
+  gen.paint.pot
+  gen.pos.behind
+  gen.practice.intro
+  gen.praiseCheckGap.02
+  gen.praiseCheckStart.01
+  gen.praiseCheckStart.03
+  gen.praiseNewWay.01
+  gen.praiseNewWay.02
+  gen.praiseNewWay.03
+  gen.praiseRoute.01
+  gen.praiseRoute.02
+  gen.rb.F
+  gen.rb.L
+  gen.rb.R
+  gen.rb.which
+  gen.resume.ask
+  gen.reveal.pos.behind
+  gen.reveal.pos.inS
+  gen.session.break
+  gen.size.together.big.m
+  gen.solve.pos.behind
+  gen.solve.pos.front
+  gen.solve.pos.inS
+  gen.solve.pos.out
+  gen.ssort.reveal.long
+  gen.ssort.reveal.long.f
+  gen.ssort.reveal.short
+  gen.stamp.ask
+  gen.stamp.reveal
+  gen.stamp.together
+  gen.story.hintAdd
+  gen.story.hintRemove
+  gen.strip.more
+  gen.test.remedial
+  gen.trace.more
+  gen.vertices.together
+  gen.weigh.ask.light
+  gen.weigh.reveal.light
+  gen.ws.again
+  gen.ws.againPlank
+  gen.ws.againRoom
+  gen.ws.free
+  gen.ws.freeOasis
+  gen.ws.hint
+  gen.ws.intro
+  gen.ws.introPlank
+  gen.ws.p.bridge
+  gen.ws.p.castle
+  gen.ws.p.fence
+  gen.ws.p.fish
+  gen.ws.p.raft
+  gen.ws.p.rocket
+  gen.ws.p.snow
+  gen.ws.p.train
+  gen.ws.p.tree
+  gen.ws.pickFirst
+  gen.ws.saved
+  m1.u1.d1.hook.03b
+  m1.u1.d1.why.other
+  m1.u1.d2.hook.02
+  m1.u1.d2.n.05
+  m1.u1.d2.rv.howS
+  m1.u1.d2.why.other
+  m1.u1.d2.why.sq
+  m1.u1.d3.acc.sq
+  m1.u1.d3.c.02
+  m1.u1.d3.c.04
+  m1.u1.d3.hook.03
+  m1.u1.d4.acc.sq
+  m1.u1.d6.acc.sq
+  m1.u1.d6.rb.02
+  m1.u1.d6.why.c
+  m1.u1.d6.why.sq
+  m1.u1.d6.why.t
+  m1.u2.d1.game.01
+  m1.u2.d1.why.box
+  m1.u2.d1.why.other
+  m1.u2.d2.pr.cylSolve
+  m1.u2.d4.tb.cone
+  m1.u2.d4.tb.sphere
+  m1.u2.d6.rh.intro
+  m1.u2.d6.why.flat
+  m1.u2.d6.why.solid
+  m1.u3.d1.hook.moved
+  m1.u3.d1.hook.stayed
+  m1.u3.d1.hook.wrong
+  m1.u3.d2.hook.02
+  m1.u3.d3.hook.02
+  m1.u3.d4.hook.02
+  m1.u4.d1.al.02
+  m1.u4.d1.al.04
+  m1.u4.d1.al.08
+  m1.u4.d2.rv.6
+  m1.u4.d3.sp.04
+  m1.u4.d5.rd.09

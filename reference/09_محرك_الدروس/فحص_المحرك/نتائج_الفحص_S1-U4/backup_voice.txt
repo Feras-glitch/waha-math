@@ -1,0 +1,25 @@
+ok   voice: status before import says device voice
+ok   voice: four recordings imported (zip deflate + stored + loose file)  (4, 'استُورد ٤ تسجيلات، فصارت الحزمة ٤ من ٣١٦٢. وأُهمل ملفان لا تطابق أسماؤها جملاً في الدروس، أوّلها m1.u9.d9.nothing.01.mp3. وما لم يُسجَّل بعد يقرؤه صوت الجهاز.')
+ok   voice: two unmatched names reported, none stored  استُورد ٤ تسجيلات، فصارت الحزمة ٤ من ٣١٦٢. وأُهمل ملفان لا تطابق أسماؤها جملاً في الدروس، أوّلها m1.u9.d9.nothing.01.mp3. وما لم يُسجَّل بعد يقرؤه صوت الجهاز.
+ok   voice: pack survives reopening
+ok   voice: recorded lines play from the pack, others from the device  [['gen.numw.00', 'human'], ['m1.u1.d1.hook.01', 'human'], ['gen.numw.01', 'device']]
+ok   voice: pack deleted
+ok   voice: deleted pack stays deleted
+ok   voice: broken zip reported  هذا ليس ملف zip.
+ok   backup: file downloaded with a dated name  واحة_الرياضيات_نسخة_2026-10-26.json
+ok   backup: file holds the children and their progress  ['hp_prog:kmvoy2yal', 'hp_kid', 'hp_kids', 'hp_settings:kmvoy2yal']
+ok   backup: no lock, corrupt copies or gallery in the file
+ok   backup: rejected notjson.json  هذا ليس ملف نسخة من واحة الرياضيات.
+ok   backup: rejected other.json  هذا ليس ملف نسخة من واحة الرياضيات.
+ok   backup: rejected evilkey.json  في الملف بيانات لا يعرفها التطبيق، فلم يُستعمل.
+ok   backup: rejected badval.json  ملف النسخة تالف، فلم يُستعمل.
+ok   backup: rejected files changed nothing
+ok   backup: a name with markup is shown as text  <p>في النسخة: &lt;img src=x onerror="wind (أنجز ٣ دروس).</p>
+      <p class="muted">الاستعادة تضع ما في النسخة مكان أطفا
+ok   backup: summary names the child and the lessons done  <p>في النسخة: سلمى (أنجز ٣ دروس).</p>
+      <p class="muted">الاستعادة تضع ما في النسخة مكان أطفال هذا الجهاز وتقدّمهم، وتُحفظ قبلها نسخة مما على الجهاز الآن. ا
+ok   backup: first press only asks to confirm
+ok   backup: progress restored after reopening  3
+ok   backup: a copy of what was on the device was kept
+ok   no page errors
+FAILS: 0

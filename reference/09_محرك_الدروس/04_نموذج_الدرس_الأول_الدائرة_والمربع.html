@@ -1,0 +1,789 @@
+<title>درس الدائرة والمربع</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&display=swap">
+<style>
+/* التخطيط: شاشة واحدة بلا تمرير — شريط مشاهد ← شخصية وفقاعة ← مسرح الأداة ← زر واحد كبير */
+:root {
+  --sky: #e9f3f2;        /* سماء المدينة */
+  --paper: #ffffff;      /* سطح المسرح */
+  --ink: #1d3640;        /* حبر داكن مائل للأزرق المخضر */
+  --muted: #5d7880;
+  --line: #c9dcdc;
+  --compass: #1e5a8c;    /* فرجار */
+  --chaos: #c8402f;      /* فوضى */
+  --circle: #e8735a;     /* الدائرة مرجانية (هوية م1) */
+  --square: #2f9a8e;     /* المربع أخضر مزرق (هوية م1) */
+  --good: #2e8a4e;
+  --think: #b7791f;
+  --btn: #1e5a8c;
+  --btn-ink: #ffffff;
+  --bubble: #ffffff;
+  --shadow: 0 6px 18px rgba(29, 54, 64, .12);
+  --f-display: "Baloo Bhaijaan 2", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif;
+  --f-body: "Baloo Bhaijaan 2", "Noto Naskh Arabic", "Segoe UI", Tahoma, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --sky: #13232b; --paper: #1b2f38; --ink: #e6f1f0; --muted: #9db6bb; --line: #2c4651;
+  --compass: #6aa9e0; --chaos: #f07a66; --circle: #f08a72; --square: #4fc0b2;
+  --good: #5cc283; --think: #e3b25a; --btn: #3f86c6; --btn-ink: #0d1b22; --bubble: #223a45;
+  --shadow: 0 6px 18px rgba(0, 0, 0, .35); color-scheme: dark } }
+:root[data-theme="dark"] {
+  --sky: #13232b; --paper: #1b2f38; --ink: #e6f1f0; --muted: #9db6bb; --line: #2c4651;
+  --compass: #6aa9e0; --chaos: #f07a66; --circle: #f08a72; --square: #4fc0b2;
+  --good: #5cc283; --think: #e3b25a; --btn: #3f86c6; --btn-ink: #0d1b22; --bubble: #223a45;
+  --shadow: 0 6px 18px rgba(0, 0, 0, .35); color-scheme: dark }
+
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body { margin: 0; background: var(--sky); color: var(--ink); font-family: var(--f-body); font-size: 20px; line-height: 1.6;
+  -webkit-tap-highlight-color: transparent; overflow: hidden; }
+.app { height: 100%; display: grid; grid-template-rows: auto auto auto auto; align-content: center; gap: 12px; max-width: 560px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 10px; box-sizing: border-box; }
+button { font-family: inherit; color: inherit; }
+button:focus-visible, .bin:focus-visible, .pick:focus-visible { outline: 4px solid var(--compass); outline-offset: 3px; }
+
+/* شريط المشاهد */
+.top { display: flex; align-items: center; gap: 10px; }
+.steps { flex: 1; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.steps i { height: 9px; border-radius: 9px; background: var(--line); transition: background .4s; }
+.steps i.done { background: var(--square); }
+.steps i.now { background: var(--compass); }
+.icon-btn { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--line); background: var(--paper); display: grid; place-items: center; cursor: pointer; padding: 0; }
+.icon-btn svg { width: 22px; height: 22px; }
+
+/* الشخصية والفقاعة */
+.talk { display: grid; grid-template-columns: 76px 1fr; gap: 10px; align-items: center; min-height: 92px; }
+.who { width: 76px; height: 86px; }
+.who svg { width: 100%; height: 100%; overflow: visible; }
+.speaking .who svg { animation: bob .5s ease-in-out infinite alternate; }
+@keyframes bob { to { transform: translateY(-4px) rotate(-2deg); } }
+.bubble { position: relative; background: var(--bubble); border-radius: 22px; padding: 10px 16px 10px 48px; box-shadow: var(--shadow);
+  font-size: 21px; font-weight: 700; line-height: 1.75; min-height: 54px; display: flex; align-items: center; text-wrap: balance; }
+.bubble::before { content: ""; position: absolute; right: -9px; top: 32px; border: 10px solid transparent; border-left-color: var(--bubble); border-right: 0; }
+.bubble.chaos { color: var(--chaos); }
+.replay { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 38px; height: 38px; border-radius: 50%; border: 0; background: var(--sky); cursor: pointer; display: grid; place-items: center; }
+.replay svg { width: 20px; height: 20px; }
+
+/* المسرح */
+.stage { position: relative; background: var(--paper); border-radius: 28px; box-shadow: var(--shadow); min-height: 0; overflow: hidden; display: grid; }
+.stage > svg { width: 100%; height: auto; max-height: 62vh; display: block; touch-action: none; user-select: none; }
+.bins { position: absolute; inset: auto 10px 10px 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.bin { border: 3px dashed var(--line); border-radius: 20px; background: var(--sky); min-height: 96px; display: grid; place-items: center; gap: 2px; padding: 6px 4px; cursor: pointer; font-size: 18px; font-weight: 800; }
+.bin svg { width: 44px; height: 44px; }
+.bin.hot { border-color: var(--compass); border-style: solid; }
+.bin.ok { border-color: var(--good); border-style: solid; }
+.bin.no { border-color: var(--think); border-style: solid; animation: shake .35s; }
+@keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+.choices { position: relative; display: grid; gap: 8px; padding: 0 10px 10px; }
+.pick { border: 3px solid var(--line); background: var(--sky); border-radius: 18px; padding: 10px 14px; font-size: 19px; font-weight: 700; text-align: right; cursor: pointer; min-height: 60px; }
+.pick.ok { border-color: var(--good); } .pick.no { border-color: var(--think); }
+
+/* الزر الكبير */
+.bar { display: flex; gap: 10px; }
+.go { flex: 1; min-height: 64px; border: 0; border-radius: 22px; background: var(--btn); color: var(--btn-ink); font-size: 24px; font-weight: 800; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 10px; transition: opacity .2s, transform .1s; }
+.go:active { transform: scale(.98); }
+.go[disabled] { opacity: .35; cursor: default; }
+.go svg { width: 26px; height: 26px; }
+.help { min-width: 64px; border: 3px solid var(--line); border-radius: 22px; background: var(--paper); cursor: pointer; display: grid; place-items: center; }
+.help svg { width: 46px; height: 52px; }
+
+/* الشاشة الأولى ولوحة الكبار */
+.cover { position: fixed; inset: 0; background: var(--sky); display: grid; place-items: center; z-index: 20; text-align: center;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 24px; }
+.cover h1 { font-family: var(--f-display); font-size: 40px; margin: 6px 0 0; line-height: 1.3; text-wrap: balance; }
+.cover p { color: var(--muted); margin: 4px 0 18px; font-size: 18px; }
+.cover .go { width: min(320px, 100%); margin: 0 auto; }
+.cover .chars { display: flex; gap: 18px; justify-content: center; }
+.cover .chars svg { width: 96px; height: 110px; }
+.me { width: 44px; height: 44px; border-radius: 50%; border: 2px solid var(--line); background: var(--paper); padding: 0; overflow: hidden; cursor: pointer; flex: none; }
+.me img, .me svg { width: 100%; height: 100%; object-fit: cover; display: block; }
+.profile { display: grid; gap: 14px; width: min(420px, 100%); text-align: center; }
+.profile h1 { font-size: 30px; }
+.profile input[type=text] { font: inherit; font-size: 24px; font-weight: 700; text-align: center; padding: 10px 14px; border-radius: 18px; border: 3px solid var(--line); background: var(--paper); color: var(--ink); width: 100%; box-sizing: border-box; }
+.profile input[type=text]:focus { outline: none; border-color: var(--compass); }
+.gender { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.gender button { border: 3px solid var(--line); border-radius: 22px; background: var(--paper); padding: 10px 6px 6px; cursor: pointer; font-size: 22px; font-weight: 800; display: grid; justify-items: center; gap: 2px; min-height: 120px; }
+.gender button svg { width: 72px; height: 72px; }
+.gender button[aria-pressed="true"] { border-color: var(--compass); background: var(--sky); box-shadow: 0 0 0 3px var(--compass) inset; }
+.photo-row { display: flex; align-items: center; justify-content: center; gap: 12px; }
+.photo-row .me { width: 64px; height: 64px; }
+.photo-btn { border: 2px dashed var(--line); border-radius: 16px; padding: 10px 14px; cursor: pointer; font-size: 18px; font-weight: 700; background: var(--paper); }
+.adult-link { position: fixed; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(8px + env(safe-area-inset-bottom, 0px)); font-size: 13px; color: var(--muted); background: none; border: 0; cursor: pointer; text-decoration: underline; z-index: 30; }
+.panel { position: fixed; inset: 0; z-index: 40; background: var(--sky); overflow: auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px; font-size: 16px; line-height: 1.6; }
+.panel h2 { margin: 0 0 6px; font-size: 24px; }
+.panel table { border-collapse: collapse; width: 100%; font-size: 14px; }
+.panel td, .panel th { border-bottom: 1px solid var(--line); padding: 6px 4px; text-align: right; vertical-align: top; }
+.panel .wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 14px; }
+.panel .card { background: var(--paper); border-radius: 16px; padding: 12px 14px; box-shadow: var(--shadow); min-width: 0; overflow-x: auto; }
+.pill { display: inline-block; padding: 1px 10px; border-radius: 99px; font-size: 13px; font-weight: 700; background: var(--sky); }
+.pill.good { color: var(--good); } .pill.think { color: var(--think); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+@media (max-height: 640px) { .bubble { font-size: 18px; } .talk { min-height: 76px; } .who { height: 72px; } .bin { min-height: 80px; } .go { min-height: 56px; } }
+</style>
+
+<div class="app" id="app">
+  <div class="top">
+    <button class="me" id="meBtn" aria-label="ملفّي"></button>
+    <div class="steps" id="steps" aria-label="مراحل الدرس"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <button class="icon-btn" id="muteBtn" aria-label="كتم الصوت أو تشغيله"></button>
+  </div>
+  <div class="talk" id="talk">
+    <div class="who" id="who"></div>
+    <div class="bubble" id="bubble"><span id="say" aria-live="polite"></span><button class="replay" id="replay" aria-label="أعد الجملة"></button></div>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="bar">
+    <button class="help" id="helpBtn" aria-label="هل نفكّر معاً؟" hidden></button>
+    <button class="go" id="go" disabled></button>
+  </div>
+</div>
+
+<div class="cover" id="profileCover" hidden>
+  <form class="profile" id="profileForm" autocomplete="off">
+    <h1>أَهْلًا وَسَهْلًا فِي هَنْدَسُوبُولِيس!</h1>
+    <label for="pName" style="font-size:20px;font-weight:700">الاسْمُ</label>
+    <input type="text" id="pName" maxlength="24" placeholder="الاسم">
+    <div class="gender" role="group" aria-label="ولد أو بنت">
+      <button type="button" id="gM" aria-pressed="false"></button>
+      <button type="button" id="gF" aria-pressed="false"></button>
+    </div>
+    <div class="photo-row"><span class="me" id="photoPrev"></span>
+      <label class="photo-btn" for="pPhoto">صُورَتِي (اختياري)</label>
+      <input type="file" id="pPhoto" accept="image/*" hidden></div>
+    <p id="pMsg" style="color:var(--think);min-height:1.6em;margin:0"></p>
+    <button class="go" type="submit" id="pSave">تَمَّ</button>
+  </form>
+</div>
+<div class="cover" id="cover">
+  <div>
+    <div class="chars" id="coverChars"></div>
+    <h1>الدَّائِرَةُ وَالمُرَبَّعُ</h1>
+    <p>واحة الرياضيات · المرحلة 1 · الوحدة 1 · الدرس 1</p>
+    <button class="go" id="startBtn"><span>اِبْدَأْ</span></button>
+  </div>
+</div>
+<button class="adult-link" id="adultBtn">للكبار</button>
+<div class="panel" id="panel" hidden></div>
+
+<script>
+'use strict';
+/* ===================== المحرّك: نموذج أولي لدرس واحد (D179) ===================== */
+const NS = 'http://www.w3.org/2000/svg';
+const $ = s => document.querySelector(s);
+const FAST = location.hash === '#fast';   // وضع الفحص الآلي: يقصّر الانتظار فقط
+const sleep = ms => new Promise(r => setTimeout(r, FAST ? ms * 0.05 : ms));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const LESSON_ID = 'm1.u1.d1';
+/* ---------- الطالب: الاسم والجنس والصورة ---------- */
+let PROFILE = store.get('hp_proto_profile', null);   // {name, gender: 'm'|'f', photo}
+/* صياغة المخاطَب: كل جملة تحمل صيغتيها صراحةً {مذكر|مؤنث}، ولا تحويل آلياً للكلمات */
+const GEN_RX = /\{([^|{}]*)\|([^|{}]*)\}/g;
+function G(t) { return String(t).replace(/\{name\}/g, PROFILE ? PROFILE.name : '').replace(GEN_RX, (m, a, b) => (PROFILE && PROFILE.gender === 'f') ? b : a); }
+function gSuffix(t) { GEN_RX.lastIndex = 0; return GEN_RX.test(t) ? (PROFILE && PROFILE.gender === 'f' ? '_f' : '_m') : ''; }
+const LOG = store.get('hp_proto_log', { attempts: [], scenes: {}, mastery: null });
+function logAttempt(a) { LOG.attempts.push({ t: Date.now(), ...a }); store.set('hp_proto_log', LOG); }
+
+/* ---------- أيقونات ---------- */
+const ICON = {
+  play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>',
+  back: '<svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  sound: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8a5 5 0 010 8M18.5 5.5a8.5 8.5 0 010 13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  mute: '<svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+};
+/* ---------- الشخصيات ---------- */
+function compassSVG() {
+  return `<svg viewBox="0 0 80 92" aria-hidden="true"><line x1="34" y1="38" x2="20" y2="88" stroke="#b9c3c7" stroke-width="6" stroke-linecap="round"/>
+  <line x1="46" y1="38" x2="60" y2="86" stroke="#b9c3c7" stroke-width="6" stroke-linecap="round"/><circle cx="20" cy="88" r="4" fill="#b9c3c7"/>
+  <circle cx="40" cy="26" r="24" fill="#1e5a8c"/><circle cx="31" cy="22" r="3.5" fill="#fff"/><circle cx="49" cy="22" r="3.5" fill="#fff"/>
+  <path d="M30 32 q10 9 20 0" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/></svg>`;
+}
+function chaosSVG() {
+  return `<svg viewBox="0 0 80 92" aria-hidden="true"><path d="M40 6 L50 30 L76 30 L56 47 L64 76 L40 60 L16 76 L24 47 L4 30 L30 30 Z" fill="#c8402f" stroke="#a5301f" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="32" cy="38" r="3.5" fill="#fff"/><circle cx="48" cy="38" r="3.5" fill="#fff"/><circle cx="33" cy="38.5" r="1.6" fill="#3b1410"/><circle cx="49" cy="38.5" r="1.6" fill="#3b1410"/>
+  <path d="M30 47 q10 10 20 -1" fill="#fff" stroke="#fff" stroke-width="2" stroke-linecap="round"/><path d="M26 31 l9 3 M54 31 l-9 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></svg>`;
+}
+const WHO = { compass: compassSVG, chaos: chaosSVG };
+
+/* ---------- الصوت: تسجيل بشري إن وُجد، ثم صوت الجهاز، ثم مهلة قراءة ---------- */
+let MUTED = store.get('hp_proto_muted', false);
+const CLIPS = {};          // معرّف الجملة ← رابط ملف صوتي مستورد (لوحة الكبار)
+let currentAudio = null, lastLine = null;
+function voiceAr() { try { const v = speechSynthesis.getVoices(); return v.find(x => /^ar[-_](EG|SA)/i.test(x.lang)) || v.find(x => /^ar/i.test(x.lang)) || null; } catch (e) { return null; } }
+function plain(t) { return t.replace(/[ً-ْ]/g, ''); }
+function readTime(t) { return FAST ? 40 : Math.max(1400, plain(t).length * 75); }
+function stopVoice() { try { speechSynthesis.cancel(); } catch (e) {} if (currentAudio) { currentAudio.pause(); currentAudio = null; } }
+function say(who, id, text) {
+  lastLine = { who, id, text };
+  const talk = $('#talk'), b = $('#bubble');
+  $('#who').innerHTML = WHO[who]();
+  const raw = text; text = G(text);
+  $('#say').textContent = text;
+  b.classList.toggle('chaos', who === 'chaos');
+  talk.classList.add('speaking');
+  stopVoice();
+  const full = LESSON_ID + '.' + id + gSuffix(raw);   // تسجيل خاص لكل صيغة (دليل الإنتاج الصوتي، القسم 3)
+  return new Promise(resolve => {
+    let done = false;
+    const finish = () => { if (done) return; done = true; talk.classList.remove('speaking'); resolve(); };
+    const fallback = setTimeout(finish, readTime(text) + 600);
+    if (MUTED) { clearTimeout(fallback); setTimeout(finish, readTime(text)); return; }
+    if (CLIPS[full]) {
+      currentAudio = new Audio(CLIPS[full]);
+      currentAudio.onended = () => { clearTimeout(fallback); finish(); };
+      currentAudio.onerror = () => {};
+      currentAudio.play().catch(() => {});
+      return;
+    }
+    try {
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ar-SA'; u.rate = 0.85; u.pitch = who === 'chaos' ? 1.35 : 1;
+      const v = voiceAr(); if (v) { u.voice = v; u.lang = v.lang; }
+      u.onend = () => { clearTimeout(fallback); finish(); };
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  });
+}
+async function lines(arr) { for (const [who, id, text] of arr) await say(who, id, text); }
+
+/* ---------- أصوات قصيرة مولَّدة (لا ملفات) ---------- */
+let AC = null;
+function tone(seq) {
+  if (MUTED) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    let t = AC.currentTime;
+    for (const [f, d] of seq) { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'sine'; o.frequency.value = f;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.18, t + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+      o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + 0.02); t += d * 0.8; }
+  } catch (e) {}
+}
+const SFX = { tick: () => tone([[880, .12]]), good: () => tone([[660, .14], [990, .22]]), soft: () => tone([[330, .25]]), win: () => tone([[523, .14], [659, .14], [784, .14], [1046, .3]]) };
+function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }
+
+/* ---------- أدوات الرسم ---------- */
+function el(tag, attrs, parent) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+function newStage(viewH = 300) {
+  const st = $('#stage'); st.innerHTML = '';
+  const svg = el('svg', { viewBox: `0 0 360 ${viewH}`, preserveAspectRatio: 'xMidYMid meet', role: 'img' });
+  st.appendChild(svg); return svg;
+}
+function svgPoint(svg, ev) { const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+/* أشكال المسائل بألوان محايدة، حتى لا يُصنَّف الشكل بلونه (قاعدة التصميم في مواصفة المحرّك) */
+const NEUTRAL = ['#5b6c8f', '#8a6d4e', '#6f8a4c', '#a0526b', '#4f7f9a'];
+function drawShape(g, s) {
+  const c = s.color, cx = 0, cy = 0;
+  if (s.type === 'square') { const h = s.size / 2;
+    const r = el('rect', { x: cx - h, y: cy - h, width: s.size, height: s.size, rx: 3, fill: c }, g);
+    if (s.pattern) for (let i = 1; i < 3; i++) { el('line', { x1: -h + i * s.size / 3, y1: -h, x2: -h + i * s.size / 3, y2: h, stroke: '#ffffff', 'stroke-opacity': .45, 'stroke-width': 2 }, g); el('line', { x1: -h, y1: -h + i * s.size / 3, x2: h, y2: -h + i * s.size / 3, stroke: '#ffffff', 'stroke-opacity': .45, 'stroke-width': 2 }, g); }
+    return r; }
+  if (s.type === 'circle') { const r = el('circle', { cx, cy, r: s.size / 2, fill: c }, g);
+    if (s.object === 'plate') el('circle', { cx, cy, r: s.size / 2 - 12, fill: 'none', stroke: '#ffffff', 'stroke-opacity': .55, 'stroke-width': 3, 'stroke-dasharray': '6 4' }, g);
+    if (s.object === 'clock') { el('circle', { cx, cy, r: s.size / 2 - 8, fill: '#ffffff', 'fill-opacity': .85 }, g); el('line', { x1: 0, y1: 0, x2: 0, y2: -s.size / 2 + 22, stroke: '#24343a', 'stroke-width': 4, 'stroke-linecap': 'round' }, g); el('line', { x1: 0, y1: 0, x2: s.size / 4, y2: 6, stroke: '#24343a', 'stroke-width': 3, 'stroke-linecap': 'round' }, g); }
+    return r; }
+  if (s.type === 'oval') return el('ellipse', { cx, cy, rx: s.size / 2, ry: s.size / 3.2, fill: c }, g);
+  if (s.type === 'triangle') { const h = s.size / 2; return el('polygon', { points: `0,${-h} ${h},${h * .8} ${-h},${h * .8}`, fill: c, 'stroke-linejoin': 'round' }, g); }
+}
+function shapeGroup(svg, s, x, y) {
+  const g = el('g', { transform: `translate(${x} ${y}) rotate(${s.rot || 0})` }, svg);
+  drawShape(g, s); return g;
+}
+
+/* ---------- واجهة ---------- */
+const go = $('#go'), help = $('#helpBtn');
+function setGo(label, onClick, enabled = true) { go.innerHTML = `<span>${G(label)}</span>${ICON.play}`; go.onclick = onClick; go.disabled = !enabled; }
+function lockGo() { go.disabled = true; }
+function setStep(i) { [...$('#steps').children].forEach((d, k) => { d.className = k < i ? 'done' : (k === i ? 'now' : ''); }); }
+function renderMute() { $('#muteBtn').innerHTML = MUTED ? ICON.mute : ICON.sound; }
+$('#muteBtn').onclick = () => { MUTED = !MUTED; store.set('hp_proto_muted', MUTED); if (MUTED) stopVoice(); renderMute(); };
+$('#replay').innerHTML = ICON.sound;
+$('#replay').onclick = () => { if (lastLine) say(lastLine.who, lastLine.id, lastLine.text); };
+help.innerHTML = compassSVG();
+renderMute();
+
+/* مبادرة المرشد: 20 ثانية بلا تفاعل في مهمة ← فرجار يعرض المساعدة */
+let idleTimer = null, idleHandler = null;
+function armIdle(handler) { idleHandler = handler; resetIdle(); }
+function resetIdle() { clearTimeout(idleTimer); help.hidden = true; if (!idleHandler) return;
+  idleTimer = setTimeout(async () => { help.hidden = false; help.onclick = () => { help.hidden = true; idleHandler(); };
+    await say('compass', 'gen.hintOffer.01', 'هَلْ نُفَكِّرُ مَعًا؟ {اِلْمَسْ|اِلْمَسِي} فِرْجَار.'); }, 20000); }
+function disarmIdle() { idleHandler = null; clearTimeout(idleTimer); help.hidden = true; }
+document.addEventListener('pointerdown', () => { if (idleHandler) resetIdle(); }, true);
+
+/* ===================== المشهد ① الإشعال: عربتان ===================== */
+async function sceneHook() {
+  setStep(0); lockGo();
+  const svg = newStage(300);
+  el('line', { x1: 0, y1: 248, x2: 360, y2: 248, stroke: css('--line'), 'stroke-width': 4 }, svg);
+  function cart(y, wheelType, label) {
+    const g = el('g', { transform: `translate(250 ${y})`, tabindex: 0, role: 'button', 'aria-label': label, style: 'cursor:pointer' }, svg);
+    el('rect', { x: -52, y: -46, width: 104, height: 40, rx: 10, fill: '#f2c14e' }, g);
+    el('rect', { x: -40, y: -64, width: 30, height: 20, rx: 4, fill: '#ffffff', stroke: '#d9a441', 'stroke-width': 2 }, g);
+    const wheels = [];
+    for (const wx of [-30, 30]) {
+      const w = el('g', { transform: `translate(${wx} 0)` }, g); w.dataset.wx = wx;
+      if (wheelType === 'circle') el('circle', { cx: 0, cy: 0, r: 16, fill: css('--circle') }, w);
+      else el('rect', { x: -15, y: -15, width: 30, height: 30, fill: css('--square') }, w);
+      el('circle', { cx: 0, cy: 0, r: 3, fill: '#24343a' }, w);
+      wheels.push(w);
+    }
+    return { g, wheels };
+  }
+  el('line', { x1: 0, y1: 138, x2: 360, y2: 138, stroke: css('--line'), 'stroke-width': 4 }, svg);
+  const top = cart(122, 'circle', 'العربة ذات العجلات الدائرية');
+  const bot = cart(232, 'square', 'العربة ذات العجلات المربعة');
+  // اللمس مقبول من لحظة ظهور العربتين، حتى قبل انتهاء السؤال
+  const choiceP = new Promise(res => {
+    top.g.onclick = () => res('circle'); bot.g.onclick = () => res('square');
+    top.g.onkeydown = e => { if (e.key === 'Enter') res('circle'); }; bot.g.onkeydown = e => { if (e.key === 'Enter') res('square'); };
+  });
+  let early = false; choiceP.then(() => { early = true; });
+  await say('chaos', 'hook.01', 'هِيهِي! صَنَعْتُ عَرَبَتَيْنِ: عَجَلَاتُ الأُولَى دَوَائِرُ، وَعَجَلَاتُ الثَّانِيَةِ مُرَبَّعَاتٌ!');
+  if (!early) await say('compass', 'hook.02', 'هَيَّا نَتَوَقَّعْ: أَيُّ عَرَبَةٍ سَتَسِيرُ بِسُهُولَةٍ؟ {اِلْمَسْهَا|اِلْمَسِيهَا}.');
+  const choice = await choiceP;
+  top.g.onclick = bot.g.onclick = null;
+  LOG.scenes.hookPrediction = choice; store.set('hp_proto_log', LOG);
+  SFX.tick();
+  await say('compass', choice === 'circle' ? 'hook.03a' : 'hook.03b', choice === 'circle' ? 'تَوَقُّعٌ جَمِيلٌ! هَيَّا نُشَاهِدْ.' : 'هَيَّا نُشَاهِدْ مَا يَحْدُثُ.');
+  // العربتان تسيران: الدائرية بسلاسة، والمربعة تقفز عند كل ركن
+  const dur = 3200;
+  top.g.animate([{ transform: 'translate(250px,122px)' }, { transform: 'translate(70px,122px)' }], { duration: dur, fill: 'forwards', easing: 'linear' });
+  top.wheels.forEach(w => w.animate([{ transform: `translate(${w.dataset.wx}px,0px) rotate(0deg)` }, { transform: `translate(${w.dataset.wx}px,0px) rotate(-720deg)` }], { duration: dur, fill: 'forwards' }));
+  const hops = []; for (let k = 0; k <= 8; k++) hops.push({ transform: `translate(${250 - k * 10}px, ${232 - (k % 2 ? 10 : 0)}px)` });
+  bot.g.animate(hops, { duration: dur, fill: 'forwards', easing: 'steps(8, end)' });
+  bot.wheels.forEach(w => w.animate([{ transform: `translate(${w.dataset.wx}px,0px) rotate(0deg)` }, { transform: `translate(${w.dataset.wx}px,0px) rotate(-180deg)` }], { duration: dur, fill: 'forwards', easing: 'steps(4, end)' }));
+  setTimeout(() => SFX.soft(), 900);
+  await sleep(dur + 200);
+  await lines([
+    ['compass', 'hook.04', 'العَرَبَةُ ذَاتُ العَجَلَاتِ الدَّائِرِيَّةِ سَارَتْ بِسُهُولَةٍ، وَالأُخْرَى تَعَثَّرَتْ.'],
+    ['chaos', 'hook.05', 'أُوه! لِمَاذَا تَتَعَثَّرُ عَرَبَتِي؟'],
+    ['compass', 'hook.06', 'هَذَا مَا سَنَكْتَشِفُهُ الآنَ بِأَصَابِعِنَا.'],
+  ]);
+  setGo('هَيَّا', sceneExplore);
+}
+
+/* ===================== المشهد ② الاكتشاف: تتبّع الحافة ===================== */
+async function sceneExplore() {
+  setStep(1); lockGo();
+  const svg = newStage(300);
+  const C = { x: 92, y: 150, r: 62 }, S = { x: 268, y: 150, h: 62 };
+  el('circle', { cx: C.x, cy: C.y, r: C.r, fill: css('--circle') }, svg);
+  el('rect', { x: S.x - S.h, y: S.y - S.h, width: S.h * 2, height: S.h * 2, fill: css('--square') }, svg);
+  const corners = [[S.x - S.h, S.y - S.h], [S.x + S.h, S.y - S.h], [S.x + S.h, S.y + S.h], [S.x - S.h, S.y + S.h]];
+  const trail = el('g', {}, svg), marks = el('g', {}, svg);
+  const cLabel = el('text', { x: C.x, y: 262, 'text-anchor': 'middle', 'font-size': 20, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f-body') }, svg);
+  const sLabel = el('text', { x: S.x, y: 262, 'text-anchor': 'middle', 'font-size': 20, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f-body') }, svg);
+  const buckets = new Set(), found = new Set();
+  const NUM = ['وَاحِد', 'اثْنَان', 'ثَلَاثَة', 'أَرْبَعَة'];
+  let circleDone = false, squareDone = false, finished = false;
+  function distRect(px, py) { const dx = Math.max(Math.abs(px - S.x) - S.h, 0), dy = Math.max(Math.abs(py - S.y) - S.h, 0);
+    const inside = Math.abs(px - S.x) <= S.h && Math.abs(py - S.y) <= S.h; return inside ? Math.min(S.h - Math.abs(px - S.x), S.h - Math.abs(py - S.y)) : Math.hypot(dx, dy); }
+  function touch(p) {
+    const dc = Math.abs(Math.hypot(p.x - C.x, p.y - C.y) - C.r);
+    if (dc < 20) { el('circle', { cx: p.x, cy: p.y, r: 4, fill: '#ffffff', 'fill-opacity': .9 }, trail);
+      const a = Math.floor(((Math.atan2(p.y - C.y, p.x - C.x) * 180 / Math.PI) + 360) % 360 / 10); buckets.add(a);
+      cLabel.textContent = 'لَا أَرْكَان'; if (!circleDone && buckets.size >= 27) { circleDone = true; SFX.good(); check(); } }
+    if (distRect(p.x, p.y) < 18) { el('circle', { cx: p.x, cy: p.y, r: 4, fill: '#ffffff', 'fill-opacity': .9 }, trail);
+      corners.forEach((c, k) => { if (!found.has(k) && Math.hypot(p.x - c[0], p.y - c[1]) < 18) { found.add(k); SFX.tick(); buzz(30);
+        const m = el('g', { transform: `translate(${c[0]} ${c[1]})` }, marks);
+        el('circle', { r: 15, fill: css('--compass') }, m); const t = el('text', { y: 7, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: '#ffffff', 'font-family': css('--f-body') }, m); t.textContent = '١٢٣٤'[found.size - 1];
+        m.animate([{ transform: `translate(${c[0]}px,${c[1]}px) scale(.2)` }, { transform: `translate(${c[0]}px,${c[1]}px) scale(1)` }], { duration: 250, easing: 'ease-out' });
+        sLabel.textContent = 'أَرْكَان: ' + '١٢٣٤'[found.size - 1];
+        if (!MUTED) say('compass', 'num.0' + found.size, NUM[found.size - 1]);
+        if (found.size === 4 && !squareDone) { squareDone = true; check(); } } }); }
+  }
+  let down = false;
+  svg.addEventListener('pointerdown', e => { down = true; svg.setPointerCapture(e.pointerId); touch(svgPoint(svg, e)); });
+  svg.addEventListener('pointermove', e => { if (down) touch(svgPoint(svg, e)); });
+  svg.addEventListener('pointerup', () => { down = false; });
+  async function check() {
+    if (!(circleDone && squareDone) || finished) return; finished = true; disarmIdle();
+    await lines([
+      ['compass', 'exp.03', 'عَلَى الدَّائِرَةِ مَرَّ الإِصْبَعُ بِسُهُولَةٍ: حَافَّتُهَا مُنْحَنِيَةٌ، وَلَا أَرْكَانَ لَهَا.'],
+      ['compass', 'exp.04', 'وَعَلَى المُرَبَّعِ تَوَقَّفَ أَرْبَعَ مَرَّاتٍ: حَوَافُّهُ مُسْتَقِيمَةٌ، وَلَهُ أَرْبَعَةُ أَرْكَانٍ.'],
+      ['chaos', 'exp.05', 'آه! لِذَلِكَ تَعَثَّرَتْ عَرَبَتِي عِنْدَ الأَرْكَانِ!'],
+    ]);
+    setGo('التَّالِي', sceneWorked);
+  }
+  // «أرني»: عرض توضيحي يتتبّع الحافتين إن احتاج الطفل
+  async function demo() {
+    for (let a = 0; a <= 360; a += 8) { const r = a * Math.PI / 180; touch({ x: C.x + C.r * Math.cos(r), y: C.y + C.r * Math.sin(r) }); await sleep(20); }
+    const path = [...corners, corners[0]];
+    for (let k = 0; k < 4; k++) for (let t = 0; t <= 1; t += .1) { touch({ x: path[k][0] + (path[k + 1][0] - path[k][0]) * t, y: path[k][1] + (path[k + 1][1] - path[k][1]) * t }); await sleep(30); }
+  }
+  await say('compass', 'exp.01', '{مَرِّرْ إِصْبَعَكَ|مَرِّرِي إِصْبَعَكِ} عَلَى حَافَّةِ كُلِّ شَكْلٍ، دَوْرَةً كَامِلَةً.');
+  say('compass', 'exp.02', 'أَيْنَ يَتَوَقَّفُ الإِصْبَعُ؟');
+  armIdle(async () => { await say('compass', 'exp.demo', '{شَاهِدْ|شَاهِدِي} إِصْبَعِي أَوَّلًا.'); demo(); });
+}
+
+/* ===================== المشهد ③ المثال المحلول ===================== */
+async function sceneWorked() {
+  setStep(2); lockGo();
+  const svg = newStage(300);
+  const sq = el('g', { transform: 'translate(180 140)' }, svg);
+  const body = el('rect', { x: -60, y: -60, width: 120, height: 120, fill: css('--square') }, sq);
+  const marks = el('g', {}, sq);
+  async function countCorners() {
+    marks.innerHTML = '';
+    const pts = [[-60, -60], [60, -60], [60, 60], [-60, 60]];
+    for (let k = 0; k < 4; k++) { const m = el('g', { transform: `translate(${pts[k][0]} ${pts[k][1]})` }, marks);
+      el('circle', { r: 15, fill: css('--compass') }, m); const t = el('text', { y: 7, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: '#ffffff', 'font-family': css('--f-body') }, m); t.textContent = '١٢٣٤'[k];
+      SFX.tick(); await sleep(550); }
+  }
+  const steps = [
+    async () => { await say('compass', 'wk.01', 'هَذَا مُرَبَّعٌ. نَعُدُّ أَرْكَانَهُ مَعًا…'); await countCorners(); await say('compass', 'wk.02', 'أَرْبَعَةُ أَرْكَانٍ، وَحَوَافُّهُ مُسْتَقِيمَةٌ.'); },
+    async () => { marks.innerHTML = ''; await say('chaos', 'wk.03', 'سَأُدَوِّرُهُ… هَا! صَارَ شَكْلًا آخَرَ!');
+      sq.animate([{ transform: 'translate(180px,140px) rotate(0deg)' }, { transform: 'translate(180px,140px) rotate(45deg)' }], { duration: 1200, fill: 'forwards', easing: 'ease-in-out' }); await sleep(1300); },
+    async () => { await say('compass', 'wk.04', 'هَيَّا نَعُدُّ مِنْ جَدِيدٍ.'); await countCorners();
+      await say('compass', 'wk.05', 'مَا زَالَتْ أَرْبَعَةَ أَرْكَانٍ، وَالحَوَافُّ مُسْتَقِيمَةٌ. فَهُوَ مَا زَالَ مُرَبَّعًا!'); },
+    async () => { marks.innerHTML = '';
+      sq.animate([{ transform: 'translate(180px,140px) rotate(45deg)' }, { transform: 'translate(70px,140px) rotate(45deg) scale(.55)' }], { duration: 700, fill: 'forwards' });
+      const g2 = el('g', { transform: 'translate(185 140) rotate(15)' }, svg); el('rect', { x: -30, y: -30, width: 60, height: 60, fill: NEUTRAL[0] }, g2);
+      const g3 = el('g', { transform: 'translate(285 140)' }, svg); el('rect', { x: -45, y: -45, width: 90, height: 90, fill: NEUTRAL[1] }, g3);
+      [g2, g3].forEach(g => g.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 600 }));
+      await say('compass', 'wk.06', 'وَالمُرَبَّعُ يَكُونُ صَغِيرًا أَوْ كَبِيرًا، مُدَوَّرًا أَوْ مُسْتَقِيمًا، وَبِأَيِّ لَوْنٍ.'); },
+    async () => { svg.innerHTML = '';
+      el('circle', { cx: 180, cy: 140, r: 70, fill: css('--circle') }, svg);
+      const dot = el('circle', { cx: 250, cy: 140, r: 9, fill: css('--compass') }, svg);
+      say('compass', 'wk.07', 'وَالدَّائِرَةُ؟ حَافَّتُهَا مُنْحَنِيَةٌ كُلُّهَا، وَلَا أَرْكَانَ لَهَا، مَهْمَا دَوَّرْنَاهَا.');
+      for (let a = 0; a <= 360; a += 4) { const r = a * Math.PI / 180; dot.setAttribute('cx', 180 + 70 * Math.cos(r)); dot.setAttribute('cy', 140 + 70 * Math.sin(r)); await sleep(18); }
+      await sleep(1500); },
+  ];
+  let k = 0;
+  async function next() { lockGo(); await steps[k](); k++; if (k < steps.length) setGo('التَّالِي', next); else setGo('{حَاوِلْ أَنْتَ|حَاوِلِي أَنْتِ}', scenePractice); }
+  next();
+}
+
+/* ===================== المولّد والسلال (للتمارين والإتقان) ===================== */
+let colorIx = 0;
+function nextColor() { return NEUTRAL[(colorIx++) % NEUTRAL.length]; }
+const GEN = {
+  squareUp: () => ({ type: 'square', kind: 'square', size: 120, rot: 0, color: nextColor(), tag: 'squareUp' }),
+  squareRot: (rot) => ({ type: 'square', kind: 'square', size: 100 + Math.round(Math.random() * 30), rot: rot ?? (30 + Math.round(Math.random() * 30)), color: nextColor(), tag: 'squareRot' }),
+  tile: () => ({ type: 'square', kind: 'square', size: 96, rot: 45, color: nextColor(), pattern: true, label: 'بَلَاطَة', tag: 'squareRot' }),
+  circle: () => ({ type: 'circle', kind: 'circle', size: 110 + Math.round(Math.random() * 30), color: nextColor(), tag: 'circle' }),
+  plate: () => ({ type: 'circle', kind: 'circle', size: 130, color: nextColor(), object: 'plate', label: 'طَبَق', tag: 'circle' }),
+  clock: () => ({ type: 'circle', kind: 'circle', size: 120, color: nextColor(), object: 'clock', label: 'سَاعَة', tag: 'circle' }),
+  oval: () => ({ type: 'oval', kind: 'other', size: 150, rot: Math.random() < .5 ? 0 : 90, color: nextColor(), tag: 'oval' }),
+  triangle: () => ({ type: 'triangle', kind: 'other', size: 120, rot: Math.random() < .5 ? 0 : 180, color: nextColor(), tag: 'triangle' }),
+};
+/* كل خطأ موسوم بالخطأ الشائع الذي يمثّله، فالتغذية الراجعة تفسيرٌ لا «خطأ» */
+function errorOf(item, bin) {
+  if (item.kind === bin) return null;
+  if (item.tag === 'squareRot') return 'rotatedSquare';
+  if (item.tag === 'oval' && bin === 'circle') return 'ovalAsCircle';
+  if (item.tag === 'triangle' && bin === 'square') return 'triangleAsSquare';
+  if (item.kind === 'circle') return 'curvedEdge';
+  if (item.kind === 'square') return 'countCorners';
+  return 'notThisShape';
+}
+const ERR = {
+  rotatedSquare: ['err.rotatedSquare.01', 'لِنُفَكِّرْ مَعًا: هَيَّا نَعُدُّ أَرْكَانَهُ… أَرْبَعَةٌ، وَحَوَافُّهُ مُسْتَقِيمَةٌ. لَقَدْ دَوَّرْنَاهُ فَقَطْ!'],
+  ovalAsCircle: ['err.ovalAsCircle.01', 'لِنُفَكِّرْ مَعًا: هَذَا الشَّكْلُ مَمْطُوطٌ، طَوِيلٌ مِنْ جِهَةٍ وَقَصِيرٌ مِنْ جِهَةٍ. الدَّائِرَةُ مُتَسَاوِيَةٌ مِنْ كُلِّ الجِهَاتِ.'],
+  triangleAsSquare: ['err.triangleAsSquare.01', 'لِنُفَكِّرْ مَعًا: كَمْ رُكْنًا لَهُ؟ ثَلَاثَةٌ فَقَطْ. المُرَبَّعُ لَهُ أَرْبَعَةُ أَرْكَانٍ.'],
+  curvedEdge: ['err.curvedEdge.01', 'لِنُفَكِّرْ مَعًا: هَلْ لِهَذَا الشَّكْلِ أَرْكَانٌ؟ حَافَّتُهُ مُنْحَنِيَةٌ كُلُّهَا.'],
+  countCorners: ['err.countCorners.01', 'لِنُفَكِّرْ مَعًا: هَيَّا نَعُدُّ أَرْكَانَهُ وَنَنْظُرُ إِلَى حَوَافِّهِ.'],
+  notThisShape: ['err.notThisShape.01', 'لِنُفَكِّرْ مَعًا: هَلْ هُوَ دَائِرَةٌ؟ هَلْ هُوَ مُرَبَّعٌ؟'],
+};
+const PRAISE = [
+  ['gen.correct.01', '{أَحْسَنْتَ|أَحْسَنْتِ}! {عَدَدْتَ|عَدَدْتِ} الأَرْكَانَ {كَمُهَنْدِسٍ حَقِيقِيٍّ|كَمُهَنْدِسَةٍ حَقِيقِيَّةٍ}.'],
+  ['gen.correct.02', 'تَمَامًا!'],
+  ['gen.correct.03', 'رَائِعٌ! {نَظَرْتَ|نَظَرْتِ} إِلَى الحَافَّةِ جَيِّدًا.'],
+  ['gen.correct.04', 'صَحِيحٌ!'],
+  ['gen.correct.05', 'بِالضَّبْطِ!'],
+];
+let praiseIx = 0;
+function reason(item) {
+  if (item.kind === 'square') return item.rot ? ['why.sqRot', 'أَرْبَعَةُ أَرْكَانٍ وَحَوَافُّ مُسْتَقِيمَةٌ، حَتَّى وَهُوَ مُدَوَّرٌ.'] : ['why.sq', 'أَرْبَعَةُ أَرْكَانٍ وَحَوَافُّ مُسْتَقِيمَةٌ.'];
+  if (item.kind === 'circle') return ['why.c', 'حَافَّتُهُ مُنْحَنِيَةٌ وَلَا أَرْكَانَ لَهُ.'];
+  return item.tag === 'oval' ? ['why.oval', 'مَمْطُوطٌ، فَلَيْسَ دَائِرَةً.'] : ['why.tri', 'لَهُ ثَلَاثَةُ أَرْكَانٍ، فَلَيْسَ مُرَبَّعًا.'];
+}
+function binIcon(k) {
+  if (k === 'circle') return `<svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="16" fill="none" stroke="${css('--circle')}" stroke-width="5"/></svg>`;
+  if (k === 'square') return `<svg viewBox="0 0 44 44"><rect x="7" y="7" width="30" height="30" fill="none" stroke="${css('--square')}" stroke-width="5"/></svg>`;
+  return `<svg viewBox="0 0 44 44"><path d="M12 12l20 20M32 12L12 32" stroke="${css('--muted')}" stroke-width="5" stroke-linecap="round"/></svg>`;
+}
+const BIN_NAMES = { circle: 'دَائِرَة', square: 'مُرَبَّع', other: 'غَيْرُ ذَلِكَ' };
+
+/* يعرض شكلاً واحداً ويعيد اختيار الطفل (نقر على السلة أو سحب الشكل إليها) */
+function askSort(item) {
+  const svg = newStage(330);
+  window.__item = item; window.__n = (window.__n || 0) + 1;
+  const g = shapeGroup(svg, item, 180, 108);
+  if (item.label) { const t = el('text', { x: 180, y: 196, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 700, fill: css('--muted'), 'font-family': css('--f-body') }, svg); t.textContent = item.label; }
+  const bins = document.createElement('div'); bins.className = 'bins';
+  ['circle', 'square', 'other'].forEach(k => {
+    const b = document.createElement('button'); b.className = 'bin'; b.dataset.k = k; b.innerHTML = binIcon(k) + `<span>${BIN_NAMES[k]}</span>`;
+    b.setAttribute('aria-label', 'سلّة ' + plain(BIN_NAMES[k])); bins.appendChild(b);
+  });
+  $('#stage').appendChild(bins);
+  return new Promise(res => {
+    let settled = false;
+    const pick = k => { if (settled) return; settled = true; res({ bin: k, binsEl: bins, g, svg }); };
+    bins.querySelectorAll('.bin').forEach(b => b.onclick = () => pick(b.dataset.k));
+    // سحب الشكل نفسه إلى سلة
+    let drag = null;
+    g.style.cursor = 'grab';
+    g.addEventListener('pointerdown', e => { drag = { sx: e.clientX, sy: e.clientY }; g.setPointerCapture(e.pointerId); });
+    g.addEventListener('pointermove', e => { if (!drag) return; const dx = e.clientX - drag.sx, dy = e.clientY - drag.sy;
+      const ctm = svg.getScreenCTM(); g.setAttribute('transform', `translate(${180 + dx / ctm.a} ${108 + dy / ctm.d}) rotate(${item.rot || 0})`);
+      bins.querySelectorAll('.bin').forEach(b => { const r = b.getBoundingClientRect(); b.classList.toggle('hot', e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom); }); });
+    g.addEventListener('pointerup', e => { if (!drag) return; drag = null;
+      const hot = bins.querySelector('.bin.hot'); bins.querySelectorAll('.bin').forEach(b => b.classList.remove('hot'));
+      if (hot) pick(hot.dataset.k); else g.setAttribute('transform', `translate(180 108) rotate(${item.rot || 0})`); });
+  });
+}
+/* يحرّك الشكل إلى السلة الصحيحة (الحل المشترك) أو يعيد المربع المدوَّر إلى وضعه المستقيم */
+async function showUpright(g, item) {
+  if (item.tag !== 'squareRot') return;
+  g.animate([{ transform: `translate(180px,108px) rotate(${item.rot}deg)` }, { transform: 'translate(180px,108px) rotate(0deg)' }], { duration: 900, fill: 'forwards', easing: 'ease-in-out' });
+  await sleep(950);
+  g.animate([{ transform: 'translate(180px,108px) rotate(0deg)' }, { transform: `translate(180px,108px) rotate(${item.rot}deg)` }], { duration: 900, fill: 'forwards', delay: 600 });
+}
+function overlayCircle(svg, item) {
+  if (item.tag !== 'oval') return;
+  const c = el('circle', { cx: 180, cy: 108, r: item.size / 2, fill: 'none', stroke: css('--circle'), 'stroke-width': 4, 'stroke-dasharray': '8 6' }, svg);
+  c.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 500 });
+}
+
+/* سؤال تمرين كامل: محاولة أولى ← تغذية موسومة بالخطأ ← محاولة ثانية ← حل مشترك + توأم */
+async function practiceItem(make, scene, allowHelp = true) {
+  const item = make();
+  let tries = 0;
+  while (true) {
+    if (allowHelp) armIdle(async () => { const [id, t] = reason(item); await say('compass', 'hint.' + item.tag, '{لَاحِظِ|لَاحِظِي} الحَافَّةَ وَالأَرْكَانَ.'); });
+    const { bin, binsEl, g, svg } = await askSort(item);
+    disarmIdle();
+    const err = errorOf(item, bin);
+    tries++;
+    logAttempt({ scene, tag: item.tag, bin, ok: !err, firstTry: tries === 1, err });
+    const binEl = binsEl.querySelector(`[data-k="${bin}"]`);
+    if (!err) {
+      binEl.classList.add('ok'); SFX.good();
+      g.animate([{ opacity: 1 }, { opacity: 0, transform: `translate(180px,180px) scale(.3)` }], { duration: 500, fill: 'forwards' });
+      const p = PRAISE[praiseIx++ % PRAISE.length]; const [rid, rt] = reason(item);
+      await say('compass', p[0], p[1] + ' ' + rt);
+      return { firstTry: tries === 1, twinNeeded: false };
+    }
+    binEl.classList.add('no'); SFX.soft();
+    if (!allowHelp) { await say('compass', 'ms.noted', 'حَسَنًا.'); return { firstTry: false }; }
+    if (tries === 1) {
+      const [eid, et] = ERR[err];
+      if (err === 'rotatedSquare') { say('compass', eid, et); await showUpright(g, item); await sleep(1200); }
+      else { overlayCircle(svg, item); await say('compass', eid, et); }
+      continue;
+    }
+    // الحل المشترك (المستوى 3) ثم مسألة توأم إلزامية
+    const right = binsEl.querySelector(`[data-k="${item.kind}"]`); right.classList.add('ok');
+    await say('compass', 'solve.' + item.kind, 'هَيَّا نَحُلُّهَا مَعًا: هَذَا ' + plain(BIN_NAMES[item.kind]) + '، لِأَنَّ ' + reason(item)[1]);
+    await say('compass', 'twin.01', 'وَالآنَ شَكْلٌ يُشْبِهُهُ، {جَرِّبْهُ بِنَفْسِكَ|جَرِّبِيهِ بِنَفْسِكِ}.');
+    const twinMake = GEN[{ squareRot: 'squareRot', squareUp: 'squareRot', circle: 'circle', oval: 'oval', triangle: 'triangle' }[item.tag] || 'circle'];
+    await practiceItem(twinMake, scene + '-twin', true);
+    return { firstTry: false, twinNeeded: true };
+  }
+}
+
+/* ===================== المشهد ④ حاول أنت ===================== */
+async function scenePractice() {
+  setStep(3); lockGo();
+  await say('compass', 'pr.01', 'إِلَى أَيِّ سَلَّةٍ يَذْهَبُ كُلُّ شَكْلٍ؟ {اِلْمَسِ|اِلْمَسِي} السَّلَّةَ، {أَوِ اسْحَبِ|أَوِ اسْحَبِي} الشَّكْلَ إِلَيْهَا.');
+  const seq = [GEN.squareUp, GEN.plate, () => GEN.squareRot(45), GEN.oval, GEN.triangle];   // 🟢 🟢 🟡 🟡 🟠
+  for (const make of seq) await practiceItem(make, 'practice');
+  setGo('التَّالِي', sceneChaos);
+}
+
+/* ===================== المشهد ⑤ صحّح لفوضى ===================== */
+async function sceneChaos() {
+  setStep(4); lockGo();
+  const svg = newStage(330);
+  const cols = [{ k: 'circle', x: 300 }, { k: 'square', x: 180 }, { k: 'other', x: 60 }];
+  cols.forEach(c => { const g = el('g', { transform: `translate(${c.x} 300)` }, svg); el('rect', { x: -52, y: -22, width: 104, height: 40, rx: 14, fill: css('--sky'), stroke: css('--line'), 'stroke-width': 2 }, g);
+    const t = el('text', { y: 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f-body') }, g); t.textContent = BIN_NAMES[c.k]; });
+  const placed = [
+    { s: { type: 'circle', size: 78, color: NEUTRAL[0] }, x: 300, y: 80 },
+    { s: { type: 'circle', size: 70, color: NEUTRAL[2], object: 'plate' }, x: 300, y: 190 },
+    { s: { type: 'square', size: 70, rot: 0, color: NEUTRAL[1] }, x: 180, y: 130 },
+    { s: { type: 'square', size: 72, rot: 40, color: NEUTRAL[3] }, x: 60, y: 80, wrong: true },
+    { s: { type: 'triangle', size: 76, rot: 0, color: NEUTRAL[4] }, x: 60, y: 190 },
+  ];
+  window.__chaosIx = placed.findIndex(p => p.wrong);
+  const groups = placed.map(p => { const g = shapeGroup(svg, p.s, p.x, p.y); g.style.cursor = 'pointer'; g.setAttribute('tabindex', 0); g.setAttribute('role', 'button'); return { p, g }; });
+  let tries = 0;
+  const foundP = new Promise(res => groups.forEach(({ p, g }) => {
+    const act = async () => { tries++;
+      if (p.wrong) { disarmIdle(); SFX.good(); logAttempt({ scene: 'chaos', tag: 'findWrong', ok: true, firstTry: tries === 1 });
+        g.animate([{ transform: `translate(60px,80px) rotate(40deg)` }, { transform: `translate(180px,222px) rotate(0deg)` }], { duration: 1100, fill: 'forwards', easing: 'ease-in-out' }); res(); }
+      else { SFX.soft(); logAttempt({ scene: 'chaos', tag: 'findWrong', ok: false, firstTry: tries === 1 }); await say('compass', 'chaos.no', 'هَذَا فِي مَكَانِهِ. {اِبْحَثْ|اِبْحَثِي} عَنْ غَيْرِهِ.'); } };
+    g.onclick = act; g.onkeydown = e => { if (e.key === 'Enter') act(); };
+  }));
+  let found = false; foundP.then(() => { found = true; });
+  // اللمس مقبول من لحظة ظهور السلال
+  await say('chaos', 'chaos.01', 'رَتَّبْتُ الأَشْكَالَ فِي السِّلَالِ وَحْدِي! كُلُّ شَيْءٍ صَحِيحٌ… أَظُنُّ!');
+  if (!found) await say('compass', 'chaos.02', 'هُنَاكَ شَكْلٌ فِي غَيْرِ مَكَانِهِ. {اِلْمَسْهُ|اِلْمَسِيهِ}.');
+  if (!found) armIdle(async () => { await say('compass', 'chaos.hint', '{اُنْظُرْ|اُنْظُرِي} إِلَى سَلَّةِ «غَيْرُ ذَلِكَ»، {وَعُدَّ|وَعُدِّي} الأَرْكَانَ.'); });
+  await foundP;
+  groups.forEach(({ g }) => { g.onclick = null; });
+  await sleep(1100);
+  await say('compass', 'chaos.03', '{وَجَدْتَهُ|وَجَدْتِهِ}! لِمَاذَا أَخْطَأَتْ فَوْضَى؟');
+  const box = document.createElement('div'); box.className = 'choices';
+  const opts = [{ t: 'ظَنَّتْ أَنَّ المُرَبَّعَ المُدَوَّرَ شَكْلٌ آخَرُ، وَلَهُ أَرْبَعَةُ أَرْكَانٍ.', ok: true }, { t: 'لِأَنَّ لَوْنَهُ مُخْتَلِفٌ عَنِ المُرَبَّعَاتِ الأُخْرَى.', ok: false }];
+  opts.sort(() => Math.random() - .5);
+  $('#stage').appendChild(box);
+  await new Promise(res => opts.forEach((o, i) => {
+    const b = document.createElement('button'); b.className = 'pick'; b.textContent = o.t; box.appendChild(b);
+    b.onclick = async () => { logAttempt({ scene: 'chaos', tag: 'why', ok: o.ok });
+      if (o.ok) { b.classList.add('ok'); SFX.good(); res(); }
+      else { b.classList.add('no'); SFX.soft(); await say('compass', 'chaos.why.no', 'اللَّوْنُ لَا يُغَيِّرُ الشَّكْلَ. {عُدَّ|عُدِّي} الأَرْكَانَ.'); } };
+  }));
+  await lines([
+    ['chaos', 'chaos.04', 'أُوه! خَدَعَنِي التَّدْوِيرُ! شُكْرًا يَا {مُهَنْدِسُ|مُهَنْدِسَةُ}!'],
+  ]);
+  setGo('التَّالِي', () => sceneMastery(1));
+}
+
+/* ===================== المشهد ⑥ فحص الإتقان (D182) ===================== */
+async function sceneMastery(round = 1) {
+  setStep(5); lockGo();
+  await say('compass', 'ms.01', 'ثَلَاثَةُ أَشْكَالٍ جَدِيدَةٍ، بِلَا مُسَاعَدَةٍ. {خُذْ وَقْتَكَ|خُذِي وَقْتَكِ}.');
+  const sets = [[GEN.tile, GEN.clock, GEN.oval], [() => GEN.squareRot(20), GEN.circle, GEN.triangle]];
+  let score = 0;
+  for (const make of sets[(round - 1) % 2]) { const r = await practiceItem(make, 'mastery' + round, false); if (r.firstTry) score++; }
+  LOG.mastery = { round, score, of: 3, at: Date.now(), ok: score === 3 }; store.set('hp_proto_log', LOG);
+  if (score === 3) { SFX.win(); setGo('التَّالِي', sceneWrap); await say('compass', 'ms.ok', 'ثَلَاثَةٌ مِنْ ثَلَاثَةٍ! {أَتْقَنْتَ|أَتْقَنْتِ} الدَّائِرَةَ وَالمُرَبَّعَ.'); return; }
+  // مسار علاجي قصير: إعادة الفكرة ثم مسألتان توأم ثم إعادة الفحص بأشكال أخرى
+  await say('compass', 'ms.again', '{أَصَبْتَ|أَصَبْتِ} ' + ['صِفْرًا', 'وَاحِدًا', 'اثْنَيْنِ'][score] + ' مِنْ ثَلَاثَةٍ. هَيَّا نَتَذَكَّرُ الفِكْرَةَ ثُمَّ نُحَاوِلُ.');
+  const svg = newStage(300); const g = el('g', { transform: 'translate(180 140) rotate(40)' }, svg); el('rect', { x: -60, y: -60, width: 120, height: 120, fill: css('--square') }, g);
+  g.animate([{ transform: 'translate(180px,140px) rotate(40deg)' }, { transform: 'translate(180px,140px) rotate(0deg)' }], { duration: 1200, fill: 'forwards' });
+  await say('compass', 'ms.recall', 'المُرَبَّعُ المُدَوَّرُ مَا زَالَ مُرَبَّعًا: أَرْبَعَةُ أَرْكَانٍ. وَالدَّائِرَةُ مُتَسَاوِيَةٌ مِنْ كُلِّ الجِهَاتِ بِلَا أَرْكَانٍ.');
+  await practiceItem(() => GEN.squareRot(), 'remedial', true);
+  await practiceItem(GEN.oval, 'remedial', true);
+  setGo('{أَعِدِ|أَعِيدِي} الفَحْصَ', () => sceneMastery(round + 1));
+}
+
+/* ===================== المشهد ⑦ الختام ===================== */
+async function sceneWrap() {
+  setStep(6); lockGo();
+  const svg = newStage(300);
+  el('rect', { x: 0, y: 230, width: 360, height: 70, fill: css('--sky') }, svg);
+  const tiles = el('g', {}, svg);
+  for (let i = 0; i < 9; i++) { const r = el('rect', { x: 36 + i * 32, y: 236, width: 28, height: 28, rx: 2, fill: css('--square'), opacity: 0 }, tiles);
+    r.animate([{ opacity: 0, transform: 'translateY(-20px)' }, { opacity: 1, transform: 'translateY(0)' }], { duration: 400, delay: 200 + i * 90, fill: 'forwards' }); }
+  const f = el('g', { transform: 'translate(180 150)' }, svg);
+  el('circle', { r: 70, fill: css('--circle') }, f); el('circle', { r: 48, fill: '#9fd4ea' }, f); el('circle', { r: 12, fill: '#ffffff' }, f);
+  f.animate([{ transform: 'translate(180px,150px) scale(0)' }, { transform: 'translate(180px,150px) scale(1.08)' }, { transform: 'translate(180px,150px) scale(1)' }], { duration: 900, delay: 1100, fill: 'both', easing: 'ease-out' });
+  const me = el('g', { transform: 'translate(300 70)' }, svg);
+  el('circle', { r: 30, fill: css('--paper'), stroke: css('--compass'), 'stroke-width': 3 }, me);
+  const fo = el('foreignObject', { x: -26, y: -26, width: 52, height: 52 }, me);
+  const ph = avatarHTML(PROFILE); ph.setAttribute('style', 'width:52px;height:52px;border-radius:50%;object-fit:cover;display:block'); fo.appendChild(ph);
+  const nm = el('text', { y: 50, 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f-body') }, me);
+  nm.textContent = G('{المُهَنْدِسُ|المُهَنْدِسَةُ} {name}');
+  SFX.win(); setStep(7);
+  await lines([
+    ['compass', 'wrap.01', '{بَنَيْتَ|بَنَيْتِ} لِلْمَدِينَةِ نَافُورَةً دَائِرِيَّةً، وَحَوْلَهَا بَلَاطٌ مُرَبَّعٌ!'],
+    ['compass', 'wrap.02', 'اليَوْمَ عَرَفْنَا: الدَّائِرَةُ حَافَّتُهَا مُنْحَنِيَةٌ بِلَا أَرْكَانٍ، وَالمُرَبَّعُ لَهُ أَرْبَعَةُ أَرْكَانٍ مَهْمَا دَوَّرْنَاهُ.'],
+    ['chaos', 'wrap.03', 'مُهِمَّةُ البَيْتِ: ثَلَاثَةُ أَشْيَاءَ دَائِرِيَّةٍ، وَثَلَاثَةُ أَشْيَاءَ مُرَبَّعَةٍ. سَأَخْتَبِئُ فِي أَحَدِهَا!'],
+  ]);
+  setGo('{أَعِدِ|أَعِيدِي} الدَّرْسَ', () => location.reload());
+}
+
+/* ===================== لوحة الكبار: ما يراه المشرف + استيراد أصوات ===================== */
+const TAGS = { squareUp: 'مربع مستقيم', squareRot: 'مربع مدوَّر', circle: 'دائرة', oval: 'شكل ممطوط', triangle: 'مثلث', findWrong: 'إيجاد خطأ فوضى', why: 'سبب خطأ فوضى' };
+const ERRS = { rotatedSquare: 'يظن المربع المدوَّر شكلاً آخر', ovalAsCircle: 'يظن الشكل الممطوط دائرة', triangleAsSquare: 'يخلط المثلث بالمربع', curvedEdge: 'لم ينتبه للحافة المنحنية', countCorners: 'لم يعدّ الأركان', notThisShape: 'وضع الشكل في سلة خاطئة' };
+function openPanel() {
+  const A = LOG.attempts;
+  const first = A.filter(a => a.firstTry !== undefined && (a.scene || '').match(/^(practice|mastery)/));
+  const fOk = first.filter(a => a.firstTry && a.ok).length, fN = first.filter(a => a.firstTry).length;
+  const errs = {}; A.filter(a => a.err).forEach(a => errs[a.err] = (errs[a.err] || 0) + 1);
+  const m = LOG.mastery;
+  const p = $('#panel');
+  p.innerHTML = `<div class="wrap">
+    <div><h2>للكبار: ما جرى في هذا الدرس${PROFILE ? ' مع ' + PROFILE.name.replace(/[<>&"']/g, '') : ''}</h2><p style="color:var(--muted);margin:0">نموذج أولي لمحرّك الدروس الجديد. البيانات محفوظة على هذا الجهاز فقط.</p></div>
+    <div class="card"><b>الإتقان (من المحاولة الأولى، D182):</b> ${m ? (m.ok ? '<span class="pill good">متقن</span>' : '<span class="pill think">لم يُتقن بعد</span>') + ` · ${m.score} من 3 في المحاولة ${m.round}` : 'لم يصل إلى الفحص بعد'}<br>
+      <b>الصواب من المحاولة الأولى في التمارين والفحص:</b> ${fOk} من ${fN}<br>
+      <b>توقّع الإشعال:</b> ${LOG.scenes.hookPrediction ? (LOG.scenes.hookPrediction === 'circle' ? 'العجلات الدائرية (صحيح)' : 'العجلات المربعة') : '—'}</div>
+    <div class="card"><b>الأخطاء الشائعة التي ظهرت:</b><br>${Object.keys(errs).length ? Object.entries(errs).map(([k, n]) => `${ERRS[k] || k}: ${n}`).join('<br>') : 'لا شيء'}</div>
+    <div class="card"><b>كل المحاولات</b><table><thead><tr><th>المشهد</th><th>الشكل</th><th>النتيجة</th><th>الخطأ</th></tr></thead><tbody>
+      ${A.slice(-40).map(a => `<tr><td>${a.scene}</td><td>${TAGS[a.tag] || a.tag}</td><td>${a.ok ? '✔' : '✘'}${a.firstTry ? ' (أولى)' : ''}</td><td>${a.err ? (ERRS[a.err] || a.err) : ''}</td></tr>`).join('') || '<tr><td colspan="4">لا محاولات بعد</td></tr>'}</tbody></table></div>
+    <div class="card"><b>أصوات مسجّلة (للتجربة):</b> اختر ملفات MP3 اسم كل منها معرّف الجملة، مثل <code>m1.u1.d1.hook.01.mp3</code>، فتُسمع بدل صوت الجهاز.<br>
+      <input type="file" id="clipIn" accept="audio/*" multiple><div id="clipMsg" style="color:var(--muted)"></div></div>
+    <div class="card"><b>الطالب:</b> ${PROFILE ? (PROFILE.gender === 'f' ? 'بنت' : 'ولد') : 'لم يُسجَّل بعد'} · الخطاب في الدرس يتبع هذا الاختيار. <button class="pick" id="editProfile" style="min-height:44px;margin-top:6px">تعديل الاسم والجنس والصورة</button></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap"><button class="go" id="closePanel" style="flex:1;min-width:140px">رجوع إلى الدرس</button>
+      <button class="help" id="resetLog" style="padding:0 14px;min-height:64px">مسح السجل</button></div></div>`;
+  p.hidden = false;
+  $('#closePanel').onclick = () => { p.hidden = true; };
+  $('#editProfile').onclick = () => { p.hidden = true; openProfile(); };
+  $('#resetLog').onclick = () => { LOG.attempts = []; LOG.scenes = {}; LOG.mastery = null; store.set('hp_proto_log', LOG); openPanel(); };
+  $('#clipIn').onchange = e => { let n = 0; for (const f of e.target.files) { CLIPS[f.name.replace(/\.(mp3|m4a|wav|ogg)$/i, '')] = URL.createObjectURL(f); n++; } $('#clipMsg').textContent = 'أُضيف ' + n + ' ملفاً.'; };
+}
+$('#adultBtn').onclick = openPanel;
+
+/* ===================== الملف: الاسم والجنس والصورة ===================== */
+function kidSVG(g) {
+  const hair = g === 'f'
+    ? '<path d="M14 40 Q14 10 40 10 Q66 10 66 40 L66 62 Q60 50 58 38 Q40 30 22 38 Q20 50 14 62 Z" fill="#5b3a29"/>'
+    : '<path d="M17 34 Q18 12 40 12 Q62 12 63 34 Q52 24 40 26 Q28 24 17 34 Z" fill="#3d2a1e"/>';
+  return `<svg viewBox="0 0 80 80" aria-hidden="true"><circle cx="40" cy="40" r="38" fill="${g === 'f' ? '#fde3d9' : '#dcecf5'}"/>${hair}
+    <circle cx="40" cy="42" r="22" fill="#f1c9a5"/><circle cx="32" cy="41" r="2.6" fill="#2b2b2b"/><circle cx="48" cy="41" r="2.6" fill="#2b2b2b"/>
+    <path d="M33 50 q7 6 14 0" fill="none" stroke="#9b4b3a" stroke-width="2.5" stroke-linecap="round"/>
+    ${g === 'f' ? '<circle cx="62" cy="26" r="6" fill="#e8735a"/>' : ''}</svg>`;
+}
+function avatarHTML(pr) {
+  if (pr && pr.photo) { const img = new Image(); img.src = pr.photo; img.alt = ''; return img; }
+  const d = document.createElement('span'); d.innerHTML = kidSVG(pr ? pr.gender : 'm'); return d.firstChild;
+}
+function renderMe() { const b = $('#meBtn'); b.innerHTML = ''; b.appendChild(avatarHTML(PROFILE)); }
+let draft = { name: '', gender: null, photo: '' };
+function openProfile() {
+  draft = PROFILE ? { ...PROFILE } : { name: '', gender: null, photo: '' };
+  $('#pName').value = draft.name || '';
+  $('#gM').innerHTML = kidSVG('m') + '<span>وَلَدٌ</span>'; $('#gF').innerHTML = kidSVG('f') + '<span>بِنْتٌ</span>';
+  const mark = () => { $('#gM').setAttribute('aria-pressed', draft.gender === 'm'); $('#gF').setAttribute('aria-pressed', draft.gender === 'f');
+    const pv = $('#photoPrev'); pv.innerHTML = ''; pv.appendChild(avatarHTML(draft.gender ? draft : { gender: 'm', photo: draft.photo })); };
+  $('#gM').onclick = () => { draft.gender = 'm'; mark(); SFX.tick(); };
+  $('#gF').onclick = () => { draft.gender = 'f'; mark(); SFX.tick(); };
+  $('#pPhoto').onchange = e => {   // تُصغَّر الصورة إلى 160 بكسل فتبقى صغيرة في ذاكرة الجهاز
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => { const img = new Image(); img.onload = () => {
+      const S = 160, c = document.createElement('canvas'); c.width = c.height = S; const x = c.getContext('2d');
+      const k = Math.max(S / img.width, S / img.height), w = img.width * k, h = img.height * k;
+      x.drawImage(img, (S - w) / 2, (S - h) / 2, w, h); draft.photo = c.toDataURL('image/jpeg', 0.8); mark(); };
+      img.src = rd.result; };
+    rd.readAsDataURL(f);
+  };
+  mark(); $('#pMsg').textContent = '';
+  $('#profileCover').hidden = false; $('#cover').hidden = true;
+}
+$('#profileForm').addEventListener('submit', e => {
+  e.preventDefault();
+  draft.name = $('#pName').value.replace(/[<>"'&`]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
+  if (!draft.name) { $('#pMsg').textContent = 'اكتب الاسم أولاً.'; $('#pName').focus(); return; }
+  if (!draft.gender) { $('#pMsg').textContent = 'اختر: ولد أو بنت.'; return; }
+  PROFILE = { name: draft.name, gender: draft.gender, photo: draft.photo || '' };
+  store.set('hp_proto_profile', PROFILE);
+  $('#profileCover').hidden = true; renderMe(); showCover();
+});
+$('#meBtn').onclick = () => { stopVoice(); openProfile(); };
+$('#pName').addEventListener('input', () => { $('#pMsg').textContent = ''; });
+
+/* ===================== البداية ===================== */
+let started = false;
+function showCover() {
+  if (started) return;   // تعديل الملف أثناء الدرس يعود إلى الدرس نفسه
+  $('#coverChars').innerHTML = compassSVG() + chaosSVG();
+  $('#startBtn').innerHTML = `<span>${G('{اِبْدَأْ|اِبْدَئِي} يَا {name}')}</span>` + ICON.play;
+  $('#cover').hidden = false;
+}
+$('#startBtn').onclick = () => { started = true; $('#cover').hidden = true; try { speechSynthesis.getVoices(); } catch (e) {}
+  say('compass', 'hello.name', 'أَهْلًا يَا {name}! أَنَا فِرْجَار.').then(sceneHook); };
+$('#profileForm').addEventListener('submit', () => { if (started) $('#cover').hidden = true; });
+setStep(0); renderMe();
+if (PROFILE) showCover(); else { $('#cover').hidden = true; openProfile(); }
+</script>

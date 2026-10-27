@@ -1,0 +1,53 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.waha.math'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.waha.math"
+        minSdk 26
+        targetSdk 34
+        // رقم النسخة: يُرفع مع كل إصدار (versionCode عدد صحيح يزيد دائماً)، ومنه اسم الإصدار في Releases
+        versionCode 1
+        versionName "1.0.0"
+    }
+
+    /* التوقيع بمفتاح العائلة نفسه الذي في waha-app: يأتي من أسرار GitHub (SIGNING-AR.md في جذر المستودع)،
+       ولا يُحفظ في المستودع أبداً. والمفتاح ثابت في كل نسخة، فتُثبَّت كل نسخة فوق السابقة ولا يضيع تقدّم الأطفال. */
+    def ks = System.getenv("WAHA_KEYSTORE")
+    signingConfigs {
+        // مفتاح تجريبي ثابت داخل المستودع (ليس سرّاً): لنسخ الفحص وحدها قبل إضافة الأسرار، ولا يُنشر ما يوقَّع به
+        fixedDebug {
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+        if (ks) {
+            release {
+                storeFile file(ks)
+                storePassword System.getenv("WAHA_KEYSTORE_PASSWORD")
+                keyAlias System.getenv("WAHA_KEY_ALIAS")
+                keyPassword System.getenv("WAHA_KEY_PASSWORD")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ks) signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig ks ? signingConfigs.release : signingConfigs.fixedDebug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

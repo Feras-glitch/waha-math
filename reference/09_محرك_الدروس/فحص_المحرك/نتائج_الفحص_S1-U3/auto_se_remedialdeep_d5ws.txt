@@ -1,0 +1,27 @@
+.. m1.u3.d5 done 13.1 acts=42 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3 done 2.1 acts=9 null
+unnamed targets: 0
+tap conflicts: 0
+chaos leaks: 0
+font fallbacks: 0
+assessment misses: 9
+  m1.u3.d5 mastery:N009 roadHop road:walk [7,8,9,10,11] roadStop
+  m1.u3.d5 mastery:N009 roadPick road:next 15 roadNext
+  m1.u3.d5 mastery:N009 roadPick road:prev 19 roadNext
+  m1.u3.d5 mastery:N009 roadHop road:walk [13,12,11,10] roadStop
+  m1.u3.d5 mastery:N009 roadHop road:walk [7,8,9,10,11] roadStop
+  m1.u3.d5 mastery:N009 roadPick road:next 15 roadNext
+  m1.u3.d5 mastery:N009 roadPick road:prev 19 roadNext
+  m1.u3.d5 mastery:N009 roadHop road:walk [13,12,11,10] roadStop
+  m1.u3.d4 mastery:mixed mapFind map:find "0,back" mapMirror
+twins: 1 twin items in 1 lessons; items revealed: 1
+twins missing: 0
+clips spoken: 87 unique, 87 of 2166 recording ids; NOT in script: 0
+m1.u3.d5 done 13.1 acts=42 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3 done 2.1 acts=9 null
+errors: 0
+LOG.errors: 0
+small targets: 0
+empty drags: 0
+blocked lessons: 0
+lessons not done: 0 []

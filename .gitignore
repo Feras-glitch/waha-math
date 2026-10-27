@@ -1,2 +1,14 @@
 __pycache__/
 test/out/
+# نواتج النسخ (platforms/make_platforms.py والبناء الآلي)
+/out/
+platforms/android/app/src/main/assets/www/
+platforms/android/.gradle/
+platforms/android/build/
+platforms/android/app/build/
+platforms/android/local.properties
+platforms/desktop/node_modules/
+platforms/desktop/dist/
+platforms/desktop/app/
+platforms/desktop/icon.ico
+node_modules/

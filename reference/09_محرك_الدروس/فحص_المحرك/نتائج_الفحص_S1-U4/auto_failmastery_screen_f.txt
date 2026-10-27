@@ -1,0 +1,127 @@
+.. m1.u1.d1 done 11.2 acts=38 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u1.d2 done 22.2 acts=82 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u1.d3 done 11.4 acts=41 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u1.d4 done 14.0 acts=49 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. review done 1.3 acts=4 null
+.. m1.u1.d5 done 14.2 acts=47 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u1 done 0.5 acts=2 null
+.. m1.u1.d6 done 7.8 acts=32 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 11, "of": 11}
+.. m1.u2.d1 done 12.0 acts=50 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u2.d2 done 14.4 acts=62 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u2.d3 done 10.3 acts=38 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u2.d4 done 17.7 acts=65 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u2.d5 done 16.4 acts=56 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. review done 2.0 acts=7 null
+.. m1.u2 done 0.5 acts=2 null
+.. m1.u2.d6 done 9.1 acts=34 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 12, "of": 12}
+.. m1.u3.d1 done 11.1 acts=45 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d2 done 17.1 acts=67 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d3 done 11.7 acts=46 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d4 done 10.5 acts=36 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d5 done 12.5 acts=38 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3.d6 done 10.9 acts=37 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u3 done 0.6 acts=2 null
+.. m1.u3.d7 done 8.0 acts=26 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 11, "of": 11}
+.. m1.u4.d1 done 10.9 acts=42 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u4.d2 done 11.0 acts=48 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u4.d3 done 14.6 acts=52 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u4.d4 done 12.5 acts=49 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u4.d5 done 12.1 acts=39 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u4.d6 done 11.8 acts=32 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. review done 1.0 acts=4 null
+.. m1.u4.d7 done 14.4 acts=53 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+.. m1.u4 done 0.6 acts=2 null
+.. m1.u4.d8 done 9.0 acts=36 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 12, "of": 12}
+unnamed targets: 0
+tap conflicts: 0
+chaos leaks: 0
+font fallbacks: 0
+assessment misses: 237
+  m1.u1.d3 mastery:C003 sort notRight "rect" notRightQuad
+  m1.u1.d3 mastery:C003 completeRect completeRect "2,3" notRight
+  m1.u1.d2 mastery:mixed pick pick 1 fourCorners
+  m1.u1.d4 mastery:C005 sort squareRot "circle" rotated
+  m1.u1.d4 mastery:C005 sort triFlip "circle" rotated
+  m1.u1.d4 mastery:C005 pickAll pickAll [3] flipped
+  m1.u1.d4 mastery:C005 reason reason "o1" byShape
+  m1.u1.d4 mastery:C005 sort squareRot "circle" rotated
+  m1.u1.d4 mastery:C005 sort triFlip "circle" rotated
+  m1.u1.d4 mastery:C005 pickAll pickAll [3] flipped
+  m1.u1.d4 mastery:C005 reason reason "o1" byShape
+  m1.u1.d4 mastery:N002 same same "changed" spreadMore
+  m1.u1.d4 mastery:N002 same sameAdd "same" missedAdd
+  m1.u1.d4 mastery:N002 produce produce 10 tooMany
+  m1.u1.d4 mastery:N002 same same "changed" spreadMore
+  m1.u1.d4 mastery:N002 same sameAdd "same" missedAdd
+  m1.u1.d4 mastery:N002 produce produce 10 tooMany
+  m1.u1.d3 mastery:mixed completeRect completeRect "1,3" notRight
+  m1.u1.d5 mastery:N003 digitMatch digitMatch 2 digit62
+  m1.u1.d5 mastery:N003 digitPick digitPick 8 zeroNotNumber
+  m1.u1.d5 mastery:N003 fill fill 6 tooMany
+  m1.u1.d5 mastery:N003 digitMatch digitMatch 2 digit62
+  m1.u1.d5 mastery:N003 digitPick digitPick 6 zeroNotNumber
+  m1.u1.d5 mastery:N003 fill fill 6 tooMany
+  m1.u1.d4 mastery:mixed same same "changed" spreadMore
+  m1.u2.d1 mastery:C006 sort cubeTurned "sphere" cubeNotRoll
+  m1.u2.d1 mastery:C006 sort flatCircle "cube" flatAsSolid
+  m1.u2.d1 mastery:C006 reason reason "o2" byLook
+  m1.u2.d1 mastery:C006 sort cubeTurned "sphere" cubeNotRoll
+  m1.u2.d1 mastery:C006 sort flatCircle "cube" flatAsSolid
+  m1.u2.d1 mastery:C006 reason reason "o1" byLook
+  m1.u2.d1 mastery:C009 property prop-sphere "stay" rollMissed
+  m1.u2.d1 mastery:C009 property prop-cubeTurned "roll" cubeNotRoll
+  m1.u2.d1 mastery:C009 reason reason "o2" byLook
+  m1.u2.d1 mastery:C009 property prop-sphere "stay" rollMissed
+  m1.u2.d1 mastery:C009 property prop-cubeTurned "roll" cubeNotRoll
+  m1.u2.d1 mastery:C009 reason reason "o1" byLook
+  m1.u1.d1 mastery:mixed sort circle "cube" flatAsSolid
+  m1.u2.d2 mastery:C007 sort cylLying "cone" cylAsCone
+  m1.u2.d2 mastery:C007 sort coneTurned "cylinder" coneAsCyl
+twins: 0 twin items in 0 lessons; items revealed: 0
+twins missing: 0
+clips spoken: 1276 unique, 1276 of 3162 recording ids; NOT in script: 0
+m1.u1.d1 done 11.2 acts=38 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u1.d2 done 22.2 acts=82 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u1.d3 done 11.4 acts=41 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u1.d4 done 14.0 acts=49 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+review done 1.3 acts=4 null
+m1.u1.d5 done 14.2 acts=47 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u1 done 0.5 acts=2 null
+m1.u1.d6 done 7.8 acts=32 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 11, "of": 11}
+m1.u2.d1 done 12.0 acts=50 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u2.d2 done 14.4 acts=62 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u2.d3 done 10.3 acts=38 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u2.d4 done 17.7 acts=65 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u2.d5 done 16.4 acts=56 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+review done 2.0 acts=7 null
+m1.u2 done 0.5 acts=2 null
+m1.u2.d6 done 9.1 acts=34 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 12, "of": 12}
+m1.u3.d1 done 11.1 acts=45 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d2 done 17.1 acts=67 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d3 done 11.7 acts=46 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d4 done 10.5 acts=36 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d5 done 12.5 acts=38 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3.d6 done 10.9 acts=37 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u3 done 0.6 acts=2 null
+m1.u3.d7 done 8.0 acts=26 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 11, "of": 11}
+m1.u4.d1 done 10.9 acts=42 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u4.d2 done 11.0 acts=48 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u4.d3 done 14.6 acts=52 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u4.d4 done 12.5 acts=49 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u4.d5 done 12.1 acts=39 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u4.d6 done 11.8 acts=32 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+review done 1.0 acts=4 null
+m1.u4.d7 done 14.4 acts=53 {"done": true, "mastered": false, "deferred": true, "entry": true, "path": "screen", "score": null, "of": null}
+m1.u4 done 0.6 acts=2 null
+m1.u4.d8 done 9.0 acts=36 {"done": true, "mastered": true, "deferred": null, "entry": true, "path": "screen", "score": 12, "of": 12}
+errors: 0
+LOG.errors: 0
+small targets: 0
+empty drags: 0
+squeezed stages: 0
+clipped texts: 0
+covered badges: 0
+keyless targets: 0 (مفتاح حقيقي على 145 هدفاً، منها 72 بالمسافة، وعلى زرّي الشريط 1 مرة، ومفتاحٌ غير مفتاح الفعل 327 مرة، وهدفٌ حلُّه متتابع بمفتاح الفعل وحده 36 مرة)
+mat distractors: 0 (أسئلة عددية بعد «معي»: 0)
+blocked lessons: 0
+lessons not done: 0 []

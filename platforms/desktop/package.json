@@ -1,0 +1,39 @@
+{
+  "name": "waha-math",
+  "productName": "واحة الرياضيات",
+  "version": "1.0.0",
+  "description": "واحة الرياضيات: الرياضيات من بوابة الهندسة للأطفال، تعمل بلا إنترنت",
+  "author": "واحة الرياضيات",
+  "main": "main.js",
+  "private": true,
+  "devDependencies": {
+    "electron": "37.3.1",
+    "electron-builder": "25.1.8"
+  },
+  "build": {
+    "appId": "com.waha.math",
+    "productName": "واحة الرياضيات",
+    "executableName": "WahaMath",
+    "copyright": "واحة الرياضيات",
+    "files": ["main.js", "package.json", "app/**/*"],
+    "directories": { "output": "dist" },
+    "win": {
+      "icon": "icon.ico",
+      "target": [
+        { "target": "nsis", "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "واحة الرياضيات",
+      "artifactName": "waha-math-setup-${version}.exe"
+    },
+    "portable": {
+      "artifactName": "waha-math-portable-${version}.exe"
+    }
+  }
+}

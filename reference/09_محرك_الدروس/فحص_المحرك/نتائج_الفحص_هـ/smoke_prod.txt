@@ -1,0 +1,18 @@
+OK   start cover (no reading needed)
+OK   profile: avatars
+OK   home: 12 lessons + workshops
+OK   no test hooks
+OK   bag question: two choices
+OK   first scene rendered
+OK   progressed after touch
+OK   no page errors / invalid keyframes
+OK   no network requests (D232)
+OK   embedded faces loaded (D256)
+OK   reading font only: profile bubble {'Waha Naskh': 140}
+OK   reading font only: home stop small {'Waha Naskh': 40}
+OK   reading font only: home unit small {'Waha Naskh': 82}
+OK   reading font only: lesson bubble {'Waha Naskh': 71}
+OK   reading font only: lesson choices {'Waha Naskh': 20}
+OK   display font: home h1 {'Baloo Bhaijaan 2': 22}
+OK   display font: home stop title {'Baloo Bhaijaan 2': 24}
+OK   display font: home unit title {'Baloo Bhaijaan 2': 19, 'Waha Naskh': 18}

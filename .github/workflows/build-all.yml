@@ -1,0 +1,275 @@
+# بناء كل نسخ «واحة الرياضيات» من ناتج البناء نفسه (dist/واحة_الرياضيات.html) مع كل رفع إلى main:
+#   1) الفحوص: فحص المحتوى، والبناء يطابق المودَع في dist/، والفحص الدخاني لنسخة الأطفال، ونسخة الويب بلا إنترنت، وجسر أندرويد.
+#      لا يُبنى شيء إن أخفقت. (المجموعة الكاملة test/run_all.sh نحو أربع ساعات، فتُشغَّل عند كل بوابة لا مع كل رفع.)
+#   2) نسخة الويب على GitHub Pages (فرع gh-pages): https://feras-glitch.github.io/waha-math/
+#   3) أندرويد APK موقّع بمفتاح العائلة (أسرار WAHA_*، انظر SIGNING-AR.md). قبل إضافة الأسرار تُبنى نسخة للفحص فقط
+#      تبقى مرفقةً بصفحة التشغيل ولا تُنشر، لأن مفتاحها التجريبي في المستودع.
+#   4) ويندوز: مثبّت وبرنامج محمول (Electron)، ويُفتح التطبيق المبني نفسه ويُسار فيه كالطفل قبل النشر.
+#   5) فحص APK على هاتف وتابلت افتراضيين: يُثبَّت ويُفتح ويُسار فيه، مع لقطة شاشة (لا يوقف النشر، ويُقرأ في صفحة التشغيل).
+#   6) إصدار في Releases باسم رقم النسخة (versionName في platforms/android/app/build.gradle). ملفٌ نُشر لا يُستبدل؛
+#      وما غاب عن إصدارٍ منشور (APK قبل إضافة المفتاح) يُضاف إليه حين يُبنى.
+name: Build all
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-all-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools
+        run: |
+          pip install openpyxl==3.1.5 playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Content check (lint, D240)
+        run: node build/lint.mjs
+      - name: dist/ is what the source builds
+        run: |
+          node build/build.mjs
+          node build/build.mjs --dev
+          git diff --stat --exit-code -- 'dist/*.html' dist/script_m1.json dist/script_m1.xlsx.ids.json
+      - name: Smoke test of the children's build
+        run: python3 test/smoke_prod.py
+      - name: Platform files
+        run: python3 platforms/make_platforms.py out
+      - name: Web version works offline
+        run: python3 platforms/tests/test_web.py out
+      - name: Android bridge (speech, saving, printing, back button)
+        run: python3 platforms/tests/test_android_shim.py out
+
+  pages:
+    if: github.event_name != 'pull_request'
+    needs: checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Site
+        run: python3 platforms/make_platforms.py out
+      - uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./out/site
+          publish_branch: gh-pages
+          force_orphan: true
+
+  android:
+    if: github.event_name != 'pull_request'
+    needs: checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: App page into Android assets
+        run: |
+          python3 platforms/make_platforms.py out
+          mkdir -p platforms/android/app/src/main/assets/www
+          cp out/android-www/index.html platforms/android/app/src/main/assets/www/
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android SDK
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Signing key
+        id: key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.WAHA_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/waha.jks"
+            echo "path=$RUNNER_TEMP/waha.jks" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::لم تُضف أسرار مفتاح التوقيع بعد؛ تُبنى نسخة للفحص فقط ولا تُنشر. انظر SIGNING-AR.md"
+          fi
+      - name: Signed APK
+        if: steps.key.outputs.path != ''
+        working-directory: platforms/android
+        env:
+          WAHA_KEYSTORE: ${{ steps.key.outputs.path }}
+          WAHA_KEYSTORE_PASSWORD: ${{ secrets.WAHA_KEYSTORE_PASSWORD }}
+          WAHA_KEY_ALIAS: ${{ secrets.WAHA_KEY_ALIAS }}
+          WAHA_KEY_PASSWORD: ${{ secrets.WAHA_KEY_PASSWORD }}
+        run: |
+          gradle assembleRelease assembleDebug --no-daemon
+          mkdir -p "$GITHUB_WORKSPACE/apk"
+          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/apk/waha-math.apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/apk/waha-math-check.apk"
+      - name: Test-only APK (no signing key yet)
+        if: steps.key.outputs.path == ''
+        working-directory: platforms/android
+        run: |
+          gradle assembleDebug --no-daemon
+          mkdir -p "$GITHUB_WORKSPACE/apk"
+          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/apk/waha-math-check.apk"
+      - name: What is inside
+        run: |
+          BT="$ANDROID_HOME/build-tools/34.0.0"
+          for a in apk/*.apk; do echo "== $a"; "$BT/aapt2" dump badging "$a" | grep -E "^package|uses-permission|application-label:|sdkVersion|targetSdk"; unzip -l "$a" | grep -E "assets/www/index.html"; "$BT/apksigner" verify --print-certs "$a" | grep -E "Signer #1 certificate (DN|SHA-256)"; done
+          ! "$BT/aapt2" dump badging apk/waha-math-check.apk | grep -q "android.permission.INTERNET"
+      - name: Signed APK for the release
+        if: steps.key.outputs.path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apk
+          path: apk/waha-math.apk
+      - name: Check APK (debuggable, for the emulator test only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: check-apk
+          path: apk/waha-math-check.apk
+          retention-days: 7
+
+  android-device:
+    if: github.event_name != 'pull_request'
+    needs: android
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        device: [ pixel_6, pixel_c ]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: check-apk
+          path: apk
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install websocket-client==1.8.0
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Install, open and walk through the app
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: ${{ matrix.device }}
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: python3 platforms/tests/android_device_check.py apk/waha-math-check.apk shots-${{ matrix.device }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shots-${{ matrix.device }}
+          path: shots-${{ matrix.device }}/
+          retention-days: 14
+
+  windows:
+    if: github.event_name != 'pull_request'
+    needs: checks
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - name: App page and icon
+        run: |
+          python platforms/make_platforms.py out
+          mkdir -p platforms/desktop/app
+          cp out/desktop-app/index.html out/desktop-app/icon.png platforms/desktop/app/
+          cp platforms/icon/icon.ico platforms/desktop/icon.ico
+      - name: Installer and portable program
+        working-directory: platforms/desktop
+        run: |
+          V="$(grep -oP 'versionName "\K[^"]+' ../android/app/build.gradle)"
+          npm pkg set version="$V"
+          npm install --no-audit --no-fund
+          npx electron-builder --win --x64 --publish never
+          ls -la dist
+      - name: Open the built app and walk through it
+        working-directory: platforms/desktop
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.1
+          (dist/win-unpacked/WahaMath.exe --remote-debugging-port=9333 > /dev/null 2>&1 &)
+          node ../tests/desktop_smoke.js
+          taskkill //IM WahaMath.exe //F || true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: |
+            platforms/desktop/dist/waha-math-setup-*.exe
+            platforms/desktop/dist/waha-math-portable-*.exe
+
+  release:
+    if: github.event_name != 'pull_request'
+    needs: [ android, windows ]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          path: dl
+      - name: Files
+        run: |
+          python3 platforms/make_platforms.py out
+          mkdir -p rel
+          (cd out/site && zip -qr ../../rel/waha-math-web.zip .)
+          cp dl/windows/*.exe rel/
+          [ -f dl/release-apk/waha-math.apk ] && cp dl/release-apk/waha-math.apk rel/ || true
+          if ls rel | grep -qi check; then echo "::error::نسخة الفحص لا تُنشر"; exit 1; fi
+          ls -la rel
+      - name: Release (new version, or what an existing one lacks)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          V="$(grep -oP 'versionName "\K[^"]+' platforms/android/app/build.gradle)"; TAG="v$V"
+          APK="- أندرويد (موبايل وتابلت): waha-math.apk"
+          [ -f rel/waha-math.apk ] || APK="- أندرويد: يُضاف waha-math.apk إلى هذا الإصدار بعد إضافة أسرار مفتاح التوقيع (SIGNING-AR.md)"
+          NOTES="واحة الرياضيات — النسخة $V (المرحلة الأولى: الوحدات 1 إلى 4، 27 درساً وأربع ورش)
+          $APK
+          - ويندوز: waha-math-setup-$V.exe (مثبّت)، أو waha-math-portable-$V.exe (يعمل بلا تثبيت)
+          - الويب: https://feras-glitch.github.io/waha-math/ ، أو waha-math-web.zip (افتح index.html)
+          كلها تعمل بلا إنترنت، وتقدّم الأطفال على الجهاز نفسه، ويُنقل بين الأجهزة بالنسخة الاحتياطية في لوحة الكبار.
+          آخر بناء: $(date -u '+%Y-%m-%d %H:%M') UTC، الإيداع ${GITHUB_SHA::7}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            have="$(gh release view "$TAG" --json assets -q '.assets[].name')"
+            for f in rel/*; do n="$(basename "$f")"; if ! grep -qx "$n" <<< "$have"; then echo "يُضاف $n إلى $TAG"; gh release upload "$TAG" "$f"; fi; done
+            [ -f rel/waha-math.apk ] && gh release edit "$TAG" --notes "$NOTES" || true
+          else
+            gh release create "$TAG" rel/* --title "واحة الرياضيات $TAG" --notes "$NOTES" --target "$GITHUB_SHA"
+          fi

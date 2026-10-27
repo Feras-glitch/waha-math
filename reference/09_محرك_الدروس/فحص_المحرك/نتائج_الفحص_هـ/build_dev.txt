@@ -1,0 +1,4 @@
+فحص المحتوى: 966 جملة (330 بصيغتين)، 77 وسم خطأ، 12 درساً، 34 نوع بند، 38 مشهداً — 0 مخالفة، 0 تنبيه
+الخط: Waha Naskh 400 (WahaNaskh-Regular.woff)، Waha Naskh 700 (WahaNaskh-Bold.woff)، Baloo Bhaijaan 2 400 800 (BalooBhaijaan2.woff) — مضمّنة (D256)
+جدول التسجيل: 966 جملة، 1296 ملفاً صوتياً → dist/script_m1.xlsx
+كُتب /home/claude/engine/dist/واحة_الرياضيات.dev.html 866 KB (نسخة الفحص --dev)
