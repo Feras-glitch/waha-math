@@ -18,8 +18,16 @@ facts = []
 rc, out = keytool('-list', '-keystore', ks, '-storepass:env', 'KP', KP=pw.strip())
 if rc != 0:
     low = out.lower()
-    why = 'كلمة سرّ المخزن غير صحيحة' if 'password' in low else ('ملف المفتاح ليس مخزناً صالحاً (WAHA_KEYSTORE_BASE64؟)' if 'format' in low or 'invalid' in low else out.strip().splitlines()[-1][:150])
-    print('::error title=مفتاح التوقيع::%s. أعيدوا إدخال WAHA_KEYSTORE_PASSWORD كما في password.txt تماماً (وWAHA_KEYSTORE_BASE64 كل محتوى keystore-base64.txt).' % why)
+    size = os.path.getsize(ks)
+    if 'password' not in low:
+        why = 'ملف المفتاح (%d بايت) ليس مخزناً صالحاً: WAHA_KEYSTORE_BASE64 ليس كل محتوى keystore-base64.txt' % size
+    else:
+        # أيّ سرٍّ آخر يفتح المخزن؟ (تبادلٌ بين الأسرار عند اللصق) — بلا طباعة قيمة
+        other = [n for n, v in (('WAHA_KEY_PASSWORD', kp), ('WAHA_KEY_ALIAS', alias)) if v.strip() and keytool('-list', '-keystore', ks, '-storepass:env', 'KP', KP=v.strip())[0] == 0]
+        why = ('كلمة سرّ المخزن في WAHA_KEYSTORE_PASSWORD غير صحيحة، والصحيحة هي قيمة %s: انسخوها إليه' % other[0]) if other else \
+              ('ملف المفتاح (%d بايت) لا يُفتح بأيّ كلمة سرّ في الأسرار: إمّا WAHA_KEYSTORE_PASSWORD ليست محتوى password.txt، أو WAHA_KEYSTORE_BASE64 من ملف مفتاحٍ آخر. '
+               'أعيدوا لصق الاثنين من ملفّي «مفتاح التوقيع» نفسه' % size)
+    print('::error title=مفتاح التوقيع::%s.' % why)
     sys.exit(1)
 names = [l.split(',')[0].strip() for l in out.splitlines() if 'PrivateKeyEntry' in l]
 if pw != pw.strip():
