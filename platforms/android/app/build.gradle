@@ -42,8 +42,9 @@ android {
             minifyEnabled false
             if (ks) signingConfig signingConfigs.release
         }
+        // نسخة الفحص بالمفتاح التجريبي دائماً: لا تُوزَّع، فلا تحتاج مفتاح العائلة
         debug {
-            signingConfig ks ? signingConfigs.release : signingConfigs.fixedDebug
+            signingConfig signingConfigs.fixedDebug
         }
     }
 

@@ -2,12 +2,12 @@
 #   1) الفحوص: فحص المحتوى، والبناء يطابق المودَع في dist/، والفحص الدخاني لنسخة الأطفال، ونسخة الويب بلا إنترنت، وجسر أندرويد.
 #      لا يُبنى شيء إن أخفقت. (المجموعة الكاملة test/run_all.sh نحو أربع ساعات، فتُشغَّل عند كل بوابة لا مع كل رفع.)
 #   2) نسخة الويب على GitHub Pages (فرع gh-pages): https://feras-glitch.github.io/waha-math/
-#   3) أندرويد APK موقّع بمفتاح العائلة (أسرار WAHA_*، انظر SIGNING-AR.md). قبل إضافة الأسرار تُبنى نسخة للفحص فقط
-#      تبقى مرفقةً بصفحة التشغيل ولا تُنشر، لأن مفتاحها التجريبي في المستودع.
+#   3) أندرويد: APK للنشر موقّع بمفتاح العائلة (أسرار WAHA_*، انظر SIGNING-AR.md؛ ويُفحص المفتاح أولاً ويُقال أيّ سرٍّ خطأ)،
+#      ونسخة فحص بمفتاحٍ تجريبي في المستودع تُبنى دائماً وتبقى مرفقةً بصفحة التشغيل ولا تُنشر.
 #   4) ويندوز: مثبّت وبرنامج محمول (Electron)، ويُفتح التطبيق المبني نفسه ويُسار فيه كالطفل قبل النشر.
 #   5) فحص APK على هاتف وتابلت افتراضيين: يُثبَّت ويُفتح ويُسار فيه، مع لقطة شاشة (لا يوقف النشر، ويُقرأ في صفحة التشغيل).
-#   6) إصدار في Releases باسم رقم النسخة (versionName في platforms/android/app/build.gradle). ملفٌ نُشر لا يُستبدل؛
-#      وما غاب عن إصدارٍ منشور (APK قبل إضافة المفتاح) يُضاف إليه حين يُبنى.
+#   6) إصدار في Releases باسم رقم النسخة (versionName في platforms/android/app/build.gradle): ويندوز والويب، وAPK إن صحّ المفتاح.
+#      ملفٌ نُشر لا يُستبدل؛ وما غاب عن إصدارٍ منشور (APK قبل تصحيح المفتاح) يُضاف إليه حين يُبنى.
 name: Build all
 
 on:
@@ -75,7 +75,52 @@ jobs:
           publish_branch: gh-pages
           force_orphan: true
 
+  # نسخة الفحص (debuggable، بمفتاحٍ تجريبي ثابت في المستودع): تُبنى دائماً، ويُفحص بها التطبيق على هاتف وتابلت افتراضيين، ولا تُنشر
   android:
+    if: github.event_name != 'pull_request'
+    needs: checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: App page into Android assets
+        run: |
+          python3 platforms/make_platforms.py out
+          mkdir -p platforms/android/app/src/main/assets/www
+          cp out/android-www/index.html platforms/android/app/src/main/assets/www/
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android SDK
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Check APK
+        working-directory: platforms/android
+        run: |
+          python3 ../tests/ci_run.py "Android check APK" gradle assembleDebug --no-daemon --stacktrace
+          mkdir -p "$GITHUB_WORKSPACE/apk" && cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/apk/waha-math-check.apk"
+      - name: What is inside
+        run: |
+          BT="$ANDROID_HOME/build-tools/34.0.0"; A=apk/waha-math-check.apk
+          "$BT/aapt2" dump badging "$A" | grep -E "^package|uses-permission|application-label:|sdkVersion|targetSdk"
+          unzip -l "$A" | grep -q "assets/www/index.html"
+          ! "$BT/aapt2" dump badging "$A" | grep -q "android.permission.INTERNET"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: check-apk
+          path: apk/waha-math-check.apk
+          retention-days: 7
+
+  # نسخة النشر: موقّعة بمفتاح العائلة من الأسرار (SIGNING-AR.md). بلا أسرارٍ لا تُبنى، ويُنشر الباقي
+  android-release:
     if: github.event_name != 'pull_request'
     needs: checks
     runs-on: ubuntu-24.04
@@ -110,7 +155,7 @@ jobs:
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/waha.jks"
             echo "path=$RUNNER_TEMP/waha.jks" >> "$GITHUB_OUTPUT"
           else
-            echo "::warning::لم تُضف أسرار مفتاح التوقيع بعد؛ تُبنى نسخة للفحص فقط ولا تُنشر. انظر SIGNING-AR.md"
+            echo "::warning::لم تُضف أسرار مفتاح التوقيع بعد، فلا يُبنى APK للنشر. انظر SIGNING-AR.md"
           fi
       - name: Check the signing key
         if: steps.key.outputs.path != ''
@@ -128,34 +173,16 @@ jobs:
           WAHA_KEY_ALIAS: ${{ secrets.WAHA_KEY_ALIAS }}
           WAHA_KEY_PASSWORD: ${{ secrets.WAHA_KEY_PASSWORD }}
         run: |
-          python3 ../tests/ci_run.py "Android signed APK" gradle assembleRelease assembleDebug --no-daemon --stacktrace
-          mkdir -p "$GITHUB_WORKSPACE/apk"
-          cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/apk/waha-math.apk"
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/apk/waha-math-check.apk"
-      - name: Test-only APK (no signing key yet)
-        if: steps.key.outputs.path == ''
-        working-directory: platforms/android
-        run: |
-          python3 ../tests/ci_run.py "Android test APK" gradle assembleDebug --no-daemon --stacktrace
-          mkdir -p "$GITHUB_WORKSPACE/apk"
-          cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/apk/waha-math-check.apk"
-      - name: What is inside
-        run: |
+          python3 ../tests/ci_run.py "Android signed APK" gradle assembleRelease --no-daemon --stacktrace
+          mkdir -p "$GITHUB_WORKSPACE/apk" && cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/apk/waha-math.apk"
           BT="$ANDROID_HOME/build-tools/34.0.0"
-          for a in apk/*.apk; do echo "== $a"; "$BT/aapt2" dump badging "$a" | grep -E "^package|uses-permission|application-label:|sdkVersion|targetSdk"; unzip -l "$a" | grep -E "assets/www/index.html"; "$BT/apksigner" verify --print-certs "$a" | grep -E "Signer #1 certificate (DN|SHA-256)"; done
-          ! "$BT/aapt2" dump badging apk/waha-math-check.apk | grep -q "android.permission.INTERNET"
-      - name: Signed APK for the release
+          "$BT/aapt2" dump badging "$GITHUB_WORKSPACE/apk/waha-math.apk" | grep -E "^package|application-label:"
+          echo "::notice title=APK::$("$BT/apksigner" verify --print-certs "$GITHUB_WORKSPACE/apk/waha-math.apk" | grep -E 'Signer #1 certificate (DN|SHA-256)' | tr '\n' ' ')"
+      - uses: actions/upload-artifact@v4
         if: steps.key.outputs.path != ''
-        uses: actions/upload-artifact@v4
         with:
           name: release-apk
           path: apk/waha-math.apk
-      - name: Check APK (debuggable, for the emulator test only)
-        uses: actions/upload-artifact@v4
-        with:
-          name: check-apk
-          path: apk/waha-math-check.apk
-          retention-days: 7
 
   android-device:
     if: github.event_name != 'pull_request'
@@ -246,9 +273,10 @@ jobs:
             platforms/desktop/dist/waha-math-setup-*.exe
             platforms/desktop/dist/waha-math-portable-*.exe
 
+  # يُنشر ما بُني: ويندوز والويب دائماً، وAPK حين يصحّ مفتاح التوقيع (ويُضاف إلى الإصدار المنشور حين يُبنى بعدُ)
   release:
-    if: github.event_name != 'pull_request'
-    needs: [ android, windows ]
+    if: github.event_name != 'pull_request' && !cancelled() && needs.windows.result == 'success'
+    needs: [ android-release, windows ]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
