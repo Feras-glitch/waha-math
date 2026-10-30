@@ -57,6 +57,7 @@ KEYLESS = """() => { const s = document.querySelector('#stage svg'); if (!s) ret
 # ولوحة المفاتيح بالمفتاح الحقيقي (الفحص المستقل C2 لبوابة S1-U4: كان العدّاد يعدّ ما بلا مفتاح بشرطٍ لا يصدق أبداً، فنجت طفرة حذف اللمس من مستمع Enter العامّ):
 # في كل انتظار ثانٍ يُجاب بالصواب، يُشغَّل حلّه الآلي واللمسُ فيه موقوف، فإن كان لمسةً واحدة على هدف في المسرح أخذ الهدفُ التركيز وضُغط Enter الحقيقي
 # وانتُظر أن ينتهي الانتظار (فيُفحص المفتاح الخاص والمستمع العامّ كلاهما)؛ وما سوى ذلك تُعاد لمساته الموقوفة كما كانت
+KEY_DELAY = int(os.environ.get("KEY_DELAY", "0"))   # م.ث قبل مفتاح الفعل في الحلّ المتتابع، لإعادة إنتاج سباقه
 KEYOK = """() => { const a = window.__auto; window.__keyAsync = false; if (!a || !a.ok) return 0; const cap = [], D = EventTarget.prototype.dispatchEvent, C = HTMLElement.prototype.click, LOOP = {}; let r;
   /* حلٌّ آلي يلمس حتى يتغيّر شيء («while (laid < n) plus.click()») يدور بلا نهاية واللمس موقوف فيتجمّد الصفحة (بوابة S1-U4): بعد أربعين لمسة يُقطع ويُشغَّل الحلّ كما هو */
   const grab = (el, how) => { cap.push([el, how]); if (cap.length > 40) throw LOOP; };
@@ -68,7 +69,13 @@ KEYOK = """() => { const a = window.__auto; window.__keyAsync = false; if (!a ||
   /* والحلّ المتتابع (async: يلمس الأول ثم ينتظر ويلمس ما بعده وحده، كطريق الأعداد والعدّ باللمس والوجوه) يمضي بعد 30 م.ث فأكثر بلمساتٍ حقيقية،
      فما يتغيّر بعدها ليس من مفتاحٍ يُضغط: يُعلَّم، فيُضغط مفتاح الفعل فوراً كما قبل J2 بلا المفاتيح الأخرى (بوابة S1-U4 بعد J: سبق الحلّ المفاتيح الأخرى
      في طريق الأعداد، وظهر بلا أي مفتاح؛ ولا انتظار هنا ولا ذهاب وإياب زائد، فيبقى مفتاح الفعل قبل لمسته الثانية كما كان) */
-  window.__keyAsync = !!(r && typeof r.then === 'function'); window.__keyEl = e; e.focus(); return document.activeElement === e ? 1 : -1; }"""
+  window.__keyAsync = !!(r && typeof r.then === 'function'); window.__keyEl = e;
+  /* وفي المتتابع: هل جاءت أول لمسةٍ بعد هذا قبل أيّ مفتاح؟ فإن جاءت فالحلّ سبق المفتاح (المهلة 30 م.ث تبدأ من هنا لا من ضغط المفتاح، فتسبقه حين يبطؤ الجهاز)،
+     وما سُجّل بعدها خطأُ السائق لا خطأ المفتاح: يُعدّ باسمه ولا يُحكم به (الدرس 263؛ ظهر مرة في «replay screen f» بعد الفحص الخصم) */
+  window.__race = null;
+  if (window.__keyAsync) { let kd = false; document.addEventListener('keydown', () => { kd = true; }, { capture: true, once: true });
+    document.addEventListener('click', () => { if (window.__race === null) window.__race = !kd; }, { capture: true, once: true }); }
+  e.focus(); return document.activeElement === e ? 1 : -1; }"""
 # وأعداد «معي» لا تكون خياراً غير الجواب في أسئلة الشاشة التي تخدمها (الفحص المستقل H1 (10أ): قالت «أربعة عشر» ثم سُئل الطفل عن ثلاثة عشر وخياراه 14 و4)،
 # مولَّدةً كانت أو مشتّتاً مشخِّصاً (فالمشخِّص يُعرف بخطئه لا بذاكرة «معي»). والمتوقَّع يُحسب من بيانات الدروس بـ matNums نفسها في d240 (لا من MAT_AVOID في
 # الصفحة)، للخطوة التي فيها «معي» وما يمضي بعدها: فيُرى البناء إن لم يكتب mat.avoid، والمسار إن أبقى الأعداد بعد شاشتها أو أفرغها قبل نهايتها
@@ -146,7 +153,7 @@ async def main():
     ONLY_SET = {x for x in ONLY if not x.startswith('ws:')}
     tw_seen = {}; prev_twin = False
     if ONLY: await pg.evaluate("() => { PROG.unlockAll = true; saveProg(); showHome(); }"); await pg.wait_for_timeout(300)
-    matd = {}; matq = [0]; small = {}; noname = {}; empty = {}; squeeze = {}; clipt = {}; coverb = {}; keyless = {}; knon = [0]; kasync = [0]; kpress = [0]; kspace = [0]; kpan = [0]; taps = {}; leaks = []; failed_rev = {}; redo_seen = set(); replay_q = None; crashes = 0; seen_types = set(); deep = {}; failed_test = {}; shots = set(); report = []; lessons = 0
+    matd = {}; matq = [0]; small = {}; noname = {}; empty = {}; squeeze = {}; clipt = {}; coverb = {}; keyless = {}; knon = [0]; kasync = [0]; krace = [0]; kpress = [0]; kspace = [0]; kpan = [0]; taps = {}; leaks = []; failed_rev = {}; redo_seen = set(); replay_q = None; crashes = 0; seen_types = set(); deep = {}; failed_test = {}; shots = set(); report = []; lessons = 0
     visits = 0   # MAXL يعدّ الدروس وحدها (لا المراجعة ولا الورشة)، وسقف الزيارات كلها 200 حارس من حلقة
     while lessons < MAXL and visits < 200:
       if os.environ.get('ONLY'):
@@ -245,6 +252,7 @@ async def main():
               if await pg.evaluate("([n, k]) => !window.__auto || window.__auto.n !== n || LOG.attempts.length !== k", [a['n'], na]): moved = nk; break
             if moved: keyless.setdefault((sc, a['kind'], moved + ' (غير مفتاح الفعل) فعل شيئاً'), 0); acts.append((sc, a['kind'], how)); idle = 0; await pg.wait_for_timeout(40); continue
             if not asy and not await pg.evaluate(KEYFOCUS): keyless.setdefault((sc, a['kind'], 'لا يعود إليه التركيز بعد Tab'), 0); await pg.evaluate(KEYGO); acts.append((sc, a['kind'], how)); idle = 0; await pg.wait_for_timeout(40); continue
+            if asy and KEY_DELAY: await pg.wait_for_timeout(KEY_DELAY)   # لإعادة إنتاج السباق عمداً (KEY_DELAY=100)
             await pg.keyboard.press(key); kdone = False; kpress[0] += 1; kspace[0] += key == 'Space'
             for _ in range(60):
               if await pg.evaluate("(n) => !window.__auto || window.__auto.n !== n", a['n']): kdone = True; break
@@ -256,7 +264,8 @@ async def main():
               if same is False: keyless.setdefault((sc, a['kind'], key + ' لمس غير هدفه'), 0)
               elif same is None:
                 wr = await pg.evaluate("(n) => LOG.attempts.slice(n).filter(x => x.ok === false).map(x => x.scene + ':' + (x.tag || ''))", na)
-                if wr: keyless.setdefault((sc, a['kind'], key + ' لمس غير الحلّ: ' + ','.join(wr)[:60]), 0)
+                if wr and asy and await pg.evaluate("() => window.__race === true"): krace[0] += 1   # سبق الحلُّ المتتابع المفتاح: لا حكم على المفتاح
+                elif wr: keyless.setdefault((sc, a['kind'], key + ' لمس غير الحلّ: ' + ','.join(wr)[:60]), 0)
           elif ko == -1: keyless.setdefault((sc, a['kind'], 'لا يأخذ التركيز'), 0); await pg.evaluate(KEYGO)
           elif ko == 0: pass                              # حلّه الآلي شُغّل (ولمساته الموقوفة أُعيدت)
           elif how == 'bag': await pg.evaluate("""(p) => { const b = [...document.querySelectorAll('.choices .pick')]; (b.find(x => x.dataset.k === p) || b[0]).click(); }""", PATH)
@@ -309,7 +318,7 @@ async def main():
     if lessons and not kpress[0]: keyless.setdefault(('-', 'tap', 'لم يُضغط Enter حقيقي على أي هدف'), 0)   # فلا ينجح العدّاد فارغاً
     if lessons and kpress[0] > 1 and not kspace[0]: keyless.setdefault(('-', 'tap', 'لم تُضغط المسافة على أي هدف'), 0)
     if lessons and kpress[0] and not knon[0]: keyless.setdefault(('-', 'tap', 'لم يُضغط مفتاحٌ غير مفتاح الفعل على أي هدف'), 0)
-    print('keyless targets:', len(keyless), '(مفتاح حقيقي على %d هدفاً، منها %d بالمسافة، وعلى زرّي الشريط %d مرة، ومفتاحٌ غير مفتاح الفعل %d مرة، وهدفٌ حلُّه متتابع بمفتاح الفعل وحده %d مرة)' % (kpress[0], kspace[0], kpan[0], knon[0], kasync[0])); [print(' ', *k) for k in list(keyless)[:60]]
+    print('keyless targets:', len(keyless), '(مفتاح حقيقي على %d هدفاً، منها %d بالمسافة، وعلى زرّي الشريط %d مرة، ومفتاحٌ غير مفتاح الفعل %d مرة، وهدفٌ حلُّه متتابع بمفتاح الفعل وحده %d مرة، سبقه حلُّه فيها %d)' % (kpress[0], kspace[0], kpan[0], knon[0], kasync[0], krace[0])); [print(' ', *k) for k in list(keyless)[:60]]
     if PATH == 'mat' and lessons > 3 and not matq[0]: matd.setdefault(('-', '-', 'لم يُرَ سؤال عددي بعد «معي»'), 0)
     print('mat distractors:', len(matd), '(أسئلة عددية بعد «معي»: %d)' % matq[0]); [print('  «معي»:', *k) for k in list(matd)[:20]]
     print('blocked lessons:', len(blocked)); [print(' ', *r) for r in blocked[:20]]
