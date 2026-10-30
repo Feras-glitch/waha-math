@@ -298,7 +298,7 @@ jobs:
           if ls rel | grep -qi check; then echo "::error::نسخة الفحص لا تُنشر"; exit 1; fi
           # بيان الإصدار (توصية الفحص الخصم R07): الإيداع وبصمة صفحة التطبيق نفسها وبصمة كل ملف، فيُعرف أيّ شيفرة في كل منصة
           { echo "commit $GITHUB_SHA"; echo "app-page $(sha256sum 'dist/واحة_الرياضيات.html' | cut -d' ' -f1)  dist/واحة_الرياضيات.html";
-            (cd rel && sha256sum *); } > rel/MANIFEST-SHA256.txt
+            (cd rel && sha256sum *); } > manifest.tmp && mv manifest.tmp rel/MANIFEST-SHA256.txt   # خارج rel أولاً: لا يُدرج البيانُ بصمةَ نفسه فارغاً
           cat rel/MANIFEST-SHA256.txt; ls -la rel
       - name: Release (new version, or what an existing one lacks)
         env:

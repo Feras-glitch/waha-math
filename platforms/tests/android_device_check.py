@@ -41,8 +41,29 @@ def logcat():
     return '\n'.join(keep[-60:])
 
 
+def meminfo():
+    # ذاكرة الجهاز المتاحة وحمله: تابلت الفحص توقّف كله بعد بدء الدرس (حتى adb) في ثلاثة تشغيلات، وشيفرة التطبيق لم تتغيّر بينها وبين تشغيلٍ نجح؛
+    # فتُسجَّل الذاكرة والحمل كل خمس ثوانٍ لتظهر مع «ما تمّ» إن أخفق: نفادٌ في الجهاز الافتراضي أم توقّفٌ في التطبيق
+    try:
+        t = subprocess.run(['adb', 'shell', 'cat /proc/meminfo /proc/loadavg'], capture_output=True, text=True, timeout=20).stdout
+        d = {l.split(':')[0]: l.split()[1] for l in t.splitlines() if ':' in l and len(l.split()) > 1}
+        return '%d/%dMB load %s' % (int(d['MemAvailable']) // 1024, int(d['MemTotal']) // 1024, t.strip().splitlines()[-1].split()[0])
+    except Exception as e:
+        return 'لا: %s' % str(e)[:60]
+
+
+def sampler():
+    t0 = time.time()
+    while True:
+        res.setdefault('mem', []).append('%ds %s' % (time.time() - t0, meminfo()))
+        res['mem'] = res['mem'][-24:]
+        time.sleep(5)
+
+
 def main():
     global ws
+    import threading
+    threading.Thread(target=sampler, daemon=True).start()
     adb('install', '-r', APK)
     res['installed'] = PKG in adb('shell', 'pm', 'list', 'packages', PKG)
     adb('shell', 'am', 'start', '-W', '-n', PKG + '/.MainActivity')
@@ -110,7 +131,7 @@ def main():
     res['back_stay'] = wait("document.getElementById('exitCover').hidden && !document.getElementById('lesson').hidden", 10)
     res['size'] = ev("[innerWidth, innerHeight, devicePixelRatio]")
     res['errors'] = ev('__errs')
-    print(json.dumps(res, ensure_ascii=False, indent=1))
+    print(json.dumps({k: v for k, v in res.items() if k != 'mem'}, ensure_ascii=False, indent=1))
     need = ['installed', 'start', 'shim', 'home', 'bag', 'scene', 'back_cover', 'back_stay']
     bad = [k for k in need if not res.get(k)] + (['errors'] if res.get('errors') else [])
     print('::notice::محرك النطق في الجهاز الافتراضي: %s' % {0: 'يُجهَّز', 1: 'صوت عربي', 2: 'لا صوت عربي (تُقرأ الجمل صامتة)'}.get(res.get('tts'), res.get('tts')))
@@ -123,8 +144,9 @@ try:
     rc = main()
 except Exception:
     print(traceback.format_exc())
-    print('::error title=فحص الجهاز::%s' % esc(traceback.format_exc()[-2500:] + '\nما تمّ: ' + json.dumps(res, ensure_ascii=False)[:1000]))
+    print('::error title=فحص الجهاز::%s' % esc(traceback.format_exc()[-2500:] + '\nما تمّ: ' + json.dumps({k: v for k, v in res.items() if k != 'mem'}, ensure_ascii=False)[:1000]))
     rc = 1
+print('::%s title=ذاكرة الجهاز وحمله::%s' % ('error' if rc else 'notice', esc('\n'.join(res.get('mem', [])))))   # والناجح أيضاً: يُقارَن به
 try:
     tail = logcat()
     if rc:
