@@ -193,13 +193,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # والتابلت يرسم داخل الجهاز (guest): مُرسِم المضيف swiftshader_indirect انهار فيه (RenderThread segfault في سجلّ نواة الآلة المضيفة)
-        # بعد نحو ثلاثين ثانية من بدء الدرس في أربعة تشغيلات، والجهاز الافتراضي معه، وذاكرته لم تنفد (الإيداع cb55b05)
+        # والتابلت بمُرسِم ANGLE (swangle_indirect): مُرسِم المضيف swiftshader_indirect انهار فيه (RenderThread segfault في سجلّ نواة الآلة المضيفة)
+        # بعد نحو ثلاثين ثانية من بدء الدرس في خمسة تشغيلات، والجهاز الافتراضي معه، وذاكرته لم تنفد (الإيداع cb55b05)؛ و«guest» لم يغيّره (انهار بالعنوان نفسه)
         include:
           - device: pixel_6
             gpu: swiftshader_indirect
           - device: pixel_c
-            gpu: guest
+            gpu: swangle_indirect
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
