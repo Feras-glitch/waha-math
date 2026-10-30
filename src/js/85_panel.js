@@ -11,12 +11,29 @@ function statusPill(L) { const p = PROG[L.id] || {};
   if (p.mastered) return (p.entry ? '<span class="pill think">أتقنه على الشاشة، مدخل</span> <span class="muted">يصير تأسيساً حين يُعاد بالأشياء</span>' : '<span class="pill good">متقن</span>') + redo;
   if (p.resume) return '<span class="pill">توقّف في منتصفه</span>';
   if (!p.done) return '—';
-  const def = Object.entries(p.cs || {}).filter(([, c]) => c.deferred && !c.mastered).map(([C]) => conceptName(L, C)).filter(Boolean);
+  const def = Object.entries(p.cs || {}).filter(([C, c]) => isObj(c) && c.deferred && !c.mastered && !adultSays(L, C)).map(([C]) => conceptName(L, C)).filter(Boolean);
   return redo.slice(1) + `${redo ? ' ' : ''}<span class="pill">أُنجز</span>${p.entry ? ' <span class="pill think">مدخل: بالشاشة وحدها</span>' : ''}${def.length ? ` <span class="pill think">مؤجَّل إلى المراجعة: ${esc(def.join('، '))}</span>` : ''}${L.test && p.score != null ? ` <span class="pill">${DG(p.score)} من ${DG(p.of)}</span>` : ''}`; }
-function adultCardHTML(L) { const A = L.adultCard; const saved = (PROG.adult || {})[L.id] || [];
+/* حكم الكبير (المبدأ 12، D240؛ الفحص الخصم A01 وA02): من أجوبته الصريحة وحدها، بطول أسئلة البطاقة («نعم» في كلها)،
+   ويُشتقّ من الأجوبة الحاضرة كلما عُرض، فـ«ليس بعد» بعد «نعم» يلغيه. وهو مصدرٌ مستقلّ لا يكتب إتقان التطبيق (cs.mastered) ولا يمحوه */
+const adultAnswers = L => { const n = L.adultCard.qs.length, a = isObj(PROG.adult) && Array.isArray(PROG.adult[L.id]) ? PROG.adult[L.id] : [];
+  return Array.from({ length: n }, (_, i) => a[i] === true ? true : a[i] === false ? false : null); };
+const adultSays = (L, C) => !!(L && L.adultCard && L.adultCard.concept === C && adultAnswers(L).every(x => x === true));
+/* ترحيل ما كتبه الحكم القديم في المفهوم نفسه (mastered وbyAdult معاً): يبقى إتقان التطبيق بدليله (عتبة فحصه) لا بالحكم */
+(function adultMigrate() { let ch = false;
+  for (const L of Object.values(LDATA)) { const C = L.adultCard && L.adultCard.concept; const c = C && isObj(PROG[L.id]) && isObj(PROG[L.id].cs) ? PROG[L.id].cs[C] : null;
+    if (!isObj(c) || !('byAdult' in c)) continue; ch = true;
+    const entry = ((L.mastery && L.mastery.entryOnly) || []).includes(C), app = !entry && isInt(c.ok) && isInt(c.of) && c.of > 0 && c.ok >= msNeed(c.of);
+    if (c.byAdult && !app) { delete c.mastered; if (!entry) c.deferred = true; } delete c.byAdult; }
+  if (ch) saveProg(); })();
+function adultCardHTML(L) { const A = L.adultCard; const saved = adultAnswers(L);
   return `<div class="talkcard"><b>${esc(plain(L.title))}: ${esc(A.title)}</b><p class="muted">${esc(A.how)}</p>${A.qs.map((q, i) => `<div class="aq"><span>${DG(i + 1)}. ${esc(q)}</span><span class="seg">
-    <button class="pick" data-ac="${L.id}" data-i="${i}" data-v="1" aria-pressed="${saved[i] === true}">نعم</button><button class="pick" data-ac="${L.id}" data-i="${i}" data-v="0" aria-pressed="${saved[i] === false}">ليس بعد</button></span></div>`).join('')}
-    ${saved.length === A.qs.length && saved.every(Boolean) ? '<span class="pill good">متقن بحكم الكبير</span>' : ''}</div>`; }
+    <button class="pick" data-ac="${esc(L.id)}" data-i="${i}" data-v="1" aria-pressed="${saved[i] === true}">نعم</button><button class="pick" data-ac="${esc(L.id)}" data-i="${i}" data-v="0" aria-pressed="${saved[i] === false}">ليس بعد</button></span></div>`).join('')}
+    ${A.concept && adultSays(L, A.concept) ? '<span class="pill good">متقن بحكم الكبير</span>' : ''}</div>`; }
+/* حالة المفهوم في خريطة الإتقان: إتقان التطبيق وحكم الكبير مصدران، والعرض منهما */
+function conceptPill(L, C) { const c = ((PROG[L.id] || {}).cs || {})[C] || {}, adult = adultSays(L, C);
+  if (c.mastered) return (PROG[L.id] || {}).entry && !adult ? '<span class="pill think">أتقنه على الشاشة، مدخل</span>' : '<span class="pill good">متقن</span>';
+  if (adult) return '<span class="pill good">متقن بحكم الكبير</span>';
+  return c.entry ? '<span class="pill think">مدخل: يحكم الكبير</span>' : c.deferred ? '<span class="pill think">مؤجَّل إلى المراجعة</span>' : (L.mastery && L.mastery.concepts[C]) ? '—' : '<span class="pill">مدخل</span>'; }
 function openPanel() {
   const A = LOG.attempts; const errs = {}; A.filter(a => a.err && ERRN[a.err] && a.scene !== 'ws').forEach(a => errs[a.err] = (errs[a.err] || 0) + 1);
   const firsts = A.filter(a => a.firstTry !== undefined && isAssess(a)); const fOk = firsts.filter(a => a.firstTry && a.ok).length;
@@ -25,19 +42,19 @@ function openPanel() {
   const faces = LOG.faces.slice(-6).map(f => `${plain(LDATA[f.lesson] ? LDATA[f.lesson].title : '')}: ${{ easy: 'سهل', ok: 'مناسب', hard: 'صعب' }[f.k] || ''}`);
   $('#panel').innerHTML = `<div class="wrap">
     <div><h2>للكبار${PROFILE && PROFILE.name ? ': ' + esc(PROFILE.name) : ''}</h2><p class="muted">ما جرى في الدروس. البيانات على هذا الجهاز فقط.</p></div>
-    <div class="card warn" id="storeWarn"${STORE_ISSUES.writeFail || STORE_ISSUES.corrupt.length || STORE_ISSUES.migrated ? '' : ' hidden'}><b>تنبيه التخزين:</b> ${STORE_ISSUES.writeFail ? 'تعذّر حفظ التقدّم الأخير (المساحة ممتلئة أو التصفّح الخاص). ' : ''}${STORE_ISSUES.corrupt.length ? 'وُجدت بيانات تالفة فحُفظت نسخة منها وبدأت القيم من جديد: ' + esc(STORE_ISSUES.corrupt.join('، ')) + '. ' : ''}${STORE_ISSUES.migrated ? 'تغيّرت بنية دروس الوحدتين (ستة دروس لكلٍّ منهما)، فبدأ التقدّم من جديد، وحُفظ التقدّم القديم كاملاً في الجهاز (hp_prog_bak).' : ''}</div>
+    <div class="card warn" id="storeWarn"${STORE_ISSUES.writeFail || STORE_ISSUES.corrupt.length || STORE_ISSUES.repaired.length || STORE_ISSUES.migrated || STORE_ISSUES.restore ? '' : ' hidden'}><b>تنبيه التخزين:</b> ${STORE_ISSUES.writeFail ? 'تعذّر حفظ التقدّم الأخير (المساحة ممتلئة أو التصفّح الخاص). ' : ''}${STORE_ISSUES.corrupt.length ? 'وُجدت بيانات تالفة فحُفظت نسخة منها وبدأت القيم من جديد: ' + esc(STORE_ISSUES.corrupt.join('، ')) + '. ' : ''}${STORE_ISSUES.repaired.length ? 'وفي بعض البيانات أجزاءٌ تالفة فأُسقطت وحدها وبقي الباقي، وحُفظت نسخة منها كما كانت: ' + esc(STORE_ISSUES.repaired.join('، ')) + '. ' : ''}${STORE_ISSUES.migrated ? 'تغيّرت بنية دروس الوحدتين (ستة دروس لكلٍّ منهما)، فبدأ التقدّم من جديد، وحُفظ التقدّم القديم كاملاً في الجهاز (hp_prog_bak). ' : ''}${{ undone: 'لم تكتمل استعادة نسخةٍ سابقة (أُغلق التطبيق في أثنائها)، فأُرجع ما كان على الجهاز قبلها كاملاً.', failed: 'لم تكتمل استعادة نسخةٍ سابقة، وتعذّر إرجاع ما كان؛ وهو محفوظ في الجهاز (hp_before_restore). أعيدوا الاستعادة أو أبلغوا الدعم.', lost: 'لم تكتمل استعادة نسخةٍ سابقة، ولم توجد نسخة مما كان قبلها.' }[STORE_ISSUES.restore] || ''}</div>
     <div class="card"><b>قبل الدرس القادم: حقيبة الدرس</b>${NL ? `<p><b>${esc(plain(NL.title))}</b>${NL.bag && !NL.bag.screenOnly ? `: ${esc(NL.bag.adult)}` : ': لا يحتاج أشياء من البيت.'}</p>
       <p class="muted">أحضروها وابقوا قريبين واسمعوا، ولا تشرحوا: التطبيق يشرح. ${NL.bag && NL.bag.screenPath ? esc(NL.bag.screenPath) : ''}</p>` : '<p>أُنجزت الدروس المتاحة.</p>'}</div>
     <div class="card"><table><thead><tr><th>الدرس</th><th>الحالة</th></tr></thead><tbody>${UNITS.map(U => `<tr class="uh"><td colspan="2">${esc(plain(U.title))}${PROG['badge:' + U.id] ? ' <span class="pill good">الشارة</span>' : ''}</td></tr>` + U.lessons.map(id => { const L = LDATA[id];
       return `<tr><td>${esc(plain(L.title))}</td><td>${statusPill(L)}</td></tr>`; }).join('')).join('')}</tbody></table>
       <p><b>الصواب من المحاولة الأولى:</b> ${DG(fOk)} من ${DG(firsts.filter(a => a.firstTry != null).length)}</p></div>
-    <details class="card"><summary><b>خريطة الإتقان</b> (لكل فكرة في الدروس المنجزة)</summary><table><tbody>${done.map(L => Object.entries(L.concepts || {}).map(([C, name]) => { const c = ((PROG[L.id] || {}).cs || {})[C] || {};
-      const st = c.mastered ? ((PROG[L.id] || {}).entry && !c.byAdult ? '<span class="pill think">أتقنه على الشاشة، مدخل</span>' : '<span class="pill good">متقن</span>') : c.entry ? '<span class="pill think">مدخل: يحكم الكبير</span>' : c.deferred ? '<span class="pill think">مؤجَّل إلى المراجعة</span>' : (L.mastery && L.mastery.concepts[C]) ? '—' : '<span class="pill">مدخل</span>';
+    <details class="card"><summary><b>خريطة الإتقان</b> (لكل فكرة في الدروس المنجزة)</summary><table><tbody>${done.map(L => Object.entries(L.concepts || {}).map(([C, name]) => { const st = conceptPill(L, C);
       return `<tr><td>${esc(name)}</td><td>${st}</td></tr>`; }).join('')).join('') || '<tr><td>تظهر بعد أول درس.</td></tr>'}</tbody></table></details>
     ${done.some(L => L.adultCard) ? `<div class="card"><b>بطاقات يحكم بها الكبير</b> (ما لا يُتعلَّم من الشاشة):${done.filter(L => L.adultCard).map(adultCardHTML).join('')}</div>` : ''}
     <div class="card"><b>بطاقات الحوار ومهام البيت</b> (بعد كل درس أُنجز):${done.filter(L => TALK[L.id]).map(L => `<div class="talkcard"><b>${esc(plain(L.title))}</b><br>${esc(G(TALK[L.id]))}${homeTask(L.id) ? `<br><span class="muted">مهمة البيت: ${esc(homeTask(L.id))}</span>` : ''}</div>`).join('') || '<br>تظهر هنا بعد أول درس.'}</div>
-    <details class="card"><summary><b>المراجعة المتباعدة</b> (بعد يوم ثم ٣ ثم ٧ ثم ٢١ يوماً، والخطأ يرجعها خطوة واحدة)</summary>${Object.keys(PROG.srs).length ? `<table><thead><tr><th>الدرس</th><th>المرحلة</th><th>الموعد</th></tr></thead><tbody>${Object.entries(PROG.srs).map(([id, r]) => { const L = LDATA[id]; if (!L) return ''; const d = r.due ? daysBetween(Date.now(), r.due) : null;
-      return `<tr><td>${esc(plain(L.title))}</td><td>${DG(Math.min(r.step, 4))} من ${DG(4)}</td><td>${r.due == null ? '<span class="pill good">ثابت</span>' : d <= 0 ? '<span class="pill think">اليوم</span>' : 'بعد ' + nw(d, 'يوم واحد', 'يومين', 'أيام', 'يوماً')}</td></tr>`; }).join('')}</tbody></table>` : '<p>تبدأ بعد أول درس.</p>'}
+    <details class="card"><summary><b>المراجعة المتباعدة</b> (لكل فكرة: بعد يوم ثم ٣ ثم ٧ ثم ٢١ يوماً، والخطأ يرجعها وحدها خطوة واحدة)</summary>${Object.keys(PROG.srs).length ? `<table><thead><tr><th>الفكرة</th><th>المرحلة</th><th>الموعد</th></tr></thead><tbody>${Object.entries(PROG.srs).map(([id, r]) => { const L = LDATA[id]; if (!L || !isObj(r) || !isObj(r.cs)) return '';
+      return `<tr class="uh"><td colspan="3">${esc(plain(L.title))}</td></tr>` + Object.entries(r.cs).map(([C, x]) => { const d = x.due ? daysBetween(Date.now(), x.due) : null;
+        return `<tr><td>${esc(conceptName(L, C))}</td><td>${DG(Math.min(x.step, 4))} من ${DG(4)}</td><td>${x.due == null ? '<span class="pill good">ثابت</span>' : d <= 0 ? '<span class="pill think">اليوم</span>' : 'بعد ' + nw(d, 'يوم واحد', 'يومين', 'أيام', 'يوماً')}</td></tr>`; }).join(''); }).join('')}</tbody></table>` : '<p>تبدأ بعد أول درس.</p>'}
       ${Object.entries(PROG.streams).filter(([, s]) => s.n).map(([k, s]) => `<p>${{ glance: 'اللمحة السريعة', fluency: 'أصابعي الخمس', story: 'قصص الواحة' }[k] || k}: ${DG(s.ok || 0)} من ${DG(s.n)} من المحاولة الأولى</p>`).join('')}</details>
     <div class="card"><b>إشارات</b> (من آخر المحاولات):<br>${signals().map(([t, x]) => `<span class="pill think">${t}</span> ${esc(x)}`).join('<br>') || 'لا شيء يدعو للقلق.'}
       ${faces.length ? `<p class="muted">«كيف كان؟»: ${esc(faces.join(' · '))}</p>` : ''}
@@ -48,7 +65,7 @@ function openPanel() {
       <p class="muted">في هذه الجلسة: ${nw(sessionNow().n, 'درس واحد', 'درسان', 'دروس', 'درساً')}.</p>
       <div class="seg"><button class="pick" id="slowBtn" aria-pressed="${!!SET.slow}">قراءة أبطأ: ${SET.slow ? 'تعمل' : 'متوقفة'}</button></div></div>
     <div class="card"><b>أطفال هذا الجهاز</b> (لكل طفل تقدّمه ومعرضه وإعداداته، ويختار صورته عند الدخول):
-      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID ? '' : `<button class="pick" data-del="${k.id}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div></div>
+      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div></div>
     <div class="card"><b>الصوت:</b> <span id="vpStat">${vpStatText()}</span>
       <p class="muted">حزمة الصوت ملف zip (أو ملفات صوتية) اسم كل تسجيل فيه معرّف جملته في جدول التسجيل، مثل <code dir="ltr">m1.u1.d2.hook.01.mp3</code>، و<code dir="ltr">…_f.mp3</code> للصيغة المؤنثة. تُستورد مرة واحدة وتبقى في هذا الجهاز، وما لم يُسجَّل يقرؤه صوت الجهاز (D181).</p>
       <div class="seg"><button class="pick" id="vpPick">استيراد حزمة الصوت</button><button class="pick" id="vpDel"${VPACK.n ? '' : ' hidden'}>حذف الحزمة</button></div><input type="file" id="vpIn" accept=".zip,audio/*" multiple hidden><p id="vpMsg" class="muted" aria-live="polite"></p></div>
@@ -62,13 +79,14 @@ function openPanel() {
   $('#closePanel').onclick = () => { $('#panel').hidden = true; showHome(); };
   $('#editProfile').onclick = () => { $('#panel').hidden = true; openProfile(false); };
   $('#addKid').onclick = () => { $('#panel').hidden = true; openProfile(true); };
-  $('#panel').querySelectorAll('[data-del]').forEach(b => b.onclick = () => { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يُحذف تقدّمه كله'; return; }
-    const id = b.dataset.del; for (const key of ['hp_prog', 'hp_log', 'hp_session', 'hp_settings', 'hp_designs']) store.del(key + ':' + id);
-    KIDS.splice(KIDS.findIndex(k => k.id === id), 1); store.set('hp_kids', KIDS); openPanel(); });
-  $('#panel').querySelectorAll('[data-ac]').forEach(b => b.onclick = () => { PROG.adult = isObj(PROG.adult) ? PROG.adult : {}; const a = PROG.adult[b.dataset.ac] = PROG.adult[b.dataset.ac] || [];
-    a[+b.dataset.i] = b.dataset.v === '1'; const L = LDATA[b.dataset.ac]; const C = L.adultCard.concept;
-    if (C && a.length === L.adultCard.qs.length && a.every(Boolean)) { const cs = progOf(L.id).cs = progOf(L.id).cs || {}; cs[C] = { ...(cs[C] || {}), mastered: true, byAdult: true }; }
-    saveProg(); openPanel(); });
+  /* حذف الطفل (الفحص الخصم A08): صوره أولاً، فإن تعذّر حذفها لا يُحذف شيء ولا يُعلَن حذف؛ ثم مفاتيحه ونسخه */
+  $('#panel').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يُحذف تقدّمه وصوره كلها'; return; }
+    const id = b.dataset.del; if (!store.mine(null)) return; b.disabled = true;
+    if (!(await IDB.dropKid(id))) { b.disabled = false; b.dataset.sure = ''; b.textContent = 'تعذّر حذف صوره، فلم يُحذف شيء. أعيدوا المحاولة'; return; }
+    kidForget(id); openPanel(); });
+  $('#panel').querySelectorAll('[data-ac]').forEach(b => b.onclick = () => { const L = LDATA[b.dataset.ac]; if (!L || !L.adultCard) return;
+    const a = adultAnswers(L); a[+b.dataset.i] = b.dataset.v === '1'; PROG.adult = isObj(PROG.adult) ? PROG.adult : {}; PROG.adult[L.id] = a;
+    if (saveProg()) openPanel(); });
   $('#repBtn').onclick = () => weeklyReport();
   $('#slowBtn').onclick = () => { SET.slow = !SET.slow; saveSet(); openPanel(); };
   $('#segMax').querySelectorAll('.pick').forEach(b => b.onclick = () => { SET.sessionMax = +b.dataset.n; saveSet(); openPanel(); });
@@ -89,12 +107,14 @@ function openPanel() {
   $('#bkPick').onclick = () => $('#bkIn').click();
   $('#bkIn').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const box = $('#bkMsg'); let chk;
     try { chk = backupCheck(await f.text()); } catch (x) { chk = { ok: false, why: 'notJson' }; }
-    if (!chk.ok) { box.textContent = { notJson: 'هذا ليس ملف نسخة من واحة الرياضيات.', notOurs: 'هذا ليس ملف نسخة من واحة الرياضيات.', empty: 'ملف النسخة فارغ.', noKids: 'ملف النسخة بلا أطفال.', badKey: 'في الملف بيانات لا يعرفها التطبيق، فلم يُستعمل.', badValue: 'ملف النسخة تالف، فلم يُستعمل.' }[chk.why]; return; }
+    if (!chk.ok) { box.textContent = { notJson: 'هذا ليس ملف نسخة من واحة الرياضيات.', notOurs: 'هذا ليس ملف نسخة من واحة الرياضيات.', empty: 'ملف النسخة فارغ.', noKids: 'ملف النسخة بلا أطفال.', badKey: 'في الملف بيانات لا يعرفها التطبيق، فلم يُستعمل.', badValue: 'ملف النسخة تالف، فلم يُستعمل.', oldVersion: 'هذه النسخة من إصدارٍ آخر للتطبيق بغير بنية دروسه الحالية، فلم تُستعمل.' }[chk.why] || 'ملف النسخة تالف، فلم يُستعمل.'; return; }
     box.innerHTML = `<p>في النسخة: ${chk.kids.map(k => esc(k.name || 'بلا اسم') + ' (' + (k.done ? 'أنجز ' + nw(k.done, 'درساً واحداً', 'درسين', 'دروس', 'درساً') : 'لم يبدأ') + ')').join('، ')}.</p>
       <p class="muted">الاستعادة تضع ما في النسخة مكان أطفال هذا الجهاز وتقدّمهم، وتُحفظ قبلها نسخة مما على الجهاز الآن. الصور وحزمة الصوت لا تتغيّر.</p><div class="seg"><button class="pick" id="bkGo">استعادة</button><button class="pick" id="bkNo">إلغاء</button></div>`;
     $('#bkGo').onclick = () => { const g = $('#bkGo'); if (g.dataset.sure !== '1') { g.dataset.sure = '1'; g.textContent = 'متأكد؟ يُستبدل ما على هذا الجهاز'; return; }
-      const ok = backupApply(chk); box.textContent = ok ? 'استُعيدت النسخة. يُعاد فتح التطبيق…' : 'تعذّرت كتابة بعض البيانات (المساحة ممتلئة؟)، وحُفظ ما كان على الجهاز قبلها.';
-      setTimeout(() => location.reload(), ok ? 700 : 2500); };
+      const r = backupApply(chk); if (r.why === 'tab') return;
+      box.textContent = r.ok ? 'استُعيدت النسخة. يُعاد فتح التطبيق…' : { rescue: 'لم تُستعَد النسخة: تعذّر أولاً حفظ نسخةٍ مما على الجهاز (المساحة ممتلئة؟)، فلم يتغيّر شيء.',
+        space: 'لم تُستعَد النسخة: تعذّرت كتابة بياناتها (المساحة ممتلئة؟)، فبقي ما على الجهاز كما كان.', partial: 'لم تُستعَد النسخة، وتعذّر إرجاع ما كان في الحال؛ يُعاد فتح التطبيق ليُرجعه من نسخته المحفوظة.' }[r.why];
+      if (r.ok || r.why === 'partial') setTimeout(() => location.reload(), r.ok ? 700 : 2500); };
     $('#bkNo').onclick = () => { box.textContent = ''; }; };
 }
 const vpStatText = () => VPACK.n ? `حزمة الصوت: ${DG(VPACK.n)} من ${DG(voiceIds().size)} تسجيلاً` : 'صوت الجهاز (لا حزمة مستوردة)';

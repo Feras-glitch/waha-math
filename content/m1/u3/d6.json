@@ -363,7 +363,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u3.d5",
+   "lesson": "m1.u3.d5", "concept": "N009",
    "item": {
     "t": "roadHop",
     "q": "mx.walk",

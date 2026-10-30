@@ -830,7 +830,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u1.d2",
+   "lesson": "m1.u1.d2", "concept": "C002",
    "item": {
     "t": "pick",
     "q": [

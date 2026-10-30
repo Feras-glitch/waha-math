@@ -315,7 +315,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u4.d5",
+   "lesson": "m1.u4.d5", "concept": "N010",
    "item": {
     "t": "rodBuild",
     "q": "pr.2",

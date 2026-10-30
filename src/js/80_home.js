@@ -113,8 +113,9 @@ $('#galBtn').onclick = () => { SFX.tick(); openGallery(); };
 /* تبويبان مفتوحان: لا يمحو أحدهما عمل الآخر */
 function showTabLost() { FLOW++; hush(); disarmIdle(); if (PAUSED) { resumeLesson(); $('#confetti').innerHTML = ''; }   /* الدرس تحته انتهى: لا يبقى موقوفاً (الفحص المستقل I2 (2)) */
   const c = cover('tabCover', `<div class="breakbox"><p class="big">${esc(labelText('tabLost'))}</p><button class="go" id="tabHere">${esc(labelText('tabHere'))}</button></div>`);
-  $('#tabHere').onclick = () => { tabClaim(); location.reload(); }; }
-onTabLost = () => { if (!$('#lesson').hidden) showTabLost(); };   /* والورشة و«مراجعة اليوم» بلا CUR (الفحص المستقل J2 (6)) */
+  document.querySelectorAll('body > *').forEach(e => { if (e !== c && e.id !== 'gdefs') e.inert = true; });   /* لا فعل تحته في أيّ شاشة، ولوحة الكبار منها (الفحص الخصم A06) */
+  $('#tabHere').onclick = () => { tabClaim(); location.reload(); }; }   /* «هنا»: يأخذ القفل ويعيد القراءة قبل أيّ حفظ */
+onTabLost = () => showTabLost();   /* في كل شاشة: الدرس والورشة و«مراجعة اليوم» والخريطة واللوحة والمعرض (الفحص المستقل J2 (6)، الفحص الخصم A06) */
 /* ماسك الأخطاء: لا شاشة بيضاء، ورسالة مسموعة وعودة إلى الخريطة */
 let crashShown = false;
 onCrash = err => { if (crashShown) return; crashShown = true; FLOW++; try { hush(); disarmIdle(); if (PAUSED) { resumeLesson(); $('#confetti').innerHTML = ''; } } catch (e) {}   /* ولا مهلة فانوس تحت الغطاء (الفحص المستقل J2 (3)) */

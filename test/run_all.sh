@@ -25,6 +25,7 @@ timeout 1800 python3 test/backup_voice_run.py                   > "$O/backup_voi
 timeout 1800 python3 test/quicktap_run.py                       > "$O/quicktap.txt" 2>&1      || echo quicktap >> "$O/FAILED"   # اللمس السريع على طريق الأعداد (الفحص المستقل B)
 timeout 1800 python3 test/items_run.py                          > "$O/items.txt" 2>&1         || echo items >> "$O/FAILED"   # كل بند يُقيَّم أو يُراجَع صحيحاً وخطأً، والطرق المرسومة (الفحص المستقل C)
 timeout 1800 python3 test/ladder_run.py                         > "$O/ladder.txt" 2>&1        || echo ladder >> "$O/FAILED"   # الحلّ المشترك باقٍ في المحاولة الرابعة (D257(5)(و))
+timeout 2400 python3 test/audit_run.py                         > "$O/audit.txt" 2>&1         || echo audit >> "$O/FAILED"   # قبول تقرير المهندس الخصم A01–A08 (28 أكتوبر 2026)
 fi
 if in_part m; then   # الطفرات على جزأين (بوابة S1-U4 بعد E: تجاوزت كلها ساعة ونصفاً): المحتوى والمولّد والكود ونصف طفرات المتصفح، ثم نصفها الثاني
 [ -f "$O/FAILED" ] && sed -i '/^mutants$/d' "$O/FAILED"
@@ -60,7 +61,7 @@ import sys, os, re, glob
 O = sys.argv[1]; bad = [l.strip() for l in open(os.path.join(O, 'FAILED'))] if os.path.exists(os.path.join(O, 'FAILED')) else []
 for f in sorted(glob.glob(os.path.join(O, 'auto_*.txt'))):
   t = open(f).read(); name = os.path.basename(f)
-  for k in ['errors', 'LOG.errors', 'small targets', 'unnamed targets', 'tap conflicts', 'chaos leaks', 'font fallbacks', 'NOT in script', 'blocked lessons', 'lessons not done', 'empty drags', 'squeezed stages', 'twins missing', 'clipped texts', 'covered badges', 'keyless targets', 'mat distractors'] + ([] if re.search(r'_(fail[a-z]*|remedialdeep)_', name) else ['assessment misses']):   # النمط كلمة بين شرطتين في اسم الملف أينما كانت (auto_se_remedialdeep_…: كان الفحص يطلبها من أوله وحده)
+  for k in ['errors', 'LOG.errors', 'small targets', 'unnamed targets', 'tap conflicts', 'chaos leaks', 'font fallbacks', 'NOT in script', 'blocked lessons', 'lessons not done', 'empty drags', 'squeezed stages', 'twins missing', 'clipped texts', 'covered badges', 'keyless targets', 'mat distractors', 'storage invalid'] + ([] if re.search(r'_(fail[a-z]*|remedialdeep)_', name) else ['assessment misses']):   # النمط كلمة بين شرطتين في اسم الملف أينما كانت (auto_se_remedialdeep_…: كان الفحص يطلبها من أوله وحده)
     v = re.findall(r'(?:^|; )' + re.escape(k) + r': (\d+)', t, re.M)
     if not v: bad.append(f'{name}: {k} مفقود')
     elif any(int(x) for x in v): bad.append(f'{name}: {k} = {v}')

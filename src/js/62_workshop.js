@@ -133,7 +133,7 @@ async function wsFree(U) {
   W.pieces.forEach((p, i) => { const x = 315 - i * 90; const g = wsDraw(svg, p, x, 289, .62); g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); g.setAttribute('aria-label', plain(BIN_NAMES[p.k] || (p.k === 'plank' ? labelText('plank') : ''))); hitPad(g, 84); g.dataset.wsSpawn = p.k; g.onclick = () => spawn(p); });
   wsButtons([...(W.pieces.some(q => !SOLIDC[q.k]) ? [['wsRot', 'turnIt', ICON.rotate, () => { if (!sel || SOLIDC[sel.p.k]) return; sel.p.rot = (sel.p.rot + 45) % 360; sel.g.inner.setAttribute('transform', `rotate(${sel.p.rot})`); SFX.tick(); }]] : []),
     ['wsDel', 'remove', ICON.trash, () => { if (!sel) return; sel.g.remove(); placed.splice(placed.indexOf(sel), 1); select(null); SFX.soft(); }],
-    ['wsSave', 'save', ICON.star, async () => { if (!placed.length) return; const list = store.get(designsKey(), []); list.unshift({ t: Date.now(), unit: U.id, pieces: placed.map(q => ({ ...q.p, x: Math.round(q.x), y: Math.round(q.y) })) });
+    ['wsSave', 'save', ICON.star, async () => { if (!placed.length) return; const list = designsGet(); list.unshift({ t: Date.now(), unit: U.id, pieces: placed.map(q => ({ ...q.p, x: Math.round(q.x), y: Math.round(q.y) })) });
       store.set(designsKey(), list.slice(0, 30)); logAttempt({ scene: 'ws', tag: 'save', ok: true }); SFX.win(); confetti(); await S('gen.ws.saved'); }]]);
   await S(U.id === 'm1.u2' ? 'gen.ws.freeOasis' : 'gen.ws.free');
   await nextBtn(labelText('toMap')); showHome();

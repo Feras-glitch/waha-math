@@ -604,7 +604,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u1.d3",
+   "lesson": "m1.u1.d3", "concept": "C003",
    "item": {
     "t": "completeRect",
     "corners": [

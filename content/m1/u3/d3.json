@@ -568,7 +568,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u3.d2",
+   "lesson": "m1.u3.d2", "concept": "C010",
    "item": {
     "t": "lineTap",
     "q": "mx.q",

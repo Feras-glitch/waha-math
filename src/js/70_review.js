@@ -11,26 +11,59 @@ const STREAMS = [
   { id: 'friends', after: 'm1.u4.d6', model: 'gen.stream.friends.model', items: () => [{ t: 'frameNeed', n: R(1, 9) }] },
 ];
 const streamOpen = s => !!(PROG[s.after] || {}).done || !!PROG.unlockAll;
-function reviewDue() { return UNITS.flatMap(u => u.lessons).map(id => LDATA[id]).filter(L => L.review && L.review.length && srsDue(PROG.srs[L.id])); }
+/* المراجعة المتباعدة لكل مفهوم (المبدأ 14، D182، D237؛ الفحص الخصم A07): لكل درس جدولٌ لكل مفهوم من مفاهيم مخزونه
+   (PROG.srs[الدرس] = {cs: {المفهوم: {step, due, last}}, k: {المفهوم: دوره}, k2})، فلا يثبت مفهومٌ لم يُسأل، والخطأ يرجع مفهومه وحده */
+const srsConcepts = L => [...new Set((L.review || []).map(x => x.c).filter(Boolean))];
+const srsRec = id => { const r = PROG.srs[id]; return isObj(r) && isObj(r.cs) ? r : null; };
+function srsStart(id) { const L = LDATA[id]; if (!L || !L.review || !L.review.length) return;
+  const r = PROG.srs[id] = srsRec(id) || { cs: {}, k: {}, k2: 0 }; let ch = false;
+  for (const C of srsConcepts(L)) if (!isObj(r.cs[C])) { r.cs[C] = { step: 0, due: addDays(Date.now(), SRS_DAYS[0]) }; ch = true; }
+  if (ch) saveProg(); }
+function srsUpdate(id, C, ok) { const r = srsRec(id); if (!r || !isObj(r.cs[C])) return; const x = r.cs[C], now = Date.now();
+  if (ok) { x.step = Math.min(SRS_DAYS.length, x.step + 1); x.due = x.step >= SRS_DAYS.length ? null : addDays(now, SRS_DAYS[x.step]); }
+  else { x.step = Math.max(0, x.step - 1); x.due = addDays(now, SRS_DAYS[x.step]); }
+  x.last = now; }
+/* ترحيل جدول الدرس الواحد (قبل A07): لا يأخذ مفهومٌ خطواتٍ أكثر من مرات سؤاله (بنوده بالتناوب حتى k)، وما تأخّر عن خطوة الدرس يحين اليوم */
+(function srsMigrate() { let ch = false;
+  for (const [id, r] of Object.entries(PROG.srs)) { if (!isObj(r) || isObj(r.cs)) continue; ch = true; const L = LDATA[id];
+    if (!L || !L.review || !L.review.length) { delete PROG.srs[id]; continue; }
+    const asked = {}, k = isInt(r.k) ? r.k : 0; for (let j = 0; j < k; j++) { const c = L.review[j % L.review.length].c; asked[c] = (asked[c] || 0) + 1; }
+    const st = isInt(r.step) ? r.step : 0, cs = {};
+    for (const C of srsConcepts(L)) { const step = Math.min(st, asked[C] || 0);
+      cs[C] = { step, due: step >= SRS_DAYS.length ? null : step === st && r.due != null ? r.due : dayStart(Date.now()) }; if (isT(r.last)) cs[C].last = r.last; }
+    PROG.srs[id] = { cs, k: asked, k2: isInt(r.k2) ? r.k2 : 0 }; }
+  if (ch) saveProg(); })();
+/* ما حان من المفاهيم: [{L, C, due}] بترتيب الدروس */
+function reviewDue() { const out = [];
+  for (const id of UNITS.flatMap(u => u.lessons)) { const L = LDATA[id], r = srsRec(id); if (!L || !r || !L.review || !L.review.length) continue;
+    for (const C of srsConcepts(L)) if (srsDue(r.cs[C])) out.push({ L, C, due: r.cs[C].due }); }
+  return out; }
+const reviewLessonsDue = () => new Set(reviewDue().map(d => d.L.id)).size;
 function streamsDue() { const today = dayStart(Date.now()); return STREAMS.filter(s => streamOpen(s) && (PROG.streams[s.id] || {}).day !== today); }
 const reviewWaiting = () => reviewDue().length + streamsDue().length > 0;
-/* البند التالي من المخزون المحجوز بالتناوب، فلا يتكرّر البند نفسه */
-function nextReviewItem(L) { const r = PROG.srs[L.id]; const k = (r.k || 0) % L.review.length; r.k = k + 1; return L.review[k]; }
+/* بنود الجلسة: ثلاثة على الأكثر كما كانت (حدّ الجلسة)، أقدمها موعداً أولاً، ومفهومٌ من كل درس قبل مفهومٍ ثانٍ منه (تداخل الدروس) */
+const REVIEW_MAX = 3;
+function reviewPick() { const due = reviewDue().sort((a, b) => a.due - b.due), pick = [], used = new Set();
+  for (const d of due) if (pick.length < REVIEW_MAX && !used.has(d.L.id)) { pick.push(d); used.add(d.L.id); }
+  for (const d of due) if (pick.length < REVIEW_MAX && !pick.includes(d)) pick.push(d);
+  return pick; }
+/* البند التالي من مخزون المفهوم المحجوز بالتناوب، فلا يتكرّر البند نفسه */
+function nextReviewItem(L, C) { const r = srsRec(L.id), pool = L.review.filter(x => x.c === C); r.k = isObj(r.k) ? r.k : {}; const k = (r.k[C] || 0) % pool.length; r.k[C] = k + 1; return pool[k]; }
 /* المبدأ 14: بعد الخطأ بند ثانٍ فوري من المفهوم نفسه (c): لكل مفهوم يُراجَع بندان على الأقل (يفحصه build/d240.mjs) */
 function secondReviewItem(L, first) { const same = L.review.filter(x => x !== first && x.c && x.c === first.c); const any = L.review.filter(x => x !== first);
-  const pool = same.length ? same : any.length ? any : [first]; const r = PROG.srs[L.id]; const k = (r.k2 || 0) % pool.length; r.k2 = k + 1; return pool[k]; }
+  const pool = same.length ? same : any.length ? any : [first]; const r = srsRec(L.id); const k = (r.k2 || 0) % pool.length; r.k2 = k + 1; return pool[k]; }
 async function runReview() {
   if (TAB_LOST) { showTabLost(); return; }
-  const due = shuffle(reviewDue()).slice(0, 3); const streams = streamsDue();
+  const due = shuffle(reviewPick()); const streams = streamsDue();
   if (!due.length && !streams.length) return showHome();
-  for (let i = 1; i < due.length; i++) if (due[i].unit === due[i - 1].unit && i + 1 < due.length && due[i + 1].unit !== due[i].unit) [due[i], due[i + 1]] = [due[i + 1], due[i]];   // تداخل الوحدات ما أمكن
+  for (let i = 1; i < due.length; i++) if (due[i].L.unit === due[i - 1].L.unit && i + 1 < due.length && due[i + 1].L.unit !== due[i].L.unit) [due[i], due[i + 1]] = [due[i + 1], due[i]];   // تداخل الوحدات ما أمكن
   CUR = null; FLOW++; reseed((KID || 'k0') + '|review|' + dayStart(Date.now())); show('lesson'); lockGo(); colorIx = 0; streak = 0; SCENE_NOW = 'review'; /*T*/window.__scene = 'review:intro';/*/T*/
   const total = due.length + streams.length; setSteps(total + 1); setStep(0);
-  { const svg = newStage(300, { oasisOpacity: .3 }); due.forEach((L, i) => { const g = el('g', { transform: `translate(${250 - i * 70} 120) scale(1.1)` }, svg); g.innerHTML = stopIconInner(L); }); }
+  { const svg = newStage(300, { oasisOpacity: .3 }); due.forEach(({ L }, i) => { const g = el('g', { transform: `translate(${250 - i * 70} 120) scale(1.1)` }, svg); g.innerHTML = stopIconInner(L); }); }
   await S('gen.review.intro'); await nextBtn(labelText('letsGo'));
-  const res = {}; let step = 1, allOk = true;
-  for (const L of due) { CUR = L; setStep(step++); SCENE_NOW = 'review:' + L.id; /*T*/window.__scene = 'review:' + L.id;/*/T*/
-    const first = nextReviewItem(L); const r = await runItem(first, 'review', { scene: 'review' }); res[L.id] = r.firstTry; allOk = allOk && r.firstTry;
+  const res = []; let step = 1, allOk = true;
+  for (const { L, C } of due) { CUR = L; setStep(step++); SCENE_NOW = 'review:' + L.id; /*T*/window.__scene = 'review:' + L.id;/*/T*/
+    const first = nextReviewItem(L, C); const r = await runItem(first, 'review', { scene: 'review' }); res.push([L.id, C, r.firstTry]); allOk = allOk && r.firstTry;
     if (!r.firstTry) { await sleep(400); const r2 = await runItem(secondReviewItem(L, first), 'review', { scene: 'review:second' });   /* المبدأ 14: بند ثانٍ فوري */
       if (!r2.firstTry) { PROG.redo = isObj(PROG.redo) ? PROG.redo : {}; PROG.redo[L.id] = Date.now(); saveProg(); } }   /* خطآن متتاليان: يُعاد الدرس (D237) */
     await sleep(400); }
@@ -39,7 +72,7 @@ async function runReview() {
     if (!st.seen) { await streamModel(s); st.seen = true; saveProg(); await nextBtn(); }       // أول لقاء: فرجار يحلّ نموذجاً
     for (const it of s.items()) { const r = await runItem(it, 'review', { scene: 'stream:' + s.id }); allOk = allOk && r.firstTry; st.n = (st.n || 0) + 1; st.ok = (st.ok || 0) + (r.firstTry ? 1 : 0); }
     st.day = dayStart(Date.now()); saveProg(); await sleep(400); }
-  for (const [id, ok] of Object.entries(res)) srsUpdate(id, ok); saveProg();
+  for (const [id, C, ok] of res) srsUpdate(id, C, ok); saveProg();
   setStep(total + 1); SCENE_NOW = 'review:end'; /*T*/window.__scene = 'review:end';/*/T*/ newStage(300, { oasisOpacity: .9 });
   if (allOk) { SFX.win(); starBurst(); await S('gen.review.done'); } else await S('gen.review.later');
   await nextBtn(labelText('toMap')); showHome();
@@ -100,9 +133,9 @@ async function weeklyReport() {
   const [ok1, n1] = score(w0, now + 1), [ok0, n0] = score(w1, w0); const pct = (a, b) => b ? Math.round(a / b * 100) : null;
   const all = UNITS.flatMap(u => u.lessons); const doneW = all.filter(id => (PROG[id] || {}).at >= w0);
   const errs = {}; A.filter(a => a.t >= w0 && a.err && ERRN[a.err] && a.scene !== 'ws').forEach(a => errs[a.err] = (errs[a.err] || 0) + 1);
-  const photos = (await IDB.all()).filter(p => p.t >= w0).length; const designs = store.get(designsKey(), []).filter(d => d.t >= w0).length;
+  const photos = (await IDB.all()).filter(p => p.t >= w0).length; const designs = designsGet().filter(d => d.t >= w0).length;
   const lastId = all.filter(id => (PROG[id] || {}).done).sort((a, b) => ((PROG[b] || {}).at || 0) - ((PROG[a] || {}).at || 0))[0];
-  const due = reviewDue().length; const strong = Object.values(PROG.srs).filter(r => r.due == null).length;
+  const due = reviewLessonsDue(); const strong = Object.values(PROG.srs).filter(r => isObj(r) && isObj(r.cs) && Object.keys(r.cs).length && Object.values(r.cs).every(x => x.due == null)).length;
   const p1 = pct(ok1, n1), p0 = pct(ok0, n0); const trend = n1 >= 20 && n0 >= 20;
   $('#panel').innerHTML = `<div class="wrap report" id="report"><div class="noprint row"><button class="go" id="repPrint">طباعة</button><button class="pick" id="repBack">رجوع</button></div>
     <div class="card"><h2>تقرير الأسبوع: ${PROFILE ? esc(PROFILE.name || '') : ''}</h2><p class="muted">من ${fmt.date(w0)} إلى ${fmt.date(now)} · واحة الرياضيات، المرحلة الأولى</p></div>

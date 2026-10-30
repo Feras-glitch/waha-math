@@ -866,7 +866,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u3.d1",
+   "lesson": "m1.u3.d1", "concept": "C010",
    "item": {
     "t": "where",
     "ask": "thing",

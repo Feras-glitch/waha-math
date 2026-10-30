@@ -375,7 +375,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u2.d2",
+   "lesson": "m1.u2.d2", "concept": "C007",
    "item": {
     "t": "sort",
     "mk": "candle",

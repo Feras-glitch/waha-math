@@ -522,7 +522,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u2.d4",
+   "lesson": "m1.u2.d4", "concept": "N005",
    "item": {
     "t": "split",
     "n": 9,

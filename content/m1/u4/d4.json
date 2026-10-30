@@ -696,7 +696,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u4.d3",
+   "lesson": "m1.u4.d3", "concept": "C016",
    "item": {
     "t": "unitCount",
     "q": "mx.meas",

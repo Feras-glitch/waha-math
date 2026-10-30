@@ -668,7 +668,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u2.d3",
+   "lesson": "m1.u2.d3", "concept": "N004",
    "item": {
     "t": "cmpDigits",
     "a": 8,

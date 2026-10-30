@@ -82,7 +82,7 @@ async def main():
     check('backup: rejected files changed nothing', await pg.evaluate("() => JSON.stringify(Object.keys(localStorage).sort())") == before)
     evil = json.loads(json.dumps(bk)); kids = json.loads(evil['data']['hp_kids']); kids[0]['name'] = '<img src=x onerror="window.__x=1">'; evil['data']['hp_kids'] = json.dumps(kids, ensure_ascii=False)
     h = await try_restore(evil, 'evilname.json'); await pg.wait_for_timeout(300)
-    check('backup: a name with markup is shown as text', await pg.evaluate("() => window.__x === undefined") and '&lt;img' in h, h[:120])
+    check('backup: a name with markup is shown as text, without its markup', await pg.evaluate("() => window.__x === undefined && !document.querySelector('#bkMsg img')") and 'img src=x' in h and '<img' not in await pg.text_content('#bkMsg'), h[:120])   # يُنظَّف كما يحفظه ملف الطفل (الفحص الخصم A03)
     h = await try_restore(bk, 'good.json')
     check('backup: summary names the child and the lessons done', 'سلمى' in h and 'أنجز' in h, h[:160])
     await pg.click('#bkGo')

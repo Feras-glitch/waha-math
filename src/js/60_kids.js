@@ -60,21 +60,36 @@ const IDB = { db: null, mem: [],
     return new Promise(res => { try { const r = indexedDB.open('hp_gallery', 1);
       r.onupgradeneeded = () => r.result.createObjectStore('photos', { keyPath: 'id' });
       r.onsuccess = () => { this.db = r.result; res(this.db); }; r.onerror = () => { this.failed = true; res(null); }; } catch (e) { this.failed = true; res(null); } }); },
-  async put(o) { const db = await this.open(); if (!db) { this.mem.push(o); return; }
+  async put(o) { if (!store.mine(null)) return; const db = await this.open(); if (!db) { this.mem.push(o); return; }
     return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(o); tx.oncomplete = () => res(); tx.onerror = () => { this.mem.push(o); res(); }; } catch (e) { this.mem.push(o); res(); } }); },
   async all() { const db = await this.open(); const mine = x => x.kid === KID;
     if (!db) return this.mem.filter(mine);
     return new Promise(res => { try { const r = db.transaction('photos').objectStore('photos').getAll(); r.onsuccess = () => res(r.result.filter(mine).concat(this.mem.filter(mine))); r.onerror = () => res(this.mem.filter(mine)); } catch (e) { res(this.mem.filter(mine)); } }); },
+  /* صور طفلٍ بعينه كلها (الفحص الخصم A08): يعيد true إن اكتمل الحذف أو لم تكن قاعدة صور، وfalse إن أخفقت المعاملة */
+  async dropKid(id) { this.mem = this.mem.filter(x => x.kid !== id); const db = await this.open(); if (!db) return true;
+    return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'), os = tx.objectStore('photos'); const r = os.getAll();
+      r.onsuccess = () => { try { r.result.filter(x => x.kid === id).forEach(x => os.delete(x.id)); } catch (e) { try { tx.abort(); } catch (x) {} res(false); } };
+      tx.oncomplete = () => res(true); tx.onerror = tx.onabort = () => res(false); } catch (e) { res(false); } }); },
   async clear() { const db = await this.open(); this.mem = this.mem.filter(x => x.kid !== KID); if (!db) return;
     const list = await this.all(); return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); list.forEach(x => tx.objectStore('photos').delete(x.id)); tx.oncomplete = () => res(); tx.onerror = () => res(); } catch (e) { res(); } }); },
 };
 const designsKey = () => kk('hp_designs');
+/* التصميمات بقاعدتها (الفحص الخصم A05): تصميمٌ تالف يُسقط وحده، فلا يعطّل المعرض ولا التقرير */
+const designsGet = () => store.fix(designsKey(), [], V_DESIGNS);
+/* مفاتيح الطفل ونسخها: التقدّم والسجل والجلسة والإعدادات والتصميمات، ونسخ الترحيل والتالف، وما يخصّه في نسخة ما قبل الاستعادة */
+function kidForget(id) { const own = new RegExp('^hp_(?:(?:prog|log|session|settings|designs):' + id + '|prog_bak:' + id + ':v\\d+|corrupt:hp_\\w+:' + id + ':\\d+)$');
+  const ks = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (own.test(k)) ks.push(k); } } catch (e) {}
+  ks.forEach(k => store.del(k));
+  try { const d = JSON.parse(localStorage.getItem('hp_before_restore')); if (isObj(d) && isObj(d.data)) { for (const k of Object.keys(d.data)) if (k.endsWith(':' + id)) delete d.data[k];
+    if (typeof d.data.hp_kids === 'string') { const l = JSON.parse(d.data.hp_kids); if (Array.isArray(l)) d.data.hp_kids = JSON.stringify(l.filter(k => !isObj(k) || k.id !== id)); }
+    localStorage.setItem('hp_before_restore', JSON.stringify(d)); } } catch (e) {}
+  const i = KIDS.findIndex(k => k.id === id); if (i >= 0) KIDS.splice(i, 1); store.set('hp_kids', KIDS); }
 function designSVG(d, w = 150) { const s = el('svg', { viewBox: '0 0 360 250', width: w, 'aria-hidden': 'true' }); el('rect', { width: 360, height: 250, fill: css('--sky-bot') }, s);
   d.pieces.forEach(p => wsDraw(s, p, p.x, p.y, 1)); return s.outerHTML; }
 async function openGallery() {
   hush(); /*T*/window.__scene = 'gallery';/*/T*/
   const open = HUNT.filter(([k, l]) => (PROG[l] || {}).done);
-  const photos = (await IDB.all()).sort((a, b) => b.t - a.t); const designs = store.get(designsKey(), []);
+  const photos = (await IDB.all()).filter(p => typeof p.data === 'string' && PHOTO_RX.test(p.data)).sort((a, b) => b.t - a.t); const designs = designsGet();
   const c = cover('galCover', `<div class="gallery"><div class="ghead"><button class="round ico" id="galClose" aria-label="${esc(labelText('back'))}">${ICON.map}</button><b>${esc(G(labelText('myGallery')))}</b></div>${coverHead()}
     <div class="huntgrid" id="huntGrid"></div><input type="file" id="huntIn" accept="image/*" capture="environment" hidden>
     <div class="gitems">${photos.map(p => `<figure><img src="${p.data}" alt=""><figcaption>${esc(BIN_NAMES[p.k] || '')}</figcaption></figure>`).join('')}

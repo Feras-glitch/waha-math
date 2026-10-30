@@ -154,8 +154,8 @@ async def main():
         nx = ONLY.pop(0); target = ['ws', nx[3:]] if nx.startswith('ws:') else ['lesson', nx]
       else: target = await pg.evaluate("""() => { const n = document.querySelector('.stop.now'); if (n) return n.dataset.lesson ? ['lesson', n.dataset.lesson] : n.dataset.review ? ['review', 'review'] : null;
         const w = document.querySelector('.stop.ws.must[aria-disabled=false]'); if (w) return ['ws', w.dataset.workshop]; return null; }""")
-      if MODE == 'failreview' and not target is None and await pg.evaluate("() => Object.values(PROG.srs).some(r => r.due != null && r.due > Date.now())"):   # المراجعة تحين فوراً (لا ننتظر يوماً)
-        await pg.evaluate("() => { Object.values(PROG.srs).forEach(r => { if (r.due != null) r.due = Date.now() - 1; }); saveProg(); showHome(); }"); await pg.wait_for_timeout(200); continue
+      if MODE == 'failreview' and not target is None and await pg.evaluate("() => Object.values(PROG.srs).some(r => Object.values(r.cs || {}).some(x => x.due != null && x.due > Date.now()))"):   # المراجعة تحين فوراً (لا ننتظر يوماً)
+        await pg.evaluate("() => { Object.values(PROG.srs).forEach(r => Object.values(r.cs || {}).forEach(x => { if (x.due != null) x.due = Date.now() - 1; })); saveProg(); showHome(); }"); await pg.wait_for_timeout(200); continue
       if not target and MODE == 'replay' and replay_q is None:   # بعد المسار كله: يُعاد كل درس مرة في الجلسة نفسها (كشف حالة تبقى من التشغيل الأول)
         replay_q = await pg.evaluate("() => UNITS.flatMap(u => u.lessons)")
       if not target and replay_q: target = ['lesson', replay_q.pop(0)]
@@ -292,8 +292,13 @@ async def main():
     all_ids = await pg.evaluate("() => UNITS.flatMap(u => u.lessons)")   # كل درس انتهى، ولا درس توقّف أو دار في حلقة أو انهار (الفحص المستقل الخامس، ج1)
     blocked = [r for r in report if r[1] in ('CRASH', 'LOOP', 'STUCK', 'stuck')]; not_done = [i for i in all_ids if (not ONLY_SET or i in ONLY_SET) and not any(r[0] == i and r[1] == 'done' for r in report)]
     if os.environ.get('CLIPS_OUT'): json.dump(sorted(clips), open(os.environ['CLIPS_OUT'], 'w'))   # تجمعها test/unspoken.py: جمل لم تُنطق في أي تشغيل
+    # وما كتبه المسار كله يجتاز قواعد التخزين المتداخلة (الفحص الخصم A05): نسخته الاحتياطية تُقبل، وفتحه من جديد لا يُسقط شيئاً
+    VALID = "() => { const c = backupCheck(JSON.stringify(backupData())); const bad = []; for (const k of backupKeysNow()) { const v = JSON.parse(localStorage.getItem(k)); const b = []; BACKUP_RULE[backupKind(k)](v, b, k); bad.push(...b); } return { ok: !!c.ok, why: c.why || null, at: c.at || null, bad: bad.slice(0, 8), repaired: STORE_ISSUES.repaired }; }"
+    sv1 = await pg.evaluate(VALID); await pg.goto('about:blank'); await pg.goto(URL); await pg.wait_for_timeout(600); sv2 = await pg.evaluate(VALID)
+    store_bad = [x for x in (sv1, sv2) if not x['ok'] or x['bad'] or x['repaired']]
     await pg.screenshot(path=OUT + '/99_home.png'); await b.close()
     for r in report: print(*r)
+    print('storage invalid:', len(store_bad)); [print(' ', json.dumps(x, ensure_ascii=False)[:400]) for x in store_bad]
     print('errors:', len(errs)); [print(' ', e[:400]) for e in errs[:30]]
     print('LOG.errors:', len(errlog)); [print(' ', e) for e in errlog[:20]]
     print('small targets:', len(small)); [print(' ', *v) for v in list(small.values())[:30]]

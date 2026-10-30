@@ -262,7 +262,11 @@ export function lint(content, js) {
     if (L.chaos && L.chaos.kind === 'bins' && L.chaos.placed.filter(p => p.wrong).length !== 1) errors.push(`${L.id}: مشهد فوضى يحتاج خطأً واحداً بالضبط`);
     if (L.chaos && L.chaos.wrong && LINES.get(L.id + '.' + L.chaos.wrong) && LINES.get(L.id + '.' + L.chaos.wrong).who !== 'chaos') errors.push(`${L.id}: جملة فوضى الخاطئة بغير صوت فوضى`);
     if (L.mastery) { for (const [C, items] of Object.entries(L.mastery.concepts)) { if (!(L.concepts || {})[C]) errors.push(`${L.id}: مفهوم ${C} في الإتقان بلا اسم في concepts`); if (items.length < 3) errors.push(`${L.id}: مفهوم ${C} بأقل من ثلاثة بنود`); }
-      if (L.mastery.mixed && !lessons[L.mastery.mixed.lesson]) errors.push(`${L.id}: البند المشتبك يشير إلى درس غير موجود`); }
+      if (L.mastery.mixed && !lessons[L.mastery.mixed.lesson]) errors.push(`${L.id}: البند المشتبك يشير إلى درس غير موجود`);
+      /* وخطؤه يرجع في جدول المراجعة مفهوماً من مخزون درسه (الفحص الخصم A07): concept منها، أو لا مخزون لدرسه */
+      else if (L.mastery.mixed) { const O = lessons[L.mastery.mixed.lesson], cs = new Set((O.review || []).map(x => x.c)), c = L.mastery.mixed.concept;
+        if (cs.size && !cs.has(c)) errors.push(`${L.id}: البند المشتبك بلا مفهوم من مخزون مراجعة ${O.id} (concept: ${c === undefined ? 'غائب' : c}، والمفاهيم ${[...cs].join(' ')})`);
+        if (!cs.size && c !== undefined) errors.push(`${L.id}: البند المشتبك بمفهوم ${c} ودرسه ${O.id} بلا مخزون مراجعة`); } }
     if (!L.test && !(L.review && L.review.length)) warn.push(`${L.id}: لا مخزون مراجعة محجوز`);
     if (L.test) for (const q of L.test.items) { if (!lessons[q.of] || lessons[q.of].unit !== L.unit) errors.push(`${L.id}: البند ${q.id} يشير إلى درس خارج الوحدة: ${q.of}`); }
     // جملة العلاج بعد الاختبار تُقال والشاشة تعرض أضعف درس (الفحص المستقل C، ن-ك4): تُحيل إلى «هذا الدرس»، ولا تسمّي درساً من الوحدة

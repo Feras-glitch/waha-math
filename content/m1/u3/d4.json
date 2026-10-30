@@ -1154,7 +1154,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u3.d3",
+   "lesson": "m1.u3.d3", "concept": "C011",
    "item": {
     "t": "lrPick",
     "q": "mx.lr",

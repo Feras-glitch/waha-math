@@ -486,7 +486,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u4.d2",
+   "lesson": "m1.u4.d2", "concept": "C025",
    "item": {
     "t": "balance",
     "q": "mx.bal",

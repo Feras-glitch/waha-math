@@ -906,7 +906,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u2.d1",
+   "lesson": "m1.u2.d1", "concept": "C006",
    "item": {
     "t": "sort",
     "mk": "ice",

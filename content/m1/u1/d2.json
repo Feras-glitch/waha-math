@@ -952,7 +952,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u1.d1",
+   "lesson": "m1.u1.d1", "concept": "C001",
    "item": {
     "t": "sort",
     "mk": "cracker",

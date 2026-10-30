@@ -339,7 +339,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u4.d6",
+   "lesson": "m1.u4.d6", "concept": "N011",
    "item": {
     "t": "frameGlance",
     "n": 3

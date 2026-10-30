@@ -366,7 +366,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u4.d4",
+   "lesson": "m1.u4.d4", "concept": "D001",
    "item": {
     "t": "barRead",
     "q": "mx.bar",

@@ -517,7 +517,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u1.d4",
+   "lesson": "m1.u1.d4", "concept": "N002",
    "item": {
     "t": "same",
     "mk": "stoneS",

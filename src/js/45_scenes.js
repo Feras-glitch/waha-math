@@ -278,7 +278,7 @@ SCENES.robot = async c => {
   svg.querySelectorAll('[role=button]').forEach(g => { g.onclick = null; g.removeAttribute('role'); g.removeAttribute('tabindex'); g.style.cursor = ''; g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); });
   used.forEach(p => { p.locked = true; p.g.style.cursor = ''; });
   logAttempt({ scene: 'explore', tag: 'robot', ok: true, n: used.length });
-  const save = store.get(designsKey(), []); save.unshift({ t: Date.now(), unit: 'm1.u1', pieces: used.map(p => ({ k: p.k, size: 54, w: spec(p.k).w, h: spec(p.k).h, rot: 0, x: Math.round(p.x), y: Math.round(p.y) })) }); store.set(designsKey(), save.slice(0, 30));
+  const save = designsGet(); save.unshift({ t: Date.now(), unit: 'm1.u1', pieces: used.map(p => ({ k: p.k, size: 54, w: spec(p.k).w, h: spec(p.k).h, rot: 0, x: Math.round(p.x), y: Math.round(p.y) })) }); store.set(designsKey(), save.slice(0, 30));
   for (const k of shuffle(K.filter(k => used.some(p => p.k === k))).slice(0, 2)) { const n = used.filter(p => p.k === k).length; const pts = used.filter(p => p.k === k).map(p => ({ x: p.x, y: p.y, g: p.g }));
     used.forEach(q => q.g.style.pointerEvents = q.k === k ? '' : 'none');   /* قطعة من نوع آخر فوقها لا تحجب لمسها */
     await S('gen.robot.count.' + k); await countTouch(svg, pts, { halo: 26 }); await S('gen.count.how');

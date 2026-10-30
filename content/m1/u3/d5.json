@@ -371,7 +371,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u3.d4",
+   "lesson": "m1.u3.d4", "concept": "C012",
    "item": {
     "t": "mapFind",
     "q": "mx.map",

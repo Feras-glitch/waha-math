@@ -136,7 +136,7 @@ async function masteryStage(L) {
     else { cs.deferred = !cs.mastered; await S('gen.ms.later'); }
     saveProg();
   }
-  if (M.mixed) { const prev = CUR; CUR = LDATA[M.mixed.lesson]; let r; try { r = await runItem(M.mixed.item, 'mastery', { scene: 'mastery:mixed' }); } finally { CUR = prev; } if (!r.firstTry && PROG.srs[M.mixed.lesson]) { srsUpdate(M.mixed.lesson, false); PROG.srs[M.mixed.lesson].due = addDays(Date.now(), 1); } }   // البند المشتبك يُحكم بإعدادات درسه
+  if (M.mixed) { const prev = CUR; CUR = LDATA[M.mixed.lesson]; let r; try { r = await runItem(M.mixed.item, 'mastery', { scene: 'mastery:mixed' }); } finally { CUR = prev; } const R = srsRec(M.mixed.lesson), MC = M.mixed.concept; if (!r.firstTry && R && isObj(R.cs[MC])) { srsUpdate(M.mixed.lesson, MC, false); R.cs[MC].due = addDays(Date.now(), 1); } }   // البند المشتبك يُحكم بإعدادات درسه، وخطؤه يرجع مفهومه (concept) وحده
   const real = Object.keys(M.concepts).filter(C => !(M.entryOnly || []).includes(C));
   P.mastered = real.every(C => P.cs[C].mastered); P.deferred = real.some(C => P.cs[C].deferred && !P.cs[C].mastered); saveProg();
   if (P.mastered) { SFX.win(); starBurst(); await S(M.ok || 'gen.ms.ok'); }

@@ -540,7 +540,7 @@
    ]
   },
   "mixed": {
-   "lesson": "m1.u4.d1",
+   "lesson": "m1.u4.d1", "concept": "C014",
    "item": {
     "t": "lenPick",
     "q": "mx.len",

@@ -224,6 +224,7 @@ details.adult input[type=text]:focus { outline: none; border-color: var(--compas
 .digits .dmatch .pick { text-align: center; font-size: 36px; font-weight: 800; color: var(--compass); }
 
 /* ===== لوحة الكبار ===== */
+#tabCover { z-index: 45; }   /* فوق لوحة الكبار: تبويبٌ آخر أخذ التطبيق (الفحص الخصم A06) */
 .panel { position: fixed; inset: 0; z-index: 40; background: var(--sky-bot); overflow: auto; font-size: 16px; line-height: 1.6;
   padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px; }
 .panel .wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 14px; }

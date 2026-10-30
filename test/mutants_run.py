@@ -588,8 +588,21 @@ finally:
 RUNTIME = [
   ('حزمة الصوت لا تُحمَّل عند الفتح', 'VPACK.load().catch(() => {});', '', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL voice: pack survives reopening'),
   ('zip المضغوط لا يُفكّ', 'else if (method === 8)', 'else if (method === 88)', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL voice: four recordings imported'),
-  ('النسخة تُقبل بلا فحص نوع القيمة', "if (!BACKUP_OK[backupKind(k)](v)) return { ok: false, why: 'badValue' };", '', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: rejected badval.json'),
-  ('اسم الطفل في ملخّص النسخة بلا تهريب', "chk.kids.map(k => esc(k.name || 'بلا اسم')", "chk.kids.map(k => (k.name || 'بلا اسم')", ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: a name with markup'),
+  ('النسخة تُقبل بلا فحص نوع القيمة', "if (r === NO || bad.length) return { ok: false, why: 'badValue', at: bad[0] || k };", '', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: rejected badval.json'),
+  ('اسم الطفل المستورد بعلامات الصفحة', ".replace(/[<>\"'&`]/g, '').replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ".replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: a name with markup'),
+  # تقرير المهندس الخصم (A01–A08): كل إصلاح تكسره طفرة فيخفق فحص قبوله
+  ('A01 حكم الكبير من «نعم» واحدة', 'adultAnswers(L).every(x => x === true)', 'adultAnswers(L).some(x => x === true)', ['test/audit_run.py', '{F}'], {'ONLY': 'A01'}, 'FAIL A01'),
+  ('A02 حكم الكبير يكتب إتقان التطبيق', 'PROG.adult[L.id] = a;\n', 'PROG.adult[L.id] = a; if (adultSays(L, L.adultCard.concept)) { const P = progOf(L.id); P.cs = P.cs || {}; P.cs[L.adultCard.concept] = { ...(P.cs[L.adultCard.concept] || {}), mastered: true }; }\n', ['test/audit_run.py', '{F}'], {'ONLY': 'A02'}, 'FAIL A02'),
+  ('A03 معرّف الطفل بلا صيغته', "typeof k.id === 'string' && KID_ID.test(k.id)", "typeof k.id === 'string'", ['test/audit_run.py', '{F}'], {'ONLY': 'A03'}, 'FAIL A03'),
+  ('A03 صورة الطفل أيّ عنوان', '(!k.photo || (PHOTO_RX.test(k.photo) && k.photo.length <= 300000))', 'true', ['test/audit_run.py', '{F}'], {'ONLY': 'A03'}, 'FAIL A03 تُرفض النسخة (صورة'),
+  ('A04 الاستعادة تمضي بلا نسخة ما كان', "} catch (e) { return { ok: false, why: 'rescue' }; }", '} catch (e) {}', ['test/audit_run.py', '{F}'], {'ONLY': 'A04'}, 'FAIL A04'),
+  ('A04 الاستعادة المنقطعة لا تُرجع عند الفتح', 'if (j == null) return;', 'return;', ['test/audit_run.py', '{F}'], {'ONLY': 'A04'}, 'FAIL A04 انقطاع'),
+  ('A05 الحقل اللازم يسقط ويبقى سجلّه', 'if (req.some(k => !(k in out))) { bad.push(at); return NO; } return out; };', 'return out; };', ['test/audit_run.py', '{F}'], {'ONLY': 'A05'}, 'FAIL A05'),
+  ('A06 الكتابة بلا مراجعة ما كتبه غيره', 'if (cur !== this.seen[k]) { tabLose(); return false; }', '', ['test/audit_run.py', '{F}'], {'ONLY': 'A06'}, 'FAIL A06 تبويبٌ عاد'),
+  ('A06 غطاء التبويب للدرس وحده', 'onTabLost = () => showTabLost();', "onTabLost = () => { if (!$('#lesson').hidden) showTabLost(); };", ['test/audit_run.py', '{F}'], {'ONLY': 'A06'}, 'FAIL A06 التبويب الأقدم'),
+  ('A06 غطاء التبويب تحت اللوحة', '#tabCover { z-index: 45; }', '#tabCover { }', ['test/audit_run.py', '{F}'], {'ONLY': 'A06'}, 'FAIL A06 التبويب الأقدم'),
+  ('A07 بند المراجعة من الدرس لا من المفهوم', 'pool = L.review.filter(x => x.c === C)', 'pool = L.review', ['test/audit_run.py', '{F}'], {'ONLY': 'A07'}, 'FAIL A07'),
+  ('A08 حذف الطفل بلا حذف صوره', 'if (!(await IDB.dropKid(id)))', 'if (false)', ['test/audit_run.py', '{F}'], {'ONLY': 'A08'}, 'FAIL A08'),
   ('زرّا تحريك القطار لا يعملان', 'b.onclick = go;', 'b.onclick = null;', ['test/realtap_run.py', 'Pixel 5'], {'ONLY': 'm1.u3.d2'}, "('Pixel 5', 'm1.u3.d2:"),
   # الفحص المستقل B: اللمسة السريعة أثناء القفزة تُسقط، والطريق لا يكشف البلاطة التالية، و«أعد الجملة» يعيد العدد أو عرض المساعدة أو سؤال الخروج
   ('اللمسة أثناء القفزة تُسقط', 'if (busy) { if (pend.length < 6) pend.push(t.n); return; }', 'if (busy) return;', ['test/quicktap_run.py'], {}, 'FAIL Pixel 5: pr.1'),
