@@ -552,7 +552,7 @@ def lint(root):
 MUT_PART = os.environ.get('MUT_PART', '')
 tmp = tempfile.mkdtemp(prefix='mut_')
 try:
-  if MUT_PART == '2': raise StopIteration
+  if MUT_PART == '2' or os.environ.get('MUT_ONLY'): raise StopIteration   # MUT_ONLY: طفرة متصفح واحدة بالاسم، لإعادة فحص طفرةٍ عُدّلت
   root = os.path.join(tmp, 'engine')
   shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns('dist', 'out', '.git', '__pycache__', 'node_modules'))
   rc, out = lint(root); check(rc == 0, 'الأصل: فحص المحتوى بلا مخالفة')
@@ -843,7 +843,7 @@ RUNTIME = [
   ('مهلة الفانوس تحت غطاء التبويب', "function showTabLost() { FLOW++; hush(); disarmIdle();", "function showTabLost() { FLOW++; hush();", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ص'}, 'FAIL مهلة الفانوس تحت غطاء التبويب'),   # J2 (3)
   ('مهلة الفانوس تحت غطاء العطل', "try { hush(); disarmIdle(); if (PAUSED) { resumeLesson();", "try { hush(); if (PAUSED) { resumeLesson();", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ص'}, 'FAIL مهلة الفانوس تحت غطاء العطل'),
   ('العطل لا يُسقط الإيقاف', "try { hush(); disarmIdle(); if (PAUSED) { resumeLesson(); $('#confetti').innerHTML = ''; } } catch (e) {}", "try { hush(); disarmIdle(); } catch (e) {}", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ص'}, 'FAIL مهلة الفانوس تحت غطاء العطل بعد الخروج'),   # نجت من J2
-  ('غطاء التبويب بالدرس الجاري كما كان', "onTabLost = () => { if (!$('#lesson').hidden) showTabLost(); };", "onTabLost = () => { if (CUR) showTabLost(); };", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ص'}, 'FAIL تبويبٌ آخر والطفل في الورشة'),   # J2 (6)
+  ('غطاء التبويب بالدرس الجاري كما كان', "onTabLost = () => showTabLost();", "onTabLost = () => { if (CUR) showTabLost(); };", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ص'}, 'FAIL تبويبٌ آخر والطفل في الورشة'),   # J2 (6)
   ('اللمحة بترشيح الصفر كما كانت', "numberPick(nearNums(item.n, 6, 1), item.n)", "numberPick(nearNums(item.n, 6).filter(x => x > 0), item.n)", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ت'}, 'FAIL اللمحة في «مراجعة اليوم» بـ n=2'),   # J2 (5)
   ('nearNums بلا حدّه الأدنى', "if (v >= lo && v <= max && avoidOk(v)) set.add(v); } return shuffle([...fillOpts(set, n, lo, max)]); }", "if (v >= 0 && v <= max && avoidOk(v)) set.add(v); } return shuffle([...fillOpts(set, n, 0, max)]); }", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ت'}, 'FAIL اللمحة في «مراجعة اليوم» بـ n=2'),
   ('حارس الخيارين ميّت', "if (TESTHOOK && new Set(nums).size < 3) testBug(", "if (false) testBug(", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ت'}, 'FAIL اللمحة في «مراجعة اليوم» بـ n=2'),
@@ -876,6 +876,7 @@ for name, old, new, args, env, want in RUNTIME:
   if COUNTS(src, old, new) != [1] * len(PAIRS(old, new)): check(False, 'طفرة «%s»: النصّ يظهر %s مرة في نسخة الفحص (يجب مرة واحدة)' % (name, COUNTS(src, old, new)))
 if os.environ.get('CONTENT_ONLY'): print('FAILS:', len(FAILS)); shutil.rmtree(tmpd, ignore_errors=True); sys.exit(1 if FAILS else 0)
 K = (len(RUNTIME) + 1) // 2; RT = RUNTIME[:K] if MUT_PART == '1' else RUNTIME[K:] if MUT_PART == '2' else RUNTIME
+if os.environ.get('MUT_ONLY'): RT = [x for x in RUNTIME if x[0] == os.environ['MUT_ONLY']]
 try:
   for args, env in dict.fromkeys((tuple(x[3]), tuple(sorted(x[4].items()))) for x in RT):   # كل فحص مرة على الأصل
     rc, out = run(list(args), dict(env), DEV); check(rc == 0, 'الأصل: %s %s ينجح %s' % (args[0], dict(env), ([l.strip()[:400] for l in out.splitlines() if l.startswith('FAIL ') or 'Traceback' in l or 'Error' in l][:6] if rc else []) + out.strip().splitlines()[-1:]))   # وسطور الإخفاق نفسها (كان السطر الأخير وحده «FAILS: 1»، فلم يُعرف ما أخفق)
