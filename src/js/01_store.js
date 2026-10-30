@@ -31,7 +31,9 @@ const store = {
     return true; },
   set(k, v) { if (k !== 'hp_lock' && !this.mine(k)) return false; const t = JSON.stringify(v);
     try { localStorage.setItem(k, t); this.seen[k] = t; return true; } catch (e) { if (!STORE_ISSUES.writeFail) { STORE_ISSUES.writeFail = true; try { onStoreIssue(); } catch (x) {} } return false; } },
-  del(k) { if (!this.mine(k)) return false; try { localStorage.removeItem(k); this.seen[k] = null; } catch (e) {} return true; },
+  /* يعيد true إن زال المفتاح فعلاً (الفحص المستقل WM101-R1-01: كان يبتلع الإخفاق ويعيد true فيُعلَن حذف ما بقي) */
+  del(k) { if (!this.mine(k)) return false; try { localStorage.removeItem(k); if (localStorage.getItem(k) !== null) throw 0; this.seen[k] = null; return true; }
+    catch (e) { return false; } },                        // ومستدعيه يقول ما لم يُحذف (لا تنبيه «حفظ التقدّم» العام)
   corrupt(k, raw) { STORE_ISSUES.corrupt.push(k); try { localStorage.setItem('hp_corrupt:' + k + ':' + Date.now(), String(raw).slice(0, 20000)); } catch (e) {} },
 };
 let onStoreIssue = () => {};                              // تعيّنه لوحة الكبار (شريط تنبيه)

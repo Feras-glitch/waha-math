@@ -485,7 +485,9 @@ const store = {
     return true; },
   set(k, v) { if (k !== 'hp_lock' && !this.mine(k)) return false; const t = JSON.stringify(v);
     try { localStorage.setItem(k, t); this.seen[k] = t; return true; } catch (e) { if (!STORE_ISSUES.writeFail) { STORE_ISSUES.writeFail = true; try { onStoreIssue(); } catch (x) {} } return false; } },
-  del(k) { if (!this.mine(k)) return false; try { localStorage.removeItem(k); this.seen[k] = null; } catch (e) {} return true; },
+  /* يعيد true إن زال المفتاح فعلاً (الفحص المستقل WM101-R1-01: كان يبتلع الإخفاق ويعيد true فيُعلَن حذف ما بقي) */
+  del(k) { if (!this.mine(k)) return false; try { localStorage.removeItem(k); if (localStorage.getItem(k) !== null) throw 0; this.seen[k] = null; return true; }
+    catch (e) { return false; } },                        // ومستدعيه يقول ما لم يُحذف (لا تنبيه «حفظ التقدّم» العام)
   corrupt(k, raw) { STORE_ISSUES.corrupt.push(k); try { localStorage.setItem('hp_corrupt:' + k + ':' + Date.now(), String(raw).slice(0, 20000)); } catch (e) {} },
 };
 let onStoreIssue = () => {};                              // تعيّنه لوحة الكبار (شريط تنبيه)
@@ -863,12 +865,13 @@ const VPACK = { db: null, failed: false, n: 0,
       else take(f.name, f); progress(got.length); }
     const db = await this.open(); if (!db) throw new Error('noStore');
     for (let i = 0; i < got.length; i += 100) {   /* دفعات: لا معاملة واحدة ضخمة على جهاز ضعيف */
+      if (!store.mine(null)) throw new Error('tab');   /* قبل كل دفعة: تبويبٌ فقد القفل أثناء الاستيراد لا يكتب بعده (الفحص المستقل WM101-R1-02) */
       await new Promise((res, rej) => { const tx = db.transaction('clips', 'readwrite'); for (const c of got.slice(i, i + 100)) tx.objectStore('clips').put(c);
         tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error || new Error('abort')); });
       progress(i + 100); }
     const n = await this.load(); return { imported: new Set(got.map(c => c.id)).size, unknown, total: want.size, have: n }; },
-  async clear() { const db = await this.open(); for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; if (!db) return;
-    return new Promise(res => { try { const tx = db.transaction('clips', 'readwrite'); tx.objectStore('clips').clear(); tx.oncomplete = () => res(); tx.onerror = () => res(); } catch (e) { res(); } }); },
+  async clear() { if (!store.mine(null)) return false; const db = await this.open(); if (!store.mine(null)) return false; for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; if (!db) return true;
+    return new Promise(res => { try { const tx = db.transaction('clips', 'readwrite'); tx.objectStore('clips').clear(); tx.oncomplete = () => res(true); tx.onerror = () => res(true); } catch (e) { res(true); } }); },
 };
 /* قارئ zip صغير بلا مكتبة: الدليل المركزي، والملفات المخزّنة (0) والمضغوطة (8) بـ DecompressionStream('deflate-raw') */
 async function unzipFiles(file) {
@@ -6154,35 +6157,62 @@ function openKids(first) {
 }
 
 /* ---------- المعرض وصيد الأشكال بالكاميرا: الصور على الجهاز فقط ---------- */
-const IDB = { db: null, mem: [],
-  open() { if (this.db || this.failed) return Promise.resolve(this.db);
+const IDB = { db: null, mem: [], failed: false, none: false,
+  /* retry: الحذف يعيد محاولة الفتح بعد إخفاقٍ سابق، فيكتمل حين يعود الوصول (الفحص المستقل WM101-R1-03) */
+  open(retry) { if (this.db || (this.failed && !retry)) return Promise.resolve(this.db);
+    if (typeof indexedDB === 'undefined') { this.failed = this.none = true; return Promise.resolve(null); }   // لا مخزن صور في هذا المتصفح أصلاً
     return new Promise(res => { try { const r = indexedDB.open('hp_gallery', 1);
       r.onupgradeneeded = () => r.result.createObjectStore('photos', { keyPath: 'id' });
-      r.onsuccess = () => { this.db = r.result; res(this.db); }; r.onerror = () => { this.failed = true; res(null); }; } catch (e) { this.failed = true; res(null); } }); },
-  async put(o) { if (!store.mine(null)) return; const db = await this.open(); if (!db) { this.mem.push(o); return; }
-    return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(o); tx.oncomplete = () => res(); tx.onerror = () => { this.mem.push(o); res(); }; } catch (e) { this.mem.push(o); res(); } }); },
+      r.onsuccess = () => { this.db = r.result; this.failed = false; res(this.db); }; r.onerror = () => { this.failed = true; res(null); }; } catch (e) { this.failed = true; res(null); } }); },
+  /* القفل يُسأل قبل الانتظار وبعده (الفحص المستقل WM101-R1-02: صورةٌ بدأ حفظها قبل أن يأخذ تبويبٌ آخر القفل كانت تُكتب بعده):
+     'ok' حُفظت، و'mem' بقيت في الذاكرة لهذه الجلسة، و'tab' لم تُحفظ لأن التبويب فقد القفل */
+  async put(o) { if (!store.mine(null)) return 'tab'; const db = await this.open(); if (!store.mine(null)) return 'tab';
+    if (!db) { this.mem.push(o); return 'mem'; }
+    return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(o); tx.oncomplete = () => res('ok'); tx.onerror = () => { this.mem.push(o); res('mem'); }; } catch (e) { this.mem.push(o); res('mem'); } }); },
   async all() { const db = await this.open(); const mine = x => x.kid === KID;
     if (!db) return this.mem.filter(mine);
     return new Promise(res => { try { const r = db.transaction('photos').objectStore('photos').getAll(); r.onsuccess = () => res(r.result.filter(mine).concat(this.mem.filter(mine))); r.onerror = () => res(this.mem.filter(mine)); } catch (e) { res(this.mem.filter(mine)); } }); },
-  /* صور طفلٍ بعينه كلها (الفحص الخصم A08): يعيد true إن اكتمل الحذف أو لم تكن قاعدة صور، وfalse إن أخفقت المعاملة */
-  async dropKid(id) { this.mem = this.mem.filter(x => x.kid !== id); const db = await this.open(); if (!db) return true;
-    return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'), os = tx.objectStore('photos'); const r = os.getAll();
-      r.onsuccess = () => { try { r.result.filter(x => x.kid === id).forEach(x => os.delete(x.id)); } catch (e) { try { tx.abort(); } catch (x) {} res(false); } };
-      tx.oncomplete = () => res(true); tx.onerror = tx.onabort = () => res(false); } catch (e) { res(false); } }); },
-  async clear() { const db = await this.open(); this.mem = this.mem.filter(x => x.kid !== KID); if (!db) return;
-    const list = await this.all(); return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); list.forEach(x => tx.objectStore('photos').delete(x.id)); tx.oncomplete = () => res(); tx.onerror = () => res(); } catch (e) { res(); } }); },
+  /* صور طفلٍ بعينه كلها (الفحص الخصم A08، والمستقل WM101-R1-02 وR1-03): 'ok' إن اكتمل حذفها أو لم يكن مخزن صور في المتصفح أصلاً،
+     و'tab' إن فقد التبويب القفل قبل الفتح أو بعده أو قبل الحذف داخل المعاملة (فتُلغى)، و'fail' إن تعذّر الفتح أو أخفقت المعاملة:
+     قاعدةٌ لا يُوصل إليها ليست قاعدةً بلا صور، وصور الذاكرة لا تُمحى إلا بعد اكتمال الحذف */
+  async dropKid(id) { if (!store.mine(null)) return 'tab'; const db = await this.open(true); if (!store.mine(null)) return 'tab';
+    const done = () => { this.mem = this.mem.filter(x => x.kid !== id); return 'ok'; };
+    if (!db) return this.none ? done() : 'fail';
+    return new Promise(res => { let out = 'fail'; try { const tx = db.transaction('photos', 'readwrite'), os = tx.objectStore('photos'); const r = os.getAll();
+      r.onsuccess = () => { if (!store.mine(null)) { out = 'tab'; try { tx.abort(); } catch (x) {} return; }
+        try { r.result.filter(x => x.kid === id).forEach(x => os.delete(x.id)); } catch (e) { try { tx.abort(); } catch (x) {} } };
+      tx.oncomplete = () => res(done()); tx.onerror = tx.onabort = () => res(out); } catch (e) { res('fail'); } }); },
 };
 const designsKey = () => kk('hp_designs');
 /* التصميمات بقاعدتها (الفحص الخصم A05): تصميمٌ تالف يُسقط وحده، فلا يعطّل المعرض ولا التقرير */
 const designsGet = () => store.fix(designsKey(), [], V_DESIGNS);
-/* مفاتيح الطفل ونسخها: التقدّم والسجل والجلسة والإعدادات والتصميمات، ونسخ الترحيل والتالف، وما يخصّه في نسخة ما قبل الاستعادة */
-function kidForget(id) { const own = new RegExp('^hp_(?:(?:prog|log|session|settings|designs):' + id + '|prog_bak:' + id + ':v\\d+|corrupt:hp_\\w+:' + id + ':\\d+)$');
-  const ks = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (own.test(k)) ks.push(k); } } catch (e) {}
-  ks.forEach(k => store.del(k));
-  try { const d = JSON.parse(localStorage.getItem('hp_before_restore')); if (isObj(d) && isObj(d.data)) { for (const k of Object.keys(d.data)) if (k.endsWith(':' + id)) delete d.data[k];
-    if (typeof d.data.hp_kids === 'string') { const l = JSON.parse(d.data.hp_kids); if (Array.isArray(l)) d.data.hp_kids = JSON.stringify(l.filter(k => !isObj(k) || k.id !== id)); }
-    localStorage.setItem('hp_before_restore', JSON.stringify(d)); } } catch (e) {}
-  const i = KIDS.findIndex(k => k.id === id); if (i >= 0) KIDS.splice(i, 1); store.set('hp_kids', KIDS); }
+/* حذف الطفل عمليةٌ واحدة تُستأنف (الفحص الخصم A08، والمستقل WM101-R1-01 وR1-02 وR1-03): يُكتب «حذفٌ لم يكتمل» (hp_kid_del) أولاً،
+   ثم صوره، ثم مفاتيحه (التقدّم والسجل والجلسة والإعدادات والتصميمات، ونسخ الترحيل والتالف)، ثم ما يخصّه في نسخة ما قبل الاستعادة، ثم القائمة.
+   كل خطوة يُتحقَّق منها، ولا يُرفع الطفل من KIDS في الذاكرة إلا بعد حفظ القائمة بدونه، فالذاكرة كالتخزين دائماً.
+   فإن أخفقت خطوة وقف وبقي السجلّ: الطفل في القائمة، واللوحة تقول إن حذفه لم يكتمل وتعرض إكماله، ويُستأنف عند الفتح.
+   يعيد { ok: true } أو { ok: false, why: 'tab' | 'mark' | 'photos' | 'keys' | 'rescue' | 'list' } */
+const KID_DEL = 'hp_kid_del';
+const kidDelPending = () => { const m = store.read(KID_DEL, null, isObj); return m && typeof m.id === 'string' && KID_ID.test(m.id) ? m.id : null; };
+async function kidDelete(id) {
+  if (!store.mine(null)) return { ok: false, why: 'tab' };
+  if (kidDelPending() !== id && !store.set(KID_DEL, { id, t: Date.now() })) return { ok: false, why: 'mark' };
+  const ph = await IDB.dropKid(id); if (ph !== 'ok') return { ok: false, why: ph === 'tab' ? 'tab' : 'photos' };
+  if (!store.mine(null)) return { ok: false, why: 'tab' };
+  const own = new RegExp('^hp_(?:(?:prog|log|session|settings|designs):' + id + '|prog_bak:' + id + ':v\\d+|corrupt:hp_\\w+:' + id + ':\\d+)$');
+  const ks = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (own.test(k)) ks.push(k); } } catch (e) { return { ok: false, why: 'keys' }; }
+  if (ks.map(k => store.del(k)).includes(false)) return { ok: false, why: 'keys' };
+  let d = null; try { d = JSON.parse(store.raw('hp_before_restore')); } catch (e) {}
+  if (isObj(d) && isObj(d.data)) { let ch = false; for (const k of Object.keys(d.data)) if (k.endsWith(':' + id)) { delete d.data[k]; ch = true; }
+    if (typeof d.data.hp_kids === 'string') { try { const l = JSON.parse(d.data.hp_kids); if (Array.isArray(l) && l.some(k => isObj(k) && k.id === id)) { d.data.hp_kids = JSON.stringify(l.filter(k => !isObj(k) || k.id !== id)); ch = true; } } catch (e) {} }
+    if (ch && !store.set('hp_before_restore', d)) return { ok: false, why: 'rescue' }; }   // عبر store.set لا مباشرة: بحارس القفل ككل كتابة
+  const rest = KIDS.filter(k => k.id !== id);
+  if (rest.length !== KIDS.length) { if (!store.set('hp_kids', rest)) return { ok: false, why: 'list' }; KIDS.splice(KIDS.findIndex(k => k.id === id), 1); }
+  store.del(KID_DEL); return { ok: true };   // وإن بقي السجلّ بعد اكتمال الحذف فاستئنافه عند الفتح يجد كل شيء محذوفاً فيمحوه
+}
+/* عند الفتح لا يُستأنف الحذف وحده: تبويبٌ يُفتح أثناء حذفٍ في تبويبٍ آخر كان يكمله، فتعود عمليةٌ أُلغيت بفقد القفل (الفحص المستقل WM101-R1-02).
+   فالحذف الذي لم يكتمل يُكمَل بضغطة الكبير في اللوحة وحدها؛ والطفل المختار لا يُحذف: يُلغى سجلّه ويُقال ذلك */
+let KID_DEL_STATE = null;   // null، أو { id, why } لم يكتمل، أو { id, cancelled: true }
+function kidDelCheck() { const id = kidDelPending(); if (id && id === KID && store.del(KID_DEL)) KID_DEL_STATE = { id, cancelled: true }; }
 function designSVG(d, w = 150) { const s = el('svg', { viewBox: '0 0 360 250', width: w, 'aria-hidden': 'true' }); el('rect', { width: 360, height: 250, fill: css('--sky-bot') }, s);
   d.pieces.forEach(p => wsDraw(s, p, p.x, p.y, 1)); return s.outerHTML; }
 async function openGallery() {
@@ -6199,7 +6229,8 @@ async function openGallery() {
   $('#huntIn').onchange = e => { const f = e.target.files && e.target.files[0]; if (!f || !want) return; hush(); const rd = new FileReader();   /* عاد بصورة: لا تُعاد التعليمة التي قطعتها الكاميرا (الفحص المستقل J2 (7)) */
     rd.onload = () => { const img = new Image(); img.onload = async () => { const Z = 360, k = Math.min(1, Z / Math.max(img.width, img.height)); const cv = document.createElement('canvas');
       cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      await IDB.put({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kid: KID, k: want, t: Date.now(), data: cv.toDataURL('image/jpeg', .72) });   // rng-ok: معرّف الصورة
+      const sv = await IDB.put({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kid: KID, k: want, t: Date.now(), data: cv.toDataURL('image/jpeg', .72) });   // rng-ok: معرّف الصورة
+      if (sv === 'tab') return;   /* فقد التبويب القفل أثناء الحفظ: لم تُحفظ، فلا احتفال ولا «حُفظت» (الفحص المستقل WM101-R1-02) */
       logAttempt({ scene: 'hunt', tag: want, ok: true }); SFX.win(); confetti(); await coverSay(c, 'gen.hunt.saved'); openGallery(); }; img.src = rd.result; }; rd.readAsDataURL(f); };
   $('#galClose').onclick = () => { hush(); c.hidden = true; showHome(); };
   coverSay(c, open.length ? 'gen.gallery.intro' : 'gen.gallery.empty');
@@ -6688,6 +6719,15 @@ function conceptPill(L, C) { const c = ((PROG[L.id] || {}).cs || {})[C] || {}, a
   if (c.mastered) return (PROG[L.id] || {}).entry && !adult ? '<span class="pill think">أتقنه على الشاشة، مدخل</span>' : '<span class="pill good">متقن</span>';
   if (adult) return '<span class="pill good">متقن بحكم الكبير</span>';
   return c.entry ? '<span class="pill think">مدخل: يحكم الكبير</span>' : c.deferred ? '<span class="pill think">مؤجَّل إلى المراجعة</span>' : (L.mastery && L.mastery.concepts[C]) ? '—' : '<span class="pill">مدخل</span>'; }
+/* حذفٌ لم يكتمل يُقال بسببه، ويُعرض إكماله بضغطة (الفحص المستقل WM101-R1-01، R1-03): الطفل باقٍ في القائمة كما في التخزين حتى يكتمل */
+const KID_DEL_WHY = { mark: 'تعذّر بدء الحذف، فلم يُحذف شيء', photos: 'تعذّر الوصول إلى صوره على هذا الجهاز، فلم يكتمل حذفه',
+  keys: 'تعذّر حذف بعض بياناته (المساحة ممتلئة أو التصفّح الخاص)، فلم يكتمل حذفه', rescue: 'تعذّر حذفه من نسخة ما قبل الاستعادة، فلم يكتمل حذفه',
+  list: 'تعذّر حفظ قائمة الأطفال بدونه، فلم يكتمل حذفه' };
+function kidDelNote() { const st = KID_DEL_STATE, id = st ? st.id : kidDelPending(); if (!id) return '';
+  const k = KIDS.find(x => x.id === id), nm = esc((k && k.name) || 'الطفل');
+  if (st && st.cancelled) return `<p class="muted" id="kidDelNote">أُلغي حذف ${nm} الذي لم يكتمل لأنه اختير بعده، وقد يكون حُذف بعض بياناته قبل ذلك.</p>`;
+  if (!k || k.id === KID) return '';
+  return `<p class="muted" id="kidDelNote">${(st && KID_DEL_WHY[st.why]) || 'حذف ' + nm + ' لم يكتمل'}: يبقى ${nm} في القائمة حتى يكتمل.</p><div class="seg"><button class="pick" data-del="${esc(id)}" data-sure="1">أكملوا حذف ${nm}</button></div>`; }
 function openPanel() {
   const A = LOG.attempts; const errs = {}; A.filter(a => a.err && ERRN[a.err] && a.scene !== 'ws').forEach(a => errs[a.err] = (errs[a.err] || 0) + 1);
   const firsts = A.filter(a => a.firstTry !== undefined && isAssess(a)); const fOk = firsts.filter(a => a.firstTry && a.ok).length;
@@ -6719,7 +6759,7 @@ function openPanel() {
       <p class="muted">في هذه الجلسة: ${nw(sessionNow().n, 'درس واحد', 'درسان', 'دروس', 'درساً')}.</p>
       <div class="seg"><button class="pick" id="slowBtn" aria-pressed="${!!SET.slow}">قراءة أبطأ: ${SET.slow ? 'تعمل' : 'متوقفة'}</button></div></div>
     <div class="card"><b>أطفال هذا الجهاز</b> (لكل طفل تقدّمه ومعرضه وإعداداته، ويختار صورته عند الدخول):
-      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div></div>
+      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div>${kidDelNote()}</div>
     <div class="card"><b>الصوت:</b> <span id="vpStat">${vpStatText()}</span>
       <p class="muted">حزمة الصوت ملف zip (أو ملفات صوتية) اسم كل تسجيل فيه معرّف جملته في جدول التسجيل، مثل <code dir="ltr">m1.u1.d2.hook.01.mp3</code>، و<code dir="ltr">…_f.mp3</code> للصيغة المؤنثة. تُستورد مرة واحدة وتبقى في هذا الجهاز، وما لم يُسجَّل يقرؤه صوت الجهاز (D181).</p>
       <div class="seg"><button class="pick" id="vpPick">استيراد حزمة الصوت</button><button class="pick" id="vpDel"${VPACK.n ? '' : ' hidden'}>حذف الحزمة</button></div><input type="file" id="vpIn" accept=".zip,audio/*" multiple hidden><p id="vpMsg" class="muted" aria-live="polite"></p></div>
@@ -6736,8 +6776,8 @@ function openPanel() {
   /* حذف الطفل (الفحص الخصم A08): صوره أولاً، فإن تعذّر حذفها لا يُحذف شيء ولا يُعلَن حذف؛ ثم مفاتيحه ونسخه */
   $('#panel').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يُحذف تقدّمه وصوره كلها'; return; }
     const id = b.dataset.del; if (!store.mine(null)) return; b.disabled = true;
-    if (!(await IDB.dropKid(id))) { b.disabled = false; b.dataset.sure = ''; b.textContent = 'تعذّر حذف صوره، فلم يُحذف شيء. أعيدوا المحاولة'; return; }
-    kidForget(id); openPanel(); });
+    const r = await kidDelete(id); if (r.why === 'tab') return;   /* فقد التبويب القفل: غطاؤه ظاهر، ولا أثر في الواجهة لعمليةٍ أُلغيت */
+    KID_DEL_STATE = r.ok ? null : { id, why: r.why }; openPanel(); });
   $('#panel').querySelectorAll('[data-ac]').forEach(b => b.onclick = () => { const L = LDATA[b.dataset.ac]; if (!L || !L.adultCard) return;
     const a = adultAnswers(L); a[+b.dataset.i] = b.dataset.v === '1'; PROG.adult = isObj(PROG.adult) ? PROG.adult : {}; PROG.adult[L.id] = a;
     if (saveProg()) openPanel(); });
@@ -6753,9 +6793,9 @@ function openPanel() {
     try { const r = await VPACK.importFiles(files, n => { m.textContent = 'يستورد… ' + DG(n); });
       m.textContent = (r.imported ? `استُورد ${nw(r.imported, 'تسجيل واحد', 'تسجيلان', 'تسجيلات', 'تسجيلاً')}، فصارت الحزمة ${DG(r.have)} من ${DG(r.total)}.` : 'لم يُستورد أي تسجيل.') + (r.unknown.length === 1 ? ` وأُهمل ملف واحد لا يطابق اسمه جملة في الدروس: ${r.unknown[0]}.` : r.unknown.length ? ` وأُهمل ${nw(r.unknown.length, 'ملف واحد', 'ملفان', 'ملفات', 'ملفاً')} لا تطابق أسماؤها جملاً في الدروس، أوّلها ${r.unknown[0]}.` : '') + (r.have < r.total ? ' وما لم يُسجَّل بعد يقرؤه صوت الجهاز.' : '');
       $('#vpStat').textContent = vpStatText(); $('#vpDel').hidden = !VPACK.n;
-    } catch (err) { m.textContent = { notZip: 'هذا ليس ملف zip.', badZip: 'ملف zip تالف.', noInflate: 'هذا المتصفح لا يفتح ملفات zip المضغوطة؛ اختر الملفات الصوتية نفسها.', noStore: 'تعذّر الحفظ في الجهاز (التصفّح الخاص؟).' }[err && err.message] || 'تعذّر الاستيراد.'; } };
+    } catch (err) { m.textContent = { notZip: 'هذا ليس ملف zip.', badZip: 'ملف zip تالف.', noInflate: 'هذا المتصفح لا يفتح ملفات zip المضغوطة؛ اختر الملفات الصوتية نفسها.', noStore: 'تعذّر الحفظ في الجهاز (التصفّح الخاص؟).', tab: 'توقّف الاستيراد لأن التطبيق فُتح في نافذة أخرى؛ ما استُورد قبلها باقٍ.' }[err && err.message] || 'تعذّر الاستيراد.'; } };
   $('#vpDel').onclick = async () => { const b = $('#vpDel'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يعود صوت الجهاز'; return; }
-    await VPACK.clear(); $('#vpStat').textContent = vpStatText(); b.hidden = true; b.dataset.sure = ''; b.textContent = 'حذف الحزمة'; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
+    if (!(await VPACK.clear())) return; $('#vpStat').textContent = vpStatText(); b.hidden = true; b.dataset.sure = ''; b.textContent = 'حذف الحزمة'; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
   /* النسخة الاحتياطية (D246) */
   $('#bkSave').onclick = () => { backupSave(); $('#bkMsg').textContent = 'حُفظ الملف في التنزيلات.'; };
   $('#bkPick').onclick = () => $('#bkIn').click();
@@ -6833,6 +6873,7 @@ try { ['400 20px "Waha Naskh"', '700 20px "Waha Naskh"', '800 20px "Baloo Bhaija
 defs(); renderMute(); tabClaim();
 VPACK.load().catch(() => {});   /* حزمة الصوت المحفوظة (D181): ما سُجّل يُقال بها، والباقي بصوت الجهاز */
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { defs(); if (!$('#home').hidden) showHome(); }); } catch (e) {}
+kidDelCheck();   /* حذف طفلٍ لم يكتمل: لا يُستأنف وحده، ويُلغى إن كان هو المختار (الفحص المستقل WM101-R1-01، R1-02) */
 if (!PROFILE) firstRun(); else if (KIDS.length > 1) { showHome(); openKids(true); } else showHome();
 </script>
 </body>

@@ -355,6 +355,108 @@ async def delete_cases(b):
             'إخفاق حذف الصور: لا يُحذف الطفل ولا يُعلَن حذفه، وتظهر رسالة', [kids, keys, rows, txt[txt.find('تعذّر') - 10:][:80] if 'تعذّر' in txt else ''])
     check('A08', not errs, 'لا أخطاء في الصفحة (الحذف%s)' % (' مع الإخفاق' if fail else ''), errs[:3]); await ctx.close()
 
+# ---------- إعادة الفحص المستقلة (30 أكتوبر 2026، المعرّفات WM101-R1-01..03 ثابتة، مرتبطة بـ A06 وA08) ----------
+K2 = {'id': 'k2', 'name': 'علي', 'gender': 'm', 'photo': '', 'avatar': 'm2'}
+K2_KEYS = ['hp_prog:k2', 'hp_log:k2', 'hp_designs:k2', 'hp_settings:k2', 'hp_prog_bak:k2:v2', 'hp_corrupt:hp_prog:k2:1700000000000']
+def k2_extra():
+  rescue = {'v': 1, 't': 1, 'data': {'hp_kids': json.dumps([KID, K2], ensure_ascii=False), 'hp_kid': '"k1"', 'hp_prog:k1': '{"schema":3}', 'hp_prog:k2': '{"schema":3}'}}
+  return {'hp_prog:k2': json.dumps({'schema': 3, 'm1.u1.d1': {'done': True, 'at': 1}}), 'hp_log:k2': json.dumps({'attempts': []}), 'hp_designs:k2': '[]',
+          'hp_prog_bak:k2:v2': '{}', 'hp_corrupt:hp_prog:k2:1700000000000': '{}', 'hp_before_restore': json.dumps(rescue, ensure_ascii=False)}
+# حال الحذف كما تراه الذاكرة والتخزين والقاعدة واللوحة
+DSTATE = """async () => { const db = await IDB.open(true); let rows = null;
+  if (db) rows = await new Promise(res => { const r = db.transaction('photos').objectStore('photos').getAll(); r.onsuccess = () => res(r.result.map(x => x.id)); r.onerror = () => res(null); });
+  let rescue = null; try { const d = JSON.parse(localStorage.getItem('hp_before_restore')); rescue = Object.keys(d.data).filter(k => /k2/.test(k) || (k === 'hp_kids' && /"k2"/.test(d.data[k]))); } catch (e) {}
+  const note = document.querySelector('#kidDelNote');
+  return { mem: KIDS.some(k => k.id === 'k2'), stored: JSON.parse(localStorage.getItem('hp_kids')).some(k => k.id === 'k2'),
+    keys: Object.keys(localStorage).filter(k => /^hp_.*:k2(:|$)/.test(k)).sort(), photos: rows && rows.filter(x => x === 'pk2' || x === 'pk3'), pk1: !!rows && rows.includes('pk1'),
+    rescue, note: note ? note.textContent : '', finish: !!document.querySelector('[data-del="k2"][data-sure="1"]'), marker: localStorage.getItem('hp_kid_del'),
+    k1: !!(JSON.parse(localStorage.getItem('hp_prog:k1')) || {})['m1.u1.d1'], memPhotos: IDB.mem.filter(x => x.kid === 'k2').length }; }"""
+GONE = lambda st: not st['mem'] and not st['stored'] and not st['keys'] and st['photos'] == [] and not st['rescue'] and st['pk1'] and st['k1'] and not st['memPhotos']
+WHOLE = lambda st: st['mem'] and st['stored'] and st['keys'] == sorted(K2_KEYS) and st['photos'] == ['pk2', 'pk3'] and st['pk1'] and st['k1']
+async def seed_k2(b):
+  ctx, pg, errs = await fresh(b, {'m1.u1.d1': {'done': True, 'at': 1}}, kids=[KID, K2], extra=k2_extra())
+  await pg.evaluate("async () => { localStorage.setItem('hp_settings:k2', JSON.stringify({ sessionMax: 0, muted: true })); for (const [id, kid, t] of [['pk1', 'k1', 1], ['pk2', 'k2', 2], ['pk3', 'k2', 3]]) await IDB.put({ id, kid, k: 'circle', t, data: 'data:image/jpeg;base64,AAAA' }); }")
+  await reopen(pg); await pg.evaluate("() => openPanel()"); return ctx, pg, errs
+async def del_click(pg, finish=False):   # بلا زرٍّ (الطفل غاب، أو لا «أكملوا» في الأصل): لا ضغط، فيُحكم بالحال كما هي ولا يتوقّف الفحص
+  sel = '[data-del="k2"][data-sure="1"]' if finish else '[data-del="k2"]:not([data-sure="1"])'
+  if not await pg.query_selector(sel): return False
+  await pg.click(sel)
+  if not finish: await pg.click('[data-del="k2"]:not(#kidDelNote + .seg [data-del])')
+  await pg.wait_for_timeout(450); return True
+async def r1_cases(b):
+  # WM101-R1-01: إخفاق كل كتابة في الحذف (حذف كل مفتاح، وسجلّ الحذف، ونسخة ما قبل الاستعادة، والقائمة) ثم إعادة الفتح ثم الإكمال
+  points = [('removeItem', k) for k in K2_KEYS] + [('setItem', 'hp_kid_del'), ('setItem', 'hp_before_restore'), ('setItem', 'hp_kids')]
+  for how, key in points:
+    ctx, pg, errs = await seed_k2(b)
+    await pg.evaluate("""([how, key]) => { const P = Storage.prototype, f0 = P[how]; P[how] = function (k, v) { if (k === key) throw new DOMException('blocked', 'QuotaExceededError'); return f0.call(this, k, v); }; }""", [how, key])
+    await del_click(pg); s1 = await pg.evaluate(DSTATE)
+    await reopen(pg); await pg.evaluate("() => openPanel()"); s2 = await pg.evaluate(DSTATE)
+    nothing = how == 'setItem' and key == 'hp_kid_del'   # سجلّ الحذف لا يُكتب: لا يبدأ شيء
+    ok1 = s1['mem'] == s1['stored'] and s2['mem'] == s2['stored'] and s1['stored'] and s2['stored']
+    ok2 = 'تعذّر' in s1['note'] and (WHOLE(s1) and WHOLE(s2) and not s2['note'] if nothing else ('لم يكتمل' in s2['note'] and s2['finish']))
+    check('R1-01', ok1 and ok2, 'إخفاق %s(%s) في الحذف: الطفل في الذاكرة كما في التخزين، ولا يُعلَن حذفه، و%s' % (how, key, 'لا يتغيّر شيء' if nothing else 'اللوحة تقول إن حذفه لم يكتمل وبعد إعادة الفتح'),
+          {'قبل': {k: s1[k] for k in ('mem', 'stored', 'keys', 'photos', 'note')}, 'بعد الفتح': {k: s2[k] for k in ('mem', 'stored', 'keys', 'photos', 'note')}})
+    if not nothing:
+      await del_click(pg, finish=True); s3 = await pg.evaluate(DSTATE); await reopen(pg); await pg.evaluate("() => openPanel()"); s4 = await pg.evaluate(DSTATE)
+      check('R1-01', GONE(s3) and GONE(s4) and not s3['note'] and not s4['marker'], 'وبعد زوال الإخفاق: «أكملوا الحذف» يكمله كله، ويبقى الطفل الأول وصوره، وبعد إعادة الفتح', [{k: s3[k] for k in ('mem', 'stored', 'keys', 'photos', 'rescue')}, s4['marker']])
+    check('R1-01', not errs, 'لا أخطاء في الصفحة (إخفاق %s(%s))' % (how, key), errs[:3]); await ctx.close()
+  # WM101-R1-03: قاعدة الصور لا تُفتح (موجودة من قبل): لا يُحذف الطفل، وتبقى صور الذاكرة، ويكتمل الحذف حين يعود الوصول
+  ctx, pg, errs = await seed_k2(b)
+  await pg.evaluate("""() => { if (IDB.db) IDB.db.close(); IDB.db = null; IDB.mem.push({ id: 'pm2', kid: 'k2', k: 'circle', t: 5, data: 'data:image/jpeg;base64,AAAA' });
+    window.__idbOpen = indexedDB.open; indexedDB.open = function () { throw new DOMException('no', 'UnknownError'); }; }""")
+  await del_click(pg); s1 = await pg.evaluate("""() => ({ mem: KIDS.some(k => k.id === 'k2'), stored: JSON.parse(localStorage.getItem('hp_kids')).some(k => k.id === 'k2'),
+    keys: Object.keys(localStorage).filter(k => /^hp_.*:k2(:|$)/.test(k)).length, memPhotos: IDB.mem.filter(x => x.kid === 'k2').length, note: ($('#kidDelNote') || {}).textContent || '' })""")
+  check('R1-03', s1['mem'] and s1['stored'] and s1['keys'] == len(K2_KEYS) and s1['memPhotos'] == 1 and 'صوره' in s1['note'] and 'لم يكتمل' in s1['note'],
+        'قاعدة الصور لا تُفتح: لا يُحذف الطفل ولا مفاتيحه، وتبقى صوره في الذاكرة، وتقول اللوحة لماذا لم يكتمل', s1)
+  await pg.evaluate("() => { indexedDB.open = window.__idbOpen; }"); await del_click(pg, finish=True); s3 = await pg.evaluate(DSTATE)
+  await reopen(pg); s4 = await pg.evaluate(DSTATE)
+  check('R1-03', GONE(s3) and GONE(s4), 'وحين يعود الوصول: «أكملوا الحذف» يكمله كله، وبعد إعادة الفتح', [{k: s3[k] for k in ('mem', 'stored', 'keys', 'photos', 'memPhotos')}])
+  check('R1-03', not errs, 'لا أخطاء في الصفحة (قاعدة الصور لا تُفتح)', errs[:3]); await ctx.close()
+  # WM101-R1-02: عملٌ بدأ قبل فقد القفل لا يكتب ولا يحذف بعده، في كل موضع انتظار، وواجهة الصيد الحقيقية
+  PEND_OPEN = "() => { window.__open0 = IDB.open; IDB.open = function (r) { return new Promise(res => { window.__go = () => { IDB.open = window.__open0; res(window.__open0.call(IDB, r)); }; }); }; }"
+  LOSE_IN_TX = "() => { const P = IDBObjectStore.prototype, g0 = P.getAll; P.getAll = function () { const r = g0.apply(this, arguments); localStorage.setItem('hp_lock', JSON.stringify({ tab: 'other', t: Date.now() })); P.getAll = g0; return r; }; }"
+  for where in ('open', 'tx'):
+    ctx, A, errs = await seed_k2(b); errsB = []
+    if where == 'open': await A.evaluate(PEND_OPEN)
+    else: await A.evaluate(LOSE_IN_TX)
+    if where == 'tx': await del_click(A)
+    else: await A.click('[data-del="k2"]:not([data-sure="1"])'); await A.click('[data-del="k2"]')   # بلا انتظار: الحذف معلّق عند فتح القاعدة
+    if where == 'open':
+      B = await ctx.new_page(); B.on('pageerror', lambda e: errsB.append(str(e))); await B.goto(URL); await B.wait_for_timeout(500)
+      lost = await A.evaluate('() => TAB_LOST'); await A.evaluate('() => window.__go()'); await A.wait_for_timeout(450)
+    else: B = await ctx.new_page(); B.on('pageerror', lambda e: errsB.append(str(e))); await B.goto(URL); await B.wait_for_timeout(500); lost = await A.evaluate('() => TAB_LOST')
+    st = await B.evaluate(DSTATE); a_txt = await A.evaluate("() => ($('#kidDelNote') || {}).textContent || ''")
+    check('R1-02', lost and WHOLE(st), 'حذف طفل وفقد القفل %s: لا يُحذف شيء من صوره ولا مفاتيحه ولا قائمته' % ('أثناء فتح القاعدة' if where == 'open' else 'داخل المعاملة قبل الحذف'), {k: st[k] for k in ('mem', 'stored', 'keys', 'photos')})
+    await reopen(B); await B.evaluate("() => openPanel()"); st2 = await B.evaluate(DSTATE)
+    check('R1-02', WHOLE(st2) and not a_txt, 'وبعد إعادة الفتح لا يعود الحذف الملغى وحده، ولا أثر له في واجهة التبويب الأقدم', [{k: st2[k] for k in ('mem', 'stored', 'keys', 'photos', 'note')}, a_txt])
+    check('R1-02', not errs and not errsB, 'لا أخطاء في الصفحتين (الحذف، %s)' % where, (errs + errsB)[:3]); await ctx.close()
+  # حفظ صورة: القفل يُفقد أثناء فتح القاعدة
+  ctx, A, errs = await seed_k2(b); await A.evaluate("() => { IDB.db = null; }"); await A.evaluate(PEND_OPEN)
+  await A.evaluate("() => { window.__put = IDB.put({ id: 'late', kid: 'k1', k: 'circle', t: 9, data: 'data:image/jpeg;base64,AAAA' }); }")
+  B = await ctx.new_page(); await B.goto(URL); await B.wait_for_timeout(500); await A.evaluate('() => window.__go()'); r = await A.evaluate('() => window.__put')
+  rows = await B.evaluate(ROWS)
+  check('R1-02', r == 'tab' and rows is not None and all(x[0] != 'late' for x in rows), 'صورةٌ بدأ حفظها قبل فقد القفل لا تُكتب بعده', [r, rows]); await ctx.close()
+  # وواجهة الصيد الحقيقية: اختيار الصورة بعد أن يأخذ تبويبٌ آخر القفل (والصورة تُقرأ وتُرسم ثم تُحفظ)
+  ctx, A, errs = await fresh(b, {'m1.u1.d1': {'done': True, 'at': 1}})
+  png = os.path.join(TMP, 'shape.png'); open(png, 'wb').write(__import__('base64').b64decode('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='))
+  await A.evaluate("() => openGallery()"); await A.wait_for_timeout(300)
+  async with A.expect_file_chooser() as fc: await A.click('[data-hunt="circle"]')
+  chooser = await fc.value
+  B = await ctx.new_page(); await B.goto(URL); await B.wait_for_timeout(500)
+  n0 = await A.evaluate("() => LOG.attempts.filter(x => x.scene === 'hunt').length")
+  await chooser.set_files(png); await A.wait_for_timeout(1200)
+  rows = await B.evaluate(ROWS); n1 = await A.evaluate("() => LOG.attempts.filter(x => x.scene === 'hunt').length")
+  logB = await B.evaluate("() => (JSON.parse(localStorage.getItem('hp_log:k1') || '{\"attempts\":[]}').attempts || []).filter(x => x.scene === 'hunt').length")
+  check('R1-02', rows is not None and not any(x[1] == 'k1' for x in rows) and n1 == n0 and logB == 0, 'صورة الصيد تُختار بعد فقد القفل: لا تُحفظ، ولا تُحسب صيداً', [rows, n0, n1, logB])
+  check('R1-02', not errs, 'لا أخطاء في الصفحة (الصيد)', errs[:3]); await ctx.close()
+  # حزمة الصوت: حذفها والقفل يُفقد أثناء فتح قاعدتها
+  ctx, A, errs = await fresh(b, {}); loose = os.path.join(TMP, 'gen.first.hello.wav'); open(loose, 'wb').write(wav_bytes())
+  await A.evaluate("() => openPanel()"); await A.set_input_files('#vpIn', [loose]); await A.wait_for_function("() => /استُورد|لم يُستورد|تعذّر/.test(document.querySelector('#vpMsg').textContent)", timeout=15000)
+  await A.evaluate("() => { window.__vo = VPACK.open; VPACK.open = function () { return new Promise(res => { window.__vgo = () => { VPACK.open = window.__vo; res(window.__vo.call(VPACK)); }; }); }; window.__vclr = VPACK.clear(); }")
+  B = await ctx.new_page(); await B.goto(URL); await B.wait_for_timeout(500); await A.evaluate('() => window.__vgo()'); r = await A.evaluate('() => window.__vclr')
+  await B.reload(); await B.wait_for_timeout(700); n = await B.evaluate('() => VPACK.n')
+  check('R1-02', r is False and n == 1, 'حذف حزمة الصوت بعد فقد القفل لا يمحوها', [r, n]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch()
@@ -364,6 +466,7 @@ async def main():
     if on('A06'): await tab_cases(b)
     if on('A07'): await review_cases(b)
     if on('A08'): await delete_cases(b)
+    if on('R1-01') or on('R1-02') or on('R1-03'): await r1_cases(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())

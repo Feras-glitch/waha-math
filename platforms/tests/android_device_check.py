@@ -66,8 +66,8 @@ def main():
     threading.Thread(target=sampler, daemon=True).start()
     adb('install', '-r', APK)
     res['installed'] = PKG in adb('shell', 'pm', 'list', 'packages', PKG)
-    # المُرسِم الذي يعمل فعلاً (لا ما طُلب): «guest» لم يغيّر شيئاً في التابلت وانهار المُرسِم نفسه بالعنوان نفسه
-    res['gles'] = (adb('shell', 'dumpsys SurfaceFlinger | grep -m1 GLES', check=False).strip() or adb('shell', 'getprop', 'ro.hardware.egl', check=False).strip())[:160]
+    # المُرسِم الذي يعمل فعلاً (لا ما طُلب): «guest» لم يغيّر شيئاً في التابلت وانهار المُرسِم نفسه بالعنوان نفسه؛ وسطر «GLES:» نفسه لا عنوان قسمه (إعادة الفحص المستقلة)
+    res['gles'] = (adb('shell', 'dumpsys SurfaceFlinger | grep -m1 "GLES:"', check=False).strip() or adb('shell', 'getprop', 'ro.hardware.egl', check=False).strip())[:160]
     adb('shell', 'am', 'start', '-W', '-n', PKG + '/.MainActivity')
 
     sock = None

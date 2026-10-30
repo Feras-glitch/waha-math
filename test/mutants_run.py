@@ -602,7 +602,18 @@ RUNTIME = [
   ('A06 غطاء التبويب للدرس وحده', 'onTabLost = () => showTabLost();', "onTabLost = () => { if (!$('#lesson').hidden) showTabLost(); };", ['test/audit_run.py', '{F}'], {'ONLY': 'A06'}, 'FAIL A06 التبويب الأقدم'),
   ('A06 غطاء التبويب تحت اللوحة', '#tabCover { z-index: 45; }', '#tabCover { }', ['test/audit_run.py', '{F}'], {'ONLY': 'A06'}, 'FAIL A06 التبويب الأقدم'),
   ('A07 بند المراجعة من الدرس لا من المفهوم', 'pool = L.review.filter(x => x.c === C)', 'pool = L.review', ['test/audit_run.py', '{F}'], {'ONLY': 'A07'}, 'FAIL A07'),
-  ('A08 حذف الطفل بلا حذف صوره', 'if (!(await IDB.dropKid(id)))', 'if (false)', ['test/audit_run.py', '{F}'], {'ONLY': 'A08'}, 'FAIL A08'),
+  ('A08 حذف الطفل بلا حذف صوره', "const ph = await IDB.dropKid(id);", "const ph = 'ok';", ['test/audit_run.py', '{F}'], {'ONLY': 'A08'}, 'FAIL A08'),
+  # إعادة الفحص المستقلة (30 أكتوبر 2026): WM101-R1-01..03
+  ('R1-01 إخفاق حذف المفاتيح يُتجاهل', "if (ks.map(k => store.del(k)).includes(false)) return { ok: false, why: 'keys' };", "ks.forEach(k => store.del(k));", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-01'}, 'FAIL R1-01 إخفاق removeItem'),
+  ('R1-01 الطفل يُرفع من الذاكرة قبل حفظ القائمة', "if (!store.set('hp_kids', rest)) return { ok: false, why: 'list' }; KIDS.splice(KIDS.findIndex(k => k.id === id), 1);", "KIDS.splice(KIDS.findIndex(k => k.id === id), 1); store.set('hp_kids', KIDS);", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-01'}, 'FAIL R1-01 إخفاق setItem(hp_kids)'),
+  ('R1-01 إخفاق نسخة ما قبل الاستعادة يُتجاهل', "if (ch && !store.set('hp_before_restore', d)) return { ok: false, why: 'rescue' };", "if (ch) store.set('hp_before_restore', d);", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-01'}, 'FAIL R1-01 إخفاق setItem(hp_before_restore)'),
+  ('R1-02 حذف الصور لا يسأل القفل بعد فتح القاعدة', "const db = await this.open(true); if (!store.mine(null)) return 'tab';", "const db = await this.open(true);", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-02'}, 'FAIL R1-02 حذف طفل وفقد القفل أثناء فتح القاعدة'),
+  ('R1-02 حذف الصور لا يسأل القفل داخل المعاملة', "if (!store.mine(null)) { out = 'tab'; try { tx.abort(); } catch (x) {} return; }", "", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-02'}, 'FAIL R1-02 حذف طفل وفقد القفل داخل المعاملة'),
+  ('R1-02 حفظ الصورة لا يسأل القفل بعد فتح القاعدة', "const db = await this.open(); if (!store.mine(null)) return 'tab';", "const db = await this.open();", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-02'}, 'FAIL R1-02 صورةٌ بدأ حفظها'),
+  ('R1-02 الصيد يحتفل بصورةٍ لم تُحفظ', "if (sv === 'tab') return;", "", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-02'}, 'FAIL R1-02 صورة الصيد'),
+  ('R1-02 حذف حزمة الصوت لا يسأل القفل بعد فتح قاعدتها', "if (!store.mine(null)) return false; const db = await this.open(); if (!store.mine(null)) return false;", "if (!store.mine(null)) return false; const db = await this.open();", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-02'}, 'FAIL R1-02 حذف حزمة الصوت'),
+  ('R1-03 قاعدةٌ لا تُفتح تُعدّ بلا صور', "if (!db) return this.none ? done() : 'fail';", "if (!db) return done();", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-03'}, 'FAIL R1-03 قاعدة الصور لا تُفتح'),
+  ('R1-03 صور الذاكرة تُمحى قبل اكتمال الحذف', "const done = () => { this.mem = this.mem.filter(x => x.kid !== id); return 'ok'; };", "this.mem = this.mem.filter(x => x.kid !== id); const done = () => 'ok';", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-03'}, 'FAIL R1-03 قاعدة الصور لا تُفتح'),
   ('زرّا تحريك القطار لا يعملان', 'b.onclick = go;', 'b.onclick = null;', ['test/realtap_run.py', 'Pixel 5'], {'ONLY': 'm1.u3.d2'}, "('Pixel 5', 'm1.u3.d2:"),
   # الفحص المستقل B: اللمسة السريعة أثناء القفزة تُسقط، والطريق لا يكشف البلاطة التالية، و«أعد الجملة» يعيد العدد أو عرض المساعدة أو سؤال الخروج
   ('اللمسة أثناء القفزة تُسقط', 'if (busy) { if (pend.length < 6) pend.push(t.n); return; }', 'if (busy) return;', ['test/quicktap_run.py'], {}, 'FAIL Pixel 5: pr.1'),
@@ -876,7 +887,7 @@ for name, old, new, args, env, want in RUNTIME:
   if COUNTS(src, old, new) != [1] * len(PAIRS(old, new)): check(False, 'طفرة «%s»: النصّ يظهر %s مرة في نسخة الفحص (يجب مرة واحدة)' % (name, COUNTS(src, old, new)))
 if os.environ.get('CONTENT_ONLY'): print('FAILS:', len(FAILS)); shutil.rmtree(tmpd, ignore_errors=True); sys.exit(1 if FAILS else 0)
 K = (len(RUNTIME) + 1) // 2; RT = RUNTIME[:K] if MUT_PART == '1' else RUNTIME[K:] if MUT_PART == '2' else RUNTIME
-if os.environ.get('MUT_ONLY'): RT = [x for x in RUNTIME if x[0] == os.environ['MUT_ONLY']]
+if os.environ.get('MUT_ONLY'): RT = [x for x in RUNTIME if any(x[0].startswith(q) for q in os.environ['MUT_ONLY'].split(','))]   # اسمٌ أو بدايات أسماء مفصولة بفواصل
 try:
   for args, env in dict.fromkeys((tuple(x[3]), tuple(sorted(x[4].items()))) for x in RT):   # كل فحص مرة على الأصل
     rc, out = run(list(args), dict(env), DEV); check(rc == 0, 'الأصل: %s %s ينجح %s' % (args[0], dict(env), ([l.strip()[:400] for l in out.splitlines() if l.startswith('FAIL ') or 'Traceback' in l or 'Error' in l][:6] if rc else []) + out.strip().splitlines()[-1:]))   # وسطور الإخفاق نفسها (كان السطر الأخير وحده «FAILS: 1»، فلم يُعرف ما أخفق)

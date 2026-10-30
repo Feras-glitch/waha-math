@@ -34,6 +34,15 @@ function conceptPill(L, C) { const c = ((PROG[L.id] || {}).cs || {})[C] || {}, a
   if (c.mastered) return (PROG[L.id] || {}).entry && !adult ? '<span class="pill think">أتقنه على الشاشة، مدخل</span>' : '<span class="pill good">متقن</span>';
   if (adult) return '<span class="pill good">متقن بحكم الكبير</span>';
   return c.entry ? '<span class="pill think">مدخل: يحكم الكبير</span>' : c.deferred ? '<span class="pill think">مؤجَّل إلى المراجعة</span>' : (L.mastery && L.mastery.concepts[C]) ? '—' : '<span class="pill">مدخل</span>'; }
+/* حذفٌ لم يكتمل يُقال بسببه، ويُعرض إكماله بضغطة (الفحص المستقل WM101-R1-01، R1-03): الطفل باقٍ في القائمة كما في التخزين حتى يكتمل */
+const KID_DEL_WHY = { mark: 'تعذّر بدء الحذف، فلم يُحذف شيء', photos: 'تعذّر الوصول إلى صوره على هذا الجهاز، فلم يكتمل حذفه',
+  keys: 'تعذّر حذف بعض بياناته (المساحة ممتلئة أو التصفّح الخاص)، فلم يكتمل حذفه', rescue: 'تعذّر حذفه من نسخة ما قبل الاستعادة، فلم يكتمل حذفه',
+  list: 'تعذّر حفظ قائمة الأطفال بدونه، فلم يكتمل حذفه' };
+function kidDelNote() { const st = KID_DEL_STATE, id = st ? st.id : kidDelPending(); if (!id) return '';
+  const k = KIDS.find(x => x.id === id), nm = esc((k && k.name) || 'الطفل');
+  if (st && st.cancelled) return `<p class="muted" id="kidDelNote">أُلغي حذف ${nm} الذي لم يكتمل لأنه اختير بعده، وقد يكون حُذف بعض بياناته قبل ذلك.</p>`;
+  if (!k || k.id === KID) return '';
+  return `<p class="muted" id="kidDelNote">${(st && KID_DEL_WHY[st.why]) || 'حذف ' + nm + ' لم يكتمل'}: يبقى ${nm} في القائمة حتى يكتمل.</p><div class="seg"><button class="pick" data-del="${esc(id)}" data-sure="1">أكملوا حذف ${nm}</button></div>`; }
 function openPanel() {
   const A = LOG.attempts; const errs = {}; A.filter(a => a.err && ERRN[a.err] && a.scene !== 'ws').forEach(a => errs[a.err] = (errs[a.err] || 0) + 1);
   const firsts = A.filter(a => a.firstTry !== undefined && isAssess(a)); const fOk = firsts.filter(a => a.firstTry && a.ok).length;
@@ -65,7 +74,7 @@ function openPanel() {
       <p class="muted">في هذه الجلسة: ${nw(sessionNow().n, 'درس واحد', 'درسان', 'دروس', 'درساً')}.</p>
       <div class="seg"><button class="pick" id="slowBtn" aria-pressed="${!!SET.slow}">قراءة أبطأ: ${SET.slow ? 'تعمل' : 'متوقفة'}</button></div></div>
     <div class="card"><b>أطفال هذا الجهاز</b> (لكل طفل تقدّمه ومعرضه وإعداداته، ويختار صورته عند الدخول):
-      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div></div>
+      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div>${kidDelNote()}</div>
     <div class="card"><b>الصوت:</b> <span id="vpStat">${vpStatText()}</span>
       <p class="muted">حزمة الصوت ملف zip (أو ملفات صوتية) اسم كل تسجيل فيه معرّف جملته في جدول التسجيل، مثل <code dir="ltr">m1.u1.d2.hook.01.mp3</code>، و<code dir="ltr">…_f.mp3</code> للصيغة المؤنثة. تُستورد مرة واحدة وتبقى في هذا الجهاز، وما لم يُسجَّل يقرؤه صوت الجهاز (D181).</p>
       <div class="seg"><button class="pick" id="vpPick">استيراد حزمة الصوت</button><button class="pick" id="vpDel"${VPACK.n ? '' : ' hidden'}>حذف الحزمة</button></div><input type="file" id="vpIn" accept=".zip,audio/*" multiple hidden><p id="vpMsg" class="muted" aria-live="polite"></p></div>
@@ -82,8 +91,8 @@ function openPanel() {
   /* حذف الطفل (الفحص الخصم A08): صوره أولاً، فإن تعذّر حذفها لا يُحذف شيء ولا يُعلَن حذف؛ ثم مفاتيحه ونسخه */
   $('#panel').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يُحذف تقدّمه وصوره كلها'; return; }
     const id = b.dataset.del; if (!store.mine(null)) return; b.disabled = true;
-    if (!(await IDB.dropKid(id))) { b.disabled = false; b.dataset.sure = ''; b.textContent = 'تعذّر حذف صوره، فلم يُحذف شيء. أعيدوا المحاولة'; return; }
-    kidForget(id); openPanel(); });
+    const r = await kidDelete(id); if (r.why === 'tab') return;   /* فقد التبويب القفل: غطاؤه ظاهر، ولا أثر في الواجهة لعمليةٍ أُلغيت */
+    KID_DEL_STATE = r.ok ? null : { id, why: r.why }; openPanel(); });
   $('#panel').querySelectorAll('[data-ac]').forEach(b => b.onclick = () => { const L = LDATA[b.dataset.ac]; if (!L || !L.adultCard) return;
     const a = adultAnswers(L); a[+b.dataset.i] = b.dataset.v === '1'; PROG.adult = isObj(PROG.adult) ? PROG.adult : {}; PROG.adult[L.id] = a;
     if (saveProg()) openPanel(); });
@@ -99,9 +108,9 @@ function openPanel() {
     try { const r = await VPACK.importFiles(files, n => { m.textContent = 'يستورد… ' + DG(n); });
       m.textContent = (r.imported ? `استُورد ${nw(r.imported, 'تسجيل واحد', 'تسجيلان', 'تسجيلات', 'تسجيلاً')}، فصارت الحزمة ${DG(r.have)} من ${DG(r.total)}.` : 'لم يُستورد أي تسجيل.') + (r.unknown.length === 1 ? ` وأُهمل ملف واحد لا يطابق اسمه جملة في الدروس: ${r.unknown[0]}.` : r.unknown.length ? ` وأُهمل ${nw(r.unknown.length, 'ملف واحد', 'ملفان', 'ملفات', 'ملفاً')} لا تطابق أسماؤها جملاً في الدروس، أوّلها ${r.unknown[0]}.` : '') + (r.have < r.total ? ' وما لم يُسجَّل بعد يقرؤه صوت الجهاز.' : '');
       $('#vpStat').textContent = vpStatText(); $('#vpDel').hidden = !VPACK.n;
-    } catch (err) { m.textContent = { notZip: 'هذا ليس ملف zip.', badZip: 'ملف zip تالف.', noInflate: 'هذا المتصفح لا يفتح ملفات zip المضغوطة؛ اختر الملفات الصوتية نفسها.', noStore: 'تعذّر الحفظ في الجهاز (التصفّح الخاص؟).' }[err && err.message] || 'تعذّر الاستيراد.'; } };
+    } catch (err) { m.textContent = { notZip: 'هذا ليس ملف zip.', badZip: 'ملف zip تالف.', noInflate: 'هذا المتصفح لا يفتح ملفات zip المضغوطة؛ اختر الملفات الصوتية نفسها.', noStore: 'تعذّر الحفظ في الجهاز (التصفّح الخاص؟).', tab: 'توقّف الاستيراد لأن التطبيق فُتح في نافذة أخرى؛ ما استُورد قبلها باقٍ.' }[err && err.message] || 'تعذّر الاستيراد.'; } };
   $('#vpDel').onclick = async () => { const b = $('#vpDel'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يعود صوت الجهاز'; return; }
-    await VPACK.clear(); $('#vpStat').textContent = vpStatText(); b.hidden = true; b.dataset.sure = ''; b.textContent = 'حذف الحزمة'; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
+    if (!(await VPACK.clear())) return; $('#vpStat').textContent = vpStatText(); b.hidden = true; b.dataset.sure = ''; b.textContent = 'حذف الحزمة'; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
   /* النسخة الاحتياطية (D246) */
   $('#bkSave').onclick = () => { backupSave(); $('#bkMsg').textContent = 'حُفظ الملف في التنزيلات.'; };
   $('#bkPick').onclick = () => $('#bkIn').click();

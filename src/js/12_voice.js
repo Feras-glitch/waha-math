@@ -34,12 +34,13 @@ const VPACK = { db: null, failed: false, n: 0,
       else take(f.name, f); progress(got.length); }
     const db = await this.open(); if (!db) throw new Error('noStore');
     for (let i = 0; i < got.length; i += 100) {   /* دفعات: لا معاملة واحدة ضخمة على جهاز ضعيف */
+      if (!store.mine(null)) throw new Error('tab');   /* قبل كل دفعة: تبويبٌ فقد القفل أثناء الاستيراد لا يكتب بعده (الفحص المستقل WM101-R1-02) */
       await new Promise((res, rej) => { const tx = db.transaction('clips', 'readwrite'); for (const c of got.slice(i, i + 100)) tx.objectStore('clips').put(c);
         tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error || new Error('abort')); });
       progress(i + 100); }
     const n = await this.load(); return { imported: new Set(got.map(c => c.id)).size, unknown, total: want.size, have: n }; },
-  async clear() { const db = await this.open(); for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; if (!db) return;
-    return new Promise(res => { try { const tx = db.transaction('clips', 'readwrite'); tx.objectStore('clips').clear(); tx.oncomplete = () => res(); tx.onerror = () => res(); } catch (e) { res(); } }); },
+  async clear() { if (!store.mine(null)) return false; const db = await this.open(); if (!store.mine(null)) return false; for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; if (!db) return true;
+    return new Promise(res => { try { const tx = db.transaction('clips', 'readwrite'); tx.objectStore('clips').clear(); tx.oncomplete = () => res(true); tx.onerror = () => res(true); } catch (e) { res(true); } }); },
 };
 /* قارئ zip صغير بلا مكتبة: الدليل المركزي، والملفات المخزّنة (0) والمضغوطة (8) بـ DecompressionStream('deflate-raw') */
 async function unzipFiles(file) {

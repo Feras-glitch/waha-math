@@ -283,8 +283,9 @@ jobs:
 
   # يُنشر ما بُني: ويندوز والويب دائماً، وAPK حين يصحّ مفتاح التوقيع (ويُضاف إلى الإصدار المنشور حين يُبنى بعدُ)
   release:
-    if: github.event_name != 'pull_request' && !cancelled() && needs.windows.result == 'success'
-    needs: [ android-release, windows ]
+    # والإصدار بعد نجاح فحص الهاتف والتابلت (إعادة الفحص المستقلة: نجاح النشر كان لا يعني نجاحهما)
+    if: github.event_name != 'pull_request' && !cancelled() && needs.windows.result == 'success' && needs.android-device.result == 'success'
+    needs: [ android-release, windows, android-device ]
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -323,8 +324,9 @@ jobs:
             echo "::warning::الإصدار $TAG موجود: لا يُستبدل فيه ملفٌ موجود، فيُضاف الناقص فقط. شيفرة جديدة تحتاج رفع versionName وversionCode"
             have="$(gh release view "$TAG" --json assets -q '.assets[].name')"
             for f in rel/*; do n="$(basename "$f")"; [ "$n" = MANIFEST-SHA256.txt ] && continue   # بيانٌ لملفات هذا البناء لا يُلحق بإصدارٍ ملفاته من بناء أقدم
-              if ! grep -qx "$n" <<< "$have"; then echo "يُضاف $n إلى $TAG"; gh release upload "$TAG" "$f"; fi; done
-            [ -f rel/waha-math.apk ] && gh release edit "$TAG" --notes "$NOTES" || true
+              if ! grep -qx "$n" <<< "$have"; then echo "يُضاف $n إلى $TAG"; gh release upload "$TAG" "$f"; [ "$n" = waha-math.apk ] && ADDED_APK=1; fi; done
+            # والملاحظات لا تتغيّر إلا إن أُضيف APK في هذا التشغيل: ملفات الإصدار من بنائه الأول، فلا يُنسب إلى آخر تشغيلٍ ما لم يبنه (إعادة الفحص المستقلة)
+            if [ -n "${ADDED_APK:-}" ]; then gh release edit "$TAG" --notes "$NOTES"; fi
           else
             gh release create "$TAG" rel/* --title "واحة الرياضيات $TAG" --notes "$NOTES" --target "$GITHUB_SHA"
           fi

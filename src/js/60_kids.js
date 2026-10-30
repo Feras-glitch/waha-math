@@ -55,35 +55,62 @@ function openKids(first) {
 }
 
 /* ---------- المعرض وصيد الأشكال بالكاميرا: الصور على الجهاز فقط ---------- */
-const IDB = { db: null, mem: [],
-  open() { if (this.db || this.failed) return Promise.resolve(this.db);
+const IDB = { db: null, mem: [], failed: false, none: false,
+  /* retry: الحذف يعيد محاولة الفتح بعد إخفاقٍ سابق، فيكتمل حين يعود الوصول (الفحص المستقل WM101-R1-03) */
+  open(retry) { if (this.db || (this.failed && !retry)) return Promise.resolve(this.db);
+    if (typeof indexedDB === 'undefined') { this.failed = this.none = true; return Promise.resolve(null); }   // لا مخزن صور في هذا المتصفح أصلاً
     return new Promise(res => { try { const r = indexedDB.open('hp_gallery', 1);
       r.onupgradeneeded = () => r.result.createObjectStore('photos', { keyPath: 'id' });
-      r.onsuccess = () => { this.db = r.result; res(this.db); }; r.onerror = () => { this.failed = true; res(null); }; } catch (e) { this.failed = true; res(null); } }); },
-  async put(o) { if (!store.mine(null)) return; const db = await this.open(); if (!db) { this.mem.push(o); return; }
-    return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(o); tx.oncomplete = () => res(); tx.onerror = () => { this.mem.push(o); res(); }; } catch (e) { this.mem.push(o); res(); } }); },
+      r.onsuccess = () => { this.db = r.result; this.failed = false; res(this.db); }; r.onerror = () => { this.failed = true; res(null); }; } catch (e) { this.failed = true; res(null); } }); },
+  /* القفل يُسأل قبل الانتظار وبعده (الفحص المستقل WM101-R1-02: صورةٌ بدأ حفظها قبل أن يأخذ تبويبٌ آخر القفل كانت تُكتب بعده):
+     'ok' حُفظت، و'mem' بقيت في الذاكرة لهذه الجلسة، و'tab' لم تُحفظ لأن التبويب فقد القفل */
+  async put(o) { if (!store.mine(null)) return 'tab'; const db = await this.open(); if (!store.mine(null)) return 'tab';
+    if (!db) { this.mem.push(o); return 'mem'; }
+    return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(o); tx.oncomplete = () => res('ok'); tx.onerror = () => { this.mem.push(o); res('mem'); }; } catch (e) { this.mem.push(o); res('mem'); } }); },
   async all() { const db = await this.open(); const mine = x => x.kid === KID;
     if (!db) return this.mem.filter(mine);
     return new Promise(res => { try { const r = db.transaction('photos').objectStore('photos').getAll(); r.onsuccess = () => res(r.result.filter(mine).concat(this.mem.filter(mine))); r.onerror = () => res(this.mem.filter(mine)); } catch (e) { res(this.mem.filter(mine)); } }); },
-  /* صور طفلٍ بعينه كلها (الفحص الخصم A08): يعيد true إن اكتمل الحذف أو لم تكن قاعدة صور، وfalse إن أخفقت المعاملة */
-  async dropKid(id) { this.mem = this.mem.filter(x => x.kid !== id); const db = await this.open(); if (!db) return true;
-    return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'), os = tx.objectStore('photos'); const r = os.getAll();
-      r.onsuccess = () => { try { r.result.filter(x => x.kid === id).forEach(x => os.delete(x.id)); } catch (e) { try { tx.abort(); } catch (x) {} res(false); } };
-      tx.oncomplete = () => res(true); tx.onerror = tx.onabort = () => res(false); } catch (e) { res(false); } }); },
-  async clear() { const db = await this.open(); this.mem = this.mem.filter(x => x.kid !== KID); if (!db) return;
-    const list = await this.all(); return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); list.forEach(x => tx.objectStore('photos').delete(x.id)); tx.oncomplete = () => res(); tx.onerror = () => res(); } catch (e) { res(); } }); },
+  /* صور طفلٍ بعينه كلها (الفحص الخصم A08، والمستقل WM101-R1-02 وR1-03): 'ok' إن اكتمل حذفها أو لم يكن مخزن صور في المتصفح أصلاً،
+     و'tab' إن فقد التبويب القفل قبل الفتح أو بعده أو قبل الحذف داخل المعاملة (فتُلغى)، و'fail' إن تعذّر الفتح أو أخفقت المعاملة:
+     قاعدةٌ لا يُوصل إليها ليست قاعدةً بلا صور، وصور الذاكرة لا تُمحى إلا بعد اكتمال الحذف */
+  async dropKid(id) { if (!store.mine(null)) return 'tab'; const db = await this.open(true); if (!store.mine(null)) return 'tab';
+    const done = () => { this.mem = this.mem.filter(x => x.kid !== id); return 'ok'; };
+    if (!db) return this.none ? done() : 'fail';
+    return new Promise(res => { let out = 'fail'; try { const tx = db.transaction('photos', 'readwrite'), os = tx.objectStore('photos'); const r = os.getAll();
+      r.onsuccess = () => { if (!store.mine(null)) { out = 'tab'; try { tx.abort(); } catch (x) {} return; }
+        try { r.result.filter(x => x.kid === id).forEach(x => os.delete(x.id)); } catch (e) { try { tx.abort(); } catch (x) {} } };
+      tx.oncomplete = () => res(done()); tx.onerror = tx.onabort = () => res(out); } catch (e) { res('fail'); } }); },
 };
 const designsKey = () => kk('hp_designs');
 /* التصميمات بقاعدتها (الفحص الخصم A05): تصميمٌ تالف يُسقط وحده، فلا يعطّل المعرض ولا التقرير */
 const designsGet = () => store.fix(designsKey(), [], V_DESIGNS);
-/* مفاتيح الطفل ونسخها: التقدّم والسجل والجلسة والإعدادات والتصميمات، ونسخ الترحيل والتالف، وما يخصّه في نسخة ما قبل الاستعادة */
-function kidForget(id) { const own = new RegExp('^hp_(?:(?:prog|log|session|settings|designs):' + id + '|prog_bak:' + id + ':v\\d+|corrupt:hp_\\w+:' + id + ':\\d+)$');
-  const ks = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (own.test(k)) ks.push(k); } } catch (e) {}
-  ks.forEach(k => store.del(k));
-  try { const d = JSON.parse(localStorage.getItem('hp_before_restore')); if (isObj(d) && isObj(d.data)) { for (const k of Object.keys(d.data)) if (k.endsWith(':' + id)) delete d.data[k];
-    if (typeof d.data.hp_kids === 'string') { const l = JSON.parse(d.data.hp_kids); if (Array.isArray(l)) d.data.hp_kids = JSON.stringify(l.filter(k => !isObj(k) || k.id !== id)); }
-    localStorage.setItem('hp_before_restore', JSON.stringify(d)); } } catch (e) {}
-  const i = KIDS.findIndex(k => k.id === id); if (i >= 0) KIDS.splice(i, 1); store.set('hp_kids', KIDS); }
+/* حذف الطفل عمليةٌ واحدة تُستأنف (الفحص الخصم A08، والمستقل WM101-R1-01 وR1-02 وR1-03): يُكتب «حذفٌ لم يكتمل» (hp_kid_del) أولاً،
+   ثم صوره، ثم مفاتيحه (التقدّم والسجل والجلسة والإعدادات والتصميمات، ونسخ الترحيل والتالف)، ثم ما يخصّه في نسخة ما قبل الاستعادة، ثم القائمة.
+   كل خطوة يُتحقَّق منها، ولا يُرفع الطفل من KIDS في الذاكرة إلا بعد حفظ القائمة بدونه، فالذاكرة كالتخزين دائماً.
+   فإن أخفقت خطوة وقف وبقي السجلّ: الطفل في القائمة، واللوحة تقول إن حذفه لم يكتمل وتعرض إكماله، ويُستأنف عند الفتح.
+   يعيد { ok: true } أو { ok: false, why: 'tab' | 'mark' | 'photos' | 'keys' | 'rescue' | 'list' } */
+const KID_DEL = 'hp_kid_del';
+const kidDelPending = () => { const m = store.read(KID_DEL, null, isObj); return m && typeof m.id === 'string' && KID_ID.test(m.id) ? m.id : null; };
+async function kidDelete(id) {
+  if (!store.mine(null)) return { ok: false, why: 'tab' };
+  if (kidDelPending() !== id && !store.set(KID_DEL, { id, t: Date.now() })) return { ok: false, why: 'mark' };
+  const ph = await IDB.dropKid(id); if (ph !== 'ok') return { ok: false, why: ph === 'tab' ? 'tab' : 'photos' };
+  if (!store.mine(null)) return { ok: false, why: 'tab' };
+  const own = new RegExp('^hp_(?:(?:prog|log|session|settings|designs):' + id + '|prog_bak:' + id + ':v\\d+|corrupt:hp_\\w+:' + id + ':\\d+)$');
+  const ks = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (own.test(k)) ks.push(k); } } catch (e) { return { ok: false, why: 'keys' }; }
+  if (ks.map(k => store.del(k)).includes(false)) return { ok: false, why: 'keys' };
+  let d = null; try { d = JSON.parse(store.raw('hp_before_restore')); } catch (e) {}
+  if (isObj(d) && isObj(d.data)) { let ch = false; for (const k of Object.keys(d.data)) if (k.endsWith(':' + id)) { delete d.data[k]; ch = true; }
+    if (typeof d.data.hp_kids === 'string') { try { const l = JSON.parse(d.data.hp_kids); if (Array.isArray(l) && l.some(k => isObj(k) && k.id === id)) { d.data.hp_kids = JSON.stringify(l.filter(k => !isObj(k) || k.id !== id)); ch = true; } } catch (e) {} }
+    if (ch && !store.set('hp_before_restore', d)) return { ok: false, why: 'rescue' }; }   // عبر store.set لا مباشرة: بحارس القفل ككل كتابة
+  const rest = KIDS.filter(k => k.id !== id);
+  if (rest.length !== KIDS.length) { if (!store.set('hp_kids', rest)) return { ok: false, why: 'list' }; KIDS.splice(KIDS.findIndex(k => k.id === id), 1); }
+  store.del(KID_DEL); return { ok: true };   // وإن بقي السجلّ بعد اكتمال الحذف فاستئنافه عند الفتح يجد كل شيء محذوفاً فيمحوه
+}
+/* عند الفتح لا يُستأنف الحذف وحده: تبويبٌ يُفتح أثناء حذفٍ في تبويبٍ آخر كان يكمله، فتعود عمليةٌ أُلغيت بفقد القفل (الفحص المستقل WM101-R1-02).
+   فالحذف الذي لم يكتمل يُكمَل بضغطة الكبير في اللوحة وحدها؛ والطفل المختار لا يُحذف: يُلغى سجلّه ويُقال ذلك */
+let KID_DEL_STATE = null;   // null، أو { id, why } لم يكتمل، أو { id, cancelled: true }
+function kidDelCheck() { const id = kidDelPending(); if (id && id === KID && store.del(KID_DEL)) KID_DEL_STATE = { id, cancelled: true }; }
 function designSVG(d, w = 150) { const s = el('svg', { viewBox: '0 0 360 250', width: w, 'aria-hidden': 'true' }); el('rect', { width: 360, height: 250, fill: css('--sky-bot') }, s);
   d.pieces.forEach(p => wsDraw(s, p, p.x, p.y, 1)); return s.outerHTML; }
 async function openGallery() {
@@ -100,7 +127,8 @@ async function openGallery() {
   $('#huntIn').onchange = e => { const f = e.target.files && e.target.files[0]; if (!f || !want) return; hush(); const rd = new FileReader();   /* عاد بصورة: لا تُعاد التعليمة التي قطعتها الكاميرا (الفحص المستقل J2 (7)) */
     rd.onload = () => { const img = new Image(); img.onload = async () => { const Z = 360, k = Math.min(1, Z / Math.max(img.width, img.height)); const cv = document.createElement('canvas');
       cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
-      await IDB.put({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kid: KID, k: want, t: Date.now(), data: cv.toDataURL('image/jpeg', .72) });   // rng-ok: معرّف الصورة
+      const sv = await IDB.put({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kid: KID, k: want, t: Date.now(), data: cv.toDataURL('image/jpeg', .72) });   // rng-ok: معرّف الصورة
+      if (sv === 'tab') return;   /* فقد التبويب القفل أثناء الحفظ: لم تُحفظ، فلا احتفال ولا «حُفظت» (الفحص المستقل WM101-R1-02) */
       logAttempt({ scene: 'hunt', tag: want, ok: true }); SFX.win(); confetti(); await coverSay(c, 'gen.hunt.saved'); openGallery(); }; img.src = rd.result; }; rd.readAsDataURL(f); };
   $('#galClose').onclick = () => { hush(); c.hidden = true; showHome(); };
   coverSay(c, open.length ? 'gen.gallery.intro' : 'gen.gallery.empty');
