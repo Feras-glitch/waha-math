@@ -193,7 +193,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        device: [ pixel_6, pixel_c ]
+        # والتابلت يرسم داخل الجهاز (guest): مُرسِم المضيف swiftshader_indirect انهار فيه (RenderThread segfault في سجلّ نواة الآلة المضيفة)
+        # بعد نحو ثلاثين ثانية من بدء الدرس في أربعة تشغيلات، والجهاز الافتراضي معه، وذاكرته لم تنفد (الإيداع cb55b05)
+        include:
+          - device: pixel_6
+            gpu: swiftshader_indirect
+          - device: pixel_c
+            gpu: guest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/download-artifact@v4
@@ -217,7 +223,7 @@ jobs:
           arch: x86_64
           profile: ${{ matrix.device }}
           disable-animations: true
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          emulator-options: -no-window -gpu ${{ matrix.gpu }} -noaudio -no-boot-anim -camera-back none
           script: python3 platforms/tests/android_device_check.py apk/waha-math-check.apk shots-${{ matrix.device }}
       - uses: actions/upload-artifact@v4
         if: always()
