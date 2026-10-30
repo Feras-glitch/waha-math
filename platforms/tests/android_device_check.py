@@ -146,6 +146,14 @@ except Exception:
     print(traceback.format_exc())
     print('::error title=فحص الجهاز::%s' % esc(traceback.format_exc()[-2500:] + '\nما تمّ: ' + json.dumps({k: v for k, v in res.items() if k != 'mem'}, ensure_ascii=False)[:1000]))
     rc = 1
+if rc:   # وحال الآلة المضيفة نفسها: هل بقيت عملية الجهاز الافتراضي، وذاكرتها، وسجلّ نواتها (قتلٌ لنفاد الذاكرة أو انهيار يظهر فيه)
+    host = []
+    for c in (['adb', 'devices'], ['sh', '-c', 'pgrep -a -f qemu-system | cut -c1-160'], ['free', '-m'], ['uptime'], ['sh', '-c', 'sudo dmesg -T 2>/dev/null | tail -25']):
+        try:
+            p = subprocess.run(c, capture_output=True, text=True, timeout=20); host.append('$ %s\n%s' % (' '.join(c[-1:] if c[0] == 'sh' else c), (p.stdout + p.stderr).strip()[-900:]))
+        except Exception as e:
+            host.append('$ %s: %s' % (c, e))
+    print('::error title=الآلة المضيفة::%s' % esc('\n'.join(host)[-3800:]))
 print('::%s title=ذاكرة الجهاز وحمله::%s' % ('error' if rc else 'notice', esc('\n'.join(res.get('mem', [])))))   # والناجح أيضاً: يُقارَن به
 try:
     tail = logcat()
