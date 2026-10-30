@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 34
         // رقم النسخة: يُرفع مع كل إصدار (versionCode عدد صحيح يزيد دائماً)، ومنه اسم الإصدار في Releases
-        versionCode 1
-        versionName "1.0.0"
+        versionCode 2
+        versionName "1.0.1"
     }
 
     /* التوقيع بمفتاح العائلة نفسه الذي في waha-app: يأتي من أسرار GitHub (SIGNING-AR.md في جذر المستودع)،

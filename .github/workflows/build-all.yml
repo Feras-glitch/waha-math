@@ -50,6 +50,8 @@ jobs:
           git diff --stat --exit-code -- 'dist/*.html' dist/script_m1.json dist/script_m1.xlsx.ids.json
       - name: Smoke test of the children's build
         run: python3 test/smoke_prod.py
+      - name: Adversarial audit acceptance (A01–A08, R04)
+        run: python3 test/audit_run.py
       - name: Platform files
         run: python3 platforms/make_platforms.py out
       - name: Web version works offline
@@ -294,7 +296,10 @@ jobs:
           cp dl/windows/*.exe rel/
           [ -f dl/release-apk/waha-math.apk ] && cp dl/release-apk/waha-math.apk rel/ || true
           if ls rel | grep -qi check; then echo "::error::نسخة الفحص لا تُنشر"; exit 1; fi
-          ls -la rel
+          # بيان الإصدار (توصية الفحص الخصم R07): الإيداع وبصمة صفحة التطبيق نفسها وبصمة كل ملف، فيُعرف أيّ شيفرة في كل منصة
+          { echo "commit $GITHUB_SHA"; echo "app-page $(sha256sum 'dist/واحة_الرياضيات.html' | cut -d' ' -f1)  dist/واحة_الرياضيات.html";
+            (cd rel && sha256sum *); } > rel/MANIFEST-SHA256.txt
+          cat rel/MANIFEST-SHA256.txt; ls -la rel
       - name: Release (new version, or what an existing one lacks)
         env:
           GH_TOKEN: ${{ github.token }}
@@ -307,10 +312,12 @@ jobs:
           - ويندوز: waha-math-setup-$V.exe (مثبّت)، أو waha-math-portable-$V.exe (يعمل بلا تثبيت)
           - الويب: https://feras-glitch.github.io/waha-math/ ، أو waha-math-web.zip (افتح index.html)
           كلها تعمل بلا إنترنت، وتقدّم الأطفال على الجهاز نفسه، ويُنقل بين الأجهزة بالنسخة الاحتياطية في لوحة الكبار.
-          آخر بناء: $(date -u '+%Y-%m-%d %H:%M') UTC، الإيداع ${GITHUB_SHA::7}"
+          آخر بناء: $(date -u '+%Y-%m-%d %H:%M') UTC، الإيداع ${GITHUB_SHA::7}، وبصمات الملفات وصفحة التطبيق في MANIFEST-SHA256.txt"
           if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "::warning::الإصدار $TAG موجود: لا يُستبدل فيه ملفٌ موجود، فيُضاف الناقص فقط. شيفرة جديدة تحتاج رفع versionName وversionCode"
             have="$(gh release view "$TAG" --json assets -q '.assets[].name')"
-            for f in rel/*; do n="$(basename "$f")"; if ! grep -qx "$n" <<< "$have"; then echo "يُضاف $n إلى $TAG"; gh release upload "$TAG" "$f"; fi; done
+            for f in rel/*; do n="$(basename "$f")"; [ "$n" = MANIFEST-SHA256.txt ] && continue   # بيانٌ لملفات هذا البناء لا يُلحق بإصدارٍ ملفاته من بناء أقدم
+              if ! grep -qx "$n" <<< "$have"; then echo "يُضاف $n إلى $TAG"; gh release upload "$TAG" "$f"; fi; done
             [ -f rel/waha-math.apk ] && gh release edit "$TAG" --notes "$NOTES" || true
           else
             gh release create "$TAG" rel/* --title "واحة الرياضيات $TAG" --notes "$NOTES" --target "$GITHUB_SHA"
