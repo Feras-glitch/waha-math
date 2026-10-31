@@ -466,7 +466,7 @@ async def r1_cases(b):
   await A.evaluate("() => { window.__vo = VPACK.open; VPACK.open = function () { return new Promise(res => { window.__vgo = () => { VPACK.open = window.__vo; res(window.__vo.call(VPACK)); }; }); }; window.__vclr = VPACK.clear(); }")
   B = await ctx.new_page(); await B.goto(URL); await B.wait_for_timeout(500); await A.evaluate('() => window.__vgo()'); r = await A.evaluate('() => window.__vclr')
   await B.reload(); await B.wait_for_timeout(700); n = await B.evaluate('() => VPACK.n')
-  check('R1-02', r is False and n == 1, 'حذف حزمة الصوت بعد فقد القفل لا يمحوها', [r, n]); await ctx.close()
+  check('R1-02', r in (False, 'tab') and n == 1, 'حذف حزمة الصوت بعد فقد القفل لا يمحوها', [r, n]); await ctx.close()
 
 # حذفٌ معلّق (لم يكتمل) عبر تبويبين وإعادة الفتح (ملاحظة المراجع بعد الجولة الثانية):
 # القائمة تطابق المحفوظ في كل تبويب وبعد كل فتح، والتبويب الأقدم لا يكتب للطفل الجاري حذفه ولا يحذف، والإكمال من التبويب الجديد بعد عودة التخزين،
@@ -616,7 +616,7 @@ async def r2_tx(b):
     await A.wait_for_timeout(300); pre = await A.evaluate(STAT)
     C = await ctx.new_page(); await C.goto(URL); await C.wait_for_timeout(400); await B.evaluate('() => { window.__blocking = false; }'); await A.wait_for_timeout(600)
     post = await A.evaluate(STAT); msg = await A.evaluate("() => (document.querySelector('#vpMsg') || {}).textContent || ''"); await C.reload(); await C.wait_for_timeout(700); n = await C.evaluate('() => VPACK.n')
-    if what == 'clear': ok = pre['st'] is None and post['st'] is False and n == 1; w = 'حذف حزمة الصوت ينتظر معاملةً أخرى ثم ينتقل القفل: لا يمحوها'
+    if what == 'clear': ok = pre['st'] is None and post['st'] in (False, 'tab') and n == 1; w = 'حذف حزمة الصوت ينتظر معاملةً أخرى ثم ينتقل القفل: لا يمحوها'
     else: ok = pre['lost'] is False and n == 0 and 'نافذة أخرى' in msg; w = 'استيراد الصوت ينتظر معاملةً أخرى ثم ينتقل القفل: لا يُكتب، ويُقال لماذا'
     check('R2-02', ok, w, [pre, post, n, msg[:80]])
     check('R2-02', not errs, 'لا أخطاء في الصفحة (الصوت، %s)' % what, errs[:3]); await ctx.close()
@@ -636,6 +636,41 @@ async def r2_hunt(b):
         'صورة الصيد حفظها ينتظر معاملةً أخرى ثم ينتقل القفل: لا تُحفظ، ولا تُحسب صيداً، ولا يُحتفل بها', [pre, rows, n0, n1, logC])
   check('R2-02', not errs, 'لا أخطاء في الصفحة (صيد منتظر)', errs[:3]); await ctx.close()
 
+# الجولة الرابعة (31 أكتوبر 2026، WM102-R3-01): إخفاق التخزين في حذف حزمة الصوت لا يُعلَن حذفاً.
+# الإخفاق يُحقن في طلب clips.clear الحقيقي وحده (يرمي، أو تُلغى معاملته بعده فيجري onabort)، لا في VPACK.clear ولا في ownTx،
+# والحذف بزرّ اللوحة الحقيقي مرتين؛ ثم يُقرأ التخزين نفسه، ويُعاد الفتح، ثم ضابط الحذف الطبيعي (بعد إعادة الفتح، وفي الصفحة نفسها بلا إعادة تحميل).
+VCOUNT = "() => new Promise(res => { const r = indexedDB.open('hp_voice', 1); r.onsuccess = () => { const db = r.result; const q = db.transaction('clips').objectStore('clips').count(); q.onsuccess = () => { res(q.result); db.close(); }; q.onerror = () => res(-1); }; r.onerror = () => res(-1); })"
+VUI = "() => ({ n: VPACK.n, msg: $('#vpMsg').textContent, hidden: $('#vpDel').hidden, btn: $('#vpDel').textContent, sure: $('#vpDel').dataset.sure || '', stat: $('#vpStat').textContent })"
+VFAIL = {'throw': "() => { window.__c0 = IDBObjectStore.prototype.clear; IDBObjectStore.prototype.clear = function () { if (this.name === 'clips') throw new DOMException('injected', 'UnknownError'); return window.__c0.call(this); }; }",
+         'abort': "() => { window.__c0 = IDBObjectStore.prototype.clear; IDBObjectStore.prototype.clear = function () { const q = window.__c0.call(this); if (this.name === 'clips') this.transaction.abort(); return q; }; }"}
+VHEAL = "() => { IDBObjectStore.prototype.clear = window.__c0; }"
+async def vp_del(pg):
+  if await pg.evaluate("() => $('#vpDel').hidden"): u = await pg.evaluate(VUI); u['nobtn'] = True; return u   # لا زرّ: لا محاولة من الواجهة (عيب على 03c652e)، فيُسجَّل إخفاقاً لا انهياراً
+  await pg.evaluate("() => { $('#vpMsg').textContent = ''; }")
+  await pg.click('#vpDel'); await pg.click('#vpDel')
+  try: await pg.wait_for_function("() => $('#vpMsg').textContent !== ''", timeout=4000)
+  except Exception: pass
+  await pg.wait_for_timeout(150); return await pg.evaluate(VUI)
+async def r3_cases(b):
+  for how in ('throw', 'abort'):
+    ctx, A, errs = await fresh(b, {}); loose = os.path.join(TMP, 'gen.first.hello.wav'); open(loose, 'wb').write(wav_bytes())
+    await A.evaluate("() => openPanel()"); await A.set_input_files('#vpIn', [loose]); await A.wait_for_function("() => /استُورد|لم يُستورد|تعذّر/.test(document.querySelector('#vpMsg').textContent)", timeout=15000)
+    u0 = await A.evaluate(VUI); s0 = await A.evaluate(VCOUNT)
+    await A.evaluate(VFAIL[how]); u1 = await vp_del(A); s1 = await A.evaluate(VCOUNT)
+    check('R3-01', u0['n'] == 1 and s0 == 1 and s1 == 1 and u1['n'] == 1 and 'حُذفت' not in u1['msg'] and 'تعذّر حذف الحزمة' in u1['msg'] and not u1['hidden'] and u1['btn'] == 'حذف الحزمة' and u1['sure'] == '' and u1['stat'] == u0['stat'],
+          'إخفاق حذف حزمة الصوت (%s): التسجيل باقٍ في التخزين والذاكرة، والعدّاد كما كان، والزرّ ظاهر للمحاولة، والرسالة تقول إن الحذف تعذّر لا إنه تمّ' % how, [u0, s0, u1, s1])
+    if how == 'throw':
+      await reopen(A); await A.wait_for_timeout(300); await A.evaluate("() => openPanel()"); u2 = await A.evaluate(VUI)
+      check('R3-01', u2['n'] == 1 and not u2['hidden'] and u2['stat'] == u0['stat'], 'وبعد إعادة الفتح: الحزمة تُحمَّل كما كانت وزرّ حذفها ظاهر', u2)
+    else:
+      await A.evaluate(VHEAL)
+    u3 = await vp_del(A); s3 = await A.evaluate(VCOUNT)
+    check('R3-01', u3['n'] == 0 and s3 == 0 and 'حُذفت الحزمة' in u3['msg'] and u3['hidden'],
+          'ضابط: الحذف الطبيعي بعد زوال الإخفاق %s يمحو التخزين والذاكرة ويقول ذلك' % ('وإعادة الفتح' if how == 'throw' else 'في الصفحة نفسها بلا إعادة تحميل'), [u3, s3])
+    await reopen(A); n4 = await A.evaluate('() => VPACK.n'); s4 = await A.evaluate(VCOUNT)
+    check('R3-01', n4 == 0 and s4 == 0, 'والحزمة المحذوفة لا تعود بعد إعادة الفتح (%s)' % how, [n4, s4])
+    check('R3-01', not errs, 'لا أخطاء في الصفحة (حذف الصوت، %s)' % how, errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch()
@@ -648,6 +683,7 @@ async def main():
     if on('R1-01') or on('R1-02') or on('R1-03'): await r1_cases(b)
     if on('R1-01') or on('R1-01P'): await r1_pending(b)
     if on('R2-01') or on('R2-02') or on('R2-02H'): await r2_cases(b)
+    if on('R3-01'): await r3_cases(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())

@@ -39,11 +39,13 @@ const VPACK = { db: null, failed: false, n: 0,
       if (r !== 'ok') throw new Error(r === 'tab' ? 'tab' : 'abort');
       progress(i + 100); }
     const n = await this.load(); return { imported: new Set(got.map(c => c.id)).size, unknown, total: want.size, have: n }; },
-  /* يعيد false إن فقد التبويب القفل قبل الحذف أو أثناءه (فتبقى الحزمة كما هي، في القاعدة والذاكرة)؛ والتسجيلات في الذاكرة تُمحى بعد التزام الحذف لا قبله */
-  async clear() { if (!store.mine(null)) return false; const db = await this.open(); if (!store.mine(null)) return false;
-    const drop = () => { for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; return true; };
+  /* يعيد 'ok' بعد التزام الحذف، أو 'tab' إن فقد التبويب القفل قبله أو أثناءه، أو 'fail' إن أخفق التخزين (طلبٌ يرمي أو معاملةٌ تُلغى).
+     وفي الحالين الأخيرين تبقى الحزمة كما هي في القاعدة والذاكرة؛ فالتسجيلات في الذاكرة تُمحى بعد التزام الحذف وحده (WM102-R3-01).
+     وبلا قاعدة (لا indexedDB أو لم تُفتح) لم يُحمَّل منها شيء ولم يُستورد إليها شيء، فلا شيء محفوظ يبقى */
+  async clear() { if (!store.mine(null)) return 'tab'; const db = await this.open(); if (!store.mine(null)) return 'tab';
+    const drop = () => { for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; return 'ok'; };
     if (!db) return drop();
-    const r = await ownTx(db, 'clips', (os, last) => last(os.clear())); return r === 'tab' ? false : drop(); },
+    const r = await ownTx(db, 'clips', (os, last) => last(os.clear())); return r === 'ok' ? drop() : r; },
 };
 /* قارئ zip صغير بلا مكتبة: الدليل المركزي، والملفات المخزّنة (0) والمضغوطة (8) بـ DecompressionStream('deflate-raw') */
 async function unzipFiles(file) {

@@ -112,7 +112,9 @@ function openPanel() {
       $('#vpStat').textContent = vpStatText(); $('#vpDel').hidden = !VPACK.n;
     } catch (err) { m.textContent = { notZip: 'هذا ليس ملف zip.', badZip: 'ملف zip تالف.', noInflate: 'هذا المتصفح لا يفتح ملفات zip المضغوطة؛ اختر الملفات الصوتية نفسها.', noStore: 'تعذّر الحفظ في الجهاز (التصفّح الخاص؟).', tab: 'توقّف الاستيراد لأن التطبيق فُتح في نافذة أخرى؛ ما استُورد قبلها باقٍ.' }[err && err.message] || 'تعذّر الاستيراد.'; } };
   $('#vpDel').onclick = async () => { const b = $('#vpDel'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يعود صوت الجهاز'; return; }
-    if (!(await VPACK.clear())) return; $('#vpStat').textContent = vpStatText(); b.hidden = true; b.dataset.sure = ''; b.textContent = 'حذف الحزمة'; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
+    if (b.disabled) return; b.disabled = true; let r; try { r = await VPACK.clear(); } catch (e) { r = 'fail'; } b.disabled = false; b.dataset.sure = ''; b.textContent = 'حذف الحزمة';
+    if (r !== 'ok') { $('#vpMsg').textContent = r === 'tab' ? 'لم تُحذف الحزمة لأن التطبيق فُتح في نافذة أخرى.' : 'تعذّر حذف الحزمة من الجهاز، فبقيت كما هي. جرّبوا مرة أخرى.'; return; }   // لا يُعلن الحذف قبل التزامه (WM102-R3-01)
+    $('#vpStat').textContent = vpStatText(); b.hidden = true; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
   /* النسخة الاحتياطية (D246) */
   $('#bkSave').onclick = () => { backupSave(); $('#bkMsg').textContent = 'حُفظ الملف في التنزيلات.'; };
   $('#bkPick').onclick = () => $('#bkIn').click();

@@ -885,11 +885,13 @@ const VPACK = { db: null, failed: false, n: 0,
       if (r !== 'ok') throw new Error(r === 'tab' ? 'tab' : 'abort');
       progress(i + 100); }
     const n = await this.load(); return { imported: new Set(got.map(c => c.id)).size, unknown, total: want.size, have: n }; },
-  /* يعيد false إن فقد التبويب القفل قبل الحذف أو أثناءه (فتبقى الحزمة كما هي، في القاعدة والذاكرة)؛ والتسجيلات في الذاكرة تُمحى بعد التزام الحذف لا قبله */
-  async clear() { if (!store.mine(null)) return false; const db = await this.open(); if (!store.mine(null)) return false;
-    const drop = () => { for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; return true; };
+  /* يعيد 'ok' بعد التزام الحذف، أو 'tab' إن فقد التبويب القفل قبله أو أثناءه، أو 'fail' إن أخفق التخزين (طلبٌ يرمي أو معاملةٌ تُلغى).
+     وفي الحالين الأخيرين تبقى الحزمة كما هي في القاعدة والذاكرة؛ فالتسجيلات في الذاكرة تُمحى بعد التزام الحذف وحده (WM102-R3-01).
+     وبلا قاعدة (لا indexedDB أو لم تُفتح) لم يُحمَّل منها شيء ولم يُستورد إليها شيء، فلا شيء محفوظ يبقى */
+  async clear() { if (!store.mine(null)) return 'tab'; const db = await this.open(); if (!store.mine(null)) return 'tab';
+    const drop = () => { for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; return 'ok'; };
     if (!db) return drop();
-    const r = await ownTx(db, 'clips', (os, last) => last(os.clear())); return r === 'tab' ? false : drop(); },
+    const r = await ownTx(db, 'clips', (os, last) => last(os.clear())); return r === 'ok' ? drop() : r; },
 };
 /* قارئ zip صغير بلا مكتبة: الدليل المركزي، والملفات المخزّنة (0) والمضغوطة (8) بـ DecompressionStream('deflate-raw') */
 async function unzipFiles(file) {
@@ -6825,7 +6827,9 @@ function openPanel() {
       $('#vpStat').textContent = vpStatText(); $('#vpDel').hidden = !VPACK.n;
     } catch (err) { m.textContent = { notZip: 'هذا ليس ملف zip.', badZip: 'ملف zip تالف.', noInflate: 'هذا المتصفح لا يفتح ملفات zip المضغوطة؛ اختر الملفات الصوتية نفسها.', noStore: 'تعذّر الحفظ في الجهاز (التصفّح الخاص؟).', tab: 'توقّف الاستيراد لأن التطبيق فُتح في نافذة أخرى؛ ما استُورد قبلها باقٍ.' }[err && err.message] || 'تعذّر الاستيراد.'; } };
   $('#vpDel').onclick = async () => { const b = $('#vpDel'); if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يعود صوت الجهاز'; return; }
-    if (!(await VPACK.clear())) return; $('#vpStat').textContent = vpStatText(); b.hidden = true; b.dataset.sure = ''; b.textContent = 'حذف الحزمة'; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
+    if (b.disabled) return; b.disabled = true; let r; try { r = await VPACK.clear(); } catch (e) { r = 'fail'; } b.disabled = false; b.dataset.sure = ''; b.textContent = 'حذف الحزمة';
+    if (r !== 'ok') { $('#vpMsg').textContent = r === 'tab' ? 'لم تُحذف الحزمة لأن التطبيق فُتح في نافذة أخرى.' : 'تعذّر حذف الحزمة من الجهاز، فبقيت كما هي. جرّبوا مرة أخرى.'; return; }   // لا يُعلن الحذف قبل التزامه (WM102-R3-01)
+    $('#vpStat').textContent = vpStatText(); b.hidden = true; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
   /* النسخة الاحتياطية (D246) */
   $('#bkSave').onclick = () => { backupSave(); $('#bkMsg').textContent = 'حُفظ الملف في التنزيلات.'; };
   $('#bkPick').onclick = () => $('#bkIn').click();
