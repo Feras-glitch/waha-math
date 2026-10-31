@@ -464,7 +464,22 @@ const STORE_ISSUES = { corrupt: [], repaired: [], writeFail: false, migrated: nu
    فلا يكتب فوق ما كتبه غيره ولو فاته إشعار التبويب الآخر (تبويب عُلّق ثم عاد بعد انتهاء القفل) */
 const TAB = Math.random().toString(36).slice(2, 10);   // rng-ok: معرّف التبويب لا يدخل في عشوائية الدروس
 let TAB_LOST = false, onTabLost = () => {};
-function tabLose() { if (TAB_LOST) return; TAB_LOST = true; try { onTabLost(); } catch (e) {} }
+const TAB_TXS = new Set();                               // معاملات الكتابة الجارية أو المنتظرة في IndexedDB (ownTx)
+function tabLose() { if (TAB_LOST) return; TAB_LOST = true; TAB_TXS.forEach(tx => { try { tx.abort(); } catch (e) {} }); try { onTabLost(); } catch (e) {} }
+/* معاملة كتابة في IndexedDB بملكية التبويب (الفحص المستقل WM102-R2-02: معاملةٌ أُنشئت والتبويب مالك قد تنتظر خلف معاملةٍ أخرى قبل أن تبدأ،
+   فسؤال القفل قبل إنشائها لا يغطي انتظارها، فكانت صورةٌ تُكتب بعد أن أخذ تبويبٌ آخر القفل). ثلاثة حرّاس:
+   1) تُسجَّل في TAB_TXS فيلغيها tabLose وهي منتظرة أو جارية؛ 2) أول طلبٍ فيها لا يكتب، ويجري حين تبدأ المعاملة فعلاً، فيُسأل القفل هناك قبل أي كتابة؛
+   3) ويُسأل بعد آخر طلبٍ للكتابة، فإن فُقد أُلغيت قبل أن تلتزم. نقطة الالتزام: لا طلب بعد هذا السؤال، فما كُتب كُتب والتبويب مالك.
+   write(os, last): تُصدر طلبات الكتابة وتسلّم آخرها إلى last (أو null إن لم يكن ما يُكتب). تعيد 'ok' التزمت، و'tab' أُلغيت لفقد القفل فلم يُكتب شيء، و'fail' لسببٍ آخر */
+function ownTx(db, name, write) { return new Promise(res => { let tx, end = false, lost = false;
+  const fin = v => { if (end) return; end = true; TAB_TXS.delete(tx); res(v); };
+  const chk = () => { if (store.mine(null)) return true; lost = true; try { tx.abort(); } catch (e) {} return false; };
+  try { tx = db.transaction(name, 'readwrite'); } catch (e) { res('fail'); return; }
+  TAB_TXS.add(tx); tx.oncomplete = () => fin('ok'); tx.onerror = tx.onabort = () => fin(lost || TAB_LOST ? 'tab' : 'fail');
+  try { const os = tx.objectStore(name), go = os.count();
+    go.onsuccess = () => { if (!chk()) return;
+      try { write(os, r => { if (r) r.onsuccess = () => chk(); else chk(); }); } catch (e) { try { tx.abort(); } catch (x) {} } }; }
+  catch (e) { try { tx.abort(); } catch (x) {} fin('fail'); } }); }
 const store = {
   seen: {},                                               // آخر نصّ قرأه هذا التبويب أو كتبه لكل مفتاح
   raw(k) { try { const v = localStorage.getItem(k); this.seen[k] = v; return v; } catch (e) { return null; } },
@@ -866,12 +881,15 @@ const VPACK = { db: null, failed: false, n: 0,
     const db = await this.open(); if (!db) throw new Error('noStore');
     for (let i = 0; i < got.length; i += 100) {   /* دفعات: لا معاملة واحدة ضخمة على جهاز ضعيف */
       if (!store.mine(null)) throw new Error('tab');   /* قبل كل دفعة: تبويبٌ فقد القفل أثناء الاستيراد لا يكتب بعده (الفحص المستقل WM101-R1-02) */
-      await new Promise((res, rej) => { const tx = db.transaction('clips', 'readwrite'); for (const c of got.slice(i, i + 100)) tx.objectStore('clips').put(c);
-        tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error || new Error('abort')); });
+      const r = await ownTx(db, 'clips', (os, last) => last(got.slice(i, i + 100).map(c => os.put(c)).pop() || null));   // والدفعة المنتظرة لا تكتب بعد فقد القفل (WM102-R2-02)
+      if (r !== 'ok') throw new Error(r === 'tab' ? 'tab' : 'abort');
       progress(i + 100); }
     const n = await this.load(); return { imported: new Set(got.map(c => c.id)).size, unknown, total: want.size, have: n }; },
-  async clear() { if (!store.mine(null)) return false; const db = await this.open(); if (!store.mine(null)) return false; for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; if (!db) return true;
-    return new Promise(res => { try { const tx = db.transaction('clips', 'readwrite'); tx.objectStore('clips').clear(); tx.oncomplete = () => res(true); tx.onerror = () => res(true); } catch (e) { res(true); } }); },
+  /* يعيد false إن فقد التبويب القفل قبل الحذف أو أثناءه (فتبقى الحزمة كما هي، في القاعدة والذاكرة)؛ والتسجيلات في الذاكرة تُمحى بعد التزام الحذف لا قبله */
+  async clear() { if (!store.mine(null)) return false; const db = await this.open(); if (!store.mine(null)) return false;
+    const drop = () => { for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; return true; };
+    if (!db) return drop();
+    const r = await ownTx(db, 'clips', (os, last) => last(os.clear())); return r === 'tab' ? false : drop(); },
 };
 /* قارئ zip صغير بلا مكتبة: الدليل المركزي، والملفات المخزّنة (0) والمضغوطة (8) بـ DecompressionStream('deflate-raw') */
 async function unzipFiles(file) {
@@ -6168,7 +6186,8 @@ const IDB = { db: null, mem: [], failed: false, none: false,
      'ok' حُفظت، و'mem' بقيت في الذاكرة لهذه الجلسة، و'tab' لم تُحفظ لأن التبويب فقد القفل */
   async put(o) { if (!store.mine(null)) return 'tab'; const db = await this.open(); if (!store.mine(null)) return 'tab';
     if (!db) { this.mem.push(o); return 'mem'; }
-    return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(o); tx.oncomplete = () => res('ok'); tx.onerror = () => { this.mem.push(o); res('mem'); }; } catch (e) { this.mem.push(o); res('mem'); } }); },
+    const r = await ownTx(db, 'photos', (os, last) => last(os.put(o)));   // ومعاملةٌ تنتظر خلف غيرها لا تكتب بعد فقد القفل (WM102-R2-02)
+    if (r === 'fail') { this.mem.push(o); return 'mem'; } return r; },   // 'tab': لا تُنقل إلى الذاكرة ولا يُعلَن حفظها
   async all() { const db = await this.open(); const mine = x => x.kid === KID;
     if (!db) return this.mem.filter(mine);
     return new Promise(res => { try { const r = db.transaction('photos').objectStore('photos').getAll(); r.onsuccess = () => res(r.result.filter(mine).concat(this.mem.filter(mine))); r.onerror = () => res(this.mem.filter(mine)); } catch (e) { res(this.mem.filter(mine)); } }); },
@@ -6178,10 +6197,9 @@ const IDB = { db: null, mem: [], failed: false, none: false,
   async dropKid(id) { if (!store.mine(null)) return 'tab'; const db = await this.open(true); if (!store.mine(null)) return 'tab';
     const done = () => { this.mem = this.mem.filter(x => x.kid !== id); return 'ok'; };
     if (!db) return this.none ? done() : 'fail';
-    return new Promise(res => { let out = 'fail'; try { const tx = db.transaction('photos', 'readwrite'), os = tx.objectStore('photos'); const r = os.getAll();
-      r.onsuccess = () => { if (!store.mine(null)) { out = 'tab'; try { tx.abort(); } catch (x) {} return; }
-        try { r.result.filter(x => x.kid === id).forEach(x => os.delete(x.id)); } catch (e) { try { tx.abort(); } catch (x) {} } };
-      tx.oncomplete = () => res(done()); tx.onerror = tx.onabort = () => res(out); } catch (e) { res('fail'); } }); },
+    const r = await ownTx(db, 'photos', (os, last) => { const g = os.getAll();
+      g.onsuccess = () => { try { last(g.result.filter(x => x.kid === id).map(x => os.delete(x.id)).pop() || null); } catch (e) { try { os.transaction.abort(); } catch (x) {} } }; });   // إخفاق الحذف يلغي المعاملة كلها: 'fail'
+    return r === 'ok' ? done() : r; },
 };
 const designsKey = () => kk('hp_designs');
 /* التصميمات بقاعدتها (الفحص الخصم A05): تصميمٌ تالف يُسقط وحده، فلا يعطّل المعرض ولا التقرير */
@@ -6190,11 +6208,21 @@ const designsGet = () => store.fix(designsKey(), [], V_DESIGNS);
    ثم صوره، ثم مفاتيحه (التقدّم والسجل والجلسة والإعدادات والتصميمات، ونسخ الترحيل والتالف)، ثم ما يخصّه في نسخة ما قبل الاستعادة، ثم القائمة.
    كل خطوة يُتحقَّق منها، ولا يُرفع الطفل من KIDS في الذاكرة إلا بعد حفظ القائمة بدونه، فالذاكرة كالتخزين دائماً.
    فإن أخفقت خطوة وقف وبقي السجلّ: الطفل في القائمة، واللوحة تقول إن حذفه لم يكتمل وتعرض إكماله، ويُستأنف عند الفتح.
-   يعيد { ok: true } أو { ok: false, why: 'tab' | 'mark' | 'photos' | 'keys' | 'rescue' | 'list' } */
+   وحذفٌ واحد في كل مرة (الفحص المستقل WM102-R2-01: حذف طفلٍ آخر كان يكتب فوق سجلّ حذفٍ لم يكتمل أو يمحوه عند اكتماله، فيضيع بعد الفتح):
+   ما دام سجلّ حذف طفلٍ في القائمة باقياً، أو حذفٌ جارياً في هذا التبويب، لا يبدأ حذف غيره ('busy') حتى يكتمل ذاك أو يُلغى باختيار طفله؛
+   وسجلٌّ لطفلٍ لم يعد في القائمة (اكتمل حذفه ولم يُمحَ سجلّه) يُكمَل أولاً. والسجلّ لا يُمحى إلا بيد عمليته.
+   يعيد { ok: true } أو { ok: false, why: 'tab' | 'busy' | 'mark' | 'photos' | 'keys' | 'rescue' | 'list' } */
 const KID_DEL = 'hp_kid_del';
 const kidDelPending = () => { const m = store.read(KID_DEL, null, isObj); return m && typeof m.id === 'string' && KID_ID.test(m.id) ? m.id : null; };
+let KID_DEL_RUN = null;   // معرّف الحذف الجاري في هذا التبويب
 async function kidDelete(id) {
   if (!store.mine(null)) return { ok: false, why: 'tab' };
+  if (KID_DEL_RUN) return { ok: false, why: 'busy', id: KID_DEL_RUN };
+  const p = kidDelPending();
+  if (p && p !== id) { if (KIDS.some(k => k.id === p)) return { ok: false, why: 'busy', id: p };
+    const r = await kidDelete(p); if (!r.ok) return r.why === 'tab' ? r : { ok: false, why: 'busy', id: p }; }
+  KID_DEL_RUN = id; try { return await kidDeleteRun(id); } finally { KID_DEL_RUN = null; } }
+async function kidDeleteRun(id) {
   if (kidDelPending() !== id && !store.set(KID_DEL, { id, t: Date.now() })) return { ok: false, why: 'mark' };
   const ph = await IDB.dropKid(id); if (ph !== 'ok') return { ok: false, why: ph === 'tab' ? 'tab' : 'photos' };
   if (!store.mine(null)) return { ok: false, why: 'tab' };
@@ -6207,7 +6235,7 @@ async function kidDelete(id) {
     if (ch && !store.set('hp_before_restore', d)) return { ok: false, why: 'rescue' }; }   // عبر store.set لا مباشرة: بحارس القفل ككل كتابة
   const rest = KIDS.filter(k => k.id !== id);
   if (rest.length !== KIDS.length) { if (!store.set('hp_kids', rest)) return { ok: false, why: 'list' }; KIDS.splice(KIDS.findIndex(k => k.id === id), 1); }
-  store.del(KID_DEL); return { ok: true };   // وإن بقي السجلّ بعد اكتمال الحذف فاستئنافه عند الفتح يجد كل شيء محذوفاً فيمحوه
+  if (kidDelPending() === id) store.del(KID_DEL); return { ok: true };   // وإن بقي السجلّ بعد اكتمال الحذف فالحذف التالي يكمله أولاً فيجد كل شيء محذوفاً فيمحوه
 }
 /* عند الفتح لا يُستأنف الحذف وحده: تبويبٌ يُفتح أثناء حذفٍ في تبويبٍ آخر كان يكمله، فتعود عمليةٌ أُلغيت بفقد القفل (الفحص المستقل WM101-R1-02).
    فالحذف الذي لم يكتمل يُكمَل بضغطة الكبير في اللوحة وحدها؛ والطفل المختار لا يُحذف: يُلغى سجلّه ويُقال ذلك */
@@ -6723,11 +6751,13 @@ function conceptPill(L, C) { const c = ((PROG[L.id] || {}).cs || {})[C] || {}, a
 const KID_DEL_WHY = { mark: 'تعذّر بدء الحذف، فلم يُحذف شيء', photos: 'تعذّر الوصول إلى صوره على هذا الجهاز، فلم يكتمل حذفه',
   keys: 'تعذّر حذف بعض بياناته (المساحة ممتلئة أو التصفّح الخاص)، فلم يكتمل حذفه', rescue: 'تعذّر حذفه من نسخة ما قبل الاستعادة، فلم يكتمل حذفه',
   list: 'تعذّر حفظ قائمة الأطفال بدونه، فلم يكتمل حذفه' };
+/* حذفٌ واحد في كل مرة (WM102-R2-01): ما دام حذف طفلٍ في القائمة لم يكتمل أو جارياً، لا تُعرض أزرار حذف غيره (وkidDelete يرفضه أيضاً) */
+const kidDelBusy = () => { const p = KID_DEL_RUN || kidDelPending(); return !!p && KIDS.some(k => k.id === p); };
 function kidDelNote() { const st = KID_DEL_STATE, id = st ? st.id : kidDelPending(); if (!id) return '';
   const k = KIDS.find(x => x.id === id), nm = esc((k && k.name) || 'الطفل');
   if (st && st.cancelled) return `<p class="muted" id="kidDelNote">أُلغي حذف ${nm} الذي لم يكتمل لأنه اختير بعده، وقد يكون حُذف بعض بياناته قبل ذلك.</p>`;
   if (!k || k.id === KID) return '';
-  return `<p class="muted" id="kidDelNote">${(st && KID_DEL_WHY[st.why]) || 'حذف ' + nm + ' لم يكتمل'}: يبقى ${nm} في القائمة حتى يكتمل.</p><div class="seg"><button class="pick" data-del="${esc(id)}" data-sure="1">أكملوا حذف ${nm}</button></div>`; }
+  return `<p class="muted" id="kidDelNote">${(st && KID_DEL_WHY[st.why]) || 'حذف ' + nm + ' لم يكتمل'}: يبقى ${nm} في القائمة حتى يكتمل، ولا يُحذف طفلٌ آخر قبله. ولإلغاء حذفه اختاروه من قائمة الأطفال.</p><div class="seg"><button class="pick" data-del="${esc(id)}" data-sure="1">أكملوا حذف ${nm}</button></div>`; }
 function openPanel() {
   const A = LOG.attempts; const errs = {}; A.filter(a => a.err && ERRN[a.err] && a.scene !== 'ws').forEach(a => errs[a.err] = (errs[a.err] || 0) + 1);
   const firsts = A.filter(a => a.firstTry !== undefined && isAssess(a)); const fOk = firsts.filter(a => a.firstTry && a.ok).length;
@@ -6759,7 +6789,7 @@ function openPanel() {
       <p class="muted">في هذه الجلسة: ${nw(sessionNow().n, 'درس واحد', 'درسان', 'دروس', 'درساً')}.</p>
       <div class="seg"><button class="pick" id="slowBtn" aria-pressed="${!!SET.slow}">قراءة أبطأ: ${SET.slow ? 'تعمل' : 'متوقفة'}</button></div></div>
     <div class="card"><b>أطفال هذا الجهاز</b> (لكل طفل تقدّمه ومعرضه وإعداداته، ويختار صورته عند الدخول):
-      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div>${kidDelNote()}</div>
+      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID || kidDelBusy() ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div>${kidDelNote()}</div>
     <div class="card"><b>الصوت:</b> <span id="vpStat">${vpStatText()}</span>
       <p class="muted">حزمة الصوت ملف zip (أو ملفات صوتية) اسم كل تسجيل فيه معرّف جملته في جدول التسجيل، مثل <code dir="ltr">m1.u1.d2.hook.01.mp3</code>، و<code dir="ltr">…_f.mp3</code> للصيغة المؤنثة. تُستورد مرة واحدة وتبقى في هذا الجهاز، وما لم يُسجَّل يقرؤه صوت الجهاز (D181).</p>
       <div class="seg"><button class="pick" id="vpPick">استيراد حزمة الصوت</button><button class="pick" id="vpDel"${VPACK.n ? '' : ' hidden'}>حذف الحزمة</button></div><input type="file" id="vpIn" accept=".zip,audio/*" multiple hidden><p id="vpMsg" class="muted" aria-live="polite"></p></div>
@@ -6777,7 +6807,7 @@ function openPanel() {
   $('#panel').querySelectorAll('[data-del]').forEach(b => b.onclick = async () => { if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يُحذف تقدّمه وصوره كلها'; return; }
     const id = b.dataset.del; if (!store.mine(null)) return; b.disabled = true;
     const r = await kidDelete(id); if (r.why === 'tab') return;   /* فقد التبويب القفل: غطاؤه ظاهر، ولا أثر في الواجهة لعمليةٍ أُلغيت */
-    KID_DEL_STATE = r.ok ? null : { id, why: r.why }; openPanel(); });
+    if (r.why !== 'busy') KID_DEL_STATE = r.ok ? null : { id, why: r.why }; openPanel(); });   /* 'busy': حذفٌ آخر لم يكتمل، وحاله وسببه كما هما */
   $('#panel').querySelectorAll('[data-ac]').forEach(b => b.onclick = () => { const L = LDATA[b.dataset.ac]; if (!L || !L.adultCard) return;
     const a = adultAnswers(L); a[+b.dataset.i] = b.dataset.v === '1'; PROG.adult = isObj(PROG.adult) ? PROG.adult : {}; PROG.adult[L.id] = a;
     if (saveProg()) openPanel(); });

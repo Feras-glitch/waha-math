@@ -66,7 +66,8 @@ const IDB = { db: null, mem: [], failed: false, none: false,
      'ok' حُفظت، و'mem' بقيت في الذاكرة لهذه الجلسة، و'tab' لم تُحفظ لأن التبويب فقد القفل */
   async put(o) { if (!store.mine(null)) return 'tab'; const db = await this.open(); if (!store.mine(null)) return 'tab';
     if (!db) { this.mem.push(o); return 'mem'; }
-    return new Promise(res => { try { const tx = db.transaction('photos', 'readwrite'); tx.objectStore('photos').put(o); tx.oncomplete = () => res('ok'); tx.onerror = () => { this.mem.push(o); res('mem'); }; } catch (e) { this.mem.push(o); res('mem'); } }); },
+    const r = await ownTx(db, 'photos', (os, last) => last(os.put(o)));   // ومعاملةٌ تنتظر خلف غيرها لا تكتب بعد فقد القفل (WM102-R2-02)
+    if (r === 'fail') { this.mem.push(o); return 'mem'; } return r; },   // 'tab': لا تُنقل إلى الذاكرة ولا يُعلَن حفظها
   async all() { const db = await this.open(); const mine = x => x.kid === KID;
     if (!db) return this.mem.filter(mine);
     return new Promise(res => { try { const r = db.transaction('photos').objectStore('photos').getAll(); r.onsuccess = () => res(r.result.filter(mine).concat(this.mem.filter(mine))); r.onerror = () => res(this.mem.filter(mine)); } catch (e) { res(this.mem.filter(mine)); } }); },
@@ -76,10 +77,9 @@ const IDB = { db: null, mem: [], failed: false, none: false,
   async dropKid(id) { if (!store.mine(null)) return 'tab'; const db = await this.open(true); if (!store.mine(null)) return 'tab';
     const done = () => { this.mem = this.mem.filter(x => x.kid !== id); return 'ok'; };
     if (!db) return this.none ? done() : 'fail';
-    return new Promise(res => { let out = 'fail'; try { const tx = db.transaction('photos', 'readwrite'), os = tx.objectStore('photos'); const r = os.getAll();
-      r.onsuccess = () => { if (!store.mine(null)) { out = 'tab'; try { tx.abort(); } catch (x) {} return; }
-        try { r.result.filter(x => x.kid === id).forEach(x => os.delete(x.id)); } catch (e) { try { tx.abort(); } catch (x) {} } };
-      tx.oncomplete = () => res(done()); tx.onerror = tx.onabort = () => res(out); } catch (e) { res('fail'); } }); },
+    const r = await ownTx(db, 'photos', (os, last) => { const g = os.getAll();
+      g.onsuccess = () => { try { last(g.result.filter(x => x.kid === id).map(x => os.delete(x.id)).pop() || null); } catch (e) { try { os.transaction.abort(); } catch (x) {} } }; });   // إخفاق الحذف يلغي المعاملة كلها: 'fail'
+    return r === 'ok' ? done() : r; },
 };
 const designsKey = () => kk('hp_designs');
 /* التصميمات بقاعدتها (الفحص الخصم A05): تصميمٌ تالف يُسقط وحده، فلا يعطّل المعرض ولا التقرير */
@@ -88,11 +88,21 @@ const designsGet = () => store.fix(designsKey(), [], V_DESIGNS);
    ثم صوره، ثم مفاتيحه (التقدّم والسجل والجلسة والإعدادات والتصميمات، ونسخ الترحيل والتالف)، ثم ما يخصّه في نسخة ما قبل الاستعادة، ثم القائمة.
    كل خطوة يُتحقَّق منها، ولا يُرفع الطفل من KIDS في الذاكرة إلا بعد حفظ القائمة بدونه، فالذاكرة كالتخزين دائماً.
    فإن أخفقت خطوة وقف وبقي السجلّ: الطفل في القائمة، واللوحة تقول إن حذفه لم يكتمل وتعرض إكماله، ويُستأنف عند الفتح.
-   يعيد { ok: true } أو { ok: false, why: 'tab' | 'mark' | 'photos' | 'keys' | 'rescue' | 'list' } */
+   وحذفٌ واحد في كل مرة (الفحص المستقل WM102-R2-01: حذف طفلٍ آخر كان يكتب فوق سجلّ حذفٍ لم يكتمل أو يمحوه عند اكتماله، فيضيع بعد الفتح):
+   ما دام سجلّ حذف طفلٍ في القائمة باقياً، أو حذفٌ جارياً في هذا التبويب، لا يبدأ حذف غيره ('busy') حتى يكتمل ذاك أو يُلغى باختيار طفله؛
+   وسجلٌّ لطفلٍ لم يعد في القائمة (اكتمل حذفه ولم يُمحَ سجلّه) يُكمَل أولاً. والسجلّ لا يُمحى إلا بيد عمليته.
+   يعيد { ok: true } أو { ok: false, why: 'tab' | 'busy' | 'mark' | 'photos' | 'keys' | 'rescue' | 'list' } */
 const KID_DEL = 'hp_kid_del';
 const kidDelPending = () => { const m = store.read(KID_DEL, null, isObj); return m && typeof m.id === 'string' && KID_ID.test(m.id) ? m.id : null; };
+let KID_DEL_RUN = null;   // معرّف الحذف الجاري في هذا التبويب
 async function kidDelete(id) {
   if (!store.mine(null)) return { ok: false, why: 'tab' };
+  if (KID_DEL_RUN) return { ok: false, why: 'busy', id: KID_DEL_RUN };
+  const p = kidDelPending();
+  if (p && p !== id) { if (KIDS.some(k => k.id === p)) return { ok: false, why: 'busy', id: p };
+    const r = await kidDelete(p); if (!r.ok) return r.why === 'tab' ? r : { ok: false, why: 'busy', id: p }; }
+  KID_DEL_RUN = id; try { return await kidDeleteRun(id); } finally { KID_DEL_RUN = null; } }
+async function kidDeleteRun(id) {
   if (kidDelPending() !== id && !store.set(KID_DEL, { id, t: Date.now() })) return { ok: false, why: 'mark' };
   const ph = await IDB.dropKid(id); if (ph !== 'ok') return { ok: false, why: ph === 'tab' ? 'tab' : 'photos' };
   if (!store.mine(null)) return { ok: false, why: 'tab' };
@@ -105,7 +115,7 @@ async function kidDelete(id) {
     if (ch && !store.set('hp_before_restore', d)) return { ok: false, why: 'rescue' }; }   // عبر store.set لا مباشرة: بحارس القفل ككل كتابة
   const rest = KIDS.filter(k => k.id !== id);
   if (rest.length !== KIDS.length) { if (!store.set('hp_kids', rest)) return { ok: false, why: 'list' }; KIDS.splice(KIDS.findIndex(k => k.id === id), 1); }
-  store.del(KID_DEL); return { ok: true };   // وإن بقي السجلّ بعد اكتمال الحذف فاستئنافه عند الفتح يجد كل شيء محذوفاً فيمحوه
+  if (kidDelPending() === id) store.del(KID_DEL); return { ok: true };   // وإن بقي السجلّ بعد اكتمال الحذف فالحذف التالي يكمله أولاً فيجد كل شيء محذوفاً فيمحوه
 }
 /* عند الفتح لا يُستأنف الحذف وحده: تبويبٌ يُفتح أثناء حذفٍ في تبويبٍ آخر كان يكمله، فتعود عمليةٌ أُلغيت بفقد القفل (الفحص المستقل WM101-R1-02).
    فالحذف الذي لم يكتمل يُكمَل بضغطة الكبير في اللوحة وحدها؛ والطفل المختار لا يُحذف: يُلغى سجلّه ويُقال ذلك */

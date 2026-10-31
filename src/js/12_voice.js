@@ -35,12 +35,15 @@ const VPACK = { db: null, failed: false, n: 0,
     const db = await this.open(); if (!db) throw new Error('noStore');
     for (let i = 0; i < got.length; i += 100) {   /* دفعات: لا معاملة واحدة ضخمة على جهاز ضعيف */
       if (!store.mine(null)) throw new Error('tab');   /* قبل كل دفعة: تبويبٌ فقد القفل أثناء الاستيراد لا يكتب بعده (الفحص المستقل WM101-R1-02) */
-      await new Promise((res, rej) => { const tx = db.transaction('clips', 'readwrite'); for (const c of got.slice(i, i + 100)) tx.objectStore('clips').put(c);
-        tx.oncomplete = () => res(); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error || new Error('abort')); });
+      const r = await ownTx(db, 'clips', (os, last) => last(got.slice(i, i + 100).map(c => os.put(c)).pop() || null));   // والدفعة المنتظرة لا تكتب بعد فقد القفل (WM102-R2-02)
+      if (r !== 'ok') throw new Error(r === 'tab' ? 'tab' : 'abort');
       progress(i + 100); }
     const n = await this.load(); return { imported: new Set(got.map(c => c.id)).size, unknown, total: want.size, have: n }; },
-  async clear() { if (!store.mine(null)) return false; const db = await this.open(); if (!store.mine(null)) return false; for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; if (!db) return true;
-    return new Promise(res => { try { const tx = db.transaction('clips', 'readwrite'); tx.objectStore('clips').clear(); tx.oncomplete = () => res(true); tx.onerror = () => res(true); } catch (e) { res(true); } }); },
+  /* يعيد false إن فقد التبويب القفل قبل الحذف أو أثناءه (فتبقى الحزمة كما هي، في القاعدة والذاكرة)؛ والتسجيلات في الذاكرة تُمحى بعد التزام الحذف لا قبله */
+  async clear() { if (!store.mine(null)) return false; const db = await this.open(); if (!store.mine(null)) return false;
+    const drop = () => { for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; return true; };
+    if (!db) return drop();
+    const r = await ownTx(db, 'clips', (os, last) => last(os.clear())); return r === 'tab' ? false : drop(); },
 };
 /* قارئ zip صغير بلا مكتبة: الدليل المركزي، والملفات المخزّنة (0) والمضغوطة (8) بـ DecompressionStream('deflate-raw') */
 async function unzipFiles(file) {

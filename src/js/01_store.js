@@ -10,7 +10,22 @@ const STORE_ISSUES = { corrupt: [], repaired: [], writeFail: false, migrated: nu
    فلا يكتب فوق ما كتبه غيره ولو فاته إشعار التبويب الآخر (تبويب عُلّق ثم عاد بعد انتهاء القفل) */
 const TAB = Math.random().toString(36).slice(2, 10);   // rng-ok: معرّف التبويب لا يدخل في عشوائية الدروس
 let TAB_LOST = false, onTabLost = () => {};
-function tabLose() { if (TAB_LOST) return; TAB_LOST = true; try { onTabLost(); } catch (e) {} }
+const TAB_TXS = new Set();                               // معاملات الكتابة الجارية أو المنتظرة في IndexedDB (ownTx)
+function tabLose() { if (TAB_LOST) return; TAB_LOST = true; TAB_TXS.forEach(tx => { try { tx.abort(); } catch (e) {} }); try { onTabLost(); } catch (e) {} }
+/* معاملة كتابة في IndexedDB بملكية التبويب (الفحص المستقل WM102-R2-02: معاملةٌ أُنشئت والتبويب مالك قد تنتظر خلف معاملةٍ أخرى قبل أن تبدأ،
+   فسؤال القفل قبل إنشائها لا يغطي انتظارها، فكانت صورةٌ تُكتب بعد أن أخذ تبويبٌ آخر القفل). ثلاثة حرّاس:
+   1) تُسجَّل في TAB_TXS فيلغيها tabLose وهي منتظرة أو جارية؛ 2) أول طلبٍ فيها لا يكتب، ويجري حين تبدأ المعاملة فعلاً، فيُسأل القفل هناك قبل أي كتابة؛
+   3) ويُسأل بعد آخر طلبٍ للكتابة، فإن فُقد أُلغيت قبل أن تلتزم. نقطة الالتزام: لا طلب بعد هذا السؤال، فما كُتب كُتب والتبويب مالك.
+   write(os, last): تُصدر طلبات الكتابة وتسلّم آخرها إلى last (أو null إن لم يكن ما يُكتب). تعيد 'ok' التزمت، و'tab' أُلغيت لفقد القفل فلم يُكتب شيء، و'fail' لسببٍ آخر */
+function ownTx(db, name, write) { return new Promise(res => { let tx, end = false, lost = false;
+  const fin = v => { if (end) return; end = true; TAB_TXS.delete(tx); res(v); };
+  const chk = () => { if (store.mine(null)) return true; lost = true; try { tx.abort(); } catch (e) {} return false; };
+  try { tx = db.transaction(name, 'readwrite'); } catch (e) { res('fail'); return; }
+  TAB_TXS.add(tx); tx.oncomplete = () => fin('ok'); tx.onerror = tx.onabort = () => fin(lost || TAB_LOST ? 'tab' : 'fail');
+  try { const os = tx.objectStore(name), go = os.count();
+    go.onsuccess = () => { if (!chk()) return;
+      try { write(os, r => { if (r) r.onsuccess = () => chk(); else chk(); }); } catch (e) { try { tx.abort(); } catch (x) {} } }; }
+  catch (e) { try { tx.abort(); } catch (x) {} fin('fail'); } }); }
 const store = {
   seen: {},                                               // آخر نصّ قرأه هذا التبويب أو كتبه لكل مفتاح
   raw(k) { try { const v = localStorage.getItem(k); this.seen[k] = v; return v; } catch (e) { return null; } },
