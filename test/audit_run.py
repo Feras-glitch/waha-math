@@ -13,6 +13,9 @@
 #   R1-01 إخفاق كل كتابة في حذف الطفل: الذاكرة كالتخزين، ولا يُعلَن حذف، واللوحة تقول إنه لم يكتمل، و«أكملوا الحذف» يكمله، وبعد إعادة الفتح.
 #   R1-02 عملٌ بدأ قبل فقد القفل لا يكتب ولا يحذف بعده: حذف الصور (أثناء الفتح وداخل المعاملة)، وحفظ الصورة، وواجهة الصيد، وحذف حزمة الصوت؛ ولا يعود الحذف الملغى وحده.
 #   R1-03 قاعدة الصور لا تُفتح: لا يُحذف الطفل، وتبقى صور الذاكرة، ويكتمل الحذف حين يعود الوصول.
+# ثم ملاحظة المراجع على الجولة الثانية (31 أكتوبر): الحذف المعلّق عبر تبويبين وإعادة الفتح، 8 فحوص تحت R1-01 (ONLY=R1-01P لها وحدها)؛ على 1d53a12 يخفق 6 منها والباقيان «لا أخطاء»:
+#   حذفٌ لم يكتمل في A ثم يُفتح B: القائمة كالمحفوظ في كلٍّ منهما، وA بعد فقد القفل لا يكتب صورةً ولا تقدّماً للطفل الجاري حذفه ولا يكمل حذفه،
+#   و«أكملوا الحذف» في B يكمله كله ويبقى الطفل الآخر سليماً، واختيار الطفل المعلّق حذفه يلغي الحذف ويقول ذلك، وكلٌّ بعد إعادة الفتح.
 # الاستعمال: python3 test/audit_run.py [ملف نسخة الفحص]   (ONLY=A01,A04 لبعضها؛ يخرج بـ 1 مع أي إخفاق)
 import asyncio, io, itertools, json, os, struct, sys, tempfile, wave, zipfile
 from playwright.async_api import async_playwright
@@ -461,6 +464,39 @@ async def r1_cases(b):
   await B.reload(); await B.wait_for_timeout(700); n = await B.evaluate('() => VPACK.n')
   check('R1-02', r is False and n == 1, 'حذف حزمة الصوت بعد فقد القفل لا يمحوها', [r, n]); await ctx.close()
 
+# حذفٌ معلّق (لم يكتمل) عبر تبويبين وإعادة الفتح (ملاحظة المراجع بعد الجولة الثانية):
+# القائمة تطابق المحفوظ في كل تبويب وبعد كل فتح، والتبويب الأقدم لا يكتب للطفل الجاري حذفه ولا يحذف، والإكمال من التبويب الجديد بعد عودة التخزين،
+# والطفل الآخر سليم. واختيار الطفل المعلّق حذفه يلغي الحذف ويقول ذلك، والقائمة كالمحفوظ.
+PEND_LATE = """async () => { const r = {}; r.put = await IDB.put({ id: 'lateA', kid: 'k2', k: 'circle', t: 8, data: 'data:image/jpeg;base64,AAAA' });
+  r.set = store.set('hp_prog:k2', { schema: 3, late: true }); r.del = typeof kidDelete === 'function' ? await kidDelete('k2') : { why: 'لا kidDelete' }; r.lost = TAB_LOST; return r; }"""
+SEEN = "() => ({ mem: KIDS.map(k => k.id), stored: JSON.parse(localStorage.getItem('hp_kids')).map(k => k.id), kid: KID, marker: localStorage.getItem('hp_kid_del'), note: ($('#kidDelNote') || {}).textContent || '', late: localStorage.getItem('hp_prog:k2') })"
+async def r1_pending(b):
+  for how in ('finish', 'pick'):
+    ctx, A, errs = await seed_k2(b); errsB = []
+    await A.evaluate("() => { const P = Storage.prototype, f0 = P.removeItem; P.removeItem = function (k) { if (k === 'hp_log:k2') throw new DOMException('blocked', 'QuotaExceededError'); return f0.call(this, k); }; }")
+    await del_click(A); sA = await A.evaluate(DSTATE)
+    pend = sA['mem'] and sA['stored'] and 'لم يكتمل' in sA['note'] and sA['finish'] and bool(sA['marker'])
+    check('R1-01', pend, 'حذفٌ معلّق في التبويب A (إخفاق حذف hp_log:k2): الطفل في القائمة كما في المحفوظ، واللوحة تعرض «أكملوا الحذف»', {k: sA[k] for k in ('mem', 'stored', 'keys', 'photos', 'note', 'marker')})
+    B = await ctx.new_page(); B.on('pageerror', lambda e: errsB.append(str(e))); await B.goto(URL); await B.wait_for_timeout(500); await B.evaluate("() => openPanel()")
+    sB = await B.evaluate(DSTATE)
+    late = await A.evaluate(PEND_LATE); rowsB = await B.evaluate(ROWS); seenB = await B.evaluate(SEEN)
+    check('R1-01', pend and late['lost'] and late['put'] == 'tab' and late['set'] is False and late['del'].get('why') == 'tab' and rowsB is not None and all(r[0] != 'lateA' for r in rowsB) and seenB['late'] is None
+          and sB['mem'] and sB['stored'] and seenB['mem'] == seenB['stored'] and 'لم يكتمل' in sB['note'] and sB['finish'],
+          'وفي التبويب B الأحدث: القائمة كالمحفوظ والحذف معلّق ظاهر، والتبويب A بعد فقد القفل لا يكتب صورةً ولا تقدّماً للطفل الجاري حذفه ولا يكمل حذفه', [late, seenB, rowsB, sB['note']])
+    if how == 'finish':
+      await del_click(B, finish=True); s3 = await B.evaluate(DSTATE); s3s = await B.evaluate(SEEN); await reopen(B); await B.evaluate("() => openPanel()"); s4 = await B.evaluate(DSTATE); s4s = await B.evaluate(SEEN)
+      check('R1-01', GONE(s3) and GONE(s4) and s3s['mem'] == s3s['stored'] == ['k1'] and s4s['mem'] == s4s['stored'] == ['k1'] and not s4['marker'] and not s4['note'],
+            'و«أكملوا الحذف» في B بعد عودة التخزين يكمله كله، والطفل الآخر وصوره وتقدّمه سليمة، والقائمة كالمحفوظ وبعد إعادة الفتح', [{k: s3[k] for k in ('keys', 'photos', 'rescue', 'pk1', 'k1')}, s3s, s4s])
+    else:
+      await B.evaluate("() => { $('#panel').hidden = true; openKids(); }"); await B.wait_for_timeout(200)
+      if await B.query_selector('#kidList [data-kid="k2"]'):   # في الأصل غاب الطفل من القائمة: لا زرّ، فيُحكم بالحال كما هي
+        async with B.expect_navigation(): await B.click('#kidList [data-kid="k2"]')
+      await B.wait_for_timeout(500); await B.evaluate("() => openPanel()"); s3 = await B.evaluate(SEEN); k1 = await B.evaluate("() => !!(JSON.parse(localStorage.getItem('hp_prog:k1')) || {})['m1.u1.d1']")
+      await reopen(B); await B.evaluate("() => openPanel()"); s4 = await B.evaluate(SEEN)
+      check('R1-01', s3['kid'] == 'k2' and s3['marker'] is None and 'أُلغي' in s3['note'] and s3['mem'] == s3['stored'] == ['k1', 'k2'] and k1 and s4['marker'] is None and s4['mem'] == s4['stored'] == ['k1', 'k2'] and s4['kid'] == 'k2',
+            'واختيار الطفل المعلّق حذفه في B يلغي الحذف ويقول ذلك، ولا يُستأنف بعد إعادة الفتح، والقائمة كالمحفوظ، والطفل الآخر سليم', [s3, s4, k1])
+    check('R1-01', not errs and not errsB, 'لا أخطاء في الصفحتين (حذف معلّق، %s)' % how, (errs + errsB)[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch()
@@ -471,6 +507,7 @@ async def main():
     if on('A07'): await review_cases(b)
     if on('A08'): await delete_cases(b)
     if on('R1-01') or on('R1-02') or on('R1-03'): await r1_cases(b)
+    if on('R1-01') or on('R1-01P'): await r1_pending(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())
