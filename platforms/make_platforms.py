@@ -16,13 +16,15 @@ OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, '
 SRC = os.path.join(ROOT, 'dist', 'واحة_الرياضيات.html')
 
 
+# newline='': لا تحويل لنهايات الأسطر في القراءة ولا في الكتابة. بايثون في ويندوز يكتب CRLF بدل LF في وضع النص،
+# فخرجت صفحة نسخة ويندوز 1.0.2 مختلفة البصمة عن الصفحة المفحوصة (التحقق المستقل من الإصدار 1.0.2)
 def read(p):
-    return open(p, encoding='utf-8').read()
+    return open(p, encoding='utf-8', newline='').read()
 
 
 def write(p, s):
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    open(p, 'w', encoding='utf-8').write(s)
+    open(p, 'w', encoding='utf-8', newline='').write(s)
 
 
 def version():

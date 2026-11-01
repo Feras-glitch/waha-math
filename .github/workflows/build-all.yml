@@ -8,6 +8,7 @@
 #   5) فحص APK على هاتف وتابلت افتراضيين (محاكيان، لا جهازان حقيقيان): يُثبَّت ويُفتح ويُسار فيه، مع لقطة شاشة؛ ولا يُنشر إصدار إن أخفق.
 #   6) إصدار في Releases باسم رقم النسخة (versionName في platforms/android/app/build.gradle): ويندوز والويب، وAPK إن صحّ المفتاح.
 #      ملفٌ نُشر لا يُستبدل؛ وما غاب عن إصدارٍ منشور (APK قبل تصحيح المفتاح) يُضاف إليه حين يُبنى.
+#      وقبل النشر تُفحص صفحة التطبيق داخل كل حزمة (platforms/tests/check_pages.py)، وتُكتب بصمتها لكل منصة في MANIFEST-SHA256.txt.
 name: Build all
 
 on:
@@ -263,6 +264,9 @@ jobs:
           python ../tests/ci_run.py "Windows npm install" npm.cmd install --no-audit --no-fund
           python ../tests/ci_run.py "Windows electron-builder" npx.cmd electron-builder --win --x64 --publish never
           ls -la dist
+      - name: The page inside the Windows app is the tested page, byte for byte
+        working-directory: platforms/desktop
+        run: python ../tests/check_pages.py asar dist/win-unpacked/resources/app.asar | tee dist/page-windows.txt
       - name: Open the built app and walk through it
         working-directory: platforms/desktop
         env:
@@ -280,6 +284,7 @@ jobs:
           path: |
             platforms/desktop/dist/waha-math-setup-*.exe
             platforms/desktop/dist/waha-math-portable-*.exe
+            platforms/desktop/dist/page-windows.txt
 
   # يُنشر ما بُني: ويندوز والويب دائماً، وAPK حين يصحّ مفتاح التوقيع (ويُضاف إلى الإصدار المنشور حين يُبنى بعدُ)
   release:
@@ -303,8 +308,12 @@ jobs:
           cp dl/windows/*.exe rel/
           [ -f dl/release-apk/waha-math.apk ] && cp dl/release-apk/waha-math.apk rel/ || true
           if ls rel | grep -qi check; then echo "::error::نسخة الفحص لا تُنشر"; exit 1; fi
+          # صفحة التطبيق داخل كل حزمة: المفحوصة بايتاً بايتاً، أو مع التغيير المسموح وحده (جسر أندرويد، بيان الويب)؛ ولا يُنشر إصدارٌ إن خالفت
+          python3 platforms/tests/check_pages.py web rel/waha-math-web.zip out > pages.txt
+          if [ -f rel/waha-math.apk ]; then python3 platforms/tests/check_pages.py apk rel/waha-math.apk out >> pages.txt; fi
+          cat dl/windows/page-windows.txt >> pages.txt
           # بيان الإصدار (توصية الفحص الخصم R07): الإيداع وبصمة صفحة التطبيق نفسها وبصمة كل ملف، فيُعرف أيّ شيفرة في كل منصة
-          { echo "commit $GITHUB_SHA"; echo "app-page $(sha256sum 'dist/واحة_الرياضيات.html' | cut -d' ' -f1)  dist/واحة_الرياضيات.html";
+          { echo "commit $GITHUB_SHA"; echo "app-page $(sha256sum 'dist/واحة_الرياضيات.html' | cut -d' ' -f1)  dist/واحة_الرياضيات.html"; cat pages.txt;
             (cd rel && sha256sum *); } > manifest.tmp && mv manifest.tmp rel/MANIFEST-SHA256.txt   # خارج rel أولاً: لا يُدرج البيانُ بصمةَ نفسه فارغاً
           cat rel/MANIFEST-SHA256.txt; ls -la rel
       - name: Release (new version, or what an existing one lacks)
