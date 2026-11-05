@@ -59,7 +59,9 @@ function spotPick(svg, thing, home, spots, okKeys, opt = {}) {
     el('circle', { r: 30, fill: '#fff', 'fill-opacity': .25, stroke: css('--compass'), 'stroke-width': 3, 'stroke-dasharray': '7 6' }, g); hitPad(g, 64, 56);
     /*T*/if (TESTHOOK) g.dataset.ok = [].concat(okKeys).includes(s.k);/*/T*/ return { ...s, g }; });
   if (opt.strong) { const r = rings.find(q => [].concat(okKeys).includes(q.k)); if (r) { r.g.querySelector('circle').setAttribute('stroke-width', 6); anim(r.g, [{ opacity: .5 }, { opacity: 1 }], { duration: 600, iterations: 4, direction: 'alternate' }); } }
-  svg.appendChild(thing); thing.style.cursor = 'grab'; thing.setAttribute('role', 'button'); thing.setAttribute('aria-label', plain(opt.label || labelText('thing'))); hitPad(thing, 64, 64);
+  /* الشيء يُرفع فوق الحلقات؛ إلا ما وُضع في طبقةٍ من المسرح (الدمية داخل الصندوق): إحداثياته نسبةً إلى طبقته، فرفعُه كان يقذفه خارج المسرح
+     (في «قال المرشد» اختفت الدمية في الجولة الأخيرة بعد «داخل»، كشفه فحص الهاتف بالعرض). فيبقى في طبقته مرئياً كما رُسم، ويُسحب فيها (طبقاتٌ بإزاحةٍ لا تكبير) */
+  if (thing.parentNode === svg || !svg.contains(thing)) svg.appendChild(thing); thing.style.cursor = 'grab'; thing.setAttribute('role', 'button'); thing.setAttribute('aria-label', plain(opt.label || labelText('thing'))); hitPad(thing, 64, 64);
   const okR = rings.find(r => [].concat(okKeys).includes(r.k)) || rings[0], badR = rings.find(r => r !== okR && ![].concat(okKeys).includes(r.k)) || okR;
   AUTO({ kind: 'place', ok: () => okR.g.dispatchEvent(new MouseEvent('click', { bubbles: true })), wrong: () => badR.g.dispatchEvent(new MouseEvent('click', { bubbles: true })) });
   const off = pulse(rings.map(r => r.g)); let done = false, cleanup = null;

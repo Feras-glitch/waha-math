@@ -464,15 +464,22 @@ async def content_cases(b):
 VIS = """() => { const svg = document.querySelector('#stage svg'), st = document.querySelector('#stage'); if (!svg) return null; const r = svg.getBoundingClientRect(), c = st.getBoundingClientRect();
   const top = Math.max(r.top, c.top, 0), bot = Math.min(r.bottom, c.bottom, innerHeight);
   const out = b => b.width && (b.top >= innerHeight - 4 || b.bottom <= 4 || b.bottom > innerHeight + 2 || b.left < -2 || b.right > innerWidth + 2);
-  const live = [...svg.querySelectorAll('[role=button]')].filter(g => g.onclick || g.__route || g.__down).map(g => g.getBoundingClientRect()).filter(b => b.width && (b.top >= innerHeight - 4 || b.bottom <= 4));
+  const lv = [...svg.querySelectorAll('[role=button]')].filter(g => (g.onclick || g.__route || g.__down) && getComputedStyle(g).visibility !== 'hidden').map(g => g.getBoundingClientRect());   // وما خرج من نافذة القطار مخفيٌّ عمداً
+  const live = lv.filter(b => b.width && (b.top >= innerHeight - 4 || b.bottom <= 4));
+  const offSvg = lv.filter(b => b.width && (b.bottom <= r.top + 4 || b.top >= r.bottom - 4 || b.right <= r.left + 4 || b.left >= r.right - 4)).length;   // هدفٌ حيّ خارج المسرح كله (N-01)
   const picks = [...document.querySelectorAll('#stage .choices:not([data-done]) .pick, #go:not(.idle)')].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect()).filter(out);
   const sy = document.querySelector('#say').getBoundingClientRect(), rp = document.querySelector('#replay').getBoundingClientRect(), wh = document.querySelector('#who').getBoundingClientRect();
   const hit = (a, b) => a.width && b.width && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
-  return { visH: Math.max(0, Math.round(bot - top)), offLive: live.length, offPick: picks.length, sayW: Math.round(sy.width),
+  /* وما يُسحب وهو في طبقةٍ من المسرح (الدمية داخل الصندوق): رأسه المرسوم له، لا لحلقةٍ فوقه (N-01) */
+  const nest = [...svg.querySelectorAll('[data-thing][role=button]')].filter(g => g.parentNode !== svg && getComputedStyle(g).visibility !== 'hidden').filter(g => { const d = drawnBox(g); if (!d) return false;
+    const e = document.elementFromPoint((d.l + d.r) / 2, d.t + .15 * (d.b - d.t)); return !(e && (e === g || g.contains(e))); }).length;
+  return { visH: Math.max(0, Math.round(bot - top)), offLive: live.length, offPick: picks.length, offSvg, nest, sayW: Math.round(sy.width),
     rpOut: !!out(rp) || rp.width < 50, rpHit: hit(sy, rp) || hit(wh, rp) }; }"""
+# مسبار تعارض اللمس من auto_run نفسه (D255: مركز كل هدف وحوافّه المرسومة تذهب إليه هو)، فيُقاس بالعرض كما يُقاس بالطول
+TAPS = re.search(r'^TAPS = """(.*?)"""', open(os.path.join(HERE, 'auto_run.py'), encoding='utf-8').read(), re.S | re.M).group(1)
 async def land_cases(b):
   lessons = os.environ.get('LAND', '').split(',') if os.environ.get('LAND') else None
-  for vp in (os.environ.get('LANDVP', '640x360,740x360,844x390')).split(','):
+  for vp in (os.environ.get('LANDVP', '640x360,740x360,844x390,412x860')).split(','):   # والطول (412×860) لـ N-01 وحده
     W, H = map(int, vp.split('x')); ctx = await b.new_context(viewport={'width': W, 'height': H}, has_touch=True, is_mobile=True); pg = await ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
     await pg.goto(FAST.replace('seed=5', 'seed=7')); await pg.wait_for_timeout(250)
     await pg.evaluate("""() => { localStorage.clear(); localStorage.setItem('hp_kids', JSON.stringify([{ id: 'k1', name: 'سلمى', gender: 'f', photo: '', avatar: 'f3' }])); localStorage.setItem('hp_kid', JSON.stringify('k1'));
@@ -487,11 +494,16 @@ async def land_cases(b):
         a = st['auto']
         if a and a['n'] != last:
           last = a['n']; await pg.wait_for_timeout(120); v = await pg.evaluate(VIS)
-          if v: v.update(lesson=lid, scene=st['scene']); rows.append(v)
+          if v: v.update(lesson=lid, scene=st['scene'], taps=await pg.evaluate(TAPS)); rows.append(v)
           if st['scene'].endswith(':bag'): await pg.evaluate("() => { const b = [...document.querySelectorAll('.choices .pick')]; (b.find(x => x.dataset.k === 'screen') || b[0]).click(); }")
           else: await pg.evaluate("() => window.__auto && window.__auto.ok()")
         elif st['go']: await pg.click('#go')
         await pg.wait_for_timeout(30)
+    sv = [r for r in rows if r['offSvg'] or r['nest']]
+    check('N-01', len(rows) > 20 and not sv, '%s: لا هدف حيّ خارج المسرح كله، وما يُسحب من داخل شيءٍ رأسُه له، في %d انتظاراً (كانت الدمية في «قال المرشد» تُقذف خارج المسرح بعد «داخل»)' % (vp, len(rows)), [len(sv), sv[:4]])
+    tc = [(r['scene'], t) for r in rows for t in r['taps']]
+    check('X-03' if W > H else 'N-01', len(rows) > 20 and not tc, '%s: لا تعارض لمس في المسرح (مركز كل هدف وحوافّه المرسومة له، D255) في %d انتظاراً' % (vp, len(rows)), [len(tc), tc[:6]])
+    if H > W: check('N-01', not errs, 'لا أخطاء في الصفحة (%s)' % vp, errs[:3]); await ctx.close(); continue
     bad = [r for r in rows if r['visH'] < 120 or r['offLive'] or r['offPick']]
     check('X-03', len(rows) > 20 and not bad, 'الهاتف بالعرض %s: في %d انتظاراً الرسم ظاهر 120 بكسلاً فأكثر، ولا هدف ولا زرّ خارج الشاشة' % (vp, len(rows)), [len(bad), min([r['visH'] for r in rows] or [0]), bad[:6]])
     tb = [r for r in rows if r['sayW'] < 150 or r['rpOut'] or r['rpHit']]
@@ -513,7 +525,7 @@ async def main():
     if any(on(k) for k in ('C-05', 'C-06', 'C-07', 'C-08', 'C-10', 'C-11', 'X-09', 'C-16', 'C-12', 'M-13')): await data_cases(b)
     if on('C-13'): await script_case(b)
     if any(on(k) for k in ('M-01', 'M-02', 'M-03', 'M-04')): await content_cases(b)
-    if on('X-03'): await land_cases(b)
+    if on('X-03') or on('N-01'): await land_cases(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())
