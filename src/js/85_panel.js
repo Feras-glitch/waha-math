@@ -83,7 +83,7 @@ function openPanel() {
     <div class="card"><b>نسخة احتياطية:</b> ملف فيه أطفال هذا الجهاز وتقدّمهم وإعداداتهم وتصميماتهم، يُحفظ أو يُنقل إلى جهاز آخر. الصور وحزمة الصوت لا تدخل الملف.
       <div class="seg"><button class="pick" id="bkSave">حفظ نسخة في ملف</button><button class="pick" id="bkPick">استعادة نسخة</button></div><input type="file" id="bkIn" accept=".json,application/json" hidden><div id="bkMsg" aria-live="polite"></div></div>
     <details class="card"><summary><b>للتجربة والدعم</b></summary>
-      <div class="seg"><button class="pick" id="unlockAll">${PROG.unlockAll ? 'إعادة قفل الدروس' : 'فتح كل الدروس للتجربة'}</button><button class="pick" id="resetAll">بدء كل الدروس من جديد</button></div>
+      <div class="seg"><button class="pick" id="unlockAll">${PROG.unlockAll ? 'إعادة قفل الدروس' : 'فتح كل الدروس للتجربة'}</button><button class="pick" id="resetAll">بدء كل الدروس من جديد</button></div><p id="resetMsg" class="note" aria-live="polite"></p>
       ${LOG.errors.length ? `<p><b>سجلّ الأعطال</b> (يُرسل عند البلاغ):</p><pre class="errlog" dir="ltr">${esc(LOG.errors.slice(-8).map(e => new Date(e.t).toISOString().slice(0, 16) + ' ' + e.scene + '\n' + e.msg.split('\n').slice(0, 3).join('\n')).join('\n\n'))}</pre>` : ''}</details>
     <div class="row"><button class="go" id="closePanel">رجوع</button></div></div>`;
   $('#panel').hidden = false; $('#panel').scrollTop = 0;
@@ -102,8 +102,17 @@ function openPanel() {
   $('#slowBtn').onclick = () => { SET.slow = !SET.slow; saveSet(); openPanel(); };
   $('#segMax').querySelectorAll('.pick').forEach(b => b.onclick = () => { SET.sessionMax = +b.dataset.n; saveSet(); openPanel(); });
   $('#unlockAll').onclick = () => { if (PROG.unlockAll) delete PROG.unlockAll; else PROG.unlockAll = true; saveProg(); $('#panel').hidden = true; showHome(); };
-  $('#resetAll').onclick = () => { if ($('#resetAll').dataset.sure !== '1') { $('#resetAll').dataset.sure = '1'; $('#resetAll').textContent = 'متأكد؟ يُمحى التقدّم كله لهذا الطفل'; return; }
-    for (const k of Object.keys(PROG)) delete PROG[k]; PROG.schema = SCHEMA; PROG.srs = {}; PROG.ws = {}; PROG.streams = {}; SESSION = { n: 0, t: 0 }; store.set(kk('hp_session'), SESSION); saveProg(); LOG.attempts = []; LOG.faces = []; store.set(kk('hp_log'), LOG); store.set(designsKey(), []); IDB.clear(); $('#panel').hidden = true; showHome(); };
+  /* الصور أولاً، وما لم تُحذف لا يُمحى شيء (مراجعة الخصم C-01: أزال إصلاح WM101-R1 الدالة IDB.clear وبقي استدعاؤها هنا،
+     فكان الزرّ يمحو التقدّم ثم ينهار قبل الصور، وتبقى اللوحة مفتوحة فوق غطاء العطل) */
+  $('#resetAll').onclick = async () => { const b = $('#resetAll'), m = $('#resetMsg'); if (b.disabled) return;
+    if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يُمحى التقدّم كله لهذا الطفل، وصوره'; return; }
+    b.disabled = true; m.textContent = ''; let ph; try { ph = await IDB.dropKid(KID); } catch (e) { ph = 'fail'; }
+    b.disabled = false; b.dataset.sure = ''; b.textContent = 'بدء كل الدروس من جديد';
+    if (ph !== 'ok') { m.textContent = ph === 'tab' ? 'لم يُمحَ شيء لأن التطبيق فُتح في نافذة أخرى.' : 'تعذّر حذف صور هذا الطفل من الجهاز، فلم يُمحَ شيء. جرّبوا مرة أخرى.'; return; }
+    for (const k of Object.keys(PROG)) delete PROG[k]; PROG.schema = SCHEMA; PROG.srs = {}; PROG.ws = {}; PROG.streams = {}; SESSION = { n: 0, t: 0 }; LOG.attempts = []; LOG.faces = [];
+    const ok = [store.set(kk('hp_session'), SESSION), saveProg(), store.set(kk('hp_log'), LOG), store.set(designsKey(), [])].every(x => x !== false);
+    if (!ok) { m.textContent = 'حُذفت الصور، لكن تعذّر حفظ البدء من جديد في الجهاز كاملاً؛ قد يعود بعض التقدّم بعد إعادة فتح التطبيق.'; return; }
+    $('#panel').hidden = true; showHome(); };
   /* حزمة الصوت (D181) */
   $('#vpPick').onclick = () => $('#vpIn').click();
   $('#vpIn').onchange = async e => { const files = [...e.target.files]; e.target.value = ''; if (!files.length) return; const m = $('#vpMsg'); m.textContent = 'يستورد…';

@@ -26,6 +26,7 @@ timeout 1800 python3 test/quicktap_run.py                       > "$O/quicktap.t
 timeout 1800 python3 test/items_run.py                          > "$O/items.txt" 2>&1         || echo items >> "$O/FAILED"   # كل بند يُقيَّم أو يُراجَع صحيحاً وخطأً، والطرق المرسومة (الفحص المستقل C)
 timeout 1800 python3 test/ladder_run.py                         > "$O/ladder.txt" 2>&1        || echo ladder >> "$O/FAILED"   # الحلّ المشترك باقٍ في المحاولة الرابعة (D257(5)(و))
 timeout 2400 python3 test/audit_run.py                         > "$O/audit.txt" 2>&1         || echo audit >> "$O/FAILED"   # قبول تقرير المهندس الخصم A01–A08 (28 أكتوبر 2026)
+timeout 2400 python3 test/adv_run.py                           > "$O/adv.txt" 2>&1           || echo adv >> "$O/FAILED"     # قبول مراجعة الخصم الشاملة (5 نوفمبر 2026)
 fi
 if in_part m; then   # الطفرات على جزأين (بوابة S1-U4 بعد E: تجاوزت كلها ساعة ونصفاً): المحتوى والمولّد والكود ونصف طفرات المتصفح، ثم نصفها الثاني
 [ -f "$O/FAILED" ] && sed -i '/^mutants$/d' "$O/FAILED"

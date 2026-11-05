@@ -514,6 +514,9 @@ CODE = [
   ('نغمة بعد await psleep في السطر التالي', 'src/js/45_scenes.js', "sleep(900).then(() => SFX.soft());", "(async () => { await psleep(900);\n    SFX.soft(); })();", 'ما يُسمع بعد psleep بلا البوابة'),
   # والمثنّى المرفوع المذكّر: المضارع ليس عدداً («هَلْ يَتَسَاوَيَانِ؟» في S1-U1 د3)
   ('المثنّى بلا استثناء المضارع', 'build/lint.mjs', " && !DUAL_V.has(b)", "", 'm1.u1.d3: «معي» mat.03 فيها 2 بلا mat.facts'),
+  # مراجعة الخصم C-01 (5 نوفمبر 2026): استدعاء طريقةٍ أُزيلت يوقف البناء
+  ('C-01 استدعاء IDB.clear الذي أُزيل', 'src/js/85_panel.js', "ph = await IDB.dropKid(KID);", "ph = await IDB.clear();", 'استدعاء IDB.clear() ولا طريقة بهذا الاسم في IDB'),
+  ('C-01 استدعاء طريقة غير معرّفة في store', 'src/js/85_panel.js', "const ok = [store.set(kk('hp_session'), SESSION),", "const ok = [store.put(kk('hp_session'), SESSION),", 'استدعاء store.put() ولا طريقة بهذا الاسم في store'),
 ]
 # وكودٌ مشروع يجب أن يمرّ به فحص المحتوى (الفحص المستقل G2 (10): كانت قاعدة المفتاح تمنع «space-between» و«white-space» و«err.code» و«{ code } = d» و«it.key» و«enter» في نصّ)
 CODE_OK = [
@@ -590,6 +593,10 @@ RUNTIME = [
   ('zip المضغوط لا يُفكّ', 'else if (method === 8)', 'else if (method === 88)', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL voice: four recordings imported'),
   ('النسخة تُقبل بلا فحص نوع القيمة', "if (r === NO || bad.length) return { ok: false, why: 'badValue', at: bad[0] || k };", '', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: rejected badval.json'),
   ('اسم الطفل المستورد بعلامات الصفحة', ".replace(/[<>\"'&`]/g, '').replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ".replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: a name with markup'),
+  # مراجعة الخصم الشاملة (5 نوفمبر 2026، test/adv_run.py)
+  ('C-01 البدء من جديد يمحو قبل حذف الصور', "if (ph !== 'ok') { m.textContent = ph === 'tab'", "if (false) { m.textContent = ph === 'tab'", ['test/adv_run.py', '{F}'], {'ONLY': 'C-01'}, 'FAIL C-01 إخفاق حذف الصور'),
+  ('C-01 البدء من جديد لا يحذف الصور', "let ph; try { ph = await IDB.dropKid(KID); } catch (e) { ph = 'fail'; }", "let ph = 'ok';", ['test/adv_run.py', '{F}'], {'ONLY': 'C-01'}, 'FAIL C-01 بدء كل الدروس من جديد'),
+  ('C-01 اللوحة تبقى مفتوحة بعد البدء من جديد', "$('#panel').hidden = true; showHome(); };\n  /* حزمة الصوت", "showHome(); };\n  /* حزمة الصوت", ['test/adv_run.py', '{F}'], {'ONLY': 'C-01'}, 'FAIL C-01 بدء كل الدروس من جديد'),
   # تقرير المهندس الخصم (A01–A08): كل إصلاح تكسره طفرة فيخفق فحص قبوله
   ('A01 حكم الكبير من «نعم» واحدة', 'adultAnswers(L).every(x => x === true)', 'adultAnswers(L).some(x => x === true)', ['test/audit_run.py', '{F}'], {'ONLY': 'A01'}, 'FAIL A01'),
   ('A02 حكم الكبير يكتب إتقان التطبيق', 'PROG.adult[L.id] = a;\n', 'PROG.adult[L.id] = a; if (adultSays(L, L.adultCard.concept)) { const P = progOf(L.id); P.cs = P.cs || {}; P.cs[L.adultCard.concept] = { ...(P.cs[L.adultCard.concept] || {}), mastered: true }; }\n', ['test/audit_run.py', '{F}'], {'ONLY': 'A02'}, 'FAIL A02'),

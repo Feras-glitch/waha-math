@@ -200,6 +200,17 @@ export function lint(content, js) {
   const SWALLOW = /\b(await|const|let|return|if|else)\b\s|\w\([^)]*\);|\};|\)\s*;\s*\w/;
   const swallowIn = (txt, name) => txt.split('\n').forEach((l, i) => { const m = l.match(/\s\/\/\s(.*)$/); if (m && SWALLOW.test(m[1])) errors.push('كود بعد تعليق السطر (يُبتلع) في ' + name + ' السطر ' + (i + 1) + ': ' + m[1].slice(0, 50)); });
   swallowIn(js, 'src/js'); for (const f of readdirSync(join(ROOT, 'build')).filter(f => f.endsWith('.mjs'))) swallowIn(read(join(ROOT, 'build', f)), 'build/' + f);
+  /* استدعاء طريقةٍ لا وجود لها في كائنات الوحدة (مراجعة الخصم C-01: أزال إصلاحٌ IDB.clear وبقي استدعاؤها في لوحة الكبار، فانهار الزرّ ولم يكشفه فحص):
+     لكل كائن حرفي على مستوى الملف، كل ‎OBJ.name(‎ في الكود اسمٌ معرَّف فيه (بعمقه الأول) أو مُسنَد إليه لاحقاً (‎OBJ.name =‎) */
+  { const JS = js.split('\n').map(ln => ln.replace(/\/\*.*?\*\//g, '').replace(/\s\/\/\s.*$/, '')).join('\n');
+    for (const o of ['IDB', 'VPACK', 'store', 'SFX', 'fmt']) {
+      const m = JS.match(new RegExp('(?:const|let|var)\\s+' + o + '\\s*=\\s*\\{')); if (!m) { errors.push(`الكائن ${o} لم يُعثر على تعريفه الحرفي (فحص الاستدعاءات)`); continue; }
+      let i = m.index + m[0].length, depth = 1, top = '';
+      while (depth && i < JS.length) { const c = JS[i++]; if (depth === 1) top += c; if ('{(['.includes(c)) depth++; else if ('})]'.includes(c)) depth--; }   // المستوى الأول بفتحاته
+      const keys = new Set([...top.matchAll(/(?:^|[,{\s])(?:async\s+)?([A-Za-z_$][\w$]*)\s*(?:\(|:)/g)].map(x => x[1]));
+      for (const x of JS.matchAll(new RegExp('\\b' + o + '\\.([A-Za-z_$][\\w$]*)\\s*=(?!=)', 'g'))) keys.add(x[1]);
+      const miss = new Set(); for (const x of JS.matchAll(new RegExp('(?<![\\w$.])' + o + '\\.([A-Za-z_$][\\w$]*)\\s*\\(', 'g'))) if (!keys.has(x[1])) miss.add(x[1]);
+      for (const k of miss) errors.push(`استدعاء ${o}.${k}() ولا طريقة بهذا الاسم في ${o} (مراجعة الخصم C-01)`); } }
   const genKeys = [...LINES.keys()].filter(k => k.startsWith('gen.'));
   for (const m of code.matchAll(/'(gen\.[\w.]*)'/g)) { const id = m[1];
     if (id.endsWith('.')) { if (!genKeys.some(k => k.startsWith(id))) errors.push('بادئة جملة بلا جمل في المحتوى: ' + id); }
