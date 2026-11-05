@@ -484,9 +484,9 @@ async def land_cases(b):
     await pg.goto(FAST.replace('seed=5', 'seed=7')); await pg.wait_for_timeout(250)
     await pg.evaluate("""() => { localStorage.clear(); localStorage.setItem('hp_kids', JSON.stringify([{ id: 'k1', name: 'سلمى', gender: 'f', photo: '', avatar: 'f3' }])); localStorage.setItem('hp_kid', JSON.stringify('k1'));
       localStorage.setItem('hp_settings:k1', JSON.stringify({ sessionMax: 0, muted: true })); localStorage.setItem('hp_prog:k1', JSON.stringify({ schema: 3, unlockAll: true })); }""")
-    await reopen(pg); ids = lessons or await pg.evaluate("() => UNITS.flatMap(u => u.lessons)"); rows = []
+    await reopen(pg); ids = lessons or await pg.evaluate("() => [...UNITS.flatMap(u => u.lessons), ...UNITS.filter(u => WS[u.id]).map(u => 'ws:' + u.id)]"); rows = []   # والورش في شاشة الدرس نفسها
     for lid in ids:
-      await pg.evaluate("(id) => { showHome(); runLesson(id); }", lid); await pg.wait_for_timeout(200); last = None
+      await pg.evaluate("(id) => { showHome(); if (id.startsWith('ws:')) runWorkshop(UNITS.find(u => u.id === id.slice(3))); else runLesson(id); }", lid); await pg.wait_for_timeout(200); last = None
       for _ in range(900):
         st = await pg.evaluate(ST)
         if st['home'] and not st['covers']: break
