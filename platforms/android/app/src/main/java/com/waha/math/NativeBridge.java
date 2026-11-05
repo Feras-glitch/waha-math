@@ -114,7 +114,7 @@ public class NativeBridge {
 
     /** نتيجة الحفظ إلى الصفحة: لوحة الكبار لا تقول «حُفظ» قبلها (مراجعة الخصم C-16) */
     private void saveResult(String r) {
-        String js = "window.__saveResult&&window.__saveResult(" + JSONObject.quote(r) + ")";
+        String js = "window.wahaSaveResult&&window.wahaSaveResult(" + JSONObject.quote(r) + ")";
         web.post(() -> web.evaluateJavascript(js, null));
     }
 
