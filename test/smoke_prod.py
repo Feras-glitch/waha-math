@@ -41,11 +41,16 @@ async def main():
     await pg.click('.stop.now'); await pg.wait_for_timeout(2500)
     ok['bag question: two choices'] = await pg.evaluate("[...document.querySelectorAll('.choices .pick')].map(b => b.dataset.k).join() === 'mat,screen'")
     fonts['lesson bubble'] = await used(cdp, '#say'); fonts['lesson choices'] = await used(cdp, '.choices .pick', True)
-    await pg.evaluate("() => [...document.querySelectorAll('.choices .pick')].find(x => x.dataset.k === 'screen').click()"); await pg.wait_for_timeout(5000)
+    await pg.evaluate("() => [...document.querySelectorAll('.choices .pick')].find(x => x.dataset.k === 'screen').click()")
+    # بلا صوت عربي تُعرض الجمل بزمن قراءتها (مراجعة الخصم X-02؛ كانت تومض فيظهر المشهد بعد ثوانٍ): يُنتظر المشهد لا زمنٌ ثابت
+    try: await pg.wait_for_function("() => !!document.querySelector('#stage svg [role=button]') && document.getElementById('say').textContent.length > 10", timeout=60000)
+    except Exception: pass
     ok['first scene rendered'] = await pg.evaluate("!!document.querySelector('#stage svg [role=button]') && document.getElementById('say').textContent.length > 10")
     await pg.screenshot(path=os.path.join(HERE, 'out', 'smoke_prod_hook.png'))
     before = await pg.evaluate("document.getElementById('say').textContent")
-    await pg.evaluate("document.querySelector('#stage svg [role=button]').dispatchEvent(new MouseEvent('click', {bubbles: true}))"); await pg.wait_for_timeout(9000)
+    await pg.evaluate("() => { const g = document.querySelector('#stage svg [role=button]'); if (g) g.dispatchEvent(new MouseEvent('click', {bubbles: true})); }")
+    try: await pg.wait_for_function("(b) => document.getElementById('say').textContent !== b", arg=before, timeout=60000)
+    except Exception: pass
     ok['progressed after touch'] = await pg.evaluate("document.getElementById('say').textContent") != before
     ok['no page errors / invalid keyframes'] = not errs
     ok['no network requests (D232)'] = not net

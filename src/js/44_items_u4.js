@@ -131,7 +131,16 @@ ITEM.orderBy = {
 ITEM.sizePick = {
   make(spec) { const v = spec.ask === 'small' ? Math.min(...spec.vals) : Math.max(...spec.vals); return { ...spec, tag: 'size-' + (spec.ask || 'big'), want: spec.vals.indexOf(v) }; },
   async ask(item, mode, tries) { const svg = newStage(250, { oasis: false, ground: 0 }); const T = sizeRow(svg, { ...item, colors: item.colors || item.vals.map(() => NEUTRAL[item.color ?? 1]) });
-    if (tries >= 3) { const m = helpG(svg); T.forEach(t => el('line', { x1: 14, y1: SIZE_FLOOR - 2 * t.r, x2: 346, y2: SIZE_FLOOR - 2 * t.r, stroke: css('--compass'), 'stroke-width': 2.5, 'stroke-dasharray': '4 5' }, m)); }
+    /* الحلّ المشترك بالتطابق لا بالارتفاع (مراجعة الخصم M-03: خطٌّ عند أعلى كلٍّ جعل «الأكبر» «الأعلى»): يُرسم حدّ الأصغر فوق الأكبر في موضعه،
+       فيُرى الأكبر يزيد عليه من كل جهة. «أكبر»: حدود الباقية فوق الكبرى؛ «أصغر»: حدّ الصغرى فوق كل واحدة */
+    if (tries >= 3) { const m = helpG(svg), big = item.ask !== 'small', W = T[item.want];
+      /* حدٌّ واحد لكل شيء (لا خطوطه الداخلية)، أبيض متقطّع فوق خطٍّ داكن: يُرى على أيّ لون */
+      const ghost = (r, host) => { const cy = SIZE_FLOOR - host.r;
+        const edge = (stroke, w, dash) => { const g = (item.kind === 'box') ? sizeThingAt(m, 'box', r, host.x, cy, 'none') : el('circle', { cx: host.x, cy, r }, m);
+          [g, ...g.querySelectorAll('*')].forEach(e => { if (e.tagName === 'g') return; e.removeAttribute('filter'); e.setAttribute('fill', 'none'); e.setAttribute('stroke', stroke); e.setAttribute('stroke-width', w); if (dash) e.setAttribute('stroke-dasharray', dash); else e.removeAttribute('stroke-dasharray'); });
+          if (item.kind !== 'box') g.setAttribute('data-size', r); return g; };
+        edge(css('--ink'), 5); edge('#fff', 2.5, '6 4'); };
+      T.forEach(t => { if (t === W) return; if (big) ghost(t.r, W); else ghost(W.r, t); }); }
     say(...lineOf(tries >= 3 ? 'gen.size.together.' + (item.ask || 'big') + SIZE_G(item) : item.q), { free: true });
     const k = await tapOne(T.map(t => ({ g: t.g, k: t.k, label: t.label })), { ok: item.want, pad: 56 }); hush(); return { ans: k, ctx: { svg, T } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'sizeWrong' }; },
@@ -568,7 +577,8 @@ ITEM.framePaint = {
 ITEM.frameGlance = { ...numItem,
   make(spec) { return { ...spec, tag: 'fglance', want: spec.n }; },
   async ask(item, mode, tries) { const svg = newStage(230, { oasis: false, ground: 0 }); const F = frameAt(svg, 180, 104); F.fill(item.n, CUBE.lemon);
-    if (tries >= 3) { await S('gen.fglance.together'); const h = helpG(svg); el('path', { d: `M${F.cx + 112} 76 h-224`, stroke: css('--compass'), 'stroke-width': 3 }, h); label(h, 180, 40, labelText('fiveRow'), 15, css('--compass')); }
+    /* «الصف الأعلى خمسة» إن كان فيه خمسٌ فعلاً، وإلا فالقطع كلها في الصف الأعلى (مراجعة الخصم M-02: كانت «خمسة» تُقال وتُكتب فوق ثلاث قطع) */
+    if (tries >= 3) { const full = item.n >= 5; await S(full ? 'gen.fglance.together' : 'gen.fglance.togetherTop'); const h = helpG(svg); el('path', { d: `M${F.cx + 112} 76 h-224`, stroke: css('--compass'), 'stroke-width': 3 }, h); if (full) label(h, 180, 40, labelText('fiveRow'), 15, css('--compass')); }
     let eye = null; if (tries < 3) { await S('gen.fglance.look'); await gate(psleep(FAST ? 150 : 1400));   /* مدّة اللمحة تقف مع الدرس (الفحص المستقل G2 (4)) */ const cover = el('rect', { x: 60, y: 46, width: 240, height: 116, rx: 16, fill: css('--paper'), stroke: css('--line'), 'stroke-width': 3 }, svg);
       eye = glanceEye(svg, cover, 180, 104, mode, 'fglance'); }
     await S('gen.fglance.ask'); const np = numberPick(nearNums(item.n, 10, 1), item.n); const ans = await np.p; if (eye) eye.off(); return { ans, ctx: { svg, F, np } }; },

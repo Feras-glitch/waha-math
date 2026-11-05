@@ -20,7 +20,9 @@ const { chromium } = require('playwright');
     ok.home = await p.evaluate(() => !document.getElementById('home').hidden && document.querySelectorAll('.stop[data-lesson]').length >= 27);
     await p.click('.stop.now'); await p.waitForTimeout(2500);
     ok.bag = await p.evaluate(() => [...document.querySelectorAll('.choices .pick')].map(x => x.dataset.k).join() === 'mat,screen');
-    await p.evaluate(() => [...document.querySelectorAll('.choices .pick')].find(x => x.dataset.k === 'screen').click()); await p.waitForTimeout(5000);
+    await p.evaluate(() => [...document.querySelectorAll('.choices .pick')].find(x => x.dataset.k === 'screen').click());
+    /* بلا صوت عربي تُعرض الجمل بزمن قراءتها (مراجعة الخصم X-02، X-11): يُنتظر المشهد لا خمس ثوانٍ ثابتة */
+    await p.waitForFunction(() => !!document.querySelector('#stage svg [role=button]') && document.getElementById('say').textContent.length > 10, null, { timeout: 60000 }).catch(() => {});
     ok.scene = await p.evaluate(() => !!document.querySelector('#stage svg [role=button]') && document.getElementById('say').textContent.length > 10);
     ok.fonts = await p.evaluate(() => [...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/"/g, '')).includes('Waha Naskh'));
     ok.noErrors = errs.length === 0;

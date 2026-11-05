@@ -12,6 +12,15 @@
 #   A-08 «لوّن بطريقة جديدة» في إتقان N005: «تمّ» بلا لمسة ليس صواباً.
 #   A-10 الخيارات العددية الثلاثة: رتبة الجواب بينها (أصغر، أوسط، أكبر) قريبة من الثلث لكلٍّ.
 #   A-14/C-09 الساعة: موعد «بعد يوم» لا يحين بعد دقائق من منتصف الليل، وساعةٌ رجعت لا تُبقي الاستراحة مفروضة.
+#   C-05 ترحيل بنية أقدم والمساحة لا تسع نسخته: لا يُكتب فوق التقدّم القديم، واللوحة تقول ذلك، وحين تتّسع تُحفظ النسخة ثم الجديد.
+#   C-06 قيمة تالفة لا تُنسخ عند كل قراءة: نسخة واحدة، واسمها في التنبيه مرة واحدة.
+#   C-07/C-08 الاستعادة بالواجهة: صور طفلٍ آخر بالمعرّف نفسه تُحذف، وحذفٌ معلّق قديم لا يبقى.
+#   C-10/C-11/X-09/C-16 رسائل: طفلٌ جديد والمساحة ممتلئة، وصورة صيد في الذاكرة وحدها، وملف صيد ليس صورة، ونتيجة حفظ النسخة.
+#   C-12/C-13/M-13 حدود النسخة الاحتياطية، و«</script>» في المحتوى، ووسم «داخل/خارج».
+#   X-03 الهاتف بالعرض (640×360، 740×360، 844×390): في كل انتظارٍ لفعل الطفل في الدروس كلها، الرسم ظاهر 120 بكسلاً فأكثر، ولا هدف حيّ ولا زرّ خيار خارج الشاشة
+#       (LAND=m1.u1.d1,… لبعض الدروس؛ وLANDVP=640x360 لحجمٍ واحد).
+#   M-01..M-04 نصوص المادة: علّة المربع المائل الدوران لا «أربعة رؤوس»؛ «الصف الأعلى خمسة» لا تُقال فوق أقلّ من خمس؛ الحجم بالتطابق لا بالارتفاع؛
+#       «داخل» و«فوق» بمعناهما لا بقاعدة الرسم (H10).
 #   X-02/X-04/X-05/X-11/C-17 النطق بمحرّكات مصطنعة (بالزمن الحقيقي): محرّكٌ يخفق قبل البدء، وأصوات بلا عربي، وجسر أندرويد بلا صوت عربي،
 #       ومحرّكٌ لا يبدأ، ومحرّكٌ لا يُطلق النهاية، وتسجيلٌ تالف؛ وضابطان: صوت عربي سليم، والكتم.
 # الاستعمال: python3 test/adv_run.py [ملف نسخة الفحص]   (ONLY=C-01,X-01 لبعضها؛ يخرج بـ 1 مع أي إخفاق)
@@ -322,6 +331,174 @@ async def misc_cases(b):
   check('C-09', nb is False, 'ساعة الجهاز رجعت ساعتين بعد جلسة بلغت حدّها: جلسة جديدة، لا استراحة مفروضة', nb)
   check('A-08', not errs, 'لا أخطاء في الصفحة (التقييم: بنود متفرّقة)', errs[:3]); await ctx.close()
 
+# ---------- سلامة البيانات والرسائل ----------
+FILL = """(keep) => { let i = 0; const big = 'x'.repeat(100000); for (;;) { try { localStorage.setItem('fill' + i, big); i++; } catch (e) { break; } }
+  let j = 0; const s = 'y'.repeat(1000); for (;;) { try { localStorage.setItem('s' + j, s); j++; } catch (e) { break; } }
+  for (let k = 0; k < keep; k++) localStorage.removeItem('s' + (j - 1 - k)); return [i, j]; }"""
+FREE = "() => { for (const k of Object.keys(localStorage)) if (/^(fill|s)\\d+$/.test(k)) localStorage.removeItem(k); }"
+PNG = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAIAAABLbSncAAAAEklEQVR4nGP4z8CAFWEXHbQSACj/P8Fu7N9hAAAAAElFTkSuQmCC'
+async def data_cases(b):
+  import base64, tempfile
+  # C-05: الترحيل والمساحة ممتلئة
+  old = {'schema': 2}
+  for i in range(1, 7): old['m1.u1.d%d' % i] = {'done': True, 'at': 1, 'path': 'mat', 'note': 'z' * 900}
+  ctx, pg, errs = await fresh(b)
+  await pg.evaluate("(o) => localStorage.setItem('hp_prog:k1', JSON.stringify(o))", old); await pg.evaluate(FILL, 2); await reopen(pg)
+  r = await pg.evaluate("""() => { const saved = saveProg(); openPanel(); const w = document.querySelector('#storeWarn');
+    return { held: STORE_ISSUES.migrateHeld, prog: JSON.parse(localStorage.getItem('hp_prog:k1') || 'null'), bak: Object.keys(localStorage).filter(k => k.startsWith('hp_prog_bak:')), saved, warn: w && !w.hidden ? w.textContent : '' }; }""")
+  check('C-05', r['held'] and r['prog'] and r['prog'].get('schema') == 2 and r['saved'] is False and 'لم تتّسع' in r['warn'],
+        'ترحيل والمساحة لا تسع نسخة التقدّم القديم: لا يُكتب فوقه ولا يُحفظ جديدٌ قبل نسخته، واللوحة تقول ذلك لا «حُفظ كاملاً»', r)
+  await pg.evaluate(FREE); r2 = await pg.evaluate("() => { const saved = saveProg(); return { saved, prog: JSON.parse(localStorage.getItem('hp_prog:k1')), bak: Object.keys(localStorage).filter(k => k.startsWith('hp_prog_bak:')).map(k => JSON.parse(localStorage.getItem(k)).schema) }; }")
+  check('C-05', r2['saved'] and r2['prog'].get('schema') == 3 and r2['bak'] == [2], 'وحين تتّسع المساحة: تُحفظ نسخة التقدّم القديم أولاً ثم الجديد', r2)
+  check('C-05', not errs, 'لا أخطاء في الصفحة (الترحيل والمساحة ممتلئة)', errs[:3]); await ctx.close()
+  # C-05 (ب): إصلاحٌ جزئي والمساحة لا تسع نسخة الأصل: لا يُكتب الجزء السليم فوقه
+  ctx, pg, errs = await fresh(b)
+  log = {'attempts': [{'t': 1, 'scene': 'practice', 'ok': True, 'pad': 'q' * 1500}] * 3 + [{'t': 'bad'}], 'errors': [], 'faces': []}
+  await pg.evaluate("(o) => localStorage.setItem('hp_log:k1', JSON.stringify(o))", log); await pg.evaluate(FILL, 1); await reopen(pg)
+  r = await pg.evaluate("() => ({ raw: JSON.parse(localStorage.getItem('hp_log:k1')).attempts.length, copies: Object.keys(localStorage).filter(k => k.startsWith('hp_corrupt:hp_log')).length })")
+  check('C-05', r['raw'] == 4 or r['copies'] >= 1, 'إصلاحٌ جزئي والمساحة لا تسع نسخة الأصل: الأصل باقٍ كما هو أو له نسخة، لا يُكتب الجزء السليم فوقه بلا نسخة', r); await ctx.close()
+  # C-06: التالف يُنسخ مرة واحدة
+  ctx, pg, errs = await fresh(b, extra={'hp_designs:k1': '{bad json', 'hp_kid_del': '{"id":'})
+  for i in range(3):
+    await pg.evaluate("() => openGallery()"); await pg.wait_for_timeout(120); await pg.evaluate("() => { document.getElementById('galCover').hidden = true; }")
+  for i in range(3): await pg.evaluate("() => openPanel()"); await pg.wait_for_timeout(60)
+  r = await pg.evaluate("() => { const ks = Object.keys(localStorage).filter(k => k.startsWith('hp_corrupt:')); return { designs: ks.filter(k => k.includes('hp_designs')).length, kidDel: ks.filter(k => k.includes('hp_kid_del')).length, list: STORE_ISSUES.corrupt }; }")
+  check('C-06', r['designs'] == 1 and r['kidDel'] == 1 and len(r['list']) == len(set(r['list'])), 'قيمة تالفة تُقرأ مراراً: نسخة واحدة لكلٍّ، واسمها في التنبيه مرة واحدة', r)
+  check('C-06', not errs, 'لا أخطاء في الصفحة (التالف المقروء مراراً)', errs[:3]); await ctx.close()
+  # C-07 وC-08: الاستعادة بالواجهة
+  k2 = {'id': 'k2', 'name': 'نور', 'gender': 'f', 'photo': '', 'avatar': 'f1'}
+  ctx, pg, errs = await fresh(b, kids=[KID, k2], extra={'hp_kid_del': json.dumps({'id': 'k2', 't': 1})})
+  await pg.evaluate(PUTP, [['p1', 'k1'], ['p2', 'k2']])
+  bk = json.dumps({'app': 'waha-math', 'kind': 'backup', 'v': 1, 'schema': 3, 't': 1, 'data': {
+    'hp_kids': json.dumps([{'id': 'k1', 'name': 'كريم', 'gender': 'm', 'photo': '', 'avatar': 'm2'}, k2], ensure_ascii=False), 'hp_kid': json.dumps('k1'),
+    'hp_prog:k1': json.dumps({'schema': 3, 'm1.u1.d1': {'done': True, 'at': 1, 'path': 'mat'}})}}, ensure_ascii=False)
+  f = os.path.join(tempfile.mkdtemp(), 'b.json'); open(f, 'w', encoding='utf-8').write(bk)
+  await pg.evaluate("() => { document.getElementById('kidsCover') && (document.getElementById('kidsCover').hidden = true); openPanel(); }"); await pg.wait_for_timeout(150)
+  await pg.set_input_files('#bkIn', f); await pg.wait_for_timeout(300); await pg.click('#bkGo'); await pg.click('#bkGo'); await pg.wait_for_timeout(3500)
+  rows = await pg.evaluate(ROWS); mk = await pg.evaluate("() => localStorage.getItem('hp_kid_del')"); nm = await pg.evaluate("() => KIDS.map(k => k.name)")
+  check('C-07', rows == ['p2:k2'] and 'كريم' in nm, 'الاستعادة: صور «سلمى» (k1) تُحذف لأن k1 في النسخة طفلٌ آخر («كريم»)، وصور «نور» نفسها باقية', [rows, nm])
+  check('C-08', mk is None, 'الاستعادة: حذفٌ معلّق قديم لا يبقى بعدها', mk)
+  check('C-07', not errs, 'لا أخطاء في الصفحة (الاستعادة والصور)', errs[:3]); await ctx.close()
+  # C-10: طفلٌ جديد والمساحة ممتلئة
+  ctx, pg, errs = await fresh(b); await pg.evaluate(FILL, 0)
+  await pg.evaluate("() => { let j = 0; for (;;) { try { localStorage.setItem('t' + j, 'z'.repeat(8)); j++; } catch (e) { break; } } }")   # امتلاءٌ تام: لا يسع حتى سجلّ طفل
+  await pg.evaluate("() => openProfile(true)"); await pg.wait_for_timeout(150); await pg.click('.av[data-av="m2"]')
+  await pg.evaluate("() => { document.getElementById('pName').value = 'كريم يوسف عبد الرحمن الطويل'; }"); await pg.click('#pSave'); await pg.wait_for_timeout(900)
+  r = await pg.evaluate("() => ({ mem: KIDS.map(k => k.name), stored: JSON.parse(localStorage.getItem('hp_kids')).map(k => k.name), msg: (document.getElementById('pMsg') || {}).textContent || '' })")
+  check('C-10', len(r['mem']) == 1 and len(r['stored']) == 1 and 'تعذّر حفظ الطفل الجديد' in r['msg'], 'طفلٌ جديد والمساحة ممتلئة: لا يُعاد التحميل فيضيع بصمت، ويُقال إنه لم يُضَف', r); await ctx.close()
+  # C-11 وX-09: صيد الأشكال
+  ctx, pg, errs = await fresh(b, {'m1.u1.d1': {'done': True, 'at': 1}})
+  png = os.path.join(tempfile.mkdtemp(), 'shot.png'); open(png, 'wb').write(base64.b64decode(PNG.split(',')[1])); txt = os.path.join(tempfile.mkdtemp(), 'note.txt'); open(txt, 'w').write('not an image')
+  await pg.evaluate("() => openGallery()"); await pg.wait_for_timeout(200); await pg.evaluate("() => { window.__clips = []; document.querySelector('#huntGrid .bin').click(); }"); await pg.wait_for_timeout(150)
+  await pg.set_input_files('#huntIn', txt); await pg.wait_for_timeout(600); cl = await pg.evaluate("() => (window.__clips || []).map(x => x.replace(/_[mf]$/, ''))")
+  check('X-09', 'gen.hunt.again' in cl and 'gen.hunt.saved' not in cl, 'صيد الأشكال بملفٍ ليس صورة: يُقال «لم تصلنا صورة، جرّب مرة أخرى» لا الصمت', cl)
+  await pg.evaluate("() => { window.__p0 = IDBObjectStore.prototype.put; IDBObjectStore.prototype.put = function () { throw new DOMException('quota', 'QuotaExceededError'); }; window.__clips = []; document.querySelector('#huntGrid .bin').click(); }")
+  await pg.wait_for_timeout(150); await pg.set_input_files('#huntIn', png); await pg.wait_for_timeout(900)
+  await pg.evaluate("() => { IDBObjectStore.prototype.put = window.__p0; document.getElementById('galCover').hidden = true; openPanel(); }"); await pg.wait_for_timeout(150)
+  w = await pg.evaluate("() => { const e = document.querySelector('#storeWarn'); return e && !e.hidden ? e.textContent : ''; }")
+  check('C-11', 'لن تبقى بعد إغلاق التطبيق' in w, 'صورة صيد حُفظت في الذاكرة وحدها: لوحة الكبار تقول إنها لن تبقى بعد الإغلاق', w[:200])
+  check('X-09', not errs, 'لا أخطاء في الصفحة (صيد الأشكال)', errs[:3]); await ctx.close()
+  # C-16: نتيجة حفظ النسخة
+  ctx, pg, errs = await fresh(b); await pg.evaluate("() => openPanel()"); await pg.wait_for_timeout(150)
+  await pg.click('#bkSave'); await pg.wait_for_timeout(200); web = await pg.evaluate("() => document.getElementById('bkMsg').textContent")
+  await pg.evaluate("() => { window.AndroidBridge = { ttsState: () => 1 }; }"); await pg.click('#bkSave'); await pg.wait_for_timeout(200); a0 = await pg.evaluate("() => document.getElementById('bkMsg').textContent")
+  await pg.evaluate("() => window.wahaSaveResult && window.wahaSaveResult('cancel')"); a1 = await pg.evaluate("() => document.getElementById('bkMsg').textContent")
+  await pg.evaluate("() => window.wahaSaveResult && window.wahaSaveResult('ok')"); a2 = await pg.evaluate("() => document.getElementById('bkMsg').textContent")
+  check('C-16', not web.startswith('حُفظ') and 'اختاروا' in a0 and 'لم يُحفظ' in a1 and a2.startswith('حُفظ'), 'حفظ النسخة: لا «حُفظ» قبل أن يُحفظ؛ وفي أندرويد بعد نتيجة نافذة الحفظ (إلغاء أو حفظ)', [web, a0, a1, a2])
+  # C-12: حدود النسخة الاحتياطية
+  bk = json.dumps({'app': 'waha-math', 'kind': 'backup', 'v': 1, 'schema': 3, 't': 1, 'data': {'hp_kids': json.dumps([KID], ensure_ascii=False), 'hp_kid': json.dumps('k1'),
+    'hp_log:k1': json.dumps({'attempts': [{'t': 1, 'scene': 'practice', 'ok': True, 'pad': 'q' * 900000}], 'errors': [], 'faces': []})}}, ensure_ascii=False)
+  r = await pg.evaluate("(t) => backupCheck(t)", bk)
+  big = os.path.join(tempfile.mkdtemp(), 'big.json'); open(big, 'w').write('{' + ' ' * (11 * 1024 * 1024) + '}')
+  await pg.set_input_files('#bkIn', big); await pg.wait_for_timeout(400); m = await pg.evaluate("() => document.getElementById('bkMsg').textContent")
+  check('C-12', not r.get('ok') and 'أكبر من' in m, 'النسخة الاحتياطية: محاولةٌ بحقل 900KB تُرفض، وملفٌ أكبر من 10MB لا يُقرأ', [r.get('why'), m])
+  # M-13: داخل مقابل خارج
+  e = await pg.evaluate("() => [posErr('in', 'out').err, posErr('out', 'in').err]")
+  check('M-13', e == ['posInOut', 'posInOut'], '«داخل» مقابل «خارج»: وسم الخطأ posInOut لا posWord (سؤال السمع)', e)
+  check('C-12', not errs, 'لا أخطاء في الصفحة (رسائل النسخة)', errs[:3]); await ctx.close()
+async def script_case(b):
+  # C-13: «</script>» في نصّ المحتوى لا يكسر التطبيق (يُبنى في نسخة مؤقتة من المشروع)
+  import shutil, subprocess, tempfile
+  root = os.path.dirname(HERE); t = tempfile.mkdtemp()
+  for d in ('src', 'content', 'build', 'assets'): shutil.copytree(os.path.join(root, d), os.path.join(t, d))
+  os.makedirs(os.path.join(t, 'dist'))
+  p = os.path.join(t, 'content', 'strings', 'labels.json'); L = json.load(open(p, encoding='utf-8'))
+  L['ui']['toMap'] = L['ui']['toMap'] + '</script><script>window.__pwn=1</script>'; json.dump(L, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)   # الموضع الذي جرّبه مراجع الشيفرة
+  rc = subprocess.run(['node', 'build/build.mjs', '--dev'], cwd=t, capture_output=True, text=True)
+  if rc.returncode: check('C-13', False, '«</script>» في المحتوى: البناء', rc.stdout[-300:] + rc.stderr[-300:]); return
+  ctx = await b.new_context(); pg = await ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+  await pg.goto('file://' + os.path.join(t, 'dist', 'واحة_الرياضيات.dev.html') + '#fast'); await pg.wait_for_timeout(600)
+  r = await pg.evaluate("() => ({ content: typeof CONTENT === 'object', pwn: !!window.__pwn, label: typeof CONTENT === 'object' && JSON.stringify(CONTENT).includes('</script>') })")
+  check('C-13', r['content'] and not r['pwn'] and r['label'] and not errs, '«</script>» في نصّ المحتوى: التطبيق يُقلع، والنصّ يبقى نصّاً لا سكربتاً', [r, errs[:2]])
+  await ctx.close(); shutil.rmtree(t, ignore_errors=True)
+
+# ---------- نصوص المادة M-01..M-04 ----------
+HELP3 = """async ([spec, needle, lid]) => { window.__clips = []; if (lid) { CUR = LDATA[lid]; show('lesson'); }
+  if (spec.from) { const all = []; const walk = x => { if (Array.isArray(x)) x.forEach(walk); else if (x && typeof x === 'object') { if (x.t === spec.from && (!spec.ask || (x.ask || 'big') === spec.ask)) all.push(x); Object.values(x).forEach(walk); } }; walk(LDATA[lid]); spec = all[0]; }
+  const p = runItem(spec, 'practice', { scene: 'adv' });
+  for (let i = 0; i < 80; i++) { await new Promise(r => setTimeout(r, 60)); if ((window.__clips || []).some(c => c.includes(needle))) break;
+    const a = window.__auto; if (a && a.wrong && a.n !== window.__lastN) { window.__lastN = a.n; a.wrong(); } }
+  await new Promise(r => setTimeout(r, 150)); const svg = document.querySelector('#stage svg'); const h = svg ? [...svg.querySelectorAll('[data-help]')] : [];
+  return { clips: (window.__clips || []).map(c => c.replace(/_[mf]$/, '')), five: h.some(g => g.textContent.includes(labelText('fiveRow'))),
+    hLines: h.reduce((n, g) => n + g.querySelectorAll('line[stroke-dasharray]').length, 0), ghosts: h.reduce((n, g) => n + g.querySelectorAll('[data-size]').length, 0) }; }"""
+async def content_cases(b):
+  ctx, pg, errs = await kid_ctx(b)
+  L = await pg.evaluate("""() => { const t = (l, k) => plain(LDATA[l].lines[k] ? (Array.isArray(LDATA[l].lines[k]) ? LDATA[l].lines[k][1] : LDATA[l].lines[k]) : '');
+    return { d1: ['wk.05', 'ch.right', 'ms.recall', 'why.sqRot'].map(k => t('m1.u1.d1', k)), d4w: t('m1.u1.d4', 'ch.wrong'),
+      u3: ['ch.right', 'ms.recall'].map(k => t('m1.u3.d1', k)), in: plain(T('gen.solve.pos.in')), on: plain(T('gen.solve.pos.on')), u4: t('m1.u4.d2', 'ms.recall'),
+      size: ['gen.size.together.big', 'gen.size.together.small', 'gen.size.together.big.m', 'gen.size.together.small.m', 'gen.err.sizeWrong.01'].map(k => plain(T(k))) }; }""")
+  check('M-01', not any('رؤوس' in x and 'أدرناه' not in x for x in L['d1'][1:2]) and all('أدرناه' in x for x in L['d1']) and 'أربعة أضلاع مربع' in L['d4w'],
+        'u1/d1: المربع المائل ما زال مربعاً لأنه «أُدير فقط»، لا لأن له أربعة رؤوس (فلا تصير جملة الدرس مقدّمةَ خطأ فوضى في u1/d4)', L['d1'])
+  check('M-04', not any('الغطاء' in x or 'يلمس' in x for x in L['u3'] + [L['in'], L['on']]), '«داخل» و«فوق» بمعناهما: لا «ينغلق الغطاء» ولا «يلمس» تعريفاً (قاعدة الرسم H10 ليست تعريفاً)', [L['u3'], L['in'], L['on']])
+  check('M-03', not any('أعلى' in x for x in L['size'] + [L['u4']]), 'الحجم بالتطابق: لا «يصل أعلى» في الحلّ المشترك ولا في تلميح الخطأ ولا في تذكير الإتقان', [L['size'], L['u4']])
+  r3 = await pg.evaluate(HELP3, [{'t': 'frameGlance', 'n': 3}, 'gen.fglance.together', 'm1.u4.d6'])
+  r7 = await pg.evaluate(HELP3, [{'t': 'frameGlance', 'n': 7}, 'gen.fglance.together', 'm1.u4.d6'])
+  check('M-02', 'gen.fglance.togetherTop' in r3['clips'] and 'gen.fglance.together' not in r3['clips'] and not r3['five'], 'لمحة الإطار بثلاث قطع (الحلّ المشترك): لا «الصف الأعلى خمسة» تُقال ولا تُكتب', r3)
+  check('M-02', 'gen.fglance.together' in r7['clips'] and r7['five'], 'ضابط: بسبع قطع تُقال «الصف الأعلى خمسة» وتُكتب', r7)
+  for ask in ('big', 'small'):
+    r = await pg.evaluate(HELP3, [{'from': 'sizePick', 'ask': ask}, 'gen.size.together', 'm1.u4.d2'])   # بندٌ حقيقي من الدرس
+    check('M-03', any(c.startswith('gen.size.together') for c in r['clips']) and r['hLines'] == 0 and r['ghosts'] >= 2, 'الحلّ المشترك في «%s»: حدود مرسومة بالتطابق (لا خطٌّ عند أعلى كلٍّ)' % ('أكبر' if ask == 'big' else 'أصغر'), r)
+  check('M-02', not errs, 'لا أخطاء في الصفحة (نصوص المادة)', errs[:3]); await ctx.close()
+
+# ---------- X-03: الهاتف بالعرض ----------
+VIS = """() => { const svg = document.querySelector('#stage svg'), st = document.querySelector('#stage'); if (!svg) return null; const r = svg.getBoundingClientRect(), c = st.getBoundingClientRect();
+  const top = Math.max(r.top, c.top, 0), bot = Math.min(r.bottom, c.bottom, innerHeight);
+  const out = b => b.width && (b.top >= innerHeight - 4 || b.bottom <= 4 || b.bottom > innerHeight + 2 || b.left < -2 || b.right > innerWidth + 2);
+  const live = [...svg.querySelectorAll('[role=button]')].filter(g => g.onclick || g.__route || g.__down).map(g => g.getBoundingClientRect()).filter(b => b.width && (b.top >= innerHeight - 4 || b.bottom <= 4));
+  const picks = [...document.querySelectorAll('#stage .choices:not([data-done]) .pick, #go:not(.idle)')].filter(e => e.getClientRects().length).map(e => e.getBoundingClientRect()).filter(out);
+  const sy = document.querySelector('#say').getBoundingClientRect(), rp = document.querySelector('#replay').getBoundingClientRect(), wh = document.querySelector('#who').getBoundingClientRect();
+  const hit = (a, b) => a.width && b.width && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+  return { visH: Math.max(0, Math.round(bot - top)), offLive: live.length, offPick: picks.length, sayW: Math.round(sy.width),
+    rpOut: !!out(rp) || rp.width < 50, rpHit: hit(sy, rp) || hit(wh, rp) }; }"""
+async def land_cases(b):
+  lessons = os.environ.get('LAND', '').split(',') if os.environ.get('LAND') else None
+  for vp in (os.environ.get('LANDVP', '640x360,740x360,844x390')).split(','):
+    W, H = map(int, vp.split('x')); ctx = await b.new_context(viewport={'width': W, 'height': H}, has_touch=True, is_mobile=True); pg = await ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
+    await pg.goto(FAST.replace('seed=5', 'seed=7')); await pg.wait_for_timeout(250)
+    await pg.evaluate("""() => { localStorage.clear(); localStorage.setItem('hp_kids', JSON.stringify([{ id: 'k1', name: 'سلمى', gender: 'f', photo: '', avatar: 'f3' }])); localStorage.setItem('hp_kid', JSON.stringify('k1'));
+      localStorage.setItem('hp_settings:k1', JSON.stringify({ sessionMax: 0, muted: true })); localStorage.setItem('hp_prog:k1', JSON.stringify({ schema: 3, unlockAll: true })); }""")
+    await reopen(pg); ids = lessons or await pg.evaluate("() => UNITS.flatMap(u => u.lessons)"); rows = []
+    for lid in ids:
+      await pg.evaluate("(id) => { showHome(); runLesson(id); }", lid); await pg.wait_for_timeout(200); last = None
+      for _ in range(900):
+        st = await pg.evaluate(ST)
+        if st['home'] and not st['covers']: break
+        if 'exitCover' in st['covers']: await pg.click('#rsGo'); continue
+        a = st['auto']
+        if a and a['n'] != last:
+          last = a['n']; await pg.wait_for_timeout(120); v = await pg.evaluate(VIS)
+          if v: v.update(lesson=lid, scene=st['scene']); rows.append(v)
+          if st['scene'].endswith(':bag'): await pg.evaluate("() => { const b = [...document.querySelectorAll('.choices .pick')]; (b.find(x => x.dataset.k === 'screen') || b[0]).click(); }")
+          else: await pg.evaluate("() => window.__auto && window.__auto.ok()")
+        elif st['go']: await pg.click('#go')
+        await pg.wait_for_timeout(30)
+    bad = [r for r in rows if r['visH'] < 120 or r['offLive'] or r['offPick']]
+    check('X-03', len(rows) > 20 and not bad, 'الهاتف بالعرض %s: في %d انتظاراً الرسم ظاهر 120 بكسلاً فأكثر، ولا هدف ولا زرّ خارج الشاشة' % (vp, len(rows)), [len(bad), min([r['visH'] for r in rows] or [0]), bad[:6]])
+    tb = [r for r in rows if r['sayW'] < 150 or r['rpOut'] or r['rpHit']]
+    check('X-03', len(rows) > 20 and not tb, 'الهاتف بالعرض %s: نصّ الفقاعة عرضه 150 بكسلاً فأكثر، وزرّ «أعد» ظاهر كاملاً لا يغطّي النصّ ولا المرشد' % vp,
+          [len(tb), min([r['sayW'] for r in rows] or [0]), tb[:4]])
+    check('X-03', not errs, 'لا أخطاء في الصفحة (الهاتف بالعرض %s)' % vp, errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch()
@@ -333,6 +510,10 @@ async def main():
     if on('A-05') or on('A-06'): await report_cases(b)
     if any(on(k) for k in ('A-08', 'A-10', 'A-14', 'C-09')): await misc_cases(b)
     if any(on(k) for k in ('X-02', 'X-04', 'X-05', 'X-11', 'C-17')): await speech_cases(b)
+    if any(on(k) for k in ('C-05', 'C-06', 'C-07', 'C-08', 'C-10', 'C-11', 'X-09', 'C-16', 'C-12', 'M-13')): await data_cases(b)
+    if on('C-13'): await script_case(b)
+    if any(on(k) for k in ('M-01', 'M-02', 'M-03', 'M-04')): await content_cases(b)
+    if on('X-03'): await land_cases(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())

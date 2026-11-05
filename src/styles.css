@@ -284,5 +284,28 @@ html.lpause #confetti { visibility: hidden; }
   .choices.cards .card { font-size: 16px; line-height: 1.45; padding: 4px 8px; }
   .choices.icons .pick { font-size: 15px; line-height: 1.35; padding: 4px 6px; gap: 0; } .choices.icons .pick svg { max-width: 40px; max-height: 40px; }
 }
+/* الهاتف بالعرض (مراجعة الخصم X-03: كان الرسم المسؤول عنه يختفي تحت الخيارات في 346 من 825 انتظاراً، ولا يظهر في 58):
+   عمودان. على اليمين المرشد وفقاعته والزرّ الكبير، وعلى اليسار المسرح بارتفاع الشاشة كلّه؛ والرسم يملأ ما بقي منه فوق خياراتٍ مضغوطة
+   في صفٍّ أو صفّين (المسرح بالعرض يوافق نسبة الرسم، فلا يضيع منه شيء). والتابلت بالعرض (ارتفاعه أكبر) يبقى كما هو */
+@media (orientation: landscape) and (max-height: 520px) {
+  #lesson { max-width: none; display: grid; grid-template-columns: minmax(240px, 40%) minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas: "top stage" "talk stage" "bar stage"; gap: 6px 12px; padding-block: 6px; align-content: stretch; }
+  #lesson > .top { grid-area: top; } #lesson > .talk { grid-area: talk; align-self: start; } #lesson > .stage { grid-area: stage; min-height: 0; } #lesson > .bar { grid-area: bar; }
+  /* العمود ضيّق، فزرّ «أعد» يخرج من الفقاعة إلى تحت المرشد، ويأخذ النصّ عرض الفقاعة كلّه (كان 75 بكسلاً بين حاشيتين) */
+  #talk { grid-template-columns: var(--tap) 1fr; gap: 6px; align-items: start; min-height: calc(var(--tap) * 2 + 4px); }
+  #who { width: 49px; height: 56px; justify-self: center; }
+  #bubble { height: auto; max-height: calc(1.5em * 7 + 12px); padding: 6px 10px; overflow: visible; }
+  #say { max-height: calc(1.5em * 7); }
+  #bubble .replay { left: auto; inset-inline-start: calc(-1 * var(--tap) - 6px); top: calc(var(--tap) + 4px); transform: none; }
+  #bubble.saymore::before { inset-inline: 10px; }
+  .stage > svg { flex: 1 1 0; height: 0; min-height: 0; max-height: none; }
+  .stage > .choices { padding: 0 8px 8px; gap: 6px; }
+  .stage > .choices.cards { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+  .stage > .choices.cards .card { min-height: 52px; font-size: 16px; line-height: 1.4; padding: 4px 8px; }
+  .stage > .choices.icons { grid-template-columns: repeat(auto-fit, minmax(72px, 1fr)); }
+  .stage > .choices.icons .pick { min-height: 52px; font-size: 15px; line-height: 1.3; padding: 4px 6px; gap: 0; } .stage > .choices.icons .pick svg { max-width: 34px; max-height: 34px; }
+  .stage > .choices.nums .num { min-height: 52px; } .stage > .choices.nums .num b { font-size: 24px; }
+  .stage > .choices.rbbar .pick { min-height: 48px; } .go, .help { min-height: 52px; }
+}
 @media (max-width: 340px) { #who { display: none; } #talk { grid-template-columns: 1fr; } .cover .talk { grid-template-columns: 64px 1fr; } .cover .talk .who { width: 64px; height: 74px; }
   .avatars { gap: 8px; } .av { min-height: 62px; padding: 4px; } }   /* صور الملف الأربع في 288 بكسلاً، لا تخرج عن الشاشة */
