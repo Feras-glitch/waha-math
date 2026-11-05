@@ -49,6 +49,11 @@ SHOTS=0 DARK=1 CLIPS_OUT="$O/clips/auto_dark_ok_mat_f.json" timeout 1800 python3
 SHOTS=0 DEVICE='Galaxy S5' CLIPS_OUT="$O/clips/auto_s5_mixed_screen_m.json" timeout 1800 python3 test/auto_run.py mixed screen m > "$O/auto_s5_mixed_screen_m.txt" 2>&1   # 360×640
 SHOTS=0 DEVICE='iPhone SE' CLIPS_OUT="$O/clips/auto_se_ok_screen_f.json" timeout 1800 python3 test/auto_run.py ok screen f > "$O/auto_se_ok_screen_f.txt" 2>&1        # 320×568، أضيق شاشة
 fi
+# وكل جزءٍ منفرد يخرج بـ 1 إن سُجّل إخفاق (مراجعة الخصم C-14: كانت الأجزاء a وm وn وb تخرج بـ 0 ولو امتلأ FAILED، فلا يرى الإخفاقَ إلا الجزء c)
+if [ "$P" != all ] && [ "$P" != c ]; then
+  if [ -s "$O/FAILED" ]; then echo "إخفاق: $(tr '\n' ' ' < "$O/FAILED")"; exit 1; fi
+  exit 0
+fi
 if in_part c; then
 SHOTS=0 CLIPS_OUT="$O/clips/auto_deepall_screen_f.json" timeout 1800 python3 test/auto_run.py deepall screen f > "$O/auto_deepall_screen_f.txt" 2>&1   # كل بند بمساعدة حتى الكشف، ثم توأمه (الفحص المستقل B)
 SHOTS=0 CHAL=1 CLIPS_OUT="$O/clips/auto_deepall_chal_mat_m.json" timeout 1800 python3 test/auto_run.py deepall mat m > "$O/auto_deepall_chal_mat_m.txt" 2>&1   # وفرع «التحدّي»

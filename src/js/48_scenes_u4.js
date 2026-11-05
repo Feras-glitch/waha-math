@@ -176,7 +176,7 @@ SCENES.contractorBoard = async c => { const got = { short: 0, same: 0, long: 0 }
     const dz = dragAlign(svg, [{ o: sp, label: labelText('spanTool') }], { tap: true }); if (i === 0) say(...lineOf(c.lines[1]), { free: true }); else say(...lineOf('gen.board.next'), { free: true });
     const want = spanCat(len); let t = 0; while (true) { const ans = await choosePick(CAT_OPTS(), want); t++; logAttempt({ scene: 'explore', tag: 'ssort' + i, ok: ans === want, firstTry: t === 1 }); if (ans === want) break;
       SFX.soft(); await S(Math.abs(sp.x0 - MS_X) < .5 ? 'gen.err.ssortWrong.01' : 'gen.err.ssortAlign.01'); await dz.all(); }
-    dz.off(); got[want]++; SFX.good(); await sleep(250); }
+    dz.off(); got[want]++; SFX.good(); await sleep(FAST ? 250 : 650); }   // يبقى الجواب ظاهراً لحظة قبل البيت التالي (مراجعة الخصم X-01)
   if (c.trans) await transTap(c);
   /* الأعمدة: مربع لكل شيء، من خط واحد */
   const cats = ['short', 'same', 'long'], counts = cats.map(k => got[k]); const svg = newStage(300, { oasis: false, ground: 0 }); basketsRow(svg, cats, counts, 54);

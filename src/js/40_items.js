@@ -35,18 +35,18 @@ async function runItem0(spec, mode, ctx) {
   while (true) {
     /* المساعدة عند السكوت أو بالفانوس: «لاحظ جيداً» ثم ما يريه نوع البند، أو السؤال من جديد (الفحص المستقل B: كان «لاحظ جيداً» وحدها) */
     if (help) armIdle(async () => { await S(T.idleLine ? T.idleLine(item) : 'gen.hint.look', { aside: true }); if (T.idle) await T.idle(item); else replayLine(); }, { first: firstTime('item:' + type) });
-    const t0 = Date.now(); const r = await T.ask(item, mode, tries); disarmIdle();
+    const t0 = Date.now(); NEUTRAL_ANS = mode === 'mastery'; let r; try { r = await T.ask(item, mode, tries); } finally { NEUTRAL_ANS = false; } disarmIdle();
     const j = T.judge(item, r.ans); tries++;
     logAttempt({ scene, type, tag: item.tag, ans: r.ans, ok: j.ok, firstTry: tries === 1, err: j.ok ? null : (j.err || 'generic'), ms: Date.now() - t0 });
     if (j.ok) {
-      if (T.onOk) await T.onOk(item, r, j);
+      if (T.onOk && mode !== 'mastery') await T.onOk(item, r, j);   // الإتقان بلا إشارة صواب (A-01)
       if (mode === 'test') return { firstTry: tries === 1, ok: true, item };
       if (mode !== 'mastery') { await praiseFor(item, tries); if (j.alt && T.altLine) await S(T.altLine(item, r, j)); const why = T.reason && T.reason(item); if (why) await S(why); }
-      else { const why = T.reason && T.reason(item); if (why) await S(why); }
+      else { await S('gen.ms.noted'); return { firstTry: tries === 1, ok: true, item }; }   // الإتقان: الجملة نفسها للصواب والخطأ، بلا تعليل يكشفه (A-01)
       if (together && help && mode !== 'explore' && T.twin && !ctx.isTwin) { const tw = T.twin(item); if (tw) { await S('gen.twin.01'); await runItem(tw, mode, { scene: scene + '-twin', isTwin: true }); } }
       return { firstTry: tries === 1, ok: true, item };
     }
-    if (T.onWrong) await T.onWrong(item, r, j);
+    if (T.onWrong && mode !== 'mastery') await T.onWrong(item, r, j);
     if (mode === 'test') { if (T.mark) T.mark(item, r); return { firstTry: false, ok: false, item }; }
     if (mode === 'mastery') { await S('gen.ms.noted'); return { firstTry: false, ok: false, item }; }
     if (mode === 'review') { await T.reveal(item, r); const why = T.reason && T.reason(item); if (why) await S(why); return { firstTry: false, ok: false, item }; }

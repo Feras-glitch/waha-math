@@ -145,7 +145,7 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .choices { position: relative; display: grid; gap: 8px; padding: 0 10px 10px; }
 .pick { border: 0; background: var(--sky-bot); box-shadow: 0 4px 0 var(--line); border-radius: 18px; padding: 10px 14px; font-size: 19px; font-weight: 700; text-align: right; cursor: pointer; min-height: 60px; color: var(--ink); }
 .pick.reading { box-shadow: 0 0 0 3px var(--compass), 0 4px 0 var(--line); }
-.pick.ok { box-shadow: 0 0 0 4px var(--good), 0 4px 0 var(--line); } .pick.no { box-shadow: 0 0 0 4px var(--think), 0 4px 0 var(--line); }
+.pick.ok { box-shadow: 0 0 0 4px var(--good), 0 4px 0 var(--line); } .pick.chosen { box-shadow: 0 0 0 4px var(--muted), 0 4px 0 var(--line); } .pick.no { box-shadow: 0 0 0 4px var(--think), 0 4px 0 var(--line); }
 .pick[aria-pressed="true"] { box-shadow: 0 0 0 4px var(--compass), 0 4px 0 var(--line); }
 .choices.icons { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
 .choices.icons .pick { display: grid; justify-items: center; align-content: center; gap: 2px; text-align: center; color: var(--compass); font-size: 18px; }

@@ -60,7 +60,9 @@ export function build({ dev = false } = {}) {
   const body = read(join(SRC, 'body.html')), tail = read(join(SRC, 'tail.html'));
   const font = embedFonts(read(join(SRC, 'head.html')).replace('@@STYLES@@', read(join(SRC, 'styles.css'))), [JSON.stringify(content), modules, body, tail]);
   const js = stripHooks(modules, dev);
-  const html = font.head + body + '<script>\n\'use strict\';\nconst CONTENT = ' + JSON.stringify(content) + ';\n' + js + '</script>\n' + tail;
+  if (/<\/script/i.test(js)) throw new Error('«</script» في كود src/js يُغلق السكربت قبل نهايته (مراجعة الخصم C-13)');
+  /* «<» في نصّ المحتوى يُكتب \u003c (مراجعة الخصم C-13: «</script>» في جملةٍ كان يُغلق السكربت فيكسر التطبيق كله، ويمرّ من الفحص والبناء) */
+  const html = font.head + body + '<script>\n\'use strict\';\nconst CONTENT = ' + JSON.stringify(content).replace(/</g, '\\u003c') + ';\n' + js + '</script>\n' + tail;
   return { html, content, modules, lint: L, fonts: font.faces };
 }
 

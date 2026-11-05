@@ -246,6 +246,8 @@ export function lint(content, js) {
         if (typeof v.t === 'string' && !ITEMS.has(v.t)) bad.add(`${L.id}: نوع بند غير معروف «${v.t}» في ${path}`);
         if (v.t === 'sort' && v.mk === undefined) bad.add(`${L.id}: بند فرز بلا mk في ${path}`);
         if (v.t === 'splitMake' && new Set((v.avoid || []).map(p => Math.min(...p))).size >= Math.floor(v.n / 2) + 1) bad.add(`${L.id}: بند «لوّن بطريقة جديدة» بلا طريقة جديدة ممكنة في ${path}`);
+        /* وطريقةٌ جديدة غير «بلا تلوين» (مراجعة الخصم A-08: كان جواب إتقان N005 الوحيد 0|5، أي «تمّ» بلا لمسة، فيُحسب صواباً لطفلٍ لم يفعل شيئاً) */
+        if (v.t === 'splitMake') { const used = new Set((v.avoid || []).map(p => Math.min(...p))); if (![...Array(Math.floor(v.n / 2) + 1).keys()].some(lo => lo >= 1 && !used.has(lo))) bad.add(`${L.id}: بند «لوّن بطريقة جديدة» طريقته الجديدة الوحيدة بلا تلوين (0|${v.n}) في ${path}`); }
         if (Array.isArray(v.mk) || (typeof v.mk === 'string' && !isMaker(v.mk))) { if (!isMaker(v.mk)) bad.add(`${L.id}: مولّد غير معروف ${JSON.stringify(v.mk)} في ${path}`); }
         for (const [k, x] of Object.entries(v)) if (!(path === '' && SKIP.has(k)) && !(k === 'bag' && false)) walk(x, path + '.' + k, k);
       }

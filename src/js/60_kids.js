@@ -27,7 +27,11 @@ function openProfile(isNew) {
   $('#pSave').onclick = () => { if (!draft.avatar) return; hush();
     draft.name = $('#pName').value.replace(/[<>"'&`]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
     const rec = { name: draft.name, gender: draft.gender, photo: draft.photo || '', avatar: draft.avatar };
-    if (fresh) { const id = 'k' + Date.now().toString(36); KIDS.push({ id, ...rec }); store.set('hp_kids', KIDS); store.set('hp_kid', id);
+    /* حفظٌ لم ينجح لا يُعاد بعده التحميل (مراجعة الخصم C-10: كان الطفل الجديد يضيع بلا كلمة حين تمتلئ المساحة) */
+    const pNote = t => { let m = $('#pMsg'); if (!m) { m = document.createElement('p'); m.id = 'pMsg'; m.className = 'msg'; m.setAttribute('role', 'status'); $('#pSave').before(m); } m.textContent = t; };
+    if (fresh) { const id = 'k' + Date.now().toString(36); KIDS.push({ id, ...rec });
+      if (KID && !(store.set('hp_kids', KIDS) && store.set('hp_kid', id))) { KIDS.pop(); store.set('hp_kids', KIDS); store.set('hp_kid', KID); pNote('تعذّر حفظ الطفل الجديد في هذا الجهاز (المساحة ممتلئة أو التصفّح خاص)، فلم يُضَف.'); return; }
+      if (!KID) { store.set('hp_kids', KIDS); store.set('hp_kid', id); }
       if (KID) { location.reload(); return; }                // طفل ثانٍ: نعيد التحميل لتُقرأ مفاتيحه هو
       KID = id; PROFILE = KIDS[KIDS.length - 1]; saveProg(); saveSet(); }
     else { Object.assign(PROFILE, rec); store.set('hp_kids', KIDS); }
@@ -139,7 +143,10 @@ async function openGallery() {
       cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
       const sv = await IDB.put({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kid: KID, k: want, t: Date.now(), data: cv.toDataURL('image/jpeg', .72) });   // rng-ok: معرّف الصورة
       if (sv === 'tab') return;   /* فقد التبويب القفل أثناء الحفظ: لم تُحفظ، فلا احتفال ولا «حُفظت» (الفحص المستقل WM101-R1-02) */
-      logAttempt({ scene: 'hunt', tag: want, ok: true }); SFX.win(); confetti(); await coverSay(c, 'gen.hunt.saved'); openGallery(); }; img.src = rd.result; }; rd.readAsDataURL(f); };
+      if (sv === 'mem') { STORE_ISSUES.photoMem = true; try { onStoreIssue(); } catch (x) {} }   /* صيدٌ صحيح، والصورة في الذاكرة وحدها: يُقال للكبير إنها لن تبقى (مراجعة الخصم C-11) */
+      logAttempt({ scene: 'hunt', tag: want, ok: true }); SFX.win(); confetti(); await coverSay(c, 'gen.hunt.saved'); openGallery(); };
+      img.onerror = () => { SFX.soft(); coverSay(c, 'gen.hunt.again'); };   /* ملفٌ ليس صورة أو تالف: يُقال له لا صمت (مراجعة الخصم X-09) */
+      img.src = rd.result; }; rd.onerror = () => { SFX.soft(); coverSay(c, 'gen.hunt.again'); }; rd.readAsDataURL(f); };
   $('#galClose').onclick = () => { hush(); c.hidden = true; showHome(); };
   coverSay(c, open.length ? 'gen.gallery.intro' : 'gen.gallery.empty');
 }

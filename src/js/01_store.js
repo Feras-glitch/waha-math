@@ -3,7 +3,7 @@
    ===================================================================== */
 const SCHEMA = 3;                                        // 3: دروس الوحدتين بعد D248، والإعدادات والأرقام لكل طفل
 const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
-const STORE_ISSUES = { corrupt: [], repaired: [], writeFail: false, migrated: null, restore: null };
+const STORE_ISSUES = { corrupt: [], repaired: [], writeFail: false, migrated: null, migrateHeld: false, photoMem: false, restore: null };
 /* ---------- قفل التبويب (الفحص الخصم A06): تبويبان مفتوحان لا يكتب أحدهما فوق الآخر ----------
    التبويب الأحدث يأخذ القفل عند فتحه، والأقدم يفقده فلا يكتب بعدها شيئاً من أيّ شاشة حتى يضغط «هنا» فيعيد القراءة.
    والحارس في طبقة الكتابة نفسها: كل كتابة تسأل عن صاحب القفل، وتقارن المفتاح بآخر ما قرأه هذا التبويب أو كتبه
@@ -30,6 +30,8 @@ const store = {
   seen: {},                                               // آخر نصّ قرأه هذا التبويب أو كتبه لكل مفتاح
   raw(k) { try { const v = localStorage.getItem(k); this.seen[k] = v; return v; } catch (e) { return null; } },
   /* يعيد القيمة إن اجتازت الفحص، وإلا ينسخ القيمة التالفة إلى hp_corrupt:المفتاح:الزمن ويعيد الافتراضية */
+  /* والتالف يُنسخ مرة واحدة لكل نصّ (مراجعة الخصم C-06: كان يُنسخ عند كل قراءة فتتكاثر النسخ)، ولا يُكتب فوقه ما لم تُحفظ نسخته (C-05).
+     ولا تكتب القراءة شيئاً: الكتابة تسأل القفل، والقراءة قد تجري عند الإقلاع قبل أن يأخذه هذا التبويب */
   read(k, def, ok) { const raw = this.raw(k); if (raw == null) return def;
     let v; try { v = JSON.parse(raw); } catch (e) { this.corrupt(k, raw); return def; }
     if (ok && !ok(v)) { this.corrupt(k, raw); return def; } return v; },
@@ -37,7 +39,7 @@ const store = {
   fix(k, def, rule) { const raw = this.raw(k); if (raw == null) return def;
     let v; try { v = JSON.parse(raw); } catch (e) { this.corrupt(k, raw); return def; }
     const bad = [], r = rule(v, bad, k); if (r === NO) { this.corrupt(k, raw); return def; }
-    if (bad.length) { this.corrupt(k, raw); STORE_ISSUES.repaired.push(k); this.set(k, r); } return r; },
+    if (bad.length) { if (!STORE_ISSUES.repaired.includes(k)) STORE_ISSUES.repaired.push(k); if (this.corrupt(k, raw, true)) this.set(k, r); } return r; },
   get(k, def) { return this.read(k, def); },
   /* هل يكتب هذا التبويب؟ صاحب القفل غيره، أو تغيّر المفتاح منذ آخر قراءة له: يفقد القفل ولا يكتب */
   mine(k) { if (TAB_LOST) return false;
@@ -49,7 +51,13 @@ const store = {
   /* يعيد true إن زال المفتاح فعلاً (الفحص المستقل WM101-R1-01: كان يبتلع الإخفاق ويعيد true فيُعلَن حذف ما بقي) */
   del(k) { if (!this.mine(k)) return false; try { localStorage.removeItem(k); if (localStorage.getItem(k) !== null) throw 0; this.seen[k] = null; return true; }
     catch (e) { return false; } },                        // ومستدعيه يقول ما لم يُحذف (لا تنبيه «حفظ التقدّم» العام)
-  corrupt(k, raw) { STORE_ISSUES.corrupt.push(k); try { localStorage.setItem('hp_corrupt:' + k + ':' + Date.now(), String(raw).slice(0, 20000)); } catch (e) {} },
+  /* نسخة التالف: true إن حُفظت وقُرئت كما كُتبت (أو حُفظت من قبل بالنصّ نفسه)، وfalse إن تعذّر: فلا يُكتب فوق الأصل (مراجعة الخصم C-05).
+     ونسخةٌ واحدة لكل نصّ (C-06)؛ والنصّ كاملاً، لا مقطوعاً (نسخةٌ مقطوعة لا يُرجع منها شيء) */
+  bak: {},
+  corrupt(k, raw, partial) { const t = String(raw); if (!partial && !STORE_ISSUES.corrupt.includes(k)) STORE_ISSUES.corrupt.push(k);
+    if (this.bak[k] === t) return true;
+    try { for (let i = 0; i < localStorage.length; i++) { const x = localStorage.key(i); if (x && x.startsWith('hp_corrupt:' + k + ':') && localStorage.getItem(x) === t) { this.bak[k] = t; return true; } }
+      const ck = 'hp_corrupt:' + k + ':' + Date.now(); localStorage.setItem(ck, t); if (localStorage.getItem(ck) !== t) return false; this.bak[k] = t; return true; } catch (e) { return false; } },
 };
 let onStoreIssue = () => {};                              // تعيّنه لوحة الكبار (شريط تنبيه)
 function tabClaim() { store.set('hp_lock', { tab: TAB, t: Date.now() }); TAB_LOST = false; }
@@ -83,7 +91,7 @@ const V_STEP = { step: Pr(v => isInt(v, 0, SRS_DAYS.length)), due: Pr(v => v ===
 const V_SRS1 = vRec({ ...V_STEP, k: int0, k2: int0 }, ['step']);                       // جدول الدرس الواحد قبل الفحص الخصم A07 (يُرحَّل عند الفتح، 70_review.js)
 const V_SRS2 = vRec({ cs: vMap(CONCEPT_ID, vRec(V_STEP, ['step', 'due'])), k: vMap(CONCEPT_ID, int0), k2: int0 }, ['cs']);   // جدول لكل مفهوم
 const V_SRS = (v, bad, at) => (isObj(v) && 'cs' in v ? V_SRS2 : V_SRS1)(v, bad, at);
-const V_CS = vRec({ ok: int0, of: int0, round: Pr(v => isInt(v, 0, 9)), at: time, mastered: bool, deferred: bool, entry: bool, appOk: bool, byAdult: bool });
+const V_CS = vRec({ ok: int0, of: int0, round: Pr(v => isInt(v, 0, 9)), at: time, mastered: bool, deferred: bool, entry: bool, appOk: bool, byAdult: bool, viaReview: bool });
 const V_LESSON = vRec({ done: bool, mastered: bool, deferred: bool, entry: bool, at: time, path: Pr(v => v === 'mat' || v === 'screen'), resume: vRec({ stage: Pr(v => isInt(v, 0, 99)), t: time }, ['stage']),
   runs: int0, chose: Pr(v => v === 'normal' || v === 'challenge'), cs: vMap(CONCEPT_ID, V_CS), face: Pr(v => v === 'easy' || v === 'ok' || v === 'hard'),
   score: Pr(v => v === null || isInt(v)), of: Pr(v => v === null || isInt(v)) });
@@ -95,7 +103,9 @@ function V_PROG(o, bad, at) { if (!isObj(o)) { bad.push(at); return NO; } const 
     if (!f) { bad.push(at + '.' + k); continue; } const r = f(v, bad, at + '.' + k); if (r !== NO) out[k] = r; } return out; }
 const str = Pr(v => typeof v === 'string'), optStr = Pr(v => v == null || typeof v === 'string');
 /* المحاولة حقولها كثيرة بحسب البند: يُفحص ما تقرؤه اللوحة والتقرير، والباقي قيمٌ بسيطة أو قوائمها */
-const V_ATTEMPT = (o, bad, at) => { if (!isObj(o) || !isT(o.t) || ['scene', 'lesson', 'err', 'tag', 'type'].some(k => o[k] != null && typeof o[k] !== 'string') || ['ms', 'score', 'of'].some(k => o[k] != null && !isNum(o[k]))) { bad.push(at); return NO; } return o; };
+/* ومحاولةٌ أطول من 2000 حرف أو بأكثر من 24 حقلاً تُسقط (مراجعة الخصم C-12: حقلٌ من 900KB كان يُقبل في النسخة الاحتياطية) */
+const V_ATTEMPT = (o, bad, at) => { let big = true; try { big = Object.keys(o).length > 24 || JSON.stringify(o).length > 2000; } catch (e) {}
+  if (!isObj(o) || big || !isT(o.t) || ['scene', 'lesson', 'err', 'tag', 'type'].some(k => o[k] != null && typeof o[k] !== 'string') || ['ms', 'score', 'of'].some(k => o[k] != null && !isNum(o[k]))) { bad.push(at); return NO; } return o; };
 const V_LOG = vRec({ attempts: vArr(V_ATTEMPT, 800), errors: vArr(vRec({ t: time, msg: str, scene: str }, ['t', 'msg']), 30), faces: vArr(vRec({ t: time, lesson: str, k: str }, ['lesson']), 120) }, ['attempts']);
 const V_SESSION = vRec({ n: int0, t: time }, ['n']);
 const V_SETTINGS = vRec({ sessionMax: Pr(v => isInt(v, 0, 9)), slow: bool, digits: Pr(v => v === 'east' || v === 'west'), muted: bool, seen: vMap(/^[\w.:-]{1,40}$/, Pr(v => v === 0 || v === 1 || isBool(v))) });
@@ -161,17 +171,21 @@ const fmt = {
 /* ---------- التقدّم ---------- */
 /* PROG[درس] = {done, mastered, deferred, at, path:'mat'|'screen', resume, runs, cs:{مفهوم:{ok,of,mastered,deferred,round}}, face, score, of}
    و«badge:الوحدة»، وsrs، وws، وreview، وunlockAll، وstreams */
+let PROG_HOLD = null;   // تقدّمٌ قديم لم تُحفظ نسخته بعد: لا يُكتب فوقه (C-05)
 const PROG = (() => { const P = store.read(kk('hp_prog'), null, isObj) || {};
   /* تقدّم من بنية دروس أقدم (النسختان 1 و2 قبل D248) لا يُقرأ بمعرّفات الدروس الجديدة: d4 في الوحدة 2 صار درساً آخر.
      فتُحفظ نسخته كاملة في hp_prog_bak:الطفل:vالإصدار، ويبدأ التقدّم من جديد، ويُعلَم الكبير في لوحته */
-  if (Object.keys(P).length && P.schema !== SCHEMA) { const old = P.schema || 1;
-    try { localStorage.setItem('hp_prog_bak:' + (KID || 'k0') + ':v' + old, JSON.stringify(P)); } catch (e) {}
-    STORE_ISSUES.migrated = old; for (const k of Object.keys(P)) delete P[k]; P.schema = SCHEMA; store.set(kk('hp_prog'), P); return P; }
+  /* والنسخة تُقرأ بعد كتابتها؛ فإن تعذّرت (المساحة ممتلئة) لا يُكتب فوق التقدّم القديم: يبدأ التقدّم في الذاكرة وحدها، وتُعاد محاولة النسخة
+     مع كل حفظ، ولا يُحفظ شيء قبلها (مراجعة الخصم C-05: كان يُمحى بلا نسخة والرسالة تقول «حُفظ كاملاً») */
+  if (Object.keys(P).length && P.schema !== SCHEMA) { const old = P.schema || 1, bk = 'hp_prog_bak:' + (KID || 'k0') + ':v' + old, txt = JSON.stringify(P);
+    const keep = () => { try { if (localStorage.getItem(bk) !== txt) localStorage.setItem(bk, txt); return localStorage.getItem(bk) === txt; } catch (e) { return false; } };
+    STORE_ISSUES.migrated = old; for (const k of Object.keys(P)) delete P[k]; P.schema = SCHEMA;
+    if (keep()) store.set(kk('hp_prog'), P); else { STORE_ISSUES.migrateHeld = true; PROG_HOLD = keep; } return P; }
   /* وفي البنية الحالية: ما خالف القاعدة في داخله يُسقط وحده (الفحص الخصم A05: جدول مراجعة بقيمة null كان يعطّل لوحة الكبار) */
-  const bad = [], F = V_PROG(P, bad, kk('hp_prog')); if (bad.length) { store.corrupt(kk('hp_prog'), JSON.stringify(P)); STORE_ISSUES.repaired.push(kk('hp_prog')); store.set(kk('hp_prog'), F); }
+  const bad = [], F = V_PROG(P, bad, kk('hp_prog')); if (bad.length) { STORE_ISSUES.repaired.push(kk('hp_prog')); if (store.corrupt(kk('hp_prog'), JSON.stringify(P), true)) store.set(kk('hp_prog'), F); }
   F.schema = SCHEMA; return F; })();
 if (!isObj(PROG.srs)) PROG.srs = {}; if (!isObj(PROG.ws)) PROG.ws = {}; if (!isObj(PROG.streams)) PROG.streams = {};
-const saveProg = () => store.set(kk('hp_prog'), PROG);
+const saveProg = () => { if (PROG_HOLD) { if (!PROG_HOLD()) return false; PROG_HOLD = null; STORE_ISSUES.migrateHeld = false; } return store.set(kk('hp_prog'), PROG); };
 /* المراجعة المتباعدة لكل مفهوم (المبدأ 14، D237، الفحص الخصم A07): srsStart وsrsUpdate وجدولها في 70_review.js */
 const srsDue = r => r && r.due != null && r.due <= Date.now();
 
@@ -179,12 +193,12 @@ const srsDue = r => r && r.due != null && r.due <= Date.now();
 const LOG = store.fix(kk('hp_log'), null, V_LOG) || { attempts: [] };
 if (!Array.isArray(LOG.errors)) LOG.errors = []; if (!Array.isArray(LOG.faces)) LOG.faces = [];
 let CUR = null, SCENE_NOW = '';                          // الدرس الجاري واسم المشهد الجاري (للسجل وللفحص)
-function logAttempt(a) { LOG.attempts.push({ t: Date.now(), lesson: CUR ? CUR.id : '', seed: SEED_NOW, ...a }); if (LOG.attempts.length > 800) LOG.attempts.splice(0, LOG.attempts.length - 800); store.set(kk('hp_log'), LOG); }
+function logAttempt(a) { try { tapAnswered(); } catch (e) {} LOG.attempts.push({ t: Date.now(), lesson: CUR ? CUR.id : '', seed: SEED_NOW, ...a }); if (LOG.attempts.length > 800) LOG.attempts.splice(0, LOG.attempts.length - 800); store.set(kk('hp_log'), LOG); }
 
 /* ---------- الجلسة (المبدأ 11) ---------- */
 let SESSION = store.fix(kk('hp_session'), { n: 0, t: 0 }, V_SESSION);
 const SESSION_GAP = 30 * 60 * 1000;                      // نصف ساعة بلا دروس تبدأ جلسة جديدة
-function sessionNow() { if (Date.now() - (SESSION.t || 0) > SESSION_GAP) SESSION = { n: 0, t: 0 }; return SESSION; }
+function sessionNow() { const d = Date.now() - (SESSION.t || 0); if (d > SESSION_GAP || d < 0) SESSION = { n: 0, t: 0 }; return SESSION; }   // وساعةٌ رجعت إلى الوراء جلسةٌ جديدة (مراجعة الخصم C-09)
 function countLesson() { sessionNow(); SESSION.n++; SESSION.t = Date.now(); store.set(kk('hp_session'), SESSION); }
 function needBreak() { sessionNow(); return SET.sessionMax > 0 && SESSION.n >= SET.sessionMax; }
 

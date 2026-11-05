@@ -3,7 +3,13 @@ const CLIPS = {};
 let currentAudio = null, lastLine = null;
 /* الصوت العربي يُحفظ عند voiceschanged: على أندرويد تكون القائمة فارغة عند أول نداء */
 let VOICE = null;
-function pickVoice() { try { const v = speechSynthesis.getVoices(); VOICE = v.find(x => /^ar[-_](EG|SA)/i.test(x.lang)) || v.find(x => /^ar/i.test(x.lang)) || null; } catch (e) { VOICE = null; } }
+/* NO_TTS (مراجعة الخصم X-02، X-04، X-11): لا نطق يعمل في هذا الجهاز الآن، فتُقرأ الجمل صامتةً بزمن قراءتها من أول جملة لا بعد إخفاق كل واحدة.
+   'novoice': أصوات الجهاز معروفة وليس فيها عربي (فلا يقرأ صوتٌ إنجليزي نصاً عربياً)؛ ويعود النطق إن ظهر صوت عربي.
+   'fail': المحرّك أخفق قبل أن يبدأ (synthesis-failed وأمثاله)، أو لم يبدأ مرتين متتاليتين، أو أعلن جسر أندرويد أنه بلا صوت عربي */
+let NO_TTS = false, TTS_MISS = 0;
+function pickVoice() { try { const v = speechSynthesis.getVoices(); VOICE = v.find(x => /^ar[-_](EG|SA)/i.test(x.lang)) || v.find(x => /^ar/i.test(x.lang)) || null;
+    if (VOICE && NO_TTS === 'novoice') NO_TTS = false; else if (!VOICE && v.length && !NO_TTS) NO_TTS = 'novoice'; } catch (e) { VOICE = null; } }
+function ttsBridgeDown() { try { const B = window.AndroidBridge; return !!(B && B.ttsState && B.ttsState() === 2); } catch (e) { return false; } }
 try { pickVoice(); speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) {}
 /* زمن القراءة الصامتة (صوت مكتوم أو لا صوت عربي): مريح لطفل يتابع النص */
 const readTime = t => FAST ? 40 : Math.max(1800, plain(t).length * 95) * (SET.slow ? 1.35 : 1);
@@ -94,27 +100,39 @@ function speakNow(who, id, text, opt = {}) {
       if (!opt.cover && !opt.keep && !opt.num) { const sy = $('#say'); if (sy && sy.scrollHeight > sy.clientHeight + 8) try { sy.scrollTo({ top: sy.scrollHeight, behavior: RM ? 'auto' : 'smooth' }); } catch (e) { sy.scrollTop = sy.scrollHeight; } }   /* آخر الجملة (المطلوب غالباً) يبقى ظاهراً */
       resolve(); };
     currentFinish = finish;
-    const readSilently = () => { clearTimeout(safety); clearInterval(poll); silent = setTimeout(finish, readTime(text)); };
+    let quietRead = false;
+    const readSilently = () => { if (done || quietRead) return; quietRead = true; clearTimeout(safety); clearInterval(poll); silent = setTimeout(finish, readTime(text)); };
     if (SET.muted) { readSilently(); return; }
+    let synth; try { synth = window.speechSynthesis; } catch (e) {}
+    /* بصوت الجهاز؛ وما لا يعمل فيه النطق يُقرأ صامتاً بزمن قراءته */
+    const viaDevice = () => {
+      if (done) return; clearTimeout(safety);
+      if (!synth || FAST || NO_TTS || ttsBridgeDown()) { if (ttsBridgeDown()) NO_TTS = 'fail'; readSilently(); return; }
+      // القارئ الآلي: نقسّم إلى جمل قصيرة (كروم يقطع الكلام الطويل)، وننتظر نهاية آخرها
+      const parts = text.replace(/([.!؟?:،…])\s+/g, '$1\u0000').split('\u0000').filter(x => x.trim());
+      if (!VOICE) pickVoice(); if (NO_TTS) { readSilently(); return; }
+      const v = VOICE; let started = false, ended = 0;
+      /* بعد أن تبدأ: سقفٌ بطول النص لمحرّك لا يُطلق حدث النهاية ويبقى «يتكلّم» (X-05)، بدل 260 م.ث للحرف */
+      const begin = () => { if (started) return; started = true; TTS_MISS = 0; clearTimeout(safety); safety = setTimeout(() => { try { synth.cancel(); } catch (e) {} finish(); }, plain(text).length * (SET.slow ? 165 : 130) + 2000); };
+      parts.forEach(t => { const u = new SpeechSynthesisUtterance(t); u.lang = v ? v.lang : 'ar-SA'; if (v) u.voice = v; u.rate = SET.slow ? 0.72 : 0.9; u.pitch = who === 'chaos' ? 1.3 : 1;
+        u.onstart = begin; u.onend = () => { if (++ended === parts.length) finish(); };
+        /* إخفاقٌ قبل أن تبدأ (لا صوت يعمل): الجملة تُقرأ صامتةً بزمن قراءتها، وكذلك ما بعدها في الجلسة (X-02: كان الإخفاق يُعدّ نهايةً فتومض الجمل) */
+        u.onerror = e => { const er = e && e.error; if (!started && !done && er !== 'interrupted' && er !== 'canceled') { NO_TTS = 'fail'; try { synth.cancel(); } catch (x) {} readSilently(); return; }
+          if (++ended === parts.length) finish(); };
+        synth.speak(u); });
+      let quiet = 0;   // مراقبة: بعض الأجهزة لا تُطلق حدث النهاية
+      poll = setInterval(() => { const busy = synth.speaking || synth.pending; if (busy) { begin(); quiet = 0; } else if (started && ++quiet >= 2) finish(); }, 250);
+      setTimeout(() => { if (!started && !done && !quietRead) { try { synth.cancel(); } catch (e) {} if (++TTS_MISS >= 2) NO_TTS = 'fail'; readSilently(); } }, 3000);   // لم تبدأ: زمن القراءة، ومرتان متتاليتان: صامتاً بعدها
+      safety = setTimeout(finish, Math.max(12000, plain(text).length * 260)); };
     if (CLIPS[full]) {                                     // تسجيل بشري: ننتظر نهايته الفعلية
       const a = currentAudio = new Audio(CLIPS[full]); if (SET.slow) { a.playbackRate = .85; a.preservesPitch = true; }
-      a.onended = finish; a.onerror = readSilently;
+      let fell = false; const fall = () => { if (fell || done) return; fell = true; try { a.pause(); } catch (e) {} viaDevice(); };   // تسجيل تالف: صوت الجهاز لا الصمت (C-17)
+      a.onended = finish; a.onerror = fall;
       a.onloadedmetadata = () => { clearTimeout(safety); if (isFinite(a.duration)) safety = setTimeout(finish, a.duration * 1000 / a.playbackRate + 2500); };
       safety = setTimeout(finish, 30000);
-      a.play().catch(readSilently); return;
+      a.play().catch(fall); return;
     }
-    let synth; try { synth = window.speechSynthesis; } catch (e) {}
-    if (!synth || FAST) { readSilently(); return; }
-    // القارئ الآلي: نقسّم إلى جمل قصيرة (كروم يقطع الكلام الطويل)، وننتظر نهاية آخرها
-    const parts = text.replace(/([.!؟?:،…])\s+/g, '$1\u0000').split('\u0000').filter(x => x.trim());
-    if (!VOICE) pickVoice(); const v = VOICE; let started = false, ended = 0;
-    parts.forEach(t => { const u = new SpeechSynthesisUtterance(t); u.lang = v ? v.lang : 'ar-SA'; if (v) u.voice = v; u.rate = SET.slow ? 0.72 : 0.9; u.pitch = who === 'chaos' ? 1.3 : 1;
-      u.onstart = () => { started = true; }; u.onend = () => { if (++ended === parts.length) finish(); }; u.onerror = () => { if (++ended === parts.length) finish(); };
-      synth.speak(u); });
-    let quiet = 0;   // مراقبة: بعض الأجهزة لا تُطلق حدث النهاية
-    poll = setInterval(() => { const busy = synth.speaking || synth.pending; if (busy) { started = true; quiet = 0; } else if (started && ++quiet >= 2) finish(); }, 250);
-    setTimeout(() => { if (!started && !done) { try { synth.cancel(); } catch (e) {} readSilently(); } }, 3000);   // لا صوت عربي أو حظر: زمن القراءة
-    safety = setTimeout(finish, Math.max(12000, plain(text).length * 260));
+    viaDevice();
   });
 }
 /* هل بقي من نصّ الفقاعة ما لا يُرى؟ (الشاشة القصيرة: ثلاثة أسطر تُمرَّر) */
@@ -136,7 +154,7 @@ function tone(seq) { /*T*/if (TESTHOOK) { if (document.hidden) testBug('نغمة
   for (const [f, d] of seq) { const o = AC.createOscillator(), g = AC.createGain(); o.type = 'triangle'; o.frequency.value = f;
     g.gain.setValueAtTime(.0001, t); g.gain.exponentialRampToValueAtTime(.16, t + .02); g.gain.exponentialRampToValueAtTime(.0001, t + d);
     o.connect(g).connect(AC.destination); o.start(t); o.stop(t + d + .02); t += d * .8; } } catch (e) {} }
-const SFX = { tick: () => tone([[880, .1]]), good: () => tone([[660, .13], [990, .2]]), soft: () => tone([[330, .25]]), pop: () => tone([[520, .08], [780, .1]]),
+const SFX = { tick: () => tone([[880, .1]]), good: () => tone([[660, .13], [990, .2]]), soft: () => NEUTRAL_ANS ? tone([[880, .1]]) : tone([[330, .25]]),   /* في الإتقان نغمة الخطأ هي النقرة (مراجعة الخصم A-01: لمس جسم الشكل بدل رؤوسه كان يُسمع الخطأ) */ pop: () => tone([[520, .08], [780, .1]]),
               win: () => tone([[523, .13], [659, .13], [784, .13], [1046, .3]]),
               chaos: () => tone([[740, .09], [622, .09], [740, .09], [494, .22]]) };   // النغمة الثابتة قبل «فوضى تظنّ…» (D236)
 function buzz(ms) { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} }

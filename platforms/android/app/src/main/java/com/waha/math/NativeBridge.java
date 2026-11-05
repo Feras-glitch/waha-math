@@ -100,14 +100,22 @@ public class NativeBridge {
     void saved(Uri uri) {
         byte[] data = pendingSave;
         pendingSave = null;
-        if (uri == null || data == null) return;
+        if (uri == null || data == null) { saveResult("cancel"); return; }
         try (OutputStream o = act.getContentResolver().openOutputStream(uri, "wt")) {
             if (o == null) throw new Exception("no stream");
             o.write(data);
             toast("حُفظ الملف");
+            saveResult("ok");
         } catch (Exception e) {
             toast("تعذّر حفظ الملف");
+            saveResult("fail");
         }
+    }
+
+    /** نتيجة الحفظ إلى الصفحة: لوحة الكبار لا تقول «حُفظ» قبلها (مراجعة الخصم C-16) */
+    private void saveResult(String r) {
+        String js = "window.__saveResult&&window.__saveResult(" + JSONObject.quote(r) + ")";
+        web.post(() -> web.evaluateJavascript(js, null));
     }
 
     // ---------- الطباعة (تقرير الأسبوع) ----------

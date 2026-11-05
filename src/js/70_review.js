@@ -17,12 +17,14 @@ const srsConcepts = L => [...new Set((L.review || []).map(x => x.c).filter(Boole
 const srsRec = id => { const r = PROG.srs[id]; return isObj(r) && isObj(r.cs) ? r : null; };
 function srsStart(id) { const L = LDATA[id]; if (!L || !L.review || !L.review.length) return;
   const r = PROG.srs[id] = srsRec(id) || { cs: {}, k: {}, k2: 0 }; let ch = false;
-  for (const C of srsConcepts(L)) if (!isObj(r.cs[C])) { r.cs[C] = { step: 0, due: addDays(Date.now(), SRS_DAYS[0]) }; ch = true; }
+  for (const C of srsConcepts(L)) if (!isObj(r.cs[C])) { r.cs[C] = { step: 0, due: dueAfter(Date.now(), SRS_DAYS[0]) }; ch = true; }
   if (ch) saveProg(); }
 function srsUpdate(id, C, ok) { const r = srsRec(id); if (!r || !isObj(r.cs[C])) return; const x = r.cs[C], now = Date.now();
-  if (ok) { x.step = Math.min(SRS_DAYS.length, x.step + 1); x.due = x.step >= SRS_DAYS.length ? null : addDays(now, SRS_DAYS[x.step]); }
-  else { x.step = Math.max(0, x.step - 1); x.due = addDays(now, SRS_DAYS[x.step]); }
-  x.last = now; }
+  if (ok) { x.step = Math.min(SRS_DAYS.length, x.step + 1); x.due = x.step >= SRS_DAYS.length ? null : dueAfter(now, SRS_DAYS[x.step]); }
+  else { x.step = Math.max(0, x.step - 1); x.due = dueAfter(now, SRS_DAYS[x.step]); }
+  x.last = now;
+  /* مفهومٌ أُجّل إلى المراجعة ثم ثبت فيها لم يعد «مؤجَّلاً» (مراجعة الخصم A-06: قال التقرير «ثابت» واللوحة «مؤجَّل» في آنٍ واحد) */
+  if (ok && x.due == null) { const c = ((PROG[id] || {}).cs || {})[C]; if (isObj(c) && c.deferred && !c.mastered) { c.deferred = false; c.viaReview = true; } } }
 /* ترحيل جدول الدرس الواحد (قبل A07): لا يأخذ مفهومٌ خطواتٍ أكثر من مرات سؤاله (بنوده بالتناوب حتى k)، وما تأخّر عن خطوة الدرس يحين اليوم */
 (function srsMigrate() { let ch = false;
   for (const [id, r] of Object.entries(PROG.srs)) { if (!isObj(r) || isObj(r.cs)) continue; ch = true; const L = LDATA[id];
@@ -61,9 +63,11 @@ async function runReview() {
   const total = due.length + streams.length; setSteps(total + 1); setStep(0);
   { const svg = newStage(300, { oasisOpacity: .3 }); due.forEach(({ L }, i) => { const g = el('g', { transform: `translate(${250 - i * 70} 120) scale(1.1)` }, svg); g.innerHTML = stopIconInner(L); }); }
   await S('gen.review.intro'); await nextBtn(labelText('letsGo'));
-  const res = []; let step = 1, allOk = true;
+  let step = 1, allOk = true;
   for (const { L, C } of due) { CUR = L; setStep(step++); SCENE_NOW = 'review:' + L.id; /*T*/window.__scene = 'review:' + L.id;/*/T*/
-    const first = nextReviewItem(L, C); const r = await runItem(first, 'review', { scene: 'review' }); res.push([L.id, C, r.firstTry]); allOk = allOk && r.firstTry;
+    const first = nextReviewItem(L, C); const r = await runItem(first, 'review', { scene: 'review' }); allOk = allOk && r.firstTry;
+    srsUpdate(L.id, C, r.firstTry); saveProg();   /* يُحفظ فوراً (مراجعة الخصم A-02: كان يُكتب بعد الجلسة كلها، فمن خرج بعد الخطأ مُحي خطؤه وجاءه في إعادتها
+                                                      البندُ الآخر)؛ والخطأ يؤجّل المفهوم يوماً فأكثر فلا يعود في اليوم نفسه */
     if (!r.firstTry) { await sleep(400); const r2 = await runItem(secondReviewItem(L, first), 'review', { scene: 'review:second' });   /* المبدأ 14: بند ثانٍ فوري */
       if (!r2.firstTry) { PROG.redo = isObj(PROG.redo) ? PROG.redo : {}; PROG.redo[L.id] = Date.now(); saveProg(); } }   /* خطآن متتاليان: يُعاد الدرس (D237) */
     await sleep(400); }
@@ -72,7 +76,7 @@ async function runReview() {
     if (!st.seen) { await streamModel(s); st.seen = true; saveProg(); await nextBtn(); }       // أول لقاء: فرجار يحلّ نموذجاً
     for (const it of s.items()) { const r = await runItem(it, 'review', { scene: 'stream:' + s.id }); allOk = allOk && r.firstTry; st.n = (st.n || 0) + 1; st.ok = (st.ok || 0) + (r.firstTry ? 1 : 0); }
     st.day = dayStart(Date.now()); saveProg(); await sleep(400); }
-  for (const [id, C, ok] of res) srsUpdate(id, C, ok); saveProg();
+  saveProg();
   setStep(total + 1); SCENE_NOW = 'review:end'; /*T*/window.__scene = 'review:end';/*/T*/ newStage(300, { oasisOpacity: .9 });
   if (allOk) { SFX.win(); starBurst(); await S('gen.review.done'); } else await S('gen.review.later');
   await nextBtn(labelText('toMap')); showHome();
@@ -132,7 +136,7 @@ function signals() { const A = LOG.attempts, out = [];
 /* ---------- التقرير الأسبوعي للأهل (D204، D240: لا اتجاه بأقل من 20 بنداً) ---------- */
 async function weeklyReport() {
   const now = Date.now(), w0 = now - 7 * DAY, w1 = now - 14 * DAY; const A = LOG.attempts;
-  const score = (from, to) => { const f = A.filter(a => a.t >= from && a.t < to && a.firstTry !== undefined && isAssess(a) && a.firstTry !== null); return [f.filter(a => a.ok && a.firstTry).length, f.length]; };
+  const score = (from, to) => { const f = A.filter(a => a.t >= from && a.t < to && a.firstTry === true && isAssess(a)); return [f.filter(a => a.ok).length, f.length]; };   // المقام المحاولات الأولى وحدها (مراجعة الخصم A-05: كانت الإعادات فيه)
   const [ok1, n1] = score(w0, now + 1), [ok0, n0] = score(w1, w0); const pct = (a, b) => b ? Math.round(a / b * 100) : null;
   const all = UNITS.flatMap(u => u.lessons); const doneW = all.filter(id => (PROG[id] || {}).at >= w0);
   const errs = {}; A.filter(a => a.t >= w0 && a.err && ERRN[a.err] && a.scene !== 'ws').forEach(a => errs[a.err] = (errs[a.err] || 0) + 1);

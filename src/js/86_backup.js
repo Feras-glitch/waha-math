@@ -46,7 +46,7 @@ function backupApply(chk) {
   try { for (const k of Object.keys(old)) if (!(k in data)) { localStorage.removeItem(k); if (localStorage.getItem(k) !== null) throw new Error(k); }
     for (const k of chk.keys) { localStorage.setItem(k, data[k]); if (localStorage.getItem(k) !== data[k]) throw new Error(k); }
     localStorage.removeItem(RESTORE_LOG); if (localStorage.getItem(RESTORE_LOG) !== null) throw new Error('log'); } catch (e) { ok = false; }
-  if (ok) return { ok: true };
+  if (ok) { try { localStorage.removeItem('hp_kid_del'); } catch (e) {} return { ok: true }; }   // وحذفٌ معلّق قديم لا يبقى بعد الاستعادة (مراجعة الخصم C-08)
   try { for (const k of chk.keys) if (!(k in old)) localStorage.removeItem(k);
     for (const [k, v] of Object.entries(old)) { localStorage.setItem(k, v); if (localStorage.getItem(k) !== v) throw new Error(k); }
     for (const k of backupKeysNow()) if (!(k in old)) throw new Error(k);

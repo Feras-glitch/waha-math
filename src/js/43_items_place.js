@@ -12,7 +12,7 @@ function posErr(w, g) { const p = new Set([w, g]), has = (a, b) => p.has(a) && p
   if (/^g\d+$/.test(w)) { const a = +w.slice(1), b = +String(g).slice(1); return Math.abs(a - b) === 1 && a > 0 && b > 0 ? { ok: false, err: 'posBetween' } : { ok: false, err: 'posFrontBack' }; }   /* فراغات الطابور: g0 أمام الأول */
   if (has('in', 'on')) return { ok: false, err: 'posInOn' }; if (has('on', 'under')) return { ok: false, err: 'posOnUnder' };
   if (w === 'beside' || g === 'beside') return { ok: false, err: 'posBeside' };
-  if (['inC', 'inS', 'both', 'none'].includes(w)) return { ok: false, err: 'posInOut' };
+  if (['inC', 'inS', 'both', 'none'].includes(w) || has('in', 'out')) return { ok: false, err: 'posInOut' };   // و«داخل» مقابل «خارج» (مراجعة الخصم M-13: كان يسقط إلى posWord «ما الكلمة التي سمعتها؟»)
   if (has('front', 'behind')) return { ok: false, err: 'posFrontBack' }; if (w === 'between' || g === 'between') return { ok: false, err: 'posBetween' };
   return { ok: false, err: 'posWord' }; }
 
