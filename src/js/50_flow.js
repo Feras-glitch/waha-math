@@ -66,7 +66,7 @@ function bagIcon(svg, r, x, y, sc = 1, maxW = 112) {
   if (lbl) labelFit(svg, x, y + 72, lbl, 15, css('--muted'), maxW); }
 
 async function runLesson(id, opt = {}) {
-  if (TAB_LOST) { showTabLost(); return; }
+  if (TAB_LOST) { showTabLost(); return; } gateEnd();   // الجهاز عاد إلى الطفل: لا مهلة للبوابة (مراجعة الخصم X-06)
   const L = LDATA[id]; CUR = L; FLOW++; colorIx = 0; streak = 0; const P = progOf(id);
   const resumeAt = opt.resume && P.resume ? Math.min(P.resume.stage, L.flow.length - 1) : 0;
   if (!opt.resume) { P.runs = (P.runs || 0) + 1; }

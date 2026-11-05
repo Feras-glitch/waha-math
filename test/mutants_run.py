@@ -594,6 +594,9 @@ RUNTIME = [
   ('النسخة تُقبل بلا فحص نوع القيمة', "if (r === NO || bad.length) return { ok: false, why: 'badValue', at: bad[0] || k };", '', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: rejected badval.json'),
   ('اسم الطفل المستورد بعلامات الصفحة', ".replace(/[<>\"'&`]/g, '').replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ".replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: a name with markup'),
   # مراجعة الخصم الشاملة (5 نوفمبر 2026، test/adv_run.py)
+  ('C-02 إعادة السؤال بعد الخطأ تعود بعد «رجوع»', "if (seq === gateSeq && !P.hidden && $('#gateForm')) adultGate(then, onBack, always);", "adultGate(then, onBack, always);", ['test/adv_run.py', '{F}'], {'ONLY': 'C-02'}, 'FAIL C-02 جواب خاطئ ثم «رجوع» ثم درس'),
+  ('X-06 المهلة تبقى بعد العودة إلى الخريطة', "disarmIdle(); gateEnd(); SCENE_NOW = 'home';", "disarmIdle(); SCENE_NOW = 'home';", ['test/adv_run.py', '{F}'], {'ONLY': 'X-06'}, 'FAIL X-06 بعد أن يغلق الكبير اللوحة'),
+  ('X-06 «درس إضافي» بالمهلة بلا سؤال', "next(); }, () => {}, true); };", "next(); }, () => {}); };", ['test/adv_run.py', '{F}'], {'ONLY': 'X-06'}, 'FAIL X-06 «درس إضافي» في غطاء الاستراحة'),
   ('C-01 البدء من جديد يمحو قبل حذف الصور', "if (ph !== 'ok') { m.textContent = ph === 'tab'", "if (false) { m.textContent = ph === 'tab'", ['test/adv_run.py', '{F}'], {'ONLY': 'C-01'}, 'FAIL C-01 إخفاق حذف الصور'),
   ('C-01 البدء من جديد لا يحذف الصور', "let ph; try { ph = await IDB.dropKid(KID); } catch (e) { ph = 'fail'; }", "let ph = 'ok';", ['test/adv_run.py', '{F}'], {'ONLY': 'C-01'}, 'FAIL C-01 بدء كل الدروس من جديد'),
   ('C-01 اللوحة تبقى مفتوحة بعد البدء من جديد', "$('#panel').hidden = true; showHome(); };\n  /* حزمة الصوت", "showHome(); };\n  /* حزمة الصوت", ['test/adv_run.py', '{F}'], {'ONLY': 'C-01'}, 'FAIL C-01 بدء كل الدروس من جديد'),

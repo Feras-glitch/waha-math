@@ -94,22 +94,25 @@ function breakScene(next) { hush(); /*T*/window.__scene = 'break';/*/T*/
   [p1, p2].forEach((p, i) => anim(p, [{ transform: p.getAttribute('transform').replace(/translate\(([-\d.]+) ([-\d.]+)\)/, 'translate($1px,$2px)') + ' rotate(-2deg)' }, { transform: p.getAttribute('transform').replace(/translate\(([-\d.]+) ([-\d.]+)\)/, 'translate($1px,$2px)') + ' rotate(2deg)' }], { duration: 3000 + i * 400, iterations: 10, direction: 'alternate', easing: 'ease-in-out' }));
   coverSay(c, 'gen.session.break');
   $('#restBtn').onclick = () => { hush(); c.hidden = true; SFX.tick(); showHome(); };
-  $('#moreBtn').onclick = () => { hush(); adultGate(() => { $('#panel').hidden = true; c.hidden = true; SESSION.n = Math.max(0, SET.sessionMax - 1); store.set(kk('hp_session'), SESSION); next(); }, () => {}); };
+  $('#moreBtn').onclick = () => { hush(); adultGate(() => { $('#panel').hidden = true; c.hidden = true; SESSION.n = Math.max(0, SET.sessionMax - 1); store.set(kk('hp_session'), SESSION); next(); }, () => {}, true); };   // حدّ الجلسة يُسأل عنه دائماً (مراجعة الخصم X-06، C-21)
 }
 
 /* ---------- بوابة الكبار (المبدأ 12): سؤال ضرب لا يجيبه طفل م1، والخطأ يؤخّر المحاولة التالية ---------- */
-let gateUntil = 0, gateWait = 0;
-function adultGate(then, onBack) {
-  if (Date.now() < gateUntil) return then();
-  const a = R(6, 9), b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
+/* المهلة (عشر دقائق بلا سؤال) لا تبقى بعد أن يعود الجهاز إلى الطفل: تنتهي عند الخريطة وبدء الدرس (مراجعة الخصم X-06: كان الطفل يدخل اللوحة
+   بعد أن أغلقها الكبير)، و«درس إضافي» يُسأل دائماً (always). وإعادة السؤال بعد الخطأ لا تعود بعد «رجوع» ولا فوق غير البوابة (C-02) */
+let gateUntil = 0, gateWait = 0, gateSeq = 0;
+const gateEnd = () => { gateUntil = 0; gateSeq++; };
+function adultGate(then, onBack, always) {
+  if (!always && Date.now() < gateUntil) return then();
+  const seq = ++gateSeq; const a = R(6, 9), b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
   const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="ltr">${visualLine([DG(a), '×', DG(b), '=', '؟'])}</bdo></p>
     <form id="gateForm"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit" id="gateGo">متابعة</button></form><p id="gateMsg" class="msg" role="status"></p><button class="pick" id="gateBack">رجوع</button></div>`;
   P.hidden = false; setTimeout(() => { try { $('#gateIn').focus(); } catch (e) {} }, 50);
-  $('#gateBack').onclick = () => { P.hidden = true; if (onBack) onBack(); };
+  $('#gateBack').onclick = () => { gateSeq++; P.hidden = true; if (onBack) onBack(); };
   $('#gateForm').onsubmit = e => { e.preventDefault(); if (Date.now() < gateWait) return; const v = fmt.parse($('#gateIn').value);
     if (v === a * b) { gateUntil = Date.now() + 10 * 60 * 1000; then(); return; }
     gateWait = Date.now() + (FAST ? 50 : 3000); $('#gateMsg').textContent = 'الناتج غير صحيح. انتظروا لحظة ثم حاولوا من جديد.'; $('#gateGo').disabled = true;
-    setTimeout(() => adultGate(then, onBack), FAST ? 60 : 3000); };
+    setTimeout(() => { if (seq === gateSeq && !P.hidden && $('#gateForm')) adultGate(then, onBack, always); }, FAST ? 60 : 3000); };
 }
 
 /* ---------- إشارات للمشرف (D203): يخمّن، وعالق، ومتوقف ---------- */

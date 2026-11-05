@@ -1,6 +1,8 @@
 # فحوص قبول مراجعة الخصم الشاملة (5 نوفمبر 2026، على main 69049f1؛ المعرّفات من التقرير: C- للشيفرة، وX- للتفاعل، وA- للتقييم، وM- للمادة).
 # كل فحص يخفق على 69049f1 ما لم يُذكر أنه ضابط (لا أخطاء في الصفحة، والسليم يبقى سليماً).
 #   C-01 «بدء كل الدروس من جديد»: لا ينهار، ويحذف صور الطفل وحده قبل أي محو، وإخفاق حذفها لا يمحو شيئاً، وبعد إعادة الفتح كذلك.
+#   C-02 بوابة الكبار بالزمن الحقيقي: جوابٌ خاطئ ثم «رجوع» ثم درس: لا تعود البوابة فوقه؛ وبلا «رجوع» يُعاد السؤال (ضابط).
+#   X-06 مهلة البوابة لا تبقى بعد أن يعود الجهاز إلى الطفل: بعد إغلاق اللوحة يُسأل من جديد، و«درس إضافي» يُسأل دائماً.
 # الاستعمال: python3 test/adv_run.py [ملف نسخة الفحص]   (ONLY=C-01,X-01 لبعضها؛ يخرج بـ 1 مع أي إخفاق)
 import asyncio, json, os, sys
 from playwright.async_api import async_playwright
@@ -69,10 +71,46 @@ async def c01_cases(b):
   check('C-01', not s3['mem'] and r3 == ['pc:k2'] and not s3['panel'] and not s3['crash'], 'وبعد زوال الإخفاق: المحاولة من اللوحة نفسها تكمل البدء من جديد', [s3, r3])
   check('C-01', not errs, 'لا أخطاء في الصفحة (إخفاق حذف الصور)', errs[:3]); await ctx.close()
 
+# ---------- C-02 وX-06: بوابة الكبار ----------
+GATE = "() => ({ panel: !document.querySelector('#panel').hidden, gate: !!document.querySelector('#gateForm') && !document.querySelector('#panel').hidden, scene: window.__scene || '' })"
+async def gate_wrong(pg):
+  await pg.click('#adultBtn'); await pg.wait_for_timeout(200); a = await pg.evaluate("() => window.__gateAns")
+  await pg.fill('#gateIn', str(a + 1)); await pg.click('#gateGo'); await pg.wait_for_timeout(150)
+async def gate_pass(pg):   # وإن لم تسأل البوابة (المهلة قائمة) فاللوحة مفتوحة أصلاً
+  await pg.click('#adultBtn'); await pg.wait_for_timeout(200)
+  if not await pg.evaluate("() => !!document.querySelector('#gateIn')"): return
+  a = await pg.evaluate("() => window.__gateAns"); await pg.fill('#gateIn', str(a)); await pg.click('#gateGo'); await pg.wait_for_timeout(300)
+async def back_or_close(pg):
+  await pg.evaluate("() => { const b = document.querySelector('#gateBack') || document.querySelector('#closePanel'); if (b) b.click(); }"); await pg.wait_for_timeout(300)
+async def gate_cases(b):
+  # C-02 (أ): خطأ ثم «رجوع» ثم بدء درس: بعد أربع ثوانٍ لا بوابة فوق الدرس
+  ctx, pg, errs = await fresh(b, url=REAL); await gate_wrong(pg); await pg.click('#gateBack'); await pg.wait_for_timeout(100)
+  await pg.evaluate("() => { runLesson('m1.u1.d1'); }"); await pg.wait_for_timeout(4000); st = await pg.evaluate(GATE)
+  check('C-02', not st['gate'] and not st['panel'] and st['scene'].startswith('m1.u1.d1'), 'جواب خاطئ ثم «رجوع» ثم درس: لا تعود البوابة وحدها فوق الدرس', st)
+  check('C-02', not errs, 'لا أخطاء في الصفحة (البوابة بعد «رجوع»)', errs[:3]); await ctx.close()
+  # C-02 (ب) ضابط: خطأ بلا «رجوع»: يُعاد السؤال بعد المهلة، والزرّ يعمل
+  ctx, pg, errs = await fresh(b, url=REAL); await gate_wrong(pg); q1 = await pg.evaluate("() => window.__gateAns"); await pg.wait_for_timeout(3600)
+  st = await pg.evaluate(GATE); en = await pg.evaluate("() => !!document.querySelector('#gateGo') && !document.querySelector('#gateGo').disabled")
+  check('C-02', st['gate'] and en, 'ضابط: جواب خاطئ بلا «رجوع»: يُعاد السؤال بعد المهلة وزرّ المتابعة يعمل', [st, en, q1])
+  await ctx.close()
+  # X-06 (أ): بعد أن يجتاز الكبير البوابة ثم يغلق اللوحة، «للكبار» يسأل من جديد
+  ctx, pg, errs = await fresh(b, url=REAL); await gate_pass(pg); st0 = await pg.evaluate(GATE)
+  await pg.click('#closePanel'); await pg.wait_for_timeout(300); await pg.click('#adultBtn'); await pg.wait_for_timeout(300); st = await pg.evaluate(GATE)
+  check('X-06', st0['panel'] and not st0['gate'] and st['gate'], 'بعد أن يغلق الكبير اللوحة: «للكبار» يسأل من جديد (لا مهلة بعد أن عاد الجهاز إلى الطفل)', [st0, st])
+  # X-06 (ب): «درس إضافي» في غطاء الاستراحة يُسأل دائماً، ولو كانت المهلة قائمة
+  await back_or_close(pg); await gate_pass(pg); await pg.evaluate("() => { document.querySelector('#panel').hidden = true; window.__more = 0; breakScene(() => { window.__more = 1; }); }")
+  await pg.wait_for_timeout(300); await pg.click('#moreBtn'); await pg.wait_for_timeout(300); st = await pg.evaluate(GATE); more = await pg.evaluate("() => window.__more")
+  check('X-06', st['gate'] and more == 0, '«درس إضافي» في غطاء الاستراحة يسأل الكبير دائماً، ولا يبدأ الدرس بلا جواب', [st, more])
+  if st['gate']: a = await pg.evaluate("() => window.__gateAns"); await pg.fill('#gateIn', str(a)); await pg.click('#gateGo'); await pg.wait_for_timeout(300)
+  more = await pg.evaluate("() => window.__more")
+  check('X-06', more == 1, 'ضابط: وبالجواب الصحيح يبدأ الدرس الإضافي', more)
+  check('X-06', not errs, 'لا أخطاء في الصفحة (مهلة البوابة)', errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch()
     if on('C-01'): await c01_cases(b)
+    if on('C-02') or on('X-06'): await gate_cases(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())

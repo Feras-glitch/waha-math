@@ -53,7 +53,7 @@ function oasisBanner() { const n = UNITS.filter(U => PROG['badge:' + U.id]).leng
   springAt(b, 180, 128, 1, { stones: n, total: 6, level: n / 6 }); return b.outerHTML; }
 
 function showHome() {
-  show('home'); CUR = null; FLOW++; disarmIdle(); SCENE_NOW = 'home'; /*T*/window.__scene = 'home';/*/T*/
+  show('home'); CUR = null; FLOW++; disarmIdle(); gateEnd(); SCENE_NOW = 'home'; /*T*/window.__scene = 'home';/*/T*/
   $('#helloName').textContent = PROFILE && PROFILE.name ? G(labelText('hello')).replace('{name}', PROFILE.name) : '';
   const me = $('#meBtn'); me.innerHTML = ''; me.appendChild(avatarNode(PROFILE)); $('#galBtn').innerHTML = ICON.gallery; renderDigits(); renderMute();
   $('#oasisBanner').innerHTML = oasisBanner();
