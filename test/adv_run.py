@@ -432,7 +432,7 @@ async def data_cases(b):
 async def script_case(b):
   # C-13: «</script>» في نصّ المحتوى لا يكسر التطبيق (يُبنى في نسخة مؤقتة من المشروع)
   import shutil, subprocess, tempfile
-  root = os.path.dirname(HERE); t = tempfile.mkdtemp()
+  root = os.environ.get('SRC_ROOT') or os.path.dirname(HERE); t = tempfile.mkdtemp()   # SRC_ROOT: مصدر نسخةٍ أخرى (69049f1) ليُفحص بناؤها هي، لا بناء هذا الفرع
   for d in ('src', 'content', 'build', 'assets'): shutil.copytree(os.path.join(root, d), os.path.join(t, d))
   os.makedirs(os.path.join(t, 'dist'))
   p = os.path.join(t, 'content', 'strings', 'labels.json'); L = json.load(open(p, encoding='utf-8'))
