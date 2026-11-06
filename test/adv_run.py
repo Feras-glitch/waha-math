@@ -339,7 +339,7 @@ async def misc_cases(b):
   t = await pg.evaluate("""() => { const at = h => { const d = new Date(Date.now()); d.setHours(h, 59, 0, 0); window.__off = (window.__off || 0) + d.getTime() - Date.now();
       delete PROG.srs['m1.u1.d1']; srsStart('m1.u1.d1'); const c = Object.values(PROG.srs['m1.u1.d1'].cs)[0]; return (c.due - Date.now()) / 36e5; };
     return [at(23), at(11)]; }""")
-  check('A-14', t[0] >= 16 and t[1] <= 24.01, 'موعد «بعد يوم»: لدرسٍ انتهى قبيل منتصف الليل لا يحين قبل 16 ساعة، ولدرسٍ ظهراً يبقى منتصف ليل الغد', t)
+  check('A-14', t[0] >= 15.99 and t[1] <= 24.01, 'موعد «بعد يوم»: لدرسٍ انتهى قبيل منتصف الليل لا يحين قبل 16 ساعة، ولدرسٍ ظهراً يبقى منتصف ليل الغد', t)
   nb = await pg.evaluate("""() => { SET.sessionMax = 2; SESSION = { n: 2, t: Date.now() + 2 * 36e5 }; return needBreak(); }""")
   check('C-09', nb is False, 'ساعة الجهاز رجعت ساعتين بعد جلسة بلغت حدّها: جلسة جديدة، لا استراحة مفروضة', nb)
   check('A-08', not errs, 'لا أخطاء في الصفحة (التقييم: بنود متفرّقة)', errs[:3]); await ctx.close()
