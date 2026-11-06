@@ -263,14 +263,24 @@ async def kid_ctx(b, prog=None):
     localStorage.setItem('hp_settings:k1', JSON.stringify({ sessionMax: 0, muted: true })); localStorage.setItem('hp_prog:k1', JSON.stringify(Object.assign({ schema: 3, unlockAll: true }, p || {}))); }""", prog or {})
   await reopen(pg); return ctx, pg, errs
 async def setday(pg, d): await pg.evaluate("(d) => { window.__off = d * 864e5 + 10 * 3600e3; sessionStorage.setItem('__off', String(window.__off)); showHome(); }", d); await pg.wait_for_timeout(150)
-SIG0 = """() => { if (window.__sfxW) return; window.__sfxW = 1; window.__sfx = []; window.__sigs = []; window.__mark = null;
+SIG0 = """() => { if (window.__sfxW) return; window.__sfxW = 1; window.__sfx = []; window.__sigs = []; window.__mark = null; window.__mk = [];
   const t0 = tone; tone = function (notes) { window.__sfx.push(JSON.stringify(notes)); return t0.apply(this, arguments); };   /* ما يُسمع فعلاً، لا اسم النغمة */
-  const la = logAttempt; logAttempt = function (a) { if (window.__itemMode === 'mastery') window.__mark = [(window.__clips || []).length, window.__sfx.length]; return la.apply(this, arguments); };   /* البداية لحظة تسجيل الجواب */
+  /* وما يُعلَّم في المسرح ولو لحظة (الخيار المختار يُزال بعد 30 م.ث في الوضع السريع): كل صنف ok/no/shut يُضاف أثناء النافذة */
+  const hit = e => e.nodeType === 1 && (e.matches('.ok, .no, .shut') || e.querySelector('.ok, .no, .shut'));
+  new MutationObserver(ms => { if (!window.__mark) return; for (const m of ms) { if (m.type === 'attributes' && hit(m.target)) window.__mk.push(m.target.className.baseVal ?? m.target.className);
+    if (m.type === 'childList') for (const n of m.addedNodes) if (hit(n)) window.__mk.push('+' + (n.className && (n.className.baseVal ?? n.className))); } })
+    .observe(document.querySelector('#stage'), { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+  /* البداية أول لمسةٍ (أو نقرة) بعد أن يُسلَّح السائق للجواب، فما بدأ قبلها من قراءة الخيارات جزءٌ من السؤال؛ وإن أجاب البند بلا حدث لمس فلحظة تسجيل الجواب */
+  const arm = () => { if (!window.__armed) return; window.__armed = false; window.__mark = [(window.__clips || []).length, window.__sfx.length]; window.__mk = []; };
+  document.addEventListener('pointerdown', arm, true); document.addEventListener('click', arm, true);
+  const la = logAttempt; logAttempt = function (a) { if (window.__itemMode === 'mastery') arm(); return la.apply(this, arguments); };
   const orig = runItem; runItem = async function (spec, mode, ctx) { const r = await orig(spec, mode, ctx);   /* والنهاية نهاية البند وحده، لا الجولة */
     if (mode === 'mastery' && window.__mark) { const [c, f] = window.__mark; window.__mark = null;
       window.__sigs.push({ ok: !!r.firstTry, clips: (window.__clips || []).slice(c).map(x => x.replace(/_[mf]$/, '')), sfx: window.__sfx.slice(f).filter(x => x !== '[[880,0.1]]'),
-        marks: document.querySelectorAll('#stage .pick.ok, #stage .pick.no, #stage .no, #stage .shut').length }); }
+        marks: window.__mk.length, mk: window.__mk.slice(0, 4) }); window.__mk = []; }
     return r; }; }"""
+# البداية لحظة الفعل نفسه (أول لمسة)، لا تسجيل الجواب: النغمة والعلامة تقعان عند اللمس قبل logAttempt (كانت طفرتا الخيار المختار ونغمة الخطأ داخل السؤال تنجوان)
+MARK0 = "() => { window.__armed = true; window.__mark = null; }"
 async def a01_cases(b):
   for lid in ('m1.u1.d1', 'm1.u2.d2', 'm1.u3.d3', 'm1.u4.d2'):
     ctx, pg, errs = await kid_ctx(b); flip = {}
@@ -278,7 +288,7 @@ async def a01_cases(b):
       if st['mode'] != 'mastery': return 'ok'
       flip[st['spec']] = flip.get(st['spec'], 0) + 1; return 'wrong' if flip[st['spec']] == 1 and len(flip) % 2 else 'ok'
     async def on_ans(pg, st, how, when):
-      if when == 'before' and st['mode'] == 'mastery': await pg.evaluate(SIG0)
+      if when == 'before' and st['mode'] == 'mastery': await pg.evaluate(SIG0); await pg.evaluate(MARK0)
     r = await drive(pg, '.stop[data-lesson="%s"]' % lid, pol, on_answer=on_ans); sigs = await pg.evaluate("() => window.__sigs || []")
     key = lambda x: json.dumps({k: x[k] for k in ('clips', 'sfx', 'marks')}, ensure_ascii=False, sort_keys=True)
     ok_s = {key(x) for x in sigs if x['ok']}; bad_s = {key(x) for x in sigs if not x['ok']}
