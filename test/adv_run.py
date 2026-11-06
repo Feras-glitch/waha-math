@@ -335,7 +335,10 @@ async def misc_cases(b):
   check('A-08', not r['none'] and not r['all'] and r['some'] and min(r['some']) >= 1, '«لوّن بطريقة جديدة» في إتقان N005: «تمّ» بلا لمسة ليس صواباً، والجواب يحتاج تلويناً', r)
   d = await pg.evaluate("""() => { const c = [0, 0, 0]; let n = 0; for (let i = 0; i < 9000; i++) { const a = 1 + (i % 9); const o = nearNums(a, 10).slice().sort((x, y) => x - y); c[o.indexOf(a)]++; n++; } return c.map(x => x / n); }""")
   check('A-10', all(0.25 <= x <= 0.42 for x in d), 'الخيارات العددية الثلاثة (الأجوبة 1–9): رتبة الجواب أصغرها وأوسطها وأكبرها قريبة من الثلث لكلٍّ', d)
-  t = await pg.evaluate("""() => { const d = new Date(); d.setHours(23, 59, 0, 0); const t0 = d.getTime(); return [(dueAfter(t0, 1) - t0) / 36e5, (dueAfter(t0 - 12 * 36e5, 1) - (t0 - 12 * 36e5)) / 36e5]; }""")
+  # بالسلوك لا بالدالة: الساعة عند 23:59 ثم 11:59، ويبدأ جدول مراجعة درسٍ (srsStart كما بعد الإتقان)، ويُقرأ موعده (على 69049f1 لا dueAfter)
+  t = await pg.evaluate("""() => { const at = h => { const d = new Date(Date.now()); d.setHours(h, 59, 0, 0); window.__off = (window.__off || 0) + d.getTime() - Date.now();
+      delete PROG.srs['m1.u1.d1']; srsStart('m1.u1.d1'); const c = Object.values(PROG.srs['m1.u1.d1'].cs)[0]; return (c.due - Date.now()) / 36e5; };
+    return [at(23), at(11)]; }""")
   check('A-14', t[0] >= 16 and t[1] <= 24.01, 'موعد «بعد يوم»: لدرسٍ انتهى قبيل منتصف الليل لا يحين قبل 16 ساعة، ولدرسٍ ظهراً يبقى منتصف ليل الغد', t)
   nb = await pg.evaluate("""() => { SET.sessionMax = 2; SESSION = { n: 2, t: Date.now() + 2 * 36e5 }; return needBreak(); }""")
   check('C-09', nb is False, 'ساعة الجهاز رجعت ساعتين بعد جلسة بلغت حدّها: جلسة جديدة، لا استراحة مفروضة', nb)
