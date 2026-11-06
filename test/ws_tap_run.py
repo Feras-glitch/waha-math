@@ -31,7 +31,8 @@ async def run(p, dev, rev, kbd=False):   # kbd: القطعة والتدوير و
   await pg.reload(); await pg.wait_for_timeout(500)
   puzzles = await pg.evaluate("() => UNITS.filter(u => WS[u.id]).flatMap(u => WS[u.id].puzzles.map((P, i) => [u.id, i, P.id]))")
   for uid, i, pid in puzzles:
-    await pg.evaluate("([uid, i]) => { hush(); CUR = null; FLOW++; show('lesson'); window.__wsDone = false; wsPuzzle(UNITS.find(u => u.id === uid), WS[uid].puzzles[i], i).then(() => { window.__wsDone = true; }); }", [uid, i])
+    # ترتيب الرفّ بمولّدٍ مبذورٍ لكل لغز (كان يتبع ما استهلكته المؤقّتات قبله، فتنجو طفرة «قطع الرفّ تتنازع اللمس» أحياناً: مراجعة الخصم، نوفمبر 2026)
+    await pg.evaluate("([uid, i]) => { hush(); CUR = null; FLOW++; reseed('wstap|' + uid + '|' + i); show('lesson'); window.__wsDone = false; wsPuzzle(UNITS.find(u => u.id === uid), WS[uid].puzzles[i], i).then(() => { window.__wsDone = true; }); }", [uid, i])
     await pg.wait_for_timeout(400)
     stolen = []
     for i0, x, y in await pg.evaluate(EDGES):
