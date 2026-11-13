@@ -564,7 +564,7 @@ def lint(root):
 MUT_PART = os.environ.get('MUT_PART', '')
 tmp = tempfile.mkdtemp(prefix='mut_')
 try:
-  if MUT_PART == '2' or os.environ.get('MUT_ONLY'): raise StopIteration   # MUT_ONLY: طفرة متصفح واحدة بالاسم، لإعادة فحص طفرةٍ عُدّلت
+  if MUT_PART == '2' or os.environ.get('MUT_ONLY') or os.environ.get('MUT_SLICE'): raise StopIteration   # MUT_ONLY: طفرة متصفح واحدة بالاسم، لإعادة فحص طفرةٍ عُدّلت
   root = os.path.join(tmp, 'engine')
   shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns('dist', 'out', '.git', '__pycache__', 'node_modules'))
   rc, out = lint(root); check(rc == 0, 'الأصل: فحص المحتوى بلا مخالفة')
@@ -957,7 +957,8 @@ for name, old, new, args, env, want in RUNTIME:
   if COUNTS(src, old, new) != [1] * len(PAIRS(old, new)): check(False, 'طفرة «%s»: النصّ يظهر %s مرة في نسخة الفحص (يجب مرة واحدة)' % (name, COUNTS(src, old, new)))
 if os.environ.get('CONTENT_ONLY'): print('FAILS:', len(FAILS)); shutil.rmtree(tmpd, ignore_errors=True); sys.exit(1 if FAILS else 0)
 K = (len(RUNTIME) + 1) // 2; RT = RUNTIME[:K] if MUT_PART == '1' else RUNTIME[K:] if MUT_PART == '2' else RUNTIME
-if os.environ.get('MUT_ONLY'): RT = [x for x in RUNTIME if any(x[0].startswith(q) for q in os.environ['MUT_ONLY'].split(','))]   # اسمٌ أو بدايات أسماء مفصولة بفواصل
+if os.environ.get('MUT_ONLY'): RT = [x for x in RUNTIME if any(x[0].startswith(q) for q in os.environ['MUT_ONLY'].split(','))]
+if os.environ.get('MUT_SLICE'): _a, _b = (int(v) for v in os.environ['MUT_SLICE'].split(':')); RT = RUNTIME[_a:_b]   # MUT_SLICE=من:إلى: شريحة من طفرات المتصفح بترتيبها، فيُستأنف التشغيل الطويل بعد انقطاع (طفرات المحتوى في جزئها وحدها)   # اسمٌ أو بدايات أسماء مفصولة بفواصل
 try:
   for args, env in dict.fromkeys((tuple(x[3]), tuple(sorted(x[4].items()))) for x in RT):   # كل فحص مرة على الأصل
     rc, out = run(list(args), dict(env), DEV); check(rc == 0, 'الأصل: %s %s ينجح %s' % (args[0], dict(env), ([l.strip()[:400] for l in out.splitlines() if l.startswith('FAIL ') or 'Traceback' in l or 'Error' in l][:6] if rc else []) + out.strip().splitlines()[-1:]))   # وسطور الإخفاق نفسها (كان السطر الأخير وحده «FAILS: 1»، فلم يُعرف ما أخفق)
