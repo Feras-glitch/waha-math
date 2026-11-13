@@ -27,7 +27,7 @@ LIB = """const seen = e => { if (e.matches('rect.hit')) return false; const cs =
   const far = (r, x, y) => Math.hypot(Math.max(r.l - x, 0, x - r.r), Math.max(r.t - y, 0, y - r.b));"""
 START = """(K) => { FLOW++; hush(); const L = LDATA['m1.u2.d6']; CUR = L; show('lesson'); const c = L.flow.find(s => s.scene === 'roomHunt'); if (!c) return 'no roomHunt';
   reseed('layout_run|' + K); window.__lr = 'run'; SCENES.roomHunt({ ...c, after: null, rounds: Array.from({ length: K }, (_, i) => c.rounds[i % c.rounds.length]) }).then(() => window.__lr = 'done', e => window.__lr = 'ERR ' + e.message); return 'ok'; }"""
-MEASURE = """(first) => { %s const svg = document.querySelector('#stage svg'); const tg = [...svg.querySelectorAll('[role=button]')].filter(g => g.onclick); const name = g => g.getAttribute('aria-label') || '?'; const out = [];
+MEASURE = """(first) => { %s try { DOWNAT = null; } catch (e) {} const svg = document.querySelector('#stage svg');   /* المركز المفحوص بلا pointerdown: لا يوجّهه tapRoute بموضع لمسةٍ سابقة (كما في auto_run TAPS) */ const tg = [...svg.querySelectorAll('[role=button]')].filter(g => g.onclick); const name = g => g.getAttribute('aria-label') || '?'; const out = [];
   const B = tg.map(box); tg.forEach((g, i) => { const r = B[i]; const x = (r.l + r.r) / 2, y = (r.t + r.b) / 2; const e = document.elementFromPoint(x, y); const o = tg.find(t => t === e || t.contains(e));
     if (o && o !== g && !(o.__route && o.__route(x, y) === g)) out.push(['stolen', name(g), name(o)]);
     const P = pads(g); if (P.length !== 1) out.push(['pads', name(g), P.length]);
