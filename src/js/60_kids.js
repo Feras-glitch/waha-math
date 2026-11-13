@@ -14,13 +14,19 @@ function openProfile(isNew) {
     <div class="avatars" id="avList" role="group" aria-label="${esc(labelText('pickAvatar'))}"></div>
     <details class="adult"${fresh ? '' : ' open'}><summary>${esc(labelText('adultName'))}</summary>
       <input type="text" id="pName" maxlength="24" autocomplete="off" aria-label="${esc(labelText('nameField'))}">
-      <div class="photo-row"><span class="round" id="photoPrev"></span><label class="pick" for="pPhoto">${esc(labelText('photoOpt'))}</label><input type="file" id="pPhoto" accept="image/*" hidden></div></details>
+      <div class="photo-row"><span class="round" id="photoPrev"></span><label class="pick" for="pPhoto">${esc(labelText('photoOpt'))}</label><input type="file" id="pPhoto" accept="image/*" hidden></div>
+      <div class="seg gender" id="pGender" role="group" aria-label="${esc(plain(labelText('genderAsk')))}"><span>${esc(labelText('genderAsk'))}</span><button class="pick" data-g="m">${esc(labelText('genderM'))}</button><button class="pick" data-g="f">${esc(labelText('genderF'))}</button></div></details>
     <button class="go big" id="pSave" disabled aria-label="${esc(labelText('done'))}">${ICON.check}</button></div>`);
   $('#pName').value = draft.name || '';
+  // صيغة الخطاب اختيارٌ صريح للكبار (المراجعة بعين جديدة U1): كانت تُؤخذ من الصورة وحدها، فبنتٌ تختار صورة ولدٍ تُخاطَب بالمذكّر في الدروس كلها.
+  // الصورة تقترحها ما لم يخترها الكبار في هذه الشاشة. (تعليق سطري لا كتلي: نوع ملف الصورة في القالب فوقه يبدأ في فحص المحتوى تعليقاً كتلياً يُغلقه أول ختام تعليق بعده)
+  let gSet = false;
   const list = $('#avList'); const mark = () => { list.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.av === draft.avatar)); $('#pSave').disabled = !draft.avatar;
+    $('#pGender').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', (gSet || !!draft.avatar) && b.dataset.g === draft.gender));
     const pv = $('#photoPrev'); pv.innerHTML = ''; pv.appendChild(avatarNode(draft.avatar ? draft : { gender: 'm', photo: draft.photo })); };
   Object.keys(AVATARS).forEach(k => { const b = document.createElement('button'); b.className = 'av'; b.dataset.av = k; b.innerHTML = kidSVG(AVATARS[k].g, k); b.setAttribute('aria-label', labelText('avatar') + ' ' + DG(Object.keys(AVATARS).indexOf(k) + 1));
-    b.onclick = () => { draft.avatar = k; draft.gender = AVATARS[k].g; mark(); SFX.tick(); PROFILE_TMP(draft); coverSay(c, 'gen.first.picked'); }; list.appendChild(b); });
+    b.onclick = () => { draft.avatar = k; if (!gSet) draft.gender = AVATARS[k].g; mark(); SFX.tick(); PROFILE_TMP(draft); coverSay(c, 'gen.first.picked'); }; list.appendChild(b); });
+  $('#pGender').querySelectorAll('button').forEach(b => b.onclick = () => { gSet = true; draft.gender = b.dataset.g; if (PROFILE && !KIDS.includes(PROFILE)) PROFILE.gender = draft.gender; mark(); SFX.tick(); });
   $('#pPhoto').onchange = e => { const f = e.target.files && e.target.files[0]; if (!f) return; const rd = new FileReader();
     rd.onload = () => { const img = new Image(); img.onload = () => { const Z = 160, cv = document.createElement('canvas'); cv.width = cv.height = Z; const x = cv.getContext('2d'); const k = Math.max(Z / img.width, Z / img.height);
       x.drawImage(img, (Z - img.width * k) / 2, (Z - img.height * k) / 2, img.width * k, img.height * k); draft.photo = cv.toDataURL('image/jpeg', .8); mark(); }; img.src = rd.result; }; rd.readAsDataURL(f); };

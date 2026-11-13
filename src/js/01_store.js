@@ -105,8 +105,9 @@ const str = Pr(v => typeof v === 'string'), optStr = Pr(v => v == null || typeof
 /* المحاولة حقولها كثيرة بحسب البند: يُفحص ما تقرؤه اللوحة والتقرير، والباقي قيمٌ بسيطة أو قوائمها */
 /* ومحاولةٌ أطول من 2000 حرف أو بأكثر من 24 حقلاً تُسقط (مراجعة الخصم C-12: حقلٌ من 900KB كان يُقبل في النسخة الاحتياطية) */
 const V_ATTEMPT = (o, bad, at) => { let big = true; try { big = Object.keys(o).length > 24 || JSON.stringify(o).length > 2000; } catch (e) {}
-  if (!isObj(o) || big || !isT(o.t) || ['scene', 'lesson', 'err', 'tag', 'type'].some(k => o[k] != null && typeof o[k] !== 'string') || ['ms', 'score', 'of'].some(k => o[k] != null && !isNum(o[k]))) { bad.push(at); return NO; } return o; };
-const V_LOG = vRec({ attempts: vArr(V_ATTEMPT, 800), errors: vArr(vRec({ t: time, msg: str, scene: str }, ['t', 'msg']), 30), faces: vArr(vRec({ t: time, lesson: str, k: str }, ['lesson']), 120) }, ['attempts']);
+  if (!isObj(o) || big || !isT(o.t) || ['scene', 'lesson', 'err', 'tag', 'type', 'mode', 'spec', 'v'].some(k => o[k] != null && typeof o[k] !== 'string') || ['ms', 'score', 'of', 'try'].some(k => o[k] != null && !isNum(o[k]))) { bad.push(at); return NO; } return o; };
+const LOG_MAX = 2000, LOG_CHARS = 300000;                 // حدّا سجلّ المحاولات لكل طفل (مراجعة الخصم A-07؛ انظر logAttempt)
+const V_LOG = vRec({ attempts: vArr(V_ATTEMPT, LOG_MAX), errors: vArr(vRec({ t: time, msg: str, scene: str }, ['t', 'msg']), 30), faces: vArr(vRec({ t: time, lesson: str, k: str }, ['lesson']), 120) }, ['attempts']);
 const V_SESSION = vRec({ n: int0, t: time }, ['n']);
 const V_SETTINGS = vRec({ sessionMax: Pr(v => isInt(v, 0, 9)), slow: bool, digits: Pr(v => v === 'east' || v === 'west'), muted: bool, seen: vMap(/^[\w.:-]{1,40}$/, Pr(v => v === 0 || v === 1 || isBool(v))) });
 /* قطعة التصميم: نوعها من أنواع الورشة (يُعرف عند فتح المعرض؛ وقبل ذلك اسمٌ بحروف لاتينية) */
@@ -193,7 +194,15 @@ const srsDue = r => r && r.due != null && r.due <= Date.now();
 const LOG = store.fix(kk('hp_log'), null, V_LOG) || { attempts: [] };
 if (!Array.isArray(LOG.errors)) LOG.errors = []; if (!Array.isArray(LOG.faces)) LOG.faces = [];
 let CUR = null, SCENE_NOW = '';                          // الدرس الجاري واسم المشهد الجاري (للسجل وللفحص)
-function logAttempt(a) { try { tapAnswered(); } catch (e) {} LOG.attempts.push({ t: Date.now(), lesson: CUR ? CUR.id : '', seed: SEED_NOW, ...a }); if (LOG.attempts.length > 800) LOG.attempts.splice(0, LOG.attempts.length - 800); store.set(kk('hp_log'), LOG); }
+/* السجلّ يكفي لتحليل التجربة (مراجعة الخصم A-07): المحاولة تحمل بصمة البناء (v)، وبند الإجابة يزيد رقم محاولته (try: 1 بلا مساعدة، 2 بعد التلميح،
+   3 بعد حركة الأداة، 4 فما بعد بعد الحلّ المشترك) ووضعه (mode) ومواصفته (spec، حتى 200 حرف). وأقصاه LOG_MAX محاولة (كان 800: يُمحى أوّله في أسبوع تجربة)،
+   وLOG_CHARS حرفاً معاً: لكل طفلٍ سجلّه، فلا تملأ سجلّات الإخوة مساحة الجهاز. وإن أبت الكتابة يُحذف الربع الأقدم وتُعاد مرةً واحدة */
+function logAttempt(a) { try { tapAnswered(); } catch (e) {} LOG.attempts.push({ t: Date.now(), lesson: CUR ? CUR.id : '', seed: SEED_NOW, v: BUILD_ID, ...a }); logTrim(); logSave(); }
+const jlen = x => { try { return JSON.stringify(x).length; } catch (e) { return 0; } };
+let LOG_LEN = -1, LOG_ARR = null;                          // طول المحاولات نصّاً، يُحسب مرةً ثم يُزاد ويُنقص (لا تُحوَّل المحاولات كلها نصّاً مع كل جواب)
+function logTrim() { const A = LOG.attempts; if (A !== LOG_ARR) { LOG_ARR = A; LOG_LEN = jlen(A); } else LOG_LEN += jlen(A[A.length - 1]) + 1;
+  while (A.length > 1 && (A.length > LOG_MAX || LOG_LEN > LOG_CHARS)) LOG_LEN -= jlen(A.shift()) + 1; }
+function logSave() { if (store.set(kk('hp_log'), LOG) !== false || TAB_LOST || LOG.attempts.length < 8) return; LOG.attempts.splice(0, Math.ceil(LOG.attempts.length / 4)); LOG_ARR = null; store.set(kk('hp_log'), LOG); }
 
 /* ---------- الجلسة (المبدأ 11) ---------- */
 let SESSION = store.fix(kk('hp_session'), { n: 0, t: 0 }, V_SESSION);

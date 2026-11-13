@@ -16,8 +16,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# والنشر (2 و3 و6) من main وحده (مراجعة الخصم C-22): تشغيلٌ يدوي على فرعٍ آخر يفحص ويبني نسخ الفحص (1 و4 و5 ونسخة APK التجريبية)
+# ولا ينشر شيئاً ولا يلمس مفتاح التوقيع. وصلاحية الكتابة للوظيفتين اللتين تنشران وحدهما (pages وrelease)، والباقي يقرأ فقط.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: build-all-${{ github.ref }}
@@ -60,8 +62,10 @@ jobs:
         run: python3 platforms/tests/test_android_shim.py out
 
   pages:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: checks
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -123,7 +127,7 @@ jobs:
 
   # نسخة النشر: موقّعة بمفتاح العائلة من الأسرار (SIGNING-AR.md). بلا أسرارٍ لا تُبنى، ويُنشر الباقي
   android-release:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: checks
     runs-on: ubuntu-24.04
     steps:
@@ -284,8 +288,10 @@ jobs:
   # يُنشر ما بُني: ويندوز والويب دائماً، وAPK حين يصحّ مفتاح التوقيع (ويُضاف إلى الإصدار المنشور حين يُبنى بعدُ)
   release:
     # والإصدار بعد نجاح فحص الهاتف والتابلت (إعادة الفحص المستقلة: نجاح النشر كان لا يعني نجاحهما)
-    if: github.event_name != 'pull_request' && !cancelled() && needs.windows.result == 'success' && needs.android-device.result == 'success'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && !cancelled() && needs.windows.result == 'success' && needs.android-device.result == 'success'
     needs: [ android-release, windows, android-device ]
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5

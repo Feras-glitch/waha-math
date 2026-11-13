@@ -109,9 +109,11 @@ const gateEnd = () => { gateUntil = 0; gateSeq++; };
 function adultGate(then, onBack, always) {
   if (!always && Date.now() < gateUntil) return then();
   const seq = ++gateSeq; const a = R(6, 9), b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
-  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="ltr">${visualLine([DG(a), '×', DG(b), '=', '؟'])}</bdo></p>
-    <form id="gateForm"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit" id="gateGo">متابعة</button></form><p id="gateMsg" class="msg" role="status"></p><button class="pick" id="gateBack">رجوع</button></div>`;
-  P.hidden = false; setTimeout(() => { try { $('#gateIn').focus(); } catch (e) {} }, 50);
+  /* «رجوع» زرٌّ بأيقونة الخريطة في أعلى الصفحة، لا نصٌّ باهت في أسفلها يغطّيه لوح المفاتيح (مراجعة الخصم X-07): الطفل الذي دخلها لا يقرأ */
+  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><button class="pick gateback" id="gateBack" aria-label="رجوع إلى الخريطة">${ICON.map}<span>رجوع</span></button><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="ltr">${visualLine([DG(a), '×', DG(b), '=', '؟'])}</bdo></p>
+    <form id="gateForm"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit" id="gateGo">متابعة</button></form><p id="gateMsg" class="msg" role="status"></p></div>`;
+  /* ولا يُركَّز الحقل في جهاز لمسي: كان لوح المفاتيح يقفز فوق الصفحة لمجرّد لمسةٍ خاطئة على «للكبار» (مراجعة الخصم X-07) */
+  P.hidden = false; let coarse = false; try { coarse = matchMedia('(pointer: coarse)').matches; } catch (e) {} if (!coarse) setTimeout(() => { try { $('#gateIn').focus(); } catch (e) {} }, 50);
   $('#gateBack').onclick = () => { gateSeq++; P.hidden = true; if (onBack) onBack(); };
   $('#gateForm').onsubmit = e => { e.preventDefault(); if (Date.now() < gateWait) return; const v = fmt.parse($('#gateIn').value);
     if (v === a * b) { gateUntil = Date.now() + 10 * 60 * 1000; then(); return; }

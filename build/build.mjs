@@ -4,6 +4,7 @@
 //   خطوات كل بناء: فحص المحتوى (lint) → حقن CONTENT → تضمين الخطّين من assets/fonts/ (D256) → جدول التسجيل dist/script_m1.xlsx
 import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { lint } from './lint.mjs';
 import { matNums } from './d240.mjs';
@@ -62,8 +63,12 @@ export function build({ dev = false } = {}) {
   const js = stripHooks(modules, dev);
   if (/<\/script/i.test(js)) throw new Error('«</script» في كود src/js يُغلق السكربت قبل نهايته (مراجعة الخصم C-13)');
   /* «<» في نصّ المحتوى يُكتب \u003c (مراجعة الخصم C-13: «</script>» في جملةٍ كان يُغلق السكربت فيكسر التطبيق كله، ويمرّ من الفحص والبناء) */
-  const html = font.head + body + '<script>\n\'use strict\';\nconst CONTENT = ' + JSON.stringify(content).replace(/</g, '\\u003c') + ';\n' + js + '</script>\n' + tail;
-  return { html, content, modules, lint: L, fonts: font.faces };
+  /* حارس المتصفح القديم (مراجعة الخصم C-04): سكربت ES5 قبل الرئيسي، والرئيسي يعلن أنه حُلِّل في أول سطر وأنه بدأ في آخر البداية */
+  const guard = read(join(SRC, 'guard.html'));
+  /* بصمة البناء (مراجعة الخصم A-07): أول 8 من sha256 للمحتوى والكود، تُكتب في كل محاولة فيُعرف من أيّ نسخةٍ جاءت. ونسختا الأطفال والفحص من مصدرٍ واحد ببصمةٍ واحدة */
+  const BUILD_ID = createHash('sha256').update(JSON.stringify(content)).update(modules).digest('hex').slice(0, 8);
+  const html = font.head + body + guard + '<script>\n\'use strict\';\nwindow.wahaParsed = true;\nconst BUILD_ID = \'' + BUILD_ID + '\';\nconst CONTENT = ' + JSON.stringify(content).replace(/</g, '\\u003c') + ';\n' + js + '</script>\n' + tail;
+  return { html, content, modules, lint: L, fonts: font.faces, buildId: BUILD_ID };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

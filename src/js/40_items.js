@@ -26,6 +26,8 @@ async function runItem(spec, mode = 'practice', ctx = {}) {
   /*T*/const outer = { item: window.__item, mode: window.__itemMode, twin: window.__itemTwin };/*/T*/
   try { return await runItem0(spec, mode, ctx); } finally { /*T*/window.__item = outer.item; window.__itemMode = outer.mode || ''; window.__itemTwin = !!outer.twin;/*/T*/ }   /* وضع الفحص: نمط البند الجاري لا يبقى بعد انتهائه */
 }
+/* مواصفة البند في السجلّ (مراجعة الخصم A-07): بلا توأمه، وحتى 200 حرف (فوقها يُقصّ وينتهي بـ«…»)؛ تكفي ليُعرف أيّ بندٍ أُجيب */
+function specText(spec) { let t = ''; try { const o = {}; for (const k of Object.keys(spec || {})) if (k !== 'twin') o[k] = spec[k]; t = JSON.stringify(o); } catch (e) { return ''; } return t.length <= 200 ? t : t.slice(0, 199) + '…'; }
 async function runItem0(spec, mode, ctx) {
   const type = itemType(spec); const T = ITEM[type]; if (!T) throw new Error('نوع بند غير معروف: ' + type);
   const item = T.make(spec); item.itype = type; item.spec = spec;   // itype لا type: البند قد يكون شكلاً له type
@@ -37,7 +39,7 @@ async function runItem0(spec, mode, ctx) {
     if (help) armIdle(async () => { await S(T.idleLine ? T.idleLine(item) : 'gen.hint.look', { aside: true }); if (T.idle) await T.idle(item); else replayLine(); }, { first: firstTime('item:' + type) });
     const t0 = Date.now(); NEUTRAL_ANS = mode === 'mastery'; let r; try { r = await T.ask(item, mode, tries); } finally { NEUTRAL_ANS = false; } disarmIdle();
     const j = T.judge(item, r.ans); tries++;
-    logAttempt({ scene, type, tag: item.tag, ans: r.ans, ok: j.ok, firstTry: tries === 1, err: j.ok ? null : (j.err || 'generic'), ms: Date.now() - t0 });
+    logAttempt({ scene, mode, type, tag: item.tag, ans: r.ans, ok: j.ok, firstTry: tries === 1, try: tries, err: j.ok ? null : (j.err || 'generic'), ms: Date.now() - t0, spec: specText(spec) });
     if (j.ok) {
       if (T.onOk && mode !== 'mastery') await T.onOk(item, r, j);   // الإتقان بلا إشارة صواب (A-01)
       if (mode === 'test') return { firstTry: tries === 1, ok: true, item };

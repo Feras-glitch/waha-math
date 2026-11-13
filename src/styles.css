@@ -43,7 +43,7 @@ button:focus-visible, [tabindex]:focus-visible, summary:focus-visible { outline:
 g[role="button"]:focus-visible { outline: none; filter: drop-shadow(0 0 6px var(--compass)); }
 svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح يرسم إطار تركيز برتقالياً على عنصر SVG يُلمس بالإصبع؛ إطار لوحة المفاتيح وحده يبقى */
 .screen { position: relative; z-index: 1; height: 100%; box-sizing: border-box; max-width: 560px; margin: 0 auto;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 10px; }
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-top: 10px; padding-bottom: 10px; }
 .muted { color: var(--muted); }
 
 /* أزرار بارزة كأزرار لعبة */
@@ -93,7 +93,10 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .unithead.locked { opacity: .5; }
 .unithead .hosts { width: 96px; height: 44px; flex: none; }
 .unithead .hosts svg { width: 100%; height: 100%; overflow: visible; }
-.adult-link { position: fixed; left: max(12px, env(safe-area-inset-left, 0px)); bottom: calc(4px + env(safe-area-inset-bottom, 0px)); min-height: 44px; padding: 0 8px; font-size: 14px; color: var(--muted); background: none; border: 0; cursor: pointer; text-decoration: underline; z-index: 30; }
+/* رابط الكبار في آخر الخريطة لا طافياً فوق بطاقاتها (مراجعة الخصم X-07: كان ثابتاً فوق زاوية بطاقتين، فلمستُها تفتح البوابة) */
+.adult-link { display: block; margin: 14px 0 calc(6px + env(safe-area-inset-bottom, 0px)); margin-left: auto; min-height: 44px; padding: 0 10px; font-size: 15px; color: var(--muted); background: none; border: 0; cursor: pointer; text-decoration: underline; }
+.voice-note { margin: 0 0 12px; padding: 10px 14px; border-radius: 16px; background: var(--paper); border: 2px dashed var(--think); font-size: 15px; line-height: 1.6; text-align: start; }
+.voice-note p { margin: 0; } .voice-note #vnText { margin-top: 6px; } .voice-note .pick { min-height: 44px; padding: 0 12px; font-size: 15px; }
 
 /* ===== الدرس ===== */
 #lesson { display: grid; grid-template-rows: auto auto auto auto; align-content: center; gap: 12px; }
@@ -112,7 +115,7 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
   font-size: 21px; font-weight: 700; line-height: 1.75; min-height: 56px; display: flex; align-items: center; text-wrap: balance; margin-bottom: 8px; }
 .bubble.chaos { color: var(--chaos); }
 .bubble.hidetext #say { visibility: hidden; }            /* جملة فوضى الخاطئة تُسمع ولا تُكتب (D236) */
-.bubble.hidetext::after { content: "؟"; position: absolute; inset-inline-start: 18px; font-size: 30px; font-weight: 800; color: var(--chaos); }
+.bubble.hidetext::after { content: "؟"; position: absolute; right: 18px; font-size: 30px; font-weight: 800; color: var(--chaos); }
 .replay { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: var(--tap); height: var(--tap); border-radius: 50%; border: 0; background: var(--sky-bot); cursor: pointer; display: grid; place-items: center; }
 .replay svg { width: 22px; height: 22px; }
 .stage { position: relative; border-radius: 30px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; min-height: 0; background: var(--paper); }
@@ -129,7 +132,7 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 @keyframes pulse { 50% { opacity: .72; } }
 
 /* السلال */
-.bins { position: absolute; inset: auto 8px 8px 8px; display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 6px; }
+.bins { position: absolute; top: auto; right: 8px; bottom: 8px; left: 8px; display: grid; grid-template-columns: repeat(var(--n, 3), 1fr); gap: 6px; }
 .bin { border: 0; background: none; padding: 0; cursor: pointer; display: grid; justify-items: center; font-size: 17px; font-weight: 800; color: var(--ink); min-height: 64px; }
 .bin svg { width: 100%; max-width: 110px; height: auto; filter: drop-shadow(0 4px 0 rgba(0,0,0,.12)); transition: transform .15s; }
 .bin.hot svg, .bin:active svg { transform: translateY(-4px) scale(1.04); }
@@ -172,15 +175,15 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .choices.rbbar .pick[data-k="G"] { color: var(--good); }
 .choices.rbbar .pick[data-k="X"] { color: var(--muted); }
 .pick.pot svg { filter: drop-shadow(0 3px 0 rgba(0,0,0,.15)); }
-.wsbar { position: absolute; top: 8px; inset-inline-start: 8px; display: flex; gap: 6px; padding: 0; }
+.wsbar { position: absolute; top: 8px; right: 8px; display: flex; gap: 6px; padding: 0; }
 .wsbar .pick { min-height: var(--tap); padding: 4px 12px; font-size: 16px; grid-auto-flow: column; gap: 6px; }
-.wsbar.mid { inset-inline-start: 50%; transform: translateX(50%); }
-.wsbar.end { inset-inline-start: auto; inset-inline-end: 8px; }
+.wsbar.mid { right: 50%; transform: translateX(50%); }
+.wsbar.end { right: auto; left: 8px; }
 .wssel { filter: drop-shadow(0 0 6px var(--compass)) drop-shadow(0 0 2px var(--compass)); }
 
 /* ===== الأغطية ===== */
-.cover { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; overflow: auto; text-align: center; background: linear-gradient(180deg, var(--sky-top), var(--sky-bot)); background-color: var(--sky-bot);
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px; }
+.cover { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 20; display: grid; place-items: center; overflow: auto; text-align: center; background: linear-gradient(180deg, var(--sky-top), var(--sky-bot)); background-color: var(--sky-bot);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-top: 20px; padding-bottom: 20px; }
 .cover .talk { grid-template-columns: 80px 1fr; min-height: 0; text-align: right; width: 100%; }
 .cover .talk .who { width: 80px; height: 92px; }
 .cover .bubble { padding: 10px 16px; }
@@ -225,8 +228,8 @@ details.adult input[type=text]:focus { outline: none; border-color: var(--compas
 
 /* ===== لوحة الكبار ===== */
 #tabCover { z-index: 45; }   /* فوق لوحة الكبار: تبويبٌ آخر أخذ التطبيق (الفحص الخصم A06) */
-.panel { position: fixed; inset: 0; z-index: 40; background: var(--sky-bot); overflow: auto; font-size: 16px; line-height: 1.6;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 18px; }
+.panel { position: fixed; top: 0; right: 0; bottom: 0; left: 0; z-index: 40; background: var(--sky-bot); overflow: auto; font-size: 16px; line-height: 1.6;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-top: 18px; padding-bottom: 18px; }
 .panel .wrap { max-width: 640px; margin: 0 auto; display: grid; gap: 14px; }
 .panel h2 { margin: 0; font-size: 24px; }
 .panel p { margin: 6px 0; }
@@ -242,6 +245,8 @@ details.adult input[type=text]:focus { outline: none; border-color: var(--compas
 .panel .errlog { font-size: 12px; white-space: pre-wrap; background: var(--sky-bot); padding: 8px; border-radius: 10px; text-align: left; }
 .gate { max-width: 420px !important; text-align: center; }
 .gate .gq { font-size: 34px; font-weight: 800; margin: 0; }
+.gate .gateback { display: flex; width: max-content; align-items: center; gap: 8px; margin: 0 0 6px auto; min-height: 56px; border: 2px solid var(--line); background: var(--paper); }   /* في أعلى اليمين (بداية السطر) */
+.gate .gateback svg { width: 28px; height: 28px; }
 .gate form { display: grid; gap: 10px; }
 .gate input { font: inherit; font-size: 28px; font-weight: 800; text-align: center; width: 100%; box-sizing: border-box; padding: 8px 12px; border-radius: 16px; border: 3px solid var(--line); background: var(--paper); color: var(--ink); }
 .gate input:focus { outline: none; border-color: var(--compass); }
@@ -255,7 +260,7 @@ details.adult input[type=text]:focus { outline: none; border-color: var(--compas
   #panel { position: static !important; overflow: visible !important; background: #fff !important; } .noprint { display: none !important; } .panel .card { box-shadow: none; border: 1px solid #ccc; } }
 
 /* احتفال: قصاصات من الأشكال نفسها */
-.confetti { position: fixed; inset: 0; pointer-events: none; z-index: 50; overflow: hidden; }
+.confetti { position: fixed; top: 0; right: 0; bottom: 0; left: 0; pointer-events: none; z-index: 50; overflow: hidden; }
 /* الإيقاف يوقف حركات CSS بالأنماط لا بالكود (حركةٌ أوقفها الكود وبعثها لا تقف بإزالة صنفها)، إلا في الأغطية وبوابة الكبار؛ والقصاصات تُخفى تحته */
 html.lpause body > :not(.cover):not(.panel), html.lpause body > :not(.cover):not(.panel) *, html.lpause body > :not(.cover):not(.panel) *::before, html.lpause body > :not(.cover):not(.panel) *::after { animation-play-state: paused !important; }
 html.lpause #confetti { visibility: hidden; }
@@ -271,7 +276,7 @@ html.lpause #confetti { visibility: hidden; }
   #bubble { font-size: 17px; line-height: 1.5; padding: 6px 10px 6px 64px; min-height: 58px; height: calc(1.5em * 3 + 12px); box-sizing: border-box; overflow: hidden; margin-bottom: 0; align-items: flex-start; }
   /* النصّ وحده يُمرَّر، فيبقى زرّ «أعد» في مكانه؛ وإن طال عن ثلاثة أسطر ظهر في أسفل الفقاعة سهم صغير يدلّ على البقية (الفحص المستقل B: السطر الرابع، وهو غالباً المطلوب، مخفيّ بلا علامة) */
   #say { display: block; width: 100%; max-height: calc(1.5em * 3); overflow-y: auto; overscroll-behavior: contain; }
-  #bubble.saymore::before { content: "▾"; position: absolute; inset-inline: 10px 64px; bottom: 0; height: 18px; line-height: 16px; text-align: center; font-size: 15px; color: var(--muted);
+  #bubble.saymore::before { content: "▾"; position: absolute; right: 10px; left: 64px; bottom: 0; height: 18px; line-height: 16px; text-align: center; font-size: 15px; color: var(--muted);
     background: linear-gradient(to bottom, transparent, var(--paper) 65%); border-radius: 0 0 8px 24px; pointer-events: none; }
   .stage { flex: 1 1 auto; } .stage > svg { max-height: none; }
   .go, .help { min-height: 56px; } .go.big { min-height: 64px; }
@@ -296,8 +301,8 @@ html.lpause #confetti { visibility: hidden; }
   #who { width: 49px; height: 56px; justify-self: center; }
   #bubble { height: auto; max-height: calc(1.5em * 7 + 12px); padding: 6px 10px; overflow: visible; }
   #say { max-height: calc(1.5em * 7); }
-  #bubble .replay { left: auto; inset-inline-start: calc(-1 * var(--tap) - 6px); top: calc(var(--tap) + 4px); transform: none; }
-  #bubble.saymore::before { inset-inline: 10px; }
+  #bubble .replay { left: auto; right: calc(-1 * var(--tap) - 6px); top: calc(var(--tap) + 4px); transform: none; }
+  #bubble.saymore::before { right: 10px; left: 10px; }
   .stage > svg { flex: 1 1 0; height: 0; min-height: 0; max-height: none; }
   .stage > .choices { padding: 0 8px 8px; gap: 6px; }
   .stage > .choices.cards { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }

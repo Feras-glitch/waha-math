@@ -272,7 +272,7 @@ CONTENT = [
   # ومسألة «معي» بمفتاح d240، فلا تكون مسألة تقييم (الفحص المستقل G1 (3)): الأربع كما أدخلها إصلاح F1 (3)، و«معي» بلا مسائلها أو بعدد بلا مسألة
   ('«معي» د5 بمسألة الإتقان', '../u4/d5.json', lambda d: [line_rep('mat.01', 'أَرْبَعَةً مُنْفَرِدَةً', 'سِتَّةً مُنْفَرِدَةً')(d), line_rep('mat.02', 'عَشَرَةٌ وَأَرْبَعَةٌ: أَرْبَعَةَ عَشَرَ. ', '')(d), d['flow'][1]['mat'].update(facts=[{'of': 'rodCount', 'n': 16}])], 'إتقان N010[0]: المسألة نفسها (teen|read|16) في «معي»'),
   ('«معي» د7 بمسألة الاختبار', '../u4/d7.json', lambda d: [line_rep('mat.01', 'تِسْعَ قِطَعٍ', 'سَبْعَ قِطَعٍ')(d), d['flow'][1]['mat'].update(facts=[{'of': 'makeTen', 'a': 7, 'b': 7}])], 'الاختبار t12: المسألة نفسها (add|7,7) في «معي»'),
-  ('«معي» S1-U2 د3 بمسألة الاختبار', '../u2/d3.json', lambda d: [line_rep('mat.01', 'مِنْ ثَلَاثَةِ مُكَعَّبَاتٍ، وَبُرْجًا مِنِ اثْنَيْنِ', 'مِنْ أَرْبَعَةِ مُكَعَّبَاتٍ، وَبُرْجًا مِنْ ثَلَاثَةٍ')(d), d['flow'][1]['mat'].update(facts=[{'of': 'compare', 'a': 4, 'b': 3}])], 'الاختبار t9: المسألة نفسها (compare|3,4) في «معي»'),
+  ('«معي» S1-U2 د3 بمسألة الاختبار', '../u2/d3.json', lambda d: [line_rep('mat.01', 'مِنْ ثَلَاثَةِ مُكَعَّبَاتٍ، وَبُرْجًا مِنِ اثْنَيْنِ', 'مِنْ ثَلَاثَةِ مُكَعَّبَاتٍ، وَبُرْجًا مِنْ ثَلَاثَةٍ')(d), d['flow'][1]['mat'].update(facts=[{'of': 'compare', 'a': 3, 'b': 3}])], 'الاختبار t9: المسألة نفسها (compare|3,3) في «معي»'),   # t9 صار 3 و3 (M-10)
   ('«معي» S1-U1 د5 بمسألة المراجعة', '../u1/d5.json', lambda d: [line_rep('mat.01', 'رَقْمَ أَرْبَعَةٍ، ثُمَّ رَقْمَ سَبْعَة', 'رَقْمَ اثْنَيْنِ، ثُمَّ رَقْمَ أَرْبَعَة')(d), d['flow'][3]['mat'].update(facts=[{'of': 'trace', 'n': 2}, {'of': 'trace', 'n': 4}])], 'المراجعة[1]: المسألة نفسها (trace|2) في «معي»'),
   ('«معي» بلا مسائلها', '../u4/d5.json', lambda d: d['flow'][1]['mat'].pop('facts'), '«معي» mat.01 فيها 4، 14 بلا mat.facts'),
   ('«معي» بعدد بلا مسألة', '../u4/d7.json', lambda d: d['flow'][1]['mat'].update(facts=[]), '«معي» mat.01 تقول 9، 7، 16، 6 ولا مسألة لها في mat.facts'),
@@ -357,7 +357,7 @@ CONTENT = [
    '«أيّها أطول/أقصر؟» (3 خيارات) في تقييم الوحدة: الجواب في الموضع 3 في 4 من 5'),
   ('مراجعة N004 كما كانت (S1-U2 د3)', '../u2/d3.json', lambda d: d['review'][0].update(a=5, b=2), 'الشيئان يميناً ويساراً (cmpDigits، compare) في مراجعة N004: صاحب الصفة في الموضع 1 في 2 من 2'),   # compare وcmpDigits في عائلة H2
   ('«أيّ العددين أكبر؟» في التمرين كما كان (S1-U2 د3)', '../u2/d3.json', lambda d: d['practice']['normal'][3].update(a=3, b=8), '«أيّ العددين أكبر؟» في التمرين العادي: الأكبر في الموضع 2 في 2 من 2'),
-  ('التحدّي كما كان (S1-U2 د3)', '../u2/d3.json', lambda d: [d['practice']['challenge'][0].pop('ask'), d['practice']['challenge'][1].update(a=9, b=6)], 'الشيئان يميناً ويساراً (compare، cmpDigits) في التحدّي: صاحب الصفة في الموضع 1 في 3 من 4'),
+  ('التحدّي كما كان (S1-U2 د3)', '../u2/d3.json', lambda d: [d['practice']['challenge'][0].pop('ask'), d['practice']['challenge'][1].update(a=9, b=6)], 'الشيئان يميناً ويساراً (compare، cmpDigits) في التحدّي: صاحب الصفة في الموضع 1 في 3 من 3'),   # والرابع صار متساوياً بلا صاحب صفة (M-10)
   ('إتقان N004 كما كان (S1-U2 د3)', '../u2/d3.json', lambda d: d['mastery']['concepts']['N004'][2].update(a=4, b=7), 'في إتقان N004: الجواب في الموضع 2 في 2 من 2'),
   ('«تحت» قبل «فوق» كما كانت (S1-U3 د1 rv.1)', '../u3/d1.json', lambda d: [d['review'][0].update(words=['under', 'on']), line_rep('rv.1', 'فَوْقَ الكُرْسِيِّ، أَمْ تَحْتَهُ', 'تَحْتَ الكُرْسِيِّ، أَمْ فَوْقَهُ')(d)],
    '«أين هو؟» في تقييم الوحدة: الجواب في الموضع 1 في 3 من 4'),
@@ -396,6 +396,11 @@ CONTENT = [
   ('«أطول ← الأسفل» في بنود «أطول؟» من المسار العادي (د1)', '../u4/d1.json', lambda d: [d['practice']['normal'].insert(2, {'t': 'lenPick', 'q': 'ms.1', 'lens': [176, 212], 'ask': 'long', 'kind': 'strip', 'twin': {'t': 'lenPick', 'q': 'ms.1', 'lens': [212, 170], 'ask': 'long', 'kind': 'strip'}}),
      d['practice']['normal'].insert(3, {'t': 'lenPick', 'q': 'pr.c3', 'lens': [150, 120, 190], 'ask': 'short', 'kind': 'strip', 'colors': ['#6c7fa8', '#8c8c6e', '#7e9a4e'], 'twin': {'t': 'lenPick', 'q': 'pr.c3', 'lens': [190, 150, 116], 'ask': 'short', 'kind': 'strip'}})],
    'قاعدة «صفّ:أسفل بالقسمة» تصيب 3 من 5 بنود الطول بسؤال «أطول؟» في المسار العادي'),   # J1 (2): بنود كل سؤالٍ في المسار؛ وlint قبله يمرّ عليها بلا مخالفة
+  # المراجعة بعين جديدة (13 نوفمبر 2026): ما أُصلح في المحتوى يُعاد كما كان فيُمسك برسالته
+  ('M-10 إتقان N004 كما كان (8 و8 بحجمٍ واحد)', '../u2/d3.json', lambda d: d['mastery']['concepts']['N004'][1].update(a=8, b=8, sa=24, sb=24), 'إتقان N004: بنود البرجين'),
+  ('M-10 الاختبار t9 كما كان (3 و4)', '../u2/d6.json', lambda d: test_item(d, 't9').update(b=4, sa=44, sb=22), 'الاختبار: بنود البرجين'),
+  ('M-24 ميزان من الصورة بـ«أخفّ؟»', '../u4/d2.json', lambda d: d['practice']['normal'][3].update(ask='light'), 'ميزان من الصورة «pr.4» بـ«أيّهما أخفّ؟»'),
+  ('U2 رقم قرار في «ما على الشاشة» كما كان', '../u4/d2.json', lambda d: d['bag'].__setitem__('screenPath', d['bag']['screenPath'] + ' (D252)'), 'رقم قرار في نصٍّ يُعرض'),
 ]
 def gtext(v): return v[1] if isinstance(v, list) else v
 GEN = [
@@ -517,6 +522,10 @@ CODE = [
   # مراجعة الخصم C-01 (5 نوفمبر 2026): استدعاء طريقةٍ أُزيلت يوقف البناء
   ('C-01 استدعاء IDB.clear الذي أُزيل', 'src/js/85_panel.js', "ph = await IDB.dropKid(KID);", "ph = await IDB.clear();", 'استدعاء IDB.clear() ولا طريقة بهذا الاسم في IDB'),
   ('C-01 استدعاء طريقة غير معرّفة في store', 'src/js/85_panel.js', "const ok = [store.set(kk('hp_session'), SESSION),", "const ok = [store.put(kk('hp_session'), SESSION),", 'استدعاء store.put() ولا طريقة بهذا الاسم في store'),
+  # المراجعة بعين جديدة: رقم قرار في نصّ اللوحة (U2)؛ ونوع ملفٍ في قالب («image/*») كان يبدأ تعليقاً عند فحص المحتوى فيُخفي ما بعده إلى أول ختام تعليق
+  ('U2 رقم قرار في نصّ اللوحة كما كان', 'src/js/85_panel.js', 'وما لم يُسجَّل يقرؤه صوت الجهاز.</p>', 'وما لم يُسجَّل يقرؤه صوت الجهاز (D181).</p>', 'رقم قرار في نصٍّ يُعرض «(D181)»'),
+  ('مفتاح Enter بعد «image/*» في قالب', 'src/js/60_kids.js', "$('#pName').value = draft.name || '';", "$('#pName').value = draft.name || ''; document.addEventListener('keydown', e => { if (e.key === 'Enter') draft.name = ''; });", 'مفتاح Enter وحده في السطر'),
+  ('مفتاح Enter بعد «audio/*» في قالب', 'src/js/85_panel.js', "$('#closePanel').onclick = () => { $('#panel').hidden = true; showHome(); };", "$('#closePanel').onclick = () => { $('#panel').hidden = true; showHome(); }; document.addEventListener('keydown', e => { if (e.key === 'Enter') return; });", 'مفتاح Enter وحده في السطر'),
 ]
 # وكودٌ مشروع يجب أن يمرّ به فحص المحتوى (الفحص المستقل G2 (10): كانت قاعدة المفتاح تمنع «space-between» و«white-space» و«err.code» و«{ code } = d» و«it.key» و«enter» في نصّ)
 CODE_OK = [

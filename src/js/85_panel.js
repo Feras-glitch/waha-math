@@ -26,7 +26,7 @@ const adultSays = (L, C) => !!(L && L.adultCard && L.adultCard.concept === C && 
     if (c.byAdult && !app) { delete c.mastered; if (!entry) c.deferred = true; } delete c.byAdult; }
   if (ch) saveProg(); })();
 function adultCardHTML(L) { const A = L.adultCard; const saved = adultAnswers(L);
-  return `<div class="talkcard"><b>${esc(plain(L.title))}: ${esc(A.title)}</b><p class="muted">${esc(A.how)}</p>${A.qs.map((q, i) => `<div class="aq"><span>${DG(i + 1)}. ${esc(q)}</span><span class="seg">
+  return `<div class="talkcard"><b>${esc(plain(L.title))}: ${esc(A.title)}</b><p class="muted">${esc(G(A.how))}</p>${A.qs.map((q, i) => `<div class="aq"><span>${DG(i + 1)}. ${esc(G(q))}</span><span class="seg">
     <button class="pick" data-ac="${esc(L.id)}" data-i="${i}" data-v="1" aria-pressed="${saved[i] === true}">نعم</button><button class="pick" data-ac="${esc(L.id)}" data-i="${i}" data-v="0" aria-pressed="${saved[i] === false}">ليس بعد</button></span></div>`).join('')}
     ${A.concept && adultSays(L, A.concept) ? '<span class="pill good">متقن بحكم الكبير</span>' : ''}</div>`; }
 /* حالة المفهوم في خريطة الإتقان: إتقان التطبيق وحكم الكبير مصدران، والعرض منهما */
@@ -77,10 +77,10 @@ function openPanel() {
       <p class="muted">في هذه الجلسة: ${nw(sessionNow().n, 'درس واحد', 'درسان', 'دروس', 'درساً')}.</p>
       <div class="seg"><button class="pick" id="slowBtn" aria-pressed="${!!SET.slow}">قراءة أبطأ: ${SET.slow ? 'تعمل' : 'متوقفة'}</button></div></div>
     <div class="card"><b>أطفال هذا الجهاز</b> (لكل طفل تقدّمه ومعرضه وإعداداته، ويختار صورته عند الدخول):
-      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID || kidDelBusy() ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div>${kidDelNote()}</div>
+      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')} (${k.gender === 'f' ? 'بنت' : 'ولد'})</span>${k.id === KID || kidDelBusy() ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة وصيغة الخطاب</button></div>${kidDelNote()}</div>
     <div class="card"><b>الصوت:</b> <span id="vpStat">${vpStatText()}</span>
       ${NO_TTS ? `<p class="note" id="noTts">صوت الجهاز لا يقرأ العربية الآن، فتُعرض الجمل مكتوبةً بزمن قراءتها. ${window.AndroidBridge ? 'لإضافة الصوت: الإعدادات ← اللغة والإدخال ← تحويل النص إلى كلام ← تثبيت بيانات الصوت العربية.' : 'لإضافة الصوت: ثبّتوا الصوت العربي في إعدادات الكلام في الجهاز، ثم أعيدوا فتح التطبيق.'}</p>` : ''}
-      <p class="muted">حزمة الصوت ملف zip (أو ملفات صوتية) اسم كل تسجيل فيه معرّف جملته في جدول التسجيل، مثل <code dir="ltr">m1.u1.d2.hook.01.mp3</code>، و<code dir="ltr">…_f.mp3</code> للصيغة المؤنثة. تُستورد مرة واحدة وتبقى في هذا الجهاز، وما لم يُسجَّل يقرؤه صوت الجهاز (D181).</p>
+      <p class="muted">حزمة الصوت ملف zip (أو ملفات صوتية) اسم كل تسجيل فيه معرّف جملته في جدول التسجيل، مثل <code dir="ltr">m1.u1.d2.hook.01.mp3</code>، و<code dir="ltr">…_f.mp3</code> للصيغة المؤنثة. تُستورد مرة واحدة وتبقى في هذا الجهاز، وما لم يُسجَّل يقرؤه صوت الجهاز.</p>
       <div class="seg"><button class="pick" id="vpPick">استيراد حزمة الصوت</button><button class="pick" id="vpDel"${VPACK.n ? '' : ' hidden'}>حذف الحزمة</button></div><input type="file" id="vpIn" accept=".zip,audio/*" multiple hidden><p id="vpMsg" class="muted" aria-live="polite"></p></div>
     <div class="card"><b>نسخة احتياطية:</b> ملف فيه أطفال هذا الجهاز وتقدّمهم وإعداداتهم وتصميماتهم، يُحفظ أو يُنقل إلى جهاز آخر. الصور وحزمة الصوت لا تدخل الملف.
       <div class="seg"><button class="pick" id="bkSave">حفظ نسخة في ملف</button><button class="pick" id="bkPick">استعادة نسخة</button></div><input type="file" id="bkIn" accept=".json,application/json" hidden><div id="bkMsg" aria-live="polite"></div></div>

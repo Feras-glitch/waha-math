@@ -1,0 +1,20 @@
+<script>
+/* حارس المتصفح القديم (مراجعة الخصم C-04): بلغة ES5 وحدها، فيُحلَّل في كل متصفح.
+   السكربت الرئيسي يحتاج ES2020 (Chrome 80)، فإن لم يُحلَّل أو انقطع قبل آخر البداية بقيت الصفحة زرقاء فارغة بلا كلمة.
+   فإن لم يعلن السكربت الرئيسي أنه بدأ (wahaBooted) عند تمام التحميل، تظهر للكبار رسالة تقول ما العمل. */
+(function () {
+  var shown = false;
+  function show() {
+    if (shown || window.wahaBooted) return; shown = true;
+    var d = document.createElement('div'); d.id = 'oldWeb'; d.setAttribute('role', 'alert'); d.setAttribute('dir', 'rtl');
+    d.style.cssText = 'position:fixed;top:0;right:0;bottom:0;left:0;z-index:99;background:#fff;color:#123;padding:24px;font:20px/1.7 sans-serif;text-align:center;overflow:auto';
+    /* لم يُحلَّل السكربت (wahaParsed غائب): متصفّح قديم. وحُلِّل ولم يبلغ آخر البداية: خطأٌ أثناء الفتح */
+    d.innerHTML = window.wahaParsed ? '<p><b>تعذّر فتح التطبيق.</b></p><p>أغلقوه وافتحوه من جديد. وإن تكرّر هذا فالتقدّم محفوظ في الجهاز، والنسخة الاحتياطية من لوحة الكبار تنقله.</p>'
+      : '<p><b>لم يعمل التطبيق على هذا الجهاز.</b></p>' +
+        '<p>متصفّح الجهاز أقدم مما يحتاجه التطبيق. في أندرويد: حدّثوا «Android System WebView» و«Chrome» من متجر Play ثم افتحوا التطبيق من جديد. وفي غيره: افتحوه في نسخة حديثة من Chrome أو Edge أو Safari.</p>';
+    d.setAttribute('data-why', window.wahaParsed ? 'boot' : 'parse');
+    document.body.appendChild(d);
+  }
+  window.addEventListener('load', function () { setTimeout(show, 0); });
+})();
+</script>

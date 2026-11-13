@@ -10,7 +10,12 @@ let NO_TTS = false, TTS_MISS = 0;
 function pickVoice() { try { const v = speechSynthesis.getVoices(); VOICE = v.find(x => /^ar[-_](EG|SA)/i.test(x.lang)) || v.find(x => /^ar/i.test(x.lang)) || null;
     if (VOICE && NO_TTS === 'novoice') NO_TTS = false; else if (!VOICE && v.length && !NO_TTS) NO_TTS = 'novoice'; } catch (e) { VOICE = null; } }
 function ttsBridgeDown() { try { const B = window.AndroidBridge; return !!(B && B.ttsState && B.ttsState() === 2); } catch (e) { return false; } }
-try { pickVoice(); speechSynthesis.addEventListener('voiceschanged', pickVoice); } catch (e) {}
+/* حال الصوت للكبار (المراجعة بعين جديدة، 13 نوفمبر 2026): الطفل في م1 لا يقرأ، فجهازٌ بلا صوت عربي يُنبَّه إليه الكبار في الخريطة نفسها، لا في اللوحة وحدها.
+   'ok' صوت عربي أو حزمة صوت تامّة؛ 'none' لا صوت عربي (أو جسر أندرويد بلا عربية)؛ 'wait' لم تصل قائمة الأصوات بعد */
+function voiceState() { try { if (VPACK.n && VPACK.n >= voiceIds().size * .95) return 'ok'; } catch (e) {}
+  if (window.AndroidBridge && window.AndroidBridge.ttsState) { let s = 0; try { s = window.AndroidBridge.ttsState(); } catch (e) {} return s === 1 ? 'ok' : s === 2 ? 'none' : 'wait'; }
+  if (VOICE) return 'ok'; if (NO_TTS) return 'none'; return 'wait'; }
+try { pickVoice(); speechSynthesis.addEventListener('voiceschanged', () => { pickVoice(); if (typeof voiceNote === 'function') voiceNote(); }); } catch (e) {}
 /* زمن القراءة الصامتة (صوت مكتوم أو لا صوت عربي): مريح لطفل يتابع النص */
 const readTime = t => FAST ? 40 : Math.max(1800, plain(t).length * 95) * (SET.slow ? 1.35 : 1);
 const GAP = () => FAST ? 0 : (SET.slow ? 750 : 350);       // وقفة قصيرة بين جملة وأخرى (أطول في القراءة الأبطأ، D205)

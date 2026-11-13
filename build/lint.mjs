@@ -17,6 +17,28 @@ const REF_ONE = ['mk', 'show', 'shape'], REF_MANY = ['objs', 'opts', 'shapes', '
 const STAGES = new Set(['hook', 'explore', 'worked', 'practice', 'game', 'chaos', 'mastery', 'test', 'wrap']);
 
 const KAF_OK = new Set(['ذلك', 'ذاك', 'هناك', 'تلك', 'أولئك', 'مشابك', 'مشبك', 'سمك', 'سلك', 'تفكيك']); const TA_OK = new Set(['تحت', 'بيت', 'وقت', 'صوت', 'اخت', 'بنت']);   /* أسماء إشارة وكلمات كافها من أصلها (4ب7 العامة) */
+/* يمحو التعليقات ويُبقي النصوص والقوالب والتعابير النمطية والأسطر في مواضعها (طول كل سطر كما هو): يمرّ على الكود حرفاً حرفاً،
+   فلا يبدأ تعليقٌ داخل نص («image/*») ولا يبدأ نصٌّ داخل تعبير نمطي (/[<>"'&`]/) */
+export function stripComments(js) {
+  const out = js.split(''); let i = 0, prev = '';   // prev: آخر حرفٍ له معنى خارج التعليقات والمسافات
+  const regexOK = () => !prev || /[=(,:\[!&|?{};+\-*%<>~^]/.test(prev) || /\b(?:return|typeof|case|in|of|void|delete|throw|new)$/.test(js.slice(Math.max(0, i - 8), i).trimEnd());
+  const blank = (a, b) => { for (let k = a; k < b; k++) if (js[k] !== '\n') out[k] = ' '; };
+  const tpl = [];   // أعماق ${ } في القوالب المفتوحة
+  while (i < js.length) { const c = js[i], d = js[i + 1];
+    if (tpl.length && c === '}' && tpl[tpl.length - 1] === 0) { tpl.pop(); i++; i = skipTpl(i); prev = '`'; continue; }
+    if (c === '/' && d === '*') { const e = js.indexOf('*/', i + 2); const end = e < 0 ? js.length : e + 2; blank(i, end); i = end; continue; }
+    if (c === '/' && d === '/') { let e = js.indexOf('\n', i); if (e < 0) e = js.length; blank(i, e); i = e; continue; }
+    if (c === '\'' || c === '"') { let k = i + 1; while (k < js.length && js[k] !== c && js[k] !== '\n') k += js[k] === '\\' ? 2 : 1; i = k + 1; prev = c; continue; }
+    if (c === '`') { i = skipTpl(i + 1); prev = '`'; continue; }
+    if (c === '/' && regexOK()) { let k = i + 1, cls = false; while (k < js.length && js[k] !== '\n') { if (js[k] === '\\') { k += 2; continue; } if (js[k] === '[') cls = true; else if (js[k] === ']') cls = false; else if (js[k] === '/' && !cls) break; k++; }
+      i = k + 1; while (/[a-z]/i.test(js[i] || '')) i++; prev = '/'; continue; }
+    if (tpl.length && (c === '{' || c === '}')) tpl[tpl.length - 1] += c === '{' ? 1 : -1;
+    if (!/\s/.test(c)) prev = c; i++; }
+  /* داخل القالب: حتى «`» الخاتمة أو «${» (يُعدّ ما بعدها كوداً حتى «}» المقابلة) */
+  function skipTpl(k) { while (k < js.length) { if (js[k] === '\\') { k += 2; continue; } if (js[k] === '`') return k + 1; if (js[k] === '$' && js[k + 1] === '{') { tpl.push(0); return k + 2; } k++; } return k; }
+  return out.join('');
+}
+
 export function lint(content, js) {
   const errors = [], warn = [];
   /* كلمةٌ آخرها «كَ» خارج الصيغتين (4ب7 العامة): في الجمل والتسميات، والكلمة كل ما بين غير الحروف العربية وحركاتها (الفحص المستقل E2: نجت «قَلَمَكَ…» وتسميةٌ «صَدِيقِكَ») */
@@ -108,7 +130,9 @@ export function lint(content, js) {
     kafCheck(c.text, c.full); waslCheck(c.text, c.full);
   }
   // 2) JS
-  const code = js.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
+  /* التعليقات تُمحى بماسحٍ يعرف النصوص والقوالب والتعابير النمطية (المراجعة بعين جديدة، 13 نوفمبر 2026): كان «/*» داخل نصٍّ (accept="image/*")
+     يُعدّ بداية تعليق يُغلقه أول ختام تعليق بعده، فغابت عن فحوص الكود 39 سطراً حقيقية في ثلاثة مواضع (حفظ الطفل، وصيد الصور، واستيراد حزمة الصوت) */
+  const code = stripComments(js);
   for (const m of code.matchAll(/\b(?:say|S)\(\s*(?:'(?:compass|chaos)'\s*,\s*'[^']*'\s*,\s*)?'([^']*)'/g)) if (AR.test(m[1])) errors.push('جملة منطوقة مكتوبة في الكود: ' + m[1].slice(0, 40));
   js.split('\n').forEach((l, i) => { if (/Math\.random\(/.test(l) && !/rng-ok/.test(l)) errors.push('Math.random بلا علامة rng-ok في السطر ' + (i + 1)); });
   /* والخفوت إلى الصفر يبقى أو يُزال (الفحص المستقل D2 لبوابة S1-U4 (7): فوضى في إشعال S1-U2 د5 خفتت بلا fill فعادت ظاهرة «واختبأت بهما!»): anim(x, […, { opacity: 0 }], …)
@@ -134,7 +158,7 @@ export function lint(content, js) {
      وP.preventDefault() وP.stopPropagation() وP.stopImmediatePropagation()، فلا يُمرَّر إلى دالة أخرى (isEnter(e) خارج المستمع)، ولا يُسمّى باسم آخر، ولا يُفكَّك، ولا
      معامل بقية ولا arguments؛ ونوع حدث addEventListener نصٌّ صريح، ومستمع المفاتيح بصيغةٍ تُقرأ (لا bind). و«Enter» و«NumpadEnter» و«Space(bar)» بحروفها في نصٍّ أو تعبير
      نمطي ممنوعة، لا «enter» و«space» كلمتين (صنف CSS، وpointerenter)، و«which» تُمنع قراءةً من الحدث وحده (q.which و{ which: 1 } مشروعان) */
-  { const bare = code.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:\\'"`])\/\/[^\n]*/g, '$1');
+  { const bare = code;   /* التعليقات ممحوّة في code نفسه بالماسح (stripComments) */
     const DEF = "const isActKey = e => e.key === 'Enter' || e.key === ' ',", nDef = bare.split(DEF).length - 1;
     if (nDef !== 1) errors.push(`isActKey (بصيغتها «${DEF}» ${nDef} مرة، حتى فاصلتها) لا يقبل Enter والمسافة كليهما، أو عُرِّفت بغيرها أو أُلحق بها شرط (المطلوب مرة)`);
     const src = bare.split(DEF).join(' '.repeat(DEF.length)), at = i => src.slice(0, i).split('\n').length;
@@ -829,6 +853,20 @@ export function lint(content, js) {
         if ((v.mode || 'read') === 'pic' && !/تَوَقَّع/.test(q)) errors.push(`${L.id}: ميزان من الصورة «${v.q}»: جملته لا تقول «توقّع» والطفل يتوقّع ولا ميزان أمامه («${q.slice(0, 60)}»)`); }
       for (const x of Object.values(v)) if (x && typeof x === 'object') walk(L, x); };
     for (const L of Object.values(lessons)) walk(L, [L.flow, L.practice, L.mastery, L.review, L.test]); }
+  // 4ب21) لا رقم قرار في ما يراه الكبار (المراجعة بعين جديدة U2: «يقرؤه صوت الجهاز (D181)» في لوحة الكبار، و(D252) و(D221) في «ما على الشاشة» للدرس التالي):
+  //      نصّ في المحتوى (غير معرّف مفهوم وحده) فيه Dثلاثة أرقام، ونصٌّ في الكود خارج التعليقات فيه رقم قرار بين قوسين
+  { const walk = (v, at) => { if (typeof v === 'string') { if (v.length > 12 && /(^|[^\w])D\d{3}([^\w]|$)/.test(v)) errors.push(`${at}: رقم قرار في نصٍّ يُعرض («${v.match(/.{0,30}D\d{3}.{0,10}/)[0]}»)`); return; }
+      if (Array.isArray(v)) v.forEach((x, i) => walk(x, at + '[' + i + ']')); else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, at + '.' + k); };
+    walk(content, 'المحتوى');
+    for (const m of code.matchAll(/\((?:D\d{3}|D\d{3}[،,][^)]*)\)/g)) { const ln = code.slice(0, m.index).split('\n').length; errors.push(`الكود (السطر ${ln} من الوحدات مجموعةً): رقم قرار في نصٍّ يُعرض «${m[0]}»`); } }
+  // 4ب20) «أيّ البرجين مكعباته أكثر؟» بمكعبين مختلفي الحجم لا يُجاب بـ«الأقصر» (مراجعة الخصم M-10: في البنود السبعة كلها كان الأكثرُ مكعباتٍ الأقصرَ،
+  //      فنجحت قاعدة «اختر الأقصر» دائماً). ففي تقييم كل درس (كل مفهوم في الإتقان، والمراجعة، والاختبار) فيه بند كهذا، بندٌ تخطئ فيه القاعدة:
+  //      العددان متساويان، أو الأكثرُ الأطولُ. والطول عدد المكعبات في حجمها (sa، sb؛ وبلا حجم 24)
+  { const shortWins = v => { const a = v.a, b = v.b, ha = a * (v.sa || 24), hb = b * (v.sb || 24); if (a === b || ha === hb) return false; return (a > b) === (ha < hb); };
+    const towers = node => { const out = []; const walk = v => { if (Array.isArray(v)) return v.forEach(walk); if (!v || typeof v !== 'object') return;
+      if (v.t === 'compare' && (v.sa || 24) !== (v.sb || 24)) out.push(v); for (const [k, x] of Object.entries(v)) if (k !== 'twin' && x && typeof x === 'object') walk(x); }; walk(node); return out; };
+    for (const L of Object.values(lessons)) { const groups = [...Object.entries((L.mastery && L.mastery.concepts) || {}).map(([C, v]) => ['إتقان ' + C, v]), ['المراجعة', L.review], ['الاختبار', L.test]];
+      for (const [nm, g] of groups) { const T = towers(g || []); if (T.length && T.every(shortWins)) errors.push(`${L.id}: ${nm}: بنود البرجين بمكعبين مختلفي الحجم (${T.map(v => v.a + '/' + v.b).join('، ')}) كلها الأكثرُ مكعباتٍ فيها الأقصر، فتُجاب بـ«اختر الأقصر» بلا عدّ`); } } }
   // 4ب14) التعدّي لا يُجاب بقاعدةٍ لا تقارن (الفحوص المستقلة C2 وD1 وE1 لبوابة S1-U4). ثلاث قواعد: (1) مطابقة كلمة السؤال باسم السلّة أو رمزها («أطول؟» ← سلّة «أطول»)،
   //      وتخطئ حين الجواب في سلّة «بطول الشبر»؛ (2) لمس صاحب ≈ («بطوله»)، وتخطئ حين الجواب في «أطول/أقصر» وصاحبه «بطوله»؛ (3) الأولى حين تسمّي الجملة السلّتين
   //      والثانية حين لا تسمّيهما. ففي كل مسار تمرين فيه التعدّي، وفي تقييم كل درس فيه (الإتقان والمراجعة والمشتبك والاختبار)، بندٌ تخطئ فيه كلٌّ من الثلاث، فلا يكفي

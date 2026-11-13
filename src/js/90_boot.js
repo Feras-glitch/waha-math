@@ -6,3 +6,4 @@ VPACK.load().catch(() => {});   /* حزمة الصوت المحفوظة (D181): 
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => { defs(); if (!$('#home').hidden) showHome(); }); } catch (e) {}
 kidDelCheck();   /* حذف طفلٍ لم يكتمل: لا يُستأنف وحده، ويُلغى إن كان هو المختار (الفحص المستقل WM101-R1-01، R1-02) */
 if (!PROFILE) firstRun(); else if (KIDS.length > 1) { showHome(); openKids(true); } else showHome();
+window.wahaBooted = true;   /* حارس المتصفح القديم (src/guard.html، مراجعة الخصم C-04): بلغت البداية آخرها */

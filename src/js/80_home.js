@@ -52,11 +52,27 @@ function oasisBanner() { const n = UNITS.filter(U => PROG['badge:' + U.id]).leng
     anim(p, [{ strokeDasharray: '4 200' }, { strokeDasharray: '200 0' }], { duration: 1600, fill: 'forwards' }); });
   springAt(b, 180, 128, 1, { stones: n, total: 6, level: n / 6 }); return b.outerHTML; }
 
+/* تنبيه الكبار في الخريطة حين لا صوت عربي (المراجعة بعين جديدة U2، S2): قائمة الأصوات ومحرّك أندرويد قد يتأخران، فـ«لم تصل بعد» يُعاد فحصها كل ثانية
+   (3 مرات في المتصفح، و15 مع جسر أندرويد: محرّكه يبدأ بعد فتح التطبيق) ثم تُعدّ «لا صوت»، فلا يُقال للكبار «لا صوت» وهو يبدأ.
+   ويُخفيه الكبار لهذا الجهاز (hp_voice_note)، ويبقى تنبيه اللوحة. والنص للكبار فلا يُسجَّل */
+let VN_TRIES = 0, VN_TIMER = 0;
+function voiceHow() { const ua = navigator.userAgent || '';
+  if (window.AndroidBridge) return 'الإعدادات ← اللغة والإدخال (أو الإدارة العامة) ← تحويل النص إلى كلام ← محرّك Google ← تثبيت بيانات الصوت ← العربية. ثم أعيدوا فتح التطبيق.';
+  if (/Windows/.test(ua)) return 'الإعدادات ← الوقت واللغة ← الكلام ← إضافة أصوات ← العربية. ثم أعيدوا فتح التطبيق.';
+  if (/iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'الإعدادات ← تسهيلات الاستخدام ← المحتوى المنطوق ← الأصوات ← العربية. ثم أعيدوا فتح التطبيق.';
+  return 'أضيفوا صوتاً عربياً من إعدادات النطق في الجهاز، أو افتحوا التطبيق في Chrome أو Edge.'; }
+function voiceNote() { const n = $('#voiceNote'); if (!n) return; const st = voiceState(); const off = store.read('hp_voice_note', '', v => v === 'off') === 'off';
+  if (st === 'wait' && VN_TRIES < (window.AndroidBridge ? 15 : 3)) { n.hidden = true; if (!VN_TIMER) VN_TIMER = setTimeout(() => { VN_TIMER = 0; VN_TRIES++; if (!$('#home').hidden) voiceNote(); }, FAST ? 30 : 1000); return; }
+  if (st === 'ok' || off || $('#home').hidden) { n.hidden = true; return; }
+  if (!n.firstChild) { n.innerHTML = `<p><b>للكبار:</b> لا صوت عربي في هذا الجهاز، فالطفل يرى الجمل مكتوبةً ولا يسمعها. <button class="pick" id="vnHow">كيف نضيفه؟</button> <button class="pick" id="vnHide">إخفاء</button></p><p id="vnText" hidden></p>`;
+    $('#vnHow').onclick = () => { const t = $('#vnText'); t.textContent = voiceHow() + ' أو استوردوا حزمة الصوت من لوحة الكبار.'; t.hidden = !t.hidden; };
+    $('#vnHide').onclick = () => { store.set('hp_voice_note', 'off'); n.hidden = true; }; }
+  n.hidden = false; }
 function showHome() {
   show('home'); CUR = null; FLOW++; disarmIdle(); gateEnd(); SCENE_NOW = 'home'; /*T*/window.__scene = 'home';/*/T*/
   $('#helloName').textContent = PROFILE && PROFILE.name ? G(labelText('hello')).replace('{name}', PROFILE.name) : '';
   const me = $('#meBtn'); me.innerHTML = ''; me.appendChild(avatarNode(PROFILE)); $('#galBtn').innerHTML = ICON.gallery; renderDigits(); renderMute();
-  $('#oasisBanner').innerHTML = oasisBanner();
+  $('#oasisBanner').innerHTML = oasisBanner(); voiceNote();
   const path = $('#path'); path.innerHTML = ''; let nowSet = false; const resting = needBreak();
   if (reviewWaiting()) { const rb = document.createElement('button'); rb.className = 'stop review now'; nowSet = true; rb.dataset.review = '1';
     rb.innerHTML = `<svg viewBox="0 0 72 56" aria-hidden="true"><circle cx="36" cy="28" r="22" fill="${css('--paper')}" stroke="${css('--compass')}" stroke-width="4"/><path d="M36 14v14l10 6" stroke="${css('--compass')}" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`
