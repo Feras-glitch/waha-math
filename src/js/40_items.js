@@ -121,7 +121,7 @@ ITEM.sort = {
   altLine(item) { const cfg = sortCfg(); return cfg.acceptLine && cfg.acceptLine[item.kind]; },
   praise() { return sortCfg().praise || 'praise'; },
   hint2(item, r, err) { const v = (ERRORS[err] && ERRORS[err].vis) || 'edges'; return (VIS[v] || VIS.edges)(item, r.ctx); },
-  async together(item) { await S('gen.solve.' + item.kind); },
+  async together(item) { await S(solveLine(item.kind)); },
   async reveal(item, r) { const b = r.ctx.binsEl.querySelector(`[data-k="${item.kind}"]`); if (b) b.classList.add('ok'); await sleep(500); },
   mark(item, r) { const b = r.ctx.binsEl.querySelector(`[data-k="${item.kind}"]`); if (b) b.classList.add('ok'); },
   /* شيء من درس آخر لا سلّة لنوعه هنا (البند المشتبك): السبب يسمّيه بنوعه الحقيقي، فلا يقال عن مكعب «ليس مكعباً» */
@@ -145,7 +145,7 @@ ITEM.pick = {
   onWrong() { SFX.soft(); },
   mark(item, r) { const t = r.ctx.gs.find(x => x.k === item.ans); el('circle', { cx: t.x, cy: t.y, r: t.r, fill: 'none', stroke: css('--good'), 'stroke-width': 5 }, r.ctx.svg); },
   async hint2(item, r) { for (const t of r.ctx.gs) await VIS.edges(null, { g: t.g, svg: r.ctx.svg }); },   // ننظر إلى كل خيار بالدور، بلا كشف
-  async together(item) { await S(item.solve || ('gen.solve.' + (item.opts[item.ans].kind || 'other'))); },
+  async together(item) { await S(item.solve || solveLine(item.opts[item.ans].kind || 'other')); },
   async reveal(item, r) { ITEM.pick.mark(item, r); await sleep(600); },
   reason(item) { return item.why || null; },
   twin(item) { return item.twin || null; },

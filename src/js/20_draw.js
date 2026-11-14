@@ -155,10 +155,10 @@ function decorate(g, s) {
     el('path', { d: 'M0 -14 L4 -4 L15 -4 L6 3 L9 14 L0 7 L-9 14 L-6 3 L-15 -4 L-4 -4 Z', fill: '#f6cf7e' }, g); }
   if (o === 'coin') { el('circle', { r: S / 2 - 8, fill: 'none', stroke: W, 'stroke-opacity': .6, 'stroke-width': 3 }, g); for (let k = 0; k < 24; k++) { const a = k * Math.PI / 12; el('line', { x1: Math.cos(a) * (S / 2 - 3), y1: Math.sin(a) * (S / 2 - 3), x2: Math.cos(a) * (S / 2 - 7), y2: Math.sin(a) * (S / 2 - 7), stroke: '#000', 'stroke-opacity': .2, 'stroke-width': 2 }, g); }
     el('path', { d: `M0 ${S * .2} L0 ${-S * .1} M0 ${-S * .1} q${-S * .14} ${-S * .1} ${-S * .24} 0 M0 ${-S * .1} q${S * .14} ${-S * .1} ${S * .24} 0 M0 ${-S * .1} q${-S * .06} ${-S * .14} ${-S * .16} ${-S * .16} M0 ${-S * .1} q${S * .06} ${-S * .14} ${S * .16} ${-S * .16}`, fill: 'none', stroke: W, 'stroke-opacity': .75, 'stroke-width': 3.2, 'stroke-linecap': 'round' }, g); }   /* نخلة الواحة منقوشة، لا رقم */
-  if (o === 'kite') { const P = shapeGeom(s).poly; const lo = P.reduce((a, b) => b[1] > a[1] ? b : a);   /* طائرة ورقية: عودان متقاطعان، وذيل بعُقَد من أخفض رأس */
-    for (let k = 0; k < 3; k++) { const a = P[k], m = [(P[(k + 1) % 3][0] + P[(k + 2) % 3][0]) / 2, (P[(k + 1) % 3][1] + P[(k + 2) % 3][1]) / 2]; if (k < 2) el('line', { x1: a[0], y1: a[1], x2: m[0], y2: m[1], stroke: W, 'stroke-opacity': .6, 'stroke-width': 2.5 }, g); }
-    el('path', { d: `M${lo[0]} ${lo[1]} q5 10 -3 20 q-5 8 1 16`, fill: 'none', stroke: '#8a5a2b', 'stroke-width': 2.5 }, g);
-    [[lo[0] + 2, lo[1] + 9], [lo[0] - 2, lo[1] + 24]].forEach(([x, y]) => el('path', { d: `M${x - 7} ${y - 4} L${x + 7} ${y + 4} M${x - 7} ${y + 4} L${x + 7} ${y - 4}`, stroke: '#f6cf7e', 'stroke-width': 3, 'stroke-linecap': 'round' }, g)); }
+  if (o === 'sandwich') { const P = shapeGeom(s).poly; const cx = (P[0][0] + P[1][0] + P[2][0]) / 3, cy = (P[0][1] + P[1][1] + P[2][1]) / 3, In = P.map(([x, y]) => [cx + (x - cx) * .74, cy + (y - cy) * .74]);   /* شطيرة: لبّ فاتح داخل القشرة، وخسّ أخضر بينهما عند القاعدة */
+    el('polygon', { points: In.map(p => p.join(',')).join(' '), fill: '#f3e0b5', 'stroke-linejoin': 'round' }, g);
+    const [a, b] = [In[1], In[2]]; let d = `M${a[0]} ${a[1] + 2}`; for (let k = 1; k <= 8; k++) { const t = k / 8; d += ` L${a[0] + (b[0] - a[0]) * t} ${a[1] + (b[1] - a[1]) * t + (k % 2 ? 7 : 2)}`; }
+    el('path', { d, fill: 'none', stroke: '#7e9a4e', 'stroke-width': 4, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, g); }
   if (o === 'rug') { const geo = shapeGeom(s); const a = geo.poly[0], c2 = geo.poly[2]; const w = c2[0] - a[0], h = c2[1] - a[1];   /* سجّادة: إطار مزخرف ومعيّن في الوسط وأهداب على الطرفين */
     el('rect', { x: a[0] + 9, y: a[1] + 9, width: w - 18, height: h - 18, fill: 'none', stroke: '#f6cf7e', 'stroke-width': 3, 'stroke-dasharray': '8 4' }, g);
     el('polygon', { points: `0,${-h * .26} ${w * .16},0 0,${h * .26} ${-w * .16},0`, fill: '#f6cf7e', opacity: .85 }, g);

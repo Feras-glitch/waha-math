@@ -142,6 +142,9 @@ const digitsKnown = () => !!(PROG['m1.u1.d5'] || {}).done || !!PROG.unlockAll;
 /* الأرقام المكتوبة في الرسم (الشارات والعدّادات): من درس «أرقام الواحة» نفسه فصاعداً (N003)، وقبله نقاط وعلامات عدّ */
 const LESSON_SEQ = () => UNITS.flatMap(u => u.lessons);
 const digitsShown = () => digitsKnown() || (!!CUR && LESSON_SEQ().indexOf(CUR.id) >= LESSON_SEQ().indexOf('m1.u1.d5'));
+/* «ركن» يُعرَّف في درس المستطيل (m1.u1.d3): من بعده يقول الحلّ المشترك للمربع إن كل ركن فيه مثل ركن الورقة (مراجعة الخصم M-05: «أربعة أضلاع متساوية» وحدها تعريف المعيّن)، وقبله لا */
+const cornerKnown = () => !!(PROG['m1.u1.d3'] || {}).done || (!!CUR && LESSON_SEQ().indexOf(CUR.id) >= LESSON_SEQ().indexOf('m1.u1.d3'));
+const solveLine = kind => 'gen.solve.' + (kind === 'square' && cornerKnown() ? 'squareC' : kind);
 const tallyText = n => '•'.repeat(n);
 /* الأعداد فوق العشرة تُسمع منذ طريق الأعداد (S1-U3 د5) ولا تُكتب في خيار قبل درس «عشرة وآحاد» (N010، S1-U4 د5) الذي يعلّم كتابتها (D229):
    داخل الدرس بموضعه من المنهاج (فتدريب الفحص بفتح كل الدروس لا يغيّره)، وخارجه بإنجاز درس الجسر */

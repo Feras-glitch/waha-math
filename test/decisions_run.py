@@ -5,6 +5,8 @@
 #   A-09 المراجعة: المواعيد القصيرة (بعد يوم وبعد 3 أيام) قبل غيرها حين يزيد المستحق على السقف.
 #   R02  الصيانة بعد «ثابت»: 30 ثم 60 ثم 90 يوماً لمفهومٍ له 4 بنود مراجعة فأكثر؛ الخطأ يُرجعه إلى خطوة 3 أيام؛ وبندٌ عرضي يُحسب صيانةً.
 #   A-04 سطر «ثابت مبدئي» في تقرير الكبار.
+#   D6   نصوص القرار 6 (M-05..M-25 وA-12 وA-13) في المتصفح: الأشياء الجديدة (الشطيرة والجزرة والعلبة المعدنية) تُرسم ولا يبقى القديم؛ حلّ المربع المشترك
+#        بالركن من درس «ركن» فصاعداً؛ «صحّح لفوضى» بعد ثلاثة أخطاء كشفٌ محايد بلا «نعم!» ولا نغمة نجاح؛ واختبار الحيّ الأول 12 بنداً فيها بند «نعم».
 # الاستعمال: python3 test/decisions_run.py [ملف نسخة الفحص]   (ONLY=A-03,A-09 لبعضها؛ يخرج بـ 1 مع أي إخفاق)
 import asyncio, json, os, re, sys
 from playwright.async_api import async_playwright
@@ -162,12 +164,67 @@ async def r02_cases(b):
   check('A-04', 'فـ«ثابت» هنا مبدئي' in t, 'سطر «ثابت مبدئي» في جدول المراجعة في لوحة الكبار', '')
   check('R02', not errs, 'لا أخطاء في الصفحة (البند المشتبك)', errs[:3]); await ctx.close()
 
+async def d6_cases(b):
+  ctx, pg, errs = await fresh(b)
+  objs = await pg.evaluate("""() => { const out = {}; const svg = newStage(260, { oasis: false, ground: 0 });
+    for (const k of ['sandwich', 'carrotCone', 'can']) { let s; try { s = make(k); } catch (e) { out[k] = { err: String(e) }; continue; } const g = fitThing(svg, s, 170, 120, 130); const fills = [...g.querySelectorAll('*')].map(e => e.getAttribute('fill'));
+      out[k] = { kind: s.kind, object: s.object, label: s.label, polys: g.querySelectorAll('polygon').length, crumb: fills.includes('#f3e0b5'), leaves: fills.filter(f => f === '#7e9a4e').length, band: fills.includes('#e8d9b0') }; }
+    out.old = ['kite', 'funnel', 'tube'].map(k => typeof MK[k]); return out; }""")
+  check('D6', objs['sandwich'].get('kind') == 'triangle' and objs['sandwich'].get('label') == 'شَطِيرَة' and objs['sandwich'].get('crumb') and objs['sandwich'].get('polys', 0) >= 2, 'M-08 شطيرة مثلّثة بدل الطائرة الورقية: مثلثٌ اسمه لا يسمّي شكلاً، ولبّها مرسوم', objs['sandwich'])
+  check('D6', objs['carrotCone'].get('kind') == 'cone' and objs['carrotCone'].get('label') == 'جَزَرَة' and objs['carrotCone'].get('leaves') == 3, 'M-09 جزرة (مخروط مصمت له رأس) بدل القمع، بأوراقها', objs['carrotCone'])
+  check('D6', objs['can'].get('kind') == 'cylinder' and objs['can'].get('label') == 'عُلْبَةٌ مَعْدِنِيَّةٌ' and objs['can'].get('band'), 'M-09 علبة معدنية مغلقة (لها وجهان) بدل لفّة الكرتون المفتوحة', objs['can'])
+  check('D6', objs['old'] == ['undefined'] * 3, 'لا يبقى مولّد للطائرة الورقية ولا للقمع ولا للفّة الكرتون', objs['old'])
+  bag = await pg.evaluate("""() => { CUR = LDATA['m1.u2.d2']; const svg = newStage(200, { oasis: false, ground: 0 }); const n0 = svg.childElementCount; try { bagIcon(svg, { icon: 'can', label: 'bagCan' }, 100, 100); } catch (e) { return { drawn: false, err: String(e), text: '', items: LDATA['m1.u2.d2'].bag.items.map(r => r.icon) }; }
+    const add = [...svg.children].slice(n0); return { drawn: add.some(e => e.tagName === 'g' && e.querySelectorAll('ellipse,path').length > 2), text: svg.textContent, items: LDATA['m1.u2.d2'].bag.items.map(r => r.icon) }; }""")
+  check('D6', bag['drawn'] and 'عُلْبَةٌ مَعْدِنِيَّةٌ' in bag['text'] and bag['items'][0] == 'can', 'M-09 حقيبة u2/d2: أيقونة العلبة المعدنية مرسومة باسمها', bag)
+  sv = await pg.evaluate("""() => { const r = []; const P0 = PROG['m1.u1.d3']; delete PROG['m1.u1.d3'];
+    if (typeof solveLine !== 'function') return 'لا solveLine';
+    for (const id of ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d6', 'm1.u2.d6']) { CUR = LDATA[id]; r.push(solveLine('square')); }
+    CUR = LDATA['m1.u1.d1']; PROG['m1.u1.d3'] = { done: true, at: 1 }; r.push(solveLine('square')); r.push(solveLine('rect')); r.push(solveLine('cube'));
+    if (P0) PROG['m1.u1.d3'] = P0; else delete PROG['m1.u1.d3']; return r; }""")
+  check('D6', sv == ['gen.solve.square', 'gen.solve.square', 'gen.solve.squareC', 'gen.solve.squareC', 'gen.solve.squareC', 'gen.solve.squareC', 'gen.solve.rect', 'gen.solve.cube'],
+        'M-05 حلّ المربع المشترك: بالحوافّ في d1 وd2، وبالركن من درس «ركن» (d3) فصاعداً، وفي مراجعة درسٍ سابق لطفلٍ أنهى d3', sv)
+  await ctx.close()
+  # M-12: «صحّح لفوضى» بثلاثة اختيارات خاطئة، ثم ضابط: الصحيحة من الأولى
+  for how, label in (('wrong', 'ثلاثة أخطاء'), ('ok', 'ضابط: الصحيحة من الأولى')):
+    ctx, pg, errs = await fresh(b)
+    await pg.evaluate("""() => { const L = LDATA['m1.u1.d1']; CUR = L; show('lesson'); window.__clips = []; window.__good = 0; const g0 = SFX.good; SFX.good = (...a) => { window.__good++; return g0(...a); };
+      window.__chaosDone = false; chaosCards({ right: 'ch.right', wrong: 'ch.wrong' }).then(() => { window.__chaosDone = true; }, e => { window.__chaosDone = 'err:' + e; }); }""")
+    last = -1
+    for _ in range(600):
+      st = await pg.evaluate("() => ({ done: window.__chaosDone, a: window.__auto ? { n: window.__auto.n, kind: window.__auto.kind } : null })")
+      if st['done']: break
+      if st['a'] and st['a']['n'] != last and st['a']['kind'] == 'card':
+        last = st['a']['n']; await pg.evaluate("(h) => { const a = window.__auto; (h === 'wrong' ? a.wrong : a.ok)(); }", how)
+      await pg.wait_for_timeout(30)
+    r = await pg.evaluate("() => ({ done: window.__chaosDone, clips: window.__clips.filter(c => c.startsWith('gen.chaos') || c.includes('.ch.')), good: window.__good })")
+    c = r['clips']; has = lambda k: [i for i, x in enumerate(c) if x.startswith(k)]
+    if how == 'wrong':
+      rv, rt, ww = has('gen.chaos.reveal'), has('m1.u1.d1.ch.right'), has('gen.chaos.wasWrong')
+      ok = r['done'] is True and not has('gen.chaos.right') and r['good'] == 0 and len(has('gen.chaos.together')) == 1 and rv and rt and ww and rv[0] < rt[-1] < ww[0]
+      check('D6', ok, 'M-12 بعد ثلاثة اختيارات خاطئة: لا «نعم!» ولا نغمة نجاح، و«اسمعهما مرة أخرى» مرةً واحدة فقط، ثم «هذه هي الجملة التي تحقّقنا منها بأيدينا» والجملة و«فوضى أخطأت»', r)
+    else:
+      ok = r['done'] is True and has('gen.chaos.right') and r['good'] == 1 and not has('gen.chaos.reveal') and not has('gen.chaos.wasWrong')
+      check('D6', ok, 'M-12 ' + label + ': «نعم! هذه هي الجملة الصحيحة» ونغمة النجاح كما كانتا', r)
+    check('D6', not errs, 'لا أخطاء في الصفحة (' + label + ')', errs[:3]); await ctx.close()
+  # A-12: اختبار الحيّ الأول 12 بنداً، فيها بند «نعم» يُسأل ويُحسب، والنجاح 10 منها
+  P = {}
+  for u in ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5']: P[u] = {'done': True, 'at': 1, 'mastered': True}
+  ctx, pg, errs = await fresh(b, P)
+  meta = await pg.evaluate("() => { const T = LDATA['m1.u1.d6'].test.items; const y = T.find(q => q.id === 't12'); return { n: T.length, yes: y && y.item.t === 'yesno' && y.item.ans === true, need: typeof testNeed === 'function' ? testNeed(T.length) : null }; }")
+  r = await drive(pg, 'm1.u1.d6', test_ok=10)
+  st = await pg.evaluate("() => { const P = PROG['m1.u1.d6'] || {}; return { score: P.score, of: P.of, mastered: !!P.mastered, asked: (window.__clips || []).some(c => c.startsWith('m1.u1.d6.ts.corners')), badge: !!PROG['badge:m1.u1'] }; }")
+  check('D6', meta == {'n': 12, 'yes': True, 'need': 10}, 'A-12 اختبار الحيّ الأول 12 بنداً، فيها بند «نعم» (t12)، والنجاح 10 منها', meta)
+  check('D6', r == 'done' and st['asked'] and st['score'] == 10 and st['of'] == 12 and st['mastered'] and st['badge'], 'A-12 الاختبار يُقاد كله: يُسأل بند الأركان، و10 من 12 تنجح', [r, st])
+  check('D6', not errs, 'لا أخطاء في الصفحة (اختبار الحيّ الأول)', errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch()
     if on('A-03'): await a03_cases(b)
     if on('A-09'): await a09_cases(b)
     if on('R02') or on('A-04'): await r02_cases(b)
+    if on('D6'): await d6_cases(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())

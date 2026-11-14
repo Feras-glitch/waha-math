@@ -45,7 +45,7 @@ ZONE = """() => { %s const [A, B] = window.__T, pa = rr(pads(A.g)[0]), pb = rr(p
   if (r - l < 2) return []; return [l, r].map(x => { const on = document.elementsFromPoint(x, y); const both = [A, B].every(t => on.some(e => e.matches('rect.hit') && t.g.contains(e))); const drawn = on.some(e => [A, B].some(t => t.g.contains(e)) && seen(e));
     const da = far(ba, x, y), db = far(bb, x, y); return { x, y, ok: both && !drawn && Math.abs(da - db) > 2, want: da < db ? 0 : 1 }; }); }""" % LIB
 # (د) أنبوب عريض (أ) ثم مستطيل مرئي ليس هدفاً بعد حافته ثم شمعة نحيلة (ب) منطقتها فوق المستطيل: اللمسة على المستطيل للشمعة
-BLOCK = """() => { %s const svg = newStage(300, { oasisOpacity: .1 }); const A = { g: fitThing(svg, { ...make('tube'), label: null }, 140, 140, 70), k: 0 };
+BLOCK = """() => { %s const svg = newStage(300, { oasisOpacity: .1 }); const A = { g: fitThing(svg, { ...make('can'), label: null }, 140, 140, 70), k: 0 };
   const ba = box(A.g), m = svg.getScreenCTM(), u = 1 / m.a; const blk = el('rect', { x: 0, y: 0, width: 1, height: 1, fill: '#9b8a6a' }, svg);
   const B = { g: fitThing(svg, { ...make('candle'), label: null }, 140 + 84, 140, 70), k: 1 }; window.__T = [A, B]; tapOne(window.__T, { ok: 1, pulse: false, pad: 110 }).then(k => window.__got = k); window.__got = null;
   const pb = rr(pads(B.g)[0]), pa = rr(pads(A.g)[0]), bb = box(B.g); const x0 = Math.max(ba.r + 2, pb.l + 2), x1 = Math.min(pa.r, bb.l) - 2;
@@ -53,7 +53,7 @@ BLOCK = """() => { %s const svg = newStage(300, { oasisOpacity: .1 }); const A =
   blk.setAttribute('x', q0.x); blk.setAttribute('y', q0.y); blk.setAttribute('width', Math.max(1, q1.x - q0.x)); blk.setAttribute('height', Math.max(1, q1.y - q0.y));
   const x = (x0 + x1) / 2, y = (ba.t + ba.b) / 2, on = document.elementsFromPoint(x, y); const okPre = x1 - x0 > 3 && on[0] && on[0].matches('rect.hit') && B.g.contains(on[0]) && on.includes(blk) && on.some(e => e.matches('rect.hit') && A.g.contains(e)) && far(ba, x, y) < far(bb, x, y);
   return { x, y, ok: !!okPre }; }""" % LIB
-SPREAD = """() => { const c = { n: 6, things: ['cyl', 'tube', 'cube', 'die', 'sphere', 'orange', 'teaBox', 'candle', 'cone'] }; const cnt = [0, 0, 0, 0, 0, 0]; let n7 = 'no error';
+SPREAD = """() => { const c = { n: 6, things: ['cyl', 'can', 'cube', 'die', 'sphere', 'orange', 'teaBox', 'candle', 'cone'] }; const cnt = [0, 0, 0, 0, 0, 0]; let n7 = 'no error';
   if (typeof roomThings !== 'function') return { cnt, n7: 'roomThings missing' };
   for (let t = 0; t < 300; t++) { const svg = newStage(300, { oasisOpacity: .1 }); const T = roomThings(svg, c, 'cone'); cnt[T.findIndex(x => x.k === 'cone')]++; }
   try { roomThings(newStage(300, {}), { ...c, n: 7 }, 'cone'); } catch (e) { n7 = 'threw'; } return { cnt, n7 }; }"""

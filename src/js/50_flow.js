@@ -36,7 +36,7 @@ function bagIcon(svg, r, x, y, sc = 1, maxW = 112) {
     mail: () => { mailboxAt(g, 0, 10, 2).g.setAttribute('transform', 'translate(0 10) scale(.7)'); },
     cubes: () => { towerAt(g, -16, 40, 4, { size: 18, color: CUBE.lemon }); towerAt(g, 16, 40, 3, { size: 18, color: CUBE.white }); },
     cut: () => { shapeAt(g, { type: 'circle', size: 30, color: css('--circle') }, -26, -10); shapeAt(g, { type: 'square', size: 28, color: css('--square') }, 10, -14); shapeAt(g, { type: 'triangle', size: 30, color: css('--triangle') }, -8, 22); shapeAt(g, { type: 'rect', w: 34, h: 18, color: css('--rect') }, 28, 20); },
-    hat: () => thingAt(g, { solid: 'cone', size: 80, color: '#6c7fa8' }, 0, 0), tube: () => thingAt(g, { solid: 'cylinder', size: 76, color: '#c9a072' }, 0, 0), box: () => thingAt(g, { solid: 'box', size: 84, color: BOXC }, 0, 0),
+    hat: () => thingAt(g, { solid: 'cone', size: 80, color: '#6c7fa8' }, 0, 0), can: () => thingAt(g, { solid: 'cylinder', object: 'can', size: 76, color: '#9aa7b0' }, 0, 0), box: () => thingAt(g, { solid: 'box', size: 84, color: BOXC }, 0, 0),
     stickers: () => { for (let i = 0; i < 4; i++) el('rect', { x: -30 + (i % 2) * 30, y: -24 + Math.floor(i / 2) * 26, width: 24, height: 20, rx: 3, fill: '#f6cf7e', stroke: '#c98f55', 'stroke-width': 2, transform: `rotate(${i * 7 - 10})` }, g); },
     /* S1-U3 */
     chest: () => chestAt(g, 0, 44, { w: 76, h: 36, legs: 34, open: false }), doll: () => placeThingAt(g, 'doll', 0, 40, {}), teddy: () => placeThingAt(g, 'teddy', 0, 40, {}), ball: () => placeThingAt(g, 'ball', 0, 30, { scale: 1.3 }),

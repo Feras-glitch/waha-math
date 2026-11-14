@@ -106,7 +106,9 @@ function solidAt(parent, s, x, y) { s = tok(s);
         el('path', { d: `M${w / 2 - 2} ${-h * .25} q${w * .42} 0 ${w * .42} ${h * .22} q0 ${h * .22} ${-w * .42} ${h * .22}`, fill: 'none', stroke: '#fff', 'stroke-width': 2.5, 'stroke-linecap': 'round', opacity: .6 }, cyl); }
       if (batt) { el('rect', { x: -w / 2 + 1.5, y: -h / 2 + ry, width: w - 3, height: h * .24, fill: '#d9a35b', opacity: .95, 'pointer-events': 'none' }, cyl);   /* بطارية: طرف نحاسي ونتوء صغير */
         el('rect', { x: -w * .14, y: -h / 2 - ry - 7, width: w * .28, height: ry + 9, rx: 3, fill: '#c9c9c0', stroke: '#fff', 'stroke-width': 2, 'pointer-events': 'none' }, cyl); }   /* بلا علامة «+»: رمز الجمع له معناه في الدرس */
-      if (s.object === 'tube') for (let k = -2; k <= 2; k++) el('line', { x1: -w / 2, y1: k * h / 5 + h / 10, x2: w / 2, y2: k * h / 5 - h / 10, stroke: mix(c, 'b', .3), 'stroke-width': 2, opacity: .7 }, cyl);
+      if (s.object === 'can') { el('path', { d: `M${-w / 2} ${-h * .18} A${w / 2} ${ry} 0 0 0 ${w / 2} ${-h * .18} V${h * .2} A${w / 2} ${ry} 0 0 1 ${-w / 2} ${h * .2} Z`, fill: '#e8d9b0', opacity: .95, 'pointer-events': 'none' }, cyl);   /* علبة معدنية مغلقة: ورقة حولها، وحافّتان، وحلقة على الغطاء */
+        for (const y of [-h / 2 + ry + 6, h / 2 - 7]) el('path', { d: `M${-w / 2} ${y} A${w / 2} ${ry} 0 0 0 ${w / 2} ${y}`, fill: 'none', stroke: mix(c, 'b', .3), 'stroke-width': 2.5, opacity: .8, 'pointer-events': 'none' }, cyl);
+        el('ellipse', { cx: 0, cy: -h / 2, rx: w / 2 * .78, ry: ry * .78, fill: 'none', stroke: mix(c, 'b', .25), 'stroke-width': 2, 'pointer-events': 'none' }, cyl); }
       if (s.object === 'candle') { el('line', { x1: 0, y1: -h / 2 - ry, x2: 0, y2: -h / 2 - ry - 8, stroke: '#2b3a42', 'stroke-width': 2 }, cyl);
         el('path', { d: `M0 ${-h / 2 - ry - 26} q9 12 0 18 q-9 -6 0 -18z`, fill: '#f6b73c' }, cyl); }
       if (s.pose === 'lying') { cyl.setAttribute('transform', 'rotate(90)'); shadowAt(body, w / 2 + 4, h / 2 + ry); body.insertBefore(body.lastChild, body.firstChild); }
@@ -118,7 +120,8 @@ function solidAt(parent, s, x, y) { s = tok(s);
     const fill = grad(body, 'linearGradient', [[0, mix(c, 'b', .25)], [.4, mix(c, 'w', .3)], [.7, c], [1, mix(c, 'b', .38)]]);
     const cn = el('g', {}, body);
     el('path', { d: `M0 ${-h / 2} L${w / 2} ${h / 2} A${w / 2} ${ry} 0 0 1 ${-w / 2} ${h / 2} Z`, fill, stroke: '#fff', 'stroke-width': 3, 'stroke-linejoin': 'round' }, cn);
-    if (s.object === 'funnel') { el('rect', { x: -6, y: -h / 2 - 2, width: 12, height: 26, rx: 4, fill: mix(c, 'b', .25), stroke: '#fff', 'stroke-width': 2 }, cn); el('path', { d: `M${-w * .3} ${h * .1} L${w * .3} ${h * .1}`, stroke: '#fff', 'stroke-opacity': .5, 'stroke-width': 3 }, cn); }   /* قمع: أنبوب عند رأسه */
+    if (s.object === 'carrotCone') { for (const v of [-.22, 0, .18, .34]) { const hw = w / 2 * (v + .5); el('path', { d: `M${-hw * .8} ${v * h} q${hw * .4} 4 ${hw * .8} 3`, fill: 'none', stroke: mix(c, 'b', .35), 'stroke-width': 2.2, 'stroke-linecap': 'round', opacity: .8, 'pointer-events': 'none' }, cn); }   /* جزرة: خطوط على جسمها، وأوراق خضراء خلف قاعدتها (القاعدة تُرسم فوقها فتبقى كاملة) */
+      for (const [dx, a] of [[-11, -24], [0, 0], [11, 24]]) el('ellipse', { cx: dx, cy: h / 2 + ry + 14, rx: 6, ry: 18, fill: '#7e9a4e', stroke: '#fff', 'stroke-width': 1.5, transform: `rotate(${a} ${dx} ${h / 2 + ry + 14})`, 'pointer-events': 'none' }, cn); }
     if (s.object === 'hat') { [[-.12, .1], [.12, .25], [-.2, .38], [.05, .45], [.22, .1]].forEach(([u, v]) => el('circle', { cx: u * w, cy: v * h, r: 4.5, fill: '#fff', opacity: .85 }, cn));
       el('circle', { cx: 0, cy: -h / 2 - 7, r: 9, fill: '#f6cf7e', stroke: '#fff', 'stroke-width': 2 }, cn); }
     if (s.object === 'waffle') {                    // نقش البسكويت نمطُ تعبئة داخل حدود المخروط، فلا يكبر صندوقه فيصغر الرسم (getBBox يتجاهل القصّ)

@@ -1086,6 +1086,26 @@ export function lint(content, js) {
       if (ok.length && bad.length && Math.max(...ok) > 1.2 * Math.max(...bad)) errors.push(`${where}: في بند ${v.t === 'reason' ? 'التعليل' : 'البطاقتين'} «${v.q}» الصحيح ${Math.max(...ok)} حرفاً وأطول المشتّتين ${Math.max(...bad)}: الطول قرينة`); }
     for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkWhy(x, where, L); };
   for (const L of Object.values(lessons)) walkWhy(L, L.id, L);
+  // 4ج2) وعلى مستوى التقييم كله (مراجعة الخصم A-13: في 6 من 10 بنود تعليل في الإتقان والاختبار كان الصحيح أطولَ البطاقات وحده، والطفل يسمعها فالأطول أطول زمناً):
+  //      عدد بنود التعليل في التقييم (الإتقان ومشتبكه، والمراجعة، والاختبار) التي الصحيحُ فيها أطولُ البطاقات وحده لا يزيد على ثلثها (مقرَّباً إلى أعلى)، وكذلك أقصرها وحده
+  { const R = []; const grab = (v, L, where) => { if (Array.isArray(v)) return v.forEach(x => grab(x, L, where)); if (!v || typeof v !== 'object') return;
+      if (v.t === 'reason' && Array.isArray(v.opts)) { const txt = id => (L.lines && L.lines[id]) || (content.gen.lines || {})[id] || ''; const ok = v.opts.filter(o => o.ok).map(o => bare(txt(o.id))), bad = v.opts.filter(o => !o.ok).map(o => bare(txt(o.id)));
+        if (ok.length === 1 && bad.length) R.push({ where: where + ' «' + v.q + '»', long: ok[0] > Math.max(...bad), short: ok[0] < Math.min(...bad) }); }
+      for (const [k, x] of Object.entries(v)) if (k !== 'twin' && x && typeof x === 'object') grab(x, L, where); };
+    for (const L of Object.values(lessons)) { const M = L.mastery || {}; grab([M.concepts || {}, M.mixed || {}], L, L.id + ' الإتقان'); grab(L.review || [], L, L.id + ' المراجعة'); grab(L.test || {}, L, L.id + ' الاختبار'); }
+    const cap = Math.ceil(R.length / 3);
+    for (const [k, w] of [['long', 'أطول'], ['short', 'أقصر']]) { const H = R.filter(r => r[k]); if (H.length > cap) errors.push(`بنود التعليل في التقييم: الصحيح ${w} البطاقات وحده في ${H.length} من ${R.length} (الحدّ ${cap})، فيُعرف بطوله: ${H.map(r => r.where).join('، ')}`); } }
+  // 4ج4) المربع والمستطيل بالركن (مراجعة الخصم M-05: «أربعة أضلاع متساوية» وحدها تعريف المعيّن، و«كل ضلعين متقابلين متساويان» وحدها تعريف متوازي الأضلاع):
+  //      من درس «ركن» (m1.u1.d3) فصاعداً، كل جملة تصف بهما شكلاً (لا سؤال) فيها الركن. ودرسا d1 وd2 قبل الركن، فيصفان بالحوافّ والرؤوس
+  { const pre = new Set(['m1.u1.d1', 'm1.u1.d2']), nk = t => String(t || '').replace(/[\u064B-\u0652\u0670]/g, '');
+    const defs = t => /أربعة أضلاع متساوية|أضلاعه الأربعة متساوية|كل ضلعين متقابلين (فيه |فيهما )?متساويان/.test(t) && !/ليست كلها/.test(t);
+    for (const L of Object.values(lessons)) { if (pre.has(L.id)) continue;
+      for (const [k, v] of Object.entries(L.lines || {})) { const t = nk(Array.isArray(v) ? v[v.length - 1] : v); if (typeof t === 'string' && defs(t) && !/؟\s*$/.test(t) && !/ركن|أركان/.test(t)) errors.push(`${L.id}.${k}: يصف المربع أو المستطيل بأضلاعه بلا الركن («${t.slice(0, 60)}»)، فيصدق على المعيّن ومتوازي الأضلاع (M-05)`); } } }
+  // 4ج3) «نعم/لا» في التقييم (الإتقان ومشتبكه، والمراجعة، والاختبار) جوابها «نعم» مرةً و«لا» مرةً على الأقل (مراجعة الخصم A-12: كان البندان الوحيدان جوابهما «لا»)
+  { const Y = []; const grab = (v, where) => { if (Array.isArray(v)) return v.forEach(x => grab(x, where)); if (!v || typeof v !== 'object') return;
+      if (v.t === 'yesno') Y.push({ where: where + ' «' + v.q + '»', ans: !!v.ans }); for (const [k, x] of Object.entries(v)) if (k !== 'twin' && x && typeof x === 'object') grab(x, where); };
+    for (const L of Object.values(lessons)) { const M = L.mastery || {}; grab([M.concepts || {}, M.mixed || {}], L.id + ' الإتقان'); grab(L.review || [], L.id + ' المراجعة'); grab(L.test || {}, L.id + ' الاختبار'); }
+    for (const a of [true, false]) if (Y.length >= 2 && !Y.some(y => y.ans === a)) errors.push(`بنود «نعم/لا» في التقييم كلها جوابها «${a ? 'لا' : 'نعم'}» (${Y.map(y => y.where).join('، ')}): لا بند جوابه «${a ? 'نعم' : 'لا'}»`); }
   // 4د) «ابحث في الغرفة» (D255): الغرفة تسع ستة أشياء في صفّين مبعثرين، وتُختار من قائمة أطول منها، ولكل نوع يُسأل عنه شيء في القائمة
   const MSIG = makerSigs(code); const walkRoom = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkRoom(x, where)); if (!v || typeof v !== 'object') return;
     if (v.scene === 'roomHunt') { const n = v.n || 6, th = v.things || [], kinds = new Set(th.map(r => (MSIG[r] || {}).kind).filter(Boolean));
