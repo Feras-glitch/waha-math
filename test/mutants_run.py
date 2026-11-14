@@ -566,11 +566,12 @@ def lint(root):
   r = subprocess.run(['node', 'build/lint.mjs'], cwd=root, capture_output=True, text=True); return r.returncode, r.stdout + r.stderr
 
 # وتُقسَم على جزأين حين يحدّ المشغّل زمن المهمة (MUT_PART=1: المحتوى والمولّد والكود ونصف طفرات المتصفح الأول، و2: نصفها الثاني؛ بوابة S1-U4 بعد E:
-# تجاوزت الطفرات كلها ساعة ونصفاً فقطعها الحدّ الزمني بعد ستين طفرة متصفح بلا إخفاق، والخلاصة رأت التوقّف)
+# تجاوزت الطفرات كلها ساعة ونصفاً فقطعها الحدّ الزمني بعد ستين طفرة متصفح بلا إخفاق، والخلاصة رأت التوقّف).
+# و`run_all.sh` يشغّلها منذ الدرس 299 شرائحَ تُستأنف: `CONTENT_ONLY=1` للمحتوى، ثم `MUT_SLICE` لطفرات المتصفح، وعددها من `MUT_COUNT=1`
 MUT_PART = os.environ.get('MUT_PART', '')
 tmp = tempfile.mkdtemp(prefix='mut_')
 try:
-  if MUT_PART == '2' or os.environ.get('MUT_ONLY') or os.environ.get('MUT_SLICE'): raise StopIteration   # MUT_ONLY: طفرة متصفح واحدة بالاسم، لإعادة فحص طفرةٍ عُدّلت
+  if MUT_PART == '2' or os.environ.get('MUT_ONLY') or os.environ.get('MUT_SLICE') or os.environ.get('MUT_COUNT'): raise StopIteration   # MUT_ONLY: طفرة متصفح واحدة بالاسم، لإعادة فحص طفرةٍ عُدّلت
   root = os.path.join(tmp, 'engine')
   shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns('dist', 'out', '.git', '__pycache__', 'node_modules'))
   rc, out = lint(root); check(rc == 0, 'الأصل: فحص المحتوى بلا مخالفة')
@@ -950,6 +951,7 @@ RUNTIME = [
   ('سؤال الغطاء يُقال والصفحة مخفية', "if (opt.cover && PAUSED) { if (document.hidden) { VIS_COVER = opt.cover; return Promise.resolve(); } return speakNow(who, id, text, opt); }", "if (opt.cover && PAUSED) { return speakNow(who, id, text, opt); }", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'غ'}, 'FAIL غطاء الخروج يُفتح والصفحة مخفية'),
   ('مفتاحٌ غير مفتاح الفعل يلمس', "const isActKey = e => e.key === 'Enter' || e.key === ' ',", "const isActKey = e => e.key !== 'Tab',", ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u4.d1', 'STRICT': '1', 'SHOTS': '0', 'OUT': 'test/out/mut_auto'}, '(غير مفتاح الفعل) فعل شيئاً'),   # J2 (8): الحارس في السائق
 ]
+if os.environ.get('MUT_COUNT'): print(len(RUNTIME)); sys.exit(0)   # عدد طفرات المتصفح وحده، لتقسيمها شرائح في run_all.sh (الدرس 299)
 def run(args, env, f):
   e = dict(os.environ, **env, FILE=f)
   try: r = subprocess.run(['python3'] + [a.replace('{F}', f) for a in args], cwd=ROOT, capture_output=True, text=True, env=e, timeout=1800)

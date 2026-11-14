@@ -3,14 +3,34 @@
 # تبني النسختين، ثم تشغّل: الفحص الدخاني لنسخة الأطفال، والمسارات خارج الدرس (الخروج والاستئناف، والاستراحة والبوابة، و«أرقامي»، والمعرض، واللوحة، والليلي، والأغطية على 320×568)،
 # ووسوم أخطاء الفرز، و«أعد الجملة» (replay_run)، واللمس الحقيقي بالإصبع والفأرة (realtap_run)، وتخطيط الأشياء المبعثرة (layout_run)، وحزمة الصوت والنسخة الاحتياطية (backup_voice_run)، وفحص الفحوص بالطفرات (mutants_run، الدرس 98)، ثم السائق الآلي على الدروس التسعة عشر والورش الثلاث بسبعة أنماط ومساري الحقيبة والجنسين، والوضع الليلي، وشاشتين قصيرتين (360×640 و320×568)،
 # ثم تقرير الجمل غير المنطوقة. كل ملف نتائج ينتهي بسطور errors / LOG.errors / FAILS / small targets / unnamed targets / tap conflicts / chaos leaks / font fallbacks (D256) / NOT in script.
-# ولكل فحص حدّ زمني (timeout: نصف ساعة، والطفرات ساعة ونصف): الفحص الذي يتجمّد إخفاقٌ تراه الخلاصة لا توقّفٌ للمجموعة (بوابة S1-U4، الدرس 173).
-# وتُشغَّل على ثلاثة أجزاء متتابعة حين يحدّ المشغّل زمن المهمة الواحدة (ساعتان؛ والمجموعة كلها نحو ساعتين ونصف منذ S1-U4):
+# ولكل فحص حدّ زمني (timeout: نصف ساعة، وشريحة الطفرات ساعة): الفحص الذي يتجمّد إخفاقٌ تراه الخلاصة لا توقّفٌ للمجموعة (بوابة S1-U4، الدرس 173).
+# وتُشغَّل على أجزاء متتابعة حين يحدّ المشغّل زمن المهمة الواحدة (ساعتان؛ والمجموعة كلها نحو ثماني ساعات منذ D266):
 #   PART=a (البناءان والفحوص المنفردة) ثم PART=m (المحتوى ونصف طفرات المتصفح) ثم PART=n (نصفها الثاني) ثم PART=b (أنماط السائق الأولى) ثم PART=c (deepall وremedialdeep والخلاصة)، بمجلد النتائج نفسه؛ وبلا PART كلها.
+#   وطفرات المتصفح شرائح من 15 (الدرس 299): إن انقطع m أو n أُعيد تشغيله فأكمل من حيث توقّف. وMUT_UNTIL=<ثوانٍ منذ 1970> لا يبدأ شريحةً بعده،
+#   فيقف الجزء قبل حدّ المشغّل بلا عملية يقطعها الحدّ (والشرائح الباقية في FAILED حتى يُعاد الجزء).
 cd "$(dirname "$0")/.." || exit 1
 O="${1:-test/out/all}"; P="${PART:-all}"; mkdir -p "$O/clips"
 in_part() { [ "$P" = all ] || [ "$P" = "$1" ]; }
+# بصمة ما تفحصه الطفرات: نسخة الفحص وملفات الفحص. فلا تُقبل شريحةٌ من نسخةٍ أخرى (تُمحى الشرائح حين تتغيّر البصمة)
+mut_stamp() { { cat "dist/واحة_الرياضيات.dev.html"; for x in test/*.py test/*.sh; do cat "$x"; done; } | sha256sum | cut -c1-16; }
+mut_slices() {   # $1=1 النصف الأول من طفرات المتصفح، و2 الثاني؛ شرائح من 15 تُتخطّى منها التي تمّت بلا إخفاق (الدرس 299)
+  D="$O/mutslices"; mkdir -p "$D"; N=$(MUT_COUNT=1 timeout 600 python3 test/mutants_run.py 2>/dev/null | tail -n 1)
+  case "$N" in ''|*[!0-9]*) echo mutcount >> "$O/FAILED"; return;; esac
+  S="$(mut_stamp) $N"; [ "$(cat "$D/STAMP" 2>/dev/null)" = "$S" ] || { rm -f "$D"/*.txt; echo "$S" > "$D/STAMP"; }
+  K=$(( (N + 1) / 2 )); if [ "$1" = 1 ]; then a=0; e=$K; else a=$K; e=$N; fi
+  while [ "$a" -lt "$e" ]; do
+    b=$((a + 15)); [ "$b" -gt "$e" ] && b=$e; f="$D/$(printf %03d "$a")-$(printf %03d "$b").txt"
+    [ -f "$O/FAILED" ] && sed -i "/^mutslice $a\$/d" "$O/FAILED"
+    if ! grep -q '^FAILS: 0$' "$f" 2>/dev/null; then
+      if [ -n "$MUT_UNTIL" ] && [ "$(date +%s)" -ge "$MUT_UNTIL" ]; then echo "mutslice $a" >> "$O/FAILED"; a=$b; continue; fi
+      MUT_SLICE="$a:$b" timeout 3600 python3 test/mutants_run.py > "$f.$$" 2>&1; mv -f "$f.$$" "$f"
+      grep -q '^FAILS: 0$' "$f" || echo "mutslice $a" >> "$O/FAILED"
+    fi
+    a=$b
+  done
+}
 if in_part a; then
-rm -f "$O/FAILED" "$O/DONE" "$O/SUMMARY.txt" "$O"/auto_*.txt "$O"/clips/*.json "$O/mutants.txt" "$O/mutants2.txt"
+rm -f "$O/FAILED" "$O/DONE" "$O/SUMMARY.txt" "$O"/auto_*.txt "$O"/clips/*.json "$O/mutants.txt" "$O/mutants2.txt"; rm -rf "$O/mutslices"
 node build/build.mjs > "$O/build_prod.txt" 2>&1 || { echo "فشل البناء الإنتاجي"; cat "$O/build_prod.txt"; exit 1; }
 node build/build.mjs --dev > "$O/build_dev.txt" 2>&1 || { echo "فشل بناء الفحص"; exit 1; }
 timeout 1800 python3 test/smoke_prod.py                         > "$O/smoke_prod.txt" 2>&1    || echo smoke_prod >> "$O/FAILED"
@@ -30,13 +50,14 @@ timeout 2400 python3 test/adv_run.py                           > "$O/adv.txt" 2>
 timeout 1800 python3 test/fresh_run.py                         > "$O/fresh.txt" 2>&1         || echo fresh >> "$O/FAILED"   # قبول المراجعة بعين جديدة (13 نوفمبر 2026)
 timeout 2400 python3 test/decisions_run.py                     > "$O/decisions.txt" 2>&1     || echo decisions >> "$O/FAILED"   # قبول قرارات فراس (14 نوفمبر 2026، D266)
 fi
-if in_part m; then   # الطفرات على جزأين (بوابة S1-U4 بعد E: تجاوزت كلها ساعة ونصفاً): المحتوى والمولّد والكود ونصف طفرات المتصفح، ثم نصفها الثاني
-[ -f "$O/FAILED" ] && sed -i '/^mutants$/d' "$O/FAILED"
-MUT_PART=1 timeout 7000 python3 test/mutants_run.py             > "$O/mutants.txt" 2>&1       || echo mutants >> "$O/FAILED"   # كل فحص جديد يخفق على الخطأ القديم (الدرس 98)
+if in_part m; then   # الطفرات على جزأين (بوابة S1-U4 بعد E: تجاوزت كلها ساعة ونصفاً): المحتوى والمولّد والكود ونصف طفرات المتصفح، ثم نصفها الثاني، شرائحَ (الدرس 299)
+[ -f "$O/FAILED" ] && sed -i '/^mutants$/d; /^mutcount$/d' "$O/FAILED"
+CONTENT_ONLY=1 timeout 3600 python3 test/mutants_run.py         > "$O/mutants.txt" 2>&1       || echo mutants >> "$O/FAILED"   # كل فحص جديد يخفق على الخطأ القديم (الدرس 98)
+mut_slices 1
 fi
-if in_part n; then
-[ -f "$O/FAILED" ] && sed -i '/^mutants2$/d' "$O/FAILED"
-MUT_PART=2 timeout 7000 python3 test/mutants_run.py             > "$O/mutants2.txt" 2>&1      || echo mutants2 >> "$O/FAILED"
+if in_part n; then   # (و«mutants2» من الطريقة السابقة: كان النصف الثاني ملفاً واحداً)
+[ -f "$O/FAILED" ] && sed -i '/^mutcount$/d; /^mutants2$/d' "$O/FAILED"
+mut_slices 2
 fi
 if in_part b; then
 SHOTS=1 CLIPS_OUT="$O/clips/auto_ok_screen_f.json" timeout 1800 python3 test/auto_run.py ok screen f       > "$O/auto_ok_screen_f.txt" 2>&1
@@ -64,7 +85,7 @@ SHOTS=0 DEVICE='iPhone SE' SEED=23 ONLY='m1.u3.d5,ws:m1.u3' CLIPS_OUT="$O/clips/
 timeout 1800 python3 test/unspoken.py "$O/clips" > "$O/unspoken.txt" 2>&1   # جمل في جدول التسجيل لم تُنطق في أي تشغيل (تقرير لا يوقف)
 # الخلاصة (الفحص المستقل الخامس: المجموعة كانت تتجاهل رموز الخروج): كل فحص يخرج بـ 1 مع الإخفاق يُسجَّل في FAILED، وعدّادات السائق الآلي كلها صفر
 # (ومنها الدروس المتوقّفة والتي لم تنتهِ، وإلا «assessment misses» في أنماط الإخفاق المقصود)؛ فتُكتب SUMMARY.txt وتخرج المجموعة بـ 1 إن أخفق شيء
-python3 - "$O" > "$O/SUMMARY.txt" <<'PY'
+python3 - "$O" "$(mut_stamp)" > "$O/SUMMARY.txt" <<'PY'
 import sys, os, re, glob
 O = sys.argv[1]; bad = [l.strip() for l in open(os.path.join(O, 'FAILED'))] if os.path.exists(os.path.join(O, 'FAILED')) else []
 for f in sorted(glob.glob(os.path.join(O, 'auto_*.txt'))):
@@ -73,9 +94,19 @@ for f in sorted(glob.glob(os.path.join(O, 'auto_*.txt'))):
     v = re.findall(r'(?:^|; )' + re.escape(k) + r': (\d+)', t, re.M)
     if not v: bad.append(f'{name}: {k} مفقود')
     elif any(int(x) for x in v): bad.append(f'{name}: {k} = {v}')
-for m in ['mutants.txt', 'mutants2.txt']:   # وجزءا الطفرات تمّا (لا جزء مفقود ولا مقطوع)
-  t = open(os.path.join(O, m)).read() if os.path.exists(os.path.join(O, m)) else ''
-  if not re.search(r'^FAILS: 0$', t, re.M): bad.append(f'{m}: لم يتمّ أو أخفق')
+t = open(os.path.join(O, 'mutants.txt')).read() if os.path.exists(os.path.join(O, 'mutants.txt')) else ''   # وطفرات المحتوى تمّت
+if not re.search(r'^FAILS: 0$', t, re.M): bad.append('mutants.txt: لم يتمّ أو أخفق')
+D = os.path.join(O, 'mutslices'); st = open(os.path.join(D, 'STAMP')).read().split() if os.path.exists(os.path.join(D, 'STAMP')) else []   # وشرائح المتصفح كلها، من النسخة نفسها (الدرس 299)
+if len(st) != 2 or not st[1].isdigit(): bad.append('mutslices: STAMP مفقود')
+elif st[0] != sys.argv[2]: bad.append('mutslices: من نسخةٍ أخرى غير المفحوصة الآن')
+else:
+  N = int(st[1]); K = (N + 1) // 2
+  for lo, hi in ((0, K), (K, N)):
+    a = lo
+    while a < hi:
+      b = min(a + 15, hi); f = os.path.join(D, '%03d-%03d.txt' % (a, b)); t = open(f).read() if os.path.exists(f) else ''
+      if not re.search(r'^FAILS: 0$', t, re.M): bad.append('mutslices/%03d-%03d.txt: لم يتمّ أو أخفق' % (a, b))
+      a = b
 u = os.path.join(O, 'unspoken.txt'); t = open(u).read() if os.path.exists(u) else ''; v = re.findall(r'^twin lines never spoken: (\d+)', t, re.M)   # كل توأم بلغه السائق (بوابة S1-U4)
 if not v: bad.append('unspoken.txt: twin lines never spoken مفقود')
 elif int(v[0]): bad.append(f'unspoken.txt: twin lines never spoken = {v[0]}')
