@@ -79,7 +79,7 @@ function openPanel() {
       ${faces.length ? `<p class="muted">«كيف كان؟»: ${esc(faces.join(' · '))}</p>` : ''}
       <div class="seg"><button class="pick" id="repBtn">تقرير الأسبوع للطباعة</button></div></div>
     <details class="card"><summary><b>الأخطاء الشائعة التي ظهرت</b></summary>${Object.keys(errs).length ? Object.entries(errs).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(ERRN[k])}: ${DG(n)}`).join('<br>') : 'لا شيء بعد'}</details>
-    <div class="card"><b>حدّ الجلسة:</b> عدد الدروس قبل أن يقترح فرجار استراحة («مراجعة اليوم» لا تُحسب).
+    <div class="card"><b>حدّ الجلسة:</b> عدد الدروس قبل أن يقترح فرجار استراحة. و«مراجعة اليوم» والورشة لا تُحسبان فيه: الورشة لعبٌ حرّ قصير، يخرج منه الطفل متى شاء.
       <div class="seg" id="segMax">${[1, 2, 3, 0].map(n => `<button class="pick" data-n="${n}" aria-pressed="${SET.sessionMax === n}">${n ? nw(n, 'درس واحد', 'درسان', 'دروس', 'درساً') : 'بلا حدّ'}</button>`).join('')}</div>
       <p class="muted">في هذه الجلسة: ${nw(sessionNow().n, 'درس واحد', 'درسان', 'دروس', 'درساً')}.</p>
       <div class="seg"><button class="pick" id="slowBtn" aria-pressed="${!!SET.slow}">قراءة أبطأ: ${SET.slow ? 'تعمل' : 'متوقفة'}</button></div></div>
@@ -145,7 +145,7 @@ function openPanel() {
     try { chk = backupCheck(await f.text()); } catch (x) { chk = { ok: false, why: 'notJson' }; }
     if (!chk.ok) { box.textContent = { notJson: 'هذا ليس ملف نسخة من واحة الرياضيات.', notOurs: 'هذا ليس ملف نسخة من واحة الرياضيات.', empty: 'ملف النسخة فارغ.', noKids: 'ملف النسخة بلا أطفال.', badKey: 'في الملف بيانات لا يعرفها التطبيق، فلم يُستعمل.', badValue: 'ملف النسخة تالف، فلم يُستعمل.', oldVersion: 'هذه النسخة من إصدارٍ آخر للتطبيق بغير بنية دروسه الحالية، فلم تُستعمل.' }[chk.why] || 'ملف النسخة تالف، فلم يُستعمل.'; return; }
     box.innerHTML = `<p>في النسخة: ${chk.kids.map(k => esc(k.name || 'بلا اسم') + ' (' + (k.done ? 'أنجز ' + nw(k.done, 'درساً واحداً', 'درسين', 'دروس', 'درساً') : 'لم يبدأ') + ')').join('، ')}.</p>
-      <p class="muted">الاستعادة تضع ما في النسخة مكان أطفال هذا الجهاز وتقدّمهم، وتُحفظ قبلها نسخة مما على الجهاز الآن. صور الطفل تبقى له إن كان في النسخة نفسه، وتُحذف صور من ليس فيها. وحزمة الصوت لا تتغيّر.</p><div class="seg"><button class="pick" id="bkGo">استعادة</button><button class="pick" id="bkNo">إلغاء</button></div>`;
+      <p class="muted">الاستعادة تضع ما في النسخة مكان أطفال هذا الجهاز وتقدّمهم. وتُحفظ قبلها نسخة مما على الجهاز الآن يُرجَع إليها إن انقطعت، وتُمحى بعد تمامها، فاحفظوا نسخةً في ملف قبل الاستعادة إن أردتم الرجوع إلى ما على الجهاز. صور الطفل تبقى له إن كان في النسخة نفسه، وتُحذف صور من ليس فيها. وحزمة الصوت لا تتغيّر.</p><div class="seg"><button class="pick" id="bkGo">استعادة</button><button class="pick" id="bkNo">إلغاء</button></div>`;
     $('#bkGo').onclick = async () => { const g = $('#bkGo'); if (g.disabled) return; if (g.dataset.sure !== '1') { g.dataset.sure = '1'; g.textContent = 'متأكد؟ يُستبدل ما على هذا الجهاز'; return; }
       /* صور طفلٍ ليس في النسخة، أو طفلٍ آخر بالمعرّف نفسه (اسماً أو جنساً)، تُحذف بعد الاستعادة (مراجعة الخصم C-07: «كريم» المستعاد بالمعرّف k1 كان يرى صور «سلمى») */
       let nk = []; try { nk = JSON.parse(chk.d.data.hp_kids); } catch (x) {}

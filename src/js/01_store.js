@@ -128,7 +128,9 @@ const V_KIDS = (a, bad, at) => { if (!Array.isArray(a)) { bad.push(at); return N
 const BACKUP_KEY = /^hp_(?:kids|kid|digits|muted|(?:prog|log|session|settings|designs):[A-Za-z0-9_-]{1,24})$/;
 const RESTORE_LOG = 'hp_restore_pending';
 const backupKeysNow = () => { const ks = []; try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (BACKUP_KEY.test(k)) ks.push(k); } } catch (e) {} return ks; };
-(function restoreRecover() { let j; try { j = localStorage.getItem(RESTORE_LOG); } catch (e) { return; } if (j == null) return;
+(function restoreRecover() { let j; try { j = localStorage.getItem(RESTORE_LOG); } catch (e) { return; }
+  /* ونسخةٌ باقية بلا سِجلّ من إصدارٍ أقدم (مراجعة الخصم C-20) تُمحى إن مضى عليها يوم: الاستعادة تكتب السِّجلّ بعد النسخة مباشرة، فاليوم يُبقي نسخة تبويبٍ يستعيد الآن */
+  if (j == null) { try { const o = JSON.parse(localStorage.getItem('hp_before_restore')); if (o && !(Date.now() - o.t < 864e5)) localStorage.removeItem('hp_before_restore'); } catch (e) {} return; }
   let d = null; try { d = JSON.parse(localStorage.getItem('hp_before_restore')); } catch (e) {}
   if (!isObj(d) || !isObj(d.data)) { try { localStorage.removeItem(RESTORE_LOG); } catch (e) {} STORE_ISSUES.restore = 'lost'; return; }
   try { backupKeysNow().forEach(k => localStorage.removeItem(k));

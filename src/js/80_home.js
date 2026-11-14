@@ -96,6 +96,10 @@ function showHome() {
       btn.innerHTML = stopIcon(L) + `<span>${esc(L.title)}${tag}${sub ? `<small>${esc(G(sub))}</small>` : ''}</span>` + st; btn.setAttribute('aria-label', plain(L.title));
       btn.onclick = () => { if (!open) { SFX.soft(); return; } SFX.tick(); startLesson(id); };
       path.appendChild(btn); }); });
+  /* بعد الحيّ الأخير سطرٌ بلا موعد (القرار الصغير U6): لا ينتهي الطريق في الفراغ بعد آخر ورشة */
+  const soon = document.createElement('div'); soon.className = 'soon'; soon.setAttribute('role', 'note');
+  soon.innerHTML = `<svg viewBox="0 0 72 40" aria-hidden="true">${[14, 36, 58].map(x => `<circle cx="${x}" cy="20" r="6" fill="${css('--muted')}" opacity=".5"/>`).join('')}</svg><span>${esc(G(labelText('soonTrips')))}</span>`;
+  path.appendChild(soon);
   const nowBtn = path.querySelector('.stop.now'); if (nowBtn && !FAST) setTimeout(() => { try { nowBtn.scrollIntoView({ block: 'nearest', behavior: RM ? 'auto' : 'smooth' }); } catch (e) {} }, 300);
 }
 function wsStop(U, uOpen) { const open = uOpen && wsOpen(U); const solved = wsSolved(U.id), total = WS[U.id].puzzles.length;

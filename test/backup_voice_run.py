@@ -91,7 +91,7 @@ async def main():
     await pg.wait_for_timeout(600)
     n_done = await pg.evaluate("() => UNITS[0].lessons.filter(id => (PROG[id] || {}).done).length")
     check('backup: progress restored after reopening', n_done == 3, n_done)
-    check('backup: a copy of what was on the device was kept', await pg.evaluate("() => !!localStorage.getItem('hp_before_restore')"))
+    check('backup: the pre-restore copy is removed once the restore is complete (C-20)', await pg.evaluate("() => localStorage.getItem('hp_before_restore') === null"))
     check('no page errors', not errs, errs[:3])
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)

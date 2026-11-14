@@ -130,7 +130,8 @@ let gateUntil = 0, gateWait = 0, gateSeq = 0;
 const gateEnd = () => { gateUntil = 0; gateSeq++; };
 function adultGate(then, onBack, always) {
   if (!always && Date.now() < gateUntil) return then();
-  const seq = ++gateSeq; const a = R(6, 9), b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
+  /* عددٌ من رقمين في رقم (القرار الصغير U4): جدول الضرب حتى 9 × 9 يعرفه أخٌ في الصف الثالث. بلا مضاعفات العشرة والأحد عشر، فلا يُحسب بالنظر */
+  const seq = ++gateSeq; let a; do a = R(12, 49); while (a % 10 === 0 || a % 11 === 0); const b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
   /* «رجوع» زرٌّ بأيقونة الخريطة في أعلى الصفحة، لا نصٌّ باهت في أسفلها يغطّيه لوح المفاتيح (مراجعة الخصم X-07): الطفل الذي دخلها لا يقرأ */
   const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><button class="pick gateback" id="gateBack" aria-label="رجوع إلى الخريطة">${ICON.map}<span>رجوع</span></button><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="ltr">${visualLine([DG(a), '×', DG(b), '=', '؟'])}</bdo></p>
     <form id="gateForm"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit" id="gateGo">متابعة</button></form><p id="gateMsg" class="msg" role="status"></p></div>`;

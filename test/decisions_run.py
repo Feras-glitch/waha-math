@@ -7,6 +7,8 @@
 #   A-04 سطر «ثابت مبدئي» في تقرير الكبار.
 #   D6   نصوص القرار 6 (M-05..M-25 وA-12 وA-13) في المتصفح: الأشياء الجديدة (الشطيرة والجزرة والعلبة المعدنية) تُرسم ولا يبقى القديم؛ حلّ المربع المشترك
 #        بالركن من درس «ركن» فصاعداً؛ «صحّح لفوضى» بعد ثلاثة أخطاء كشفٌ محايد بلا «نعم!» ولا نغمة نجاح؛ واختبار الحيّ الأول 12 بنداً فيها بند «نعم».
+#   SMALL القرارات الصغيرة: C-20 نسخة ما قبل الاستعادة تُمحى بعد تمامها، وما بقي بلا سجلّ أقدم من يوم يُمحى عند الفتح؛ X-15 اللوحة تقول إن الورشة
+#        خارج حدّ الجلسة؛ U4 البوابة بعددٍ من رقمين في رقم؛ U6 سطر «رحلات قادمة في الواحة» آخر الخريطة.
 # الاستعمال: python3 test/decisions_run.py [ملف نسخة الفحص]   (ONLY=A-03,A-09 لبعضها؛ يخرج بـ 1 مع أي إخفاق)
 import asyncio, json, os, re, sys
 from playwright.async_api import async_playwright
@@ -218,6 +220,38 @@ async def d6_cases(b):
   check('D6', r == 'done' and st['asked'] and st['score'] == 10 and st['of'] == 12 and st['mastered'] and st['badge'], 'A-12 الاختبار يُقاد كله: يُسأل بند الأركان، و10 من 12 تنجح', [r, st])
   check('D6', not errs, 'لا أخطاء في الصفحة (اختبار الحيّ الأول)', errs[:3]); await ctx.close()
 
+AR = str.maketrans('٠١٢٣٤٥٦٧٨٩', '0123456789')
+async def small_cases(b):
+  ctx, pg, errs = await fresh(b)
+  # C-20: استعادة تامّة ثم لا تبقى نسخة ما قبلها
+  r = await pg.evaluate("""() => { const d = backupData(); const t = JSON.stringify(d); const a = backupApply(backupCheck(t)); return { ok: !!(a && a.ok), left: localStorage.getItem('hp_before_restore') }; }""")
+  check('SMALL', r['ok'] and r['left'] is None, 'C-20 بعد استعادةٍ تامّة تُمحى نسخة ما قبلها', r)
+  # ونسخةٌ باقية بلا سجلّ: الأقدم من يوم تُمحى عند الفتح، والأحدث تبقى (ضابط)
+  await pg.evaluate("() => localStorage.setItem('hp_before_restore', JSON.stringify({ app: 'waha-math', v: 1, t: Date.now() - 2 * 864e5, data: {} }))"); await reopen(pg)
+  old = await pg.evaluate("() => localStorage.getItem('hp_before_restore')")
+  await pg.evaluate("() => localStorage.setItem('hp_before_restore', JSON.stringify({ app: 'waha-math', v: 1, t: Date.now() - 3600e3, data: {} }))"); await reopen(pg)
+  new = await pg.evaluate("() => localStorage.getItem('hp_before_restore')")
+  check('SMALL', old is None and new is not None, 'C-20 نسخةٌ بلا سجلّ أقدم من يوم تُمحى عند الفتح، وأحدث من يوم تبقى (ضابط)', [old, (new or '')[:40]])
+  # X-15
+  await gate_pass(pg); t = await pg.evaluate("() => document.querySelector('#panel').textContent")
+  check('SMALL', 'و«مراجعة اليوم» والورشة لا تُحسبان فيه' in t, 'X-15 اللوحة تقول إن الورشة خارج حدّ الجلسة', t[t.find('حدّ الجلسة'):][:160] if 'حدّ الجلسة' in t else '')
+  await ctx.close()
+  # U4: عشرون بوابة
+  ctx, pg, errs = await fresh(b); bad = []
+  for _ in range(20):
+    await pg.evaluate("() => { gateEnd(); adultGate(() => {}, null, true); }"); await pg.wait_for_timeout(30)
+    q = (await pg.text_content('.gq')).translate(AR); ans = await pg.evaluate("() => window.__gateAns")
+    nums = [int(x) for x in re.findall(r'\d+', q)]
+    if len(nums) != 2: bad.append(q); continue
+    a, b2 = (nums if nums[0] > 9 else nums[::-1])
+    if not (12 <= a <= 49 and a % 10 and a % 11 and 6 <= b2 <= 9 and ans == a * b2): bad.append([q, ans])
+  check('SMALL', not bad, 'U4 بوابة الكبار: عددٌ من رقمين (لا مضاعف عشرة ولا أحد عشر) في رقم من 6 إلى 9، في 20 سؤالاً', bad[:3])
+  await pg.evaluate("() => { document.querySelector('#panel').hidden = true; showHome(); }"); await pg.wait_for_timeout(100)
+  # U6
+  u6 = await pg.evaluate("() => { const p = document.querySelector('#path'); const s = p && p.lastElementChild; return s ? { cls: s.className, text: s.textContent, afterLast: !!p.querySelector('[data-lesson=\"' + UNITS[UNITS.length - 1].lessons.slice(-1)[0] + '\"]') } : null; }")
+  check('SMALL', bool(u6) and u6['cls'] == 'soon' and 'رِحْلَاتٌ قَادِمَةٌ فِي الوَاحَةِ' in u6['text'] and u6['afterLast'], 'U6 آخر الخريطة سطر «رحلات قادمة في الواحة» بلا موعد', u6)
+  check('SMALL', not errs, 'لا أخطاء في الصفحة (القرارات الصغيرة)', errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch()
@@ -225,6 +259,7 @@ async def main():
     if on('A-09'): await a09_cases(b)
     if on('R02') or on('A-04'): await r02_cases(b)
     if on('D6'): await d6_cases(b)
+    if on('SMALL'): await small_cases(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())

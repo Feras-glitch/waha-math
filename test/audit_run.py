@@ -21,7 +21,7 @@
 #   R2-01 حذفٌ واحد في كل مرة، بالتتابع وبالتداخل وبترتيبين، وسجلٌّ لطفلٍ غائب يُكمَل أولاً، وكلٌّ بعد إعادة الفتح والطفل النشط سليم.
 #   R2-02 كتابة تنتظر خلف معاملةٍ حقيقية ثم ينتقل القفل: صورة («هنا»، وتبويب ثالث، وبلا إشعار)، وحذف الصور، وحزمة الصوت حذفاً واستيراداً، وواجهة الصيد.
 # الاستعمال: python3 test/audit_run.py [ملف نسخة الفحص]   (ONLY=A01,A04 لبعضها؛ يخرج بـ 1 مع أي إخفاق)
-import asyncio, io, itertools, json, os, struct, sys, tempfile, wave, zipfile
+import asyncio, io, itertools, json, os, struct, sys, tempfile, time, wave, zipfile
 from playwright.async_api import async_playwright
 HERE = os.path.dirname(os.path.abspath(__file__))
 FILE = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(HERE, '..', 'dist', 'واحة_الرياضيات.dev.html'))
@@ -181,7 +181,7 @@ INSTR = """([mode, at]) => { const S = Storage.prototype; window.__ops = 0; wind
   window.__restoreStorage = () => { S.setItem = o.set; S.removeItem = o.rem; };
   const hit = () => { window.__ops++; if (window.__frozen) return 'skip'; if (mode === 'freeze' && window.__ops >= at) { window.__frozen = true; return 'skip'; }
     if (mode === 'one' && window.__ops === at) return 'throw'; if (mode === 'from' && window.__ops >= at) return 'throwSet'; return 'go'; };
-  S.setItem = function (k, v) { const h = hit(); if (h === 'skip') return; if (h === 'throw' || h === 'throwSet') throw new DOMException('quota', 'QuotaExceededError'); return o.set.call(this, k, v); };
+  S.setItem = function (k, v) { if (k === 'hp_before_restore') window.__rescue = v; const h = hit(); if (h === 'skip') return; if (h === 'throw' || h === 'throwSet') throw new DOMException('quota', 'QuotaExceededError'); return o.set.call(this, k, v); };
   S.removeItem = function (k) { const h = hit(); if (h === 'skip') return; if (h === 'throw') throw new DOMException('quota', 'QuotaExceededError'); return o.rem.call(this, k); }; }"""
 async def restore_cases(b):
   old = {'m1.u1.d1': {'done': True, 'at': 1, 'path': 'mat'}, 'm1.u1.d2': {'done': True, 'at': 2, 'path': 'mat'}, 'm1.u1.d3': {'done': True, 'at': 3, 'path': 'mat'}}
@@ -198,8 +198,10 @@ async def restore_cases(b):
   # عدد الكتابات في الاستعادة الكاملة
   await reset(); await pg.evaluate(INSTR, ['count', 0]); r = await pg.evaluate("(t) => { const a = backupApply(backupCheck(t)); window.__restoreStorage(); return [a === true || !!(a && a.ok), window.__ops]; }", text)
   n_ops = r[1]; st = await pg.evaluate(HP); check('A04', r[0] and same(st, NEW), 'الاستعادة بلا عطل: الجديد كاملاً (%d كتابة)' % n_ops, [r])
-  rescue = await pg.evaluate("() => { try { return JSON.parse(localStorage.getItem('hp_before_restore')).data; } catch (e) { return null; } }")
-  check('A04', rescue is not None and same({k: json.loads(v) for k, v in rescue.items()}, OLD), 'ونسخة ما كان على الجهاز محفوظة كاملة', list((rescue or {}).keys()))
+  rescue = await pg.evaluate("() => { try { return JSON.parse(window.__rescue).data; } catch (e) { return null; } }")
+  check('A04', rescue is not None and same({k: json.loads(v) for k, v in rescue.items()}, OLD), 'ونسخة ما كان على الجهاز كُتبت كاملة قبل الاستعادة', list((rescue or {}).keys()))
+  gone = await pg.evaluate("() => localStorage.getItem('hp_before_restore') === null")
+  check('A04', gone, 'وبعد تمام الاستعادة تُمحى تلك النسخة، فلا تبقى تضاعف التخزين (C-20، القرار 11)')
   bad = []
   for mode in ('one', 'from'):
     for at in range(1, n_ops + 2):
@@ -370,7 +372,7 @@ async def delete_cases(b):
 K2 = {'id': 'k2', 'name': 'علي', 'gender': 'm', 'photo': '', 'avatar': 'm2'}
 K2_KEYS = ['hp_prog:k2', 'hp_log:k2', 'hp_designs:k2', 'hp_settings:k2', 'hp_prog_bak:k2:v2', 'hp_corrupt:hp_prog:k2:1700000000000']
 def k2_extra():
-  rescue = {'v': 1, 't': 1, 'data': {'hp_kids': json.dumps([KID, K2], ensure_ascii=False), 'hp_kid': '"k1"', 'hp_prog:k1': '{"schema":3}', 'hp_prog:k2': '{"schema":3}'}}
+  rescue = {'v': 1, 't': int(time.time() * 1000), 'data': {'hp_kids': json.dumps([KID, K2], ensure_ascii=False), 'hp_kid': '"k1"', 'hp_prog:k1': '{"schema":3}', 'hp_prog:k2': '{"schema":3}'}}
   return {'hp_prog:k2': json.dumps({'schema': 3, 'm1.u1.d1': {'done': True, 'at': 1}}), 'hp_log:k2': json.dumps({'attempts': []}), 'hp_designs:k2': '[]',
           'hp_prog_bak:k2:v2': '{}', 'hp_corrupt:hp_prog:k2:1700000000000': '{}', 'hp_before_restore': json.dumps(rescue, ensure_ascii=False)}
 # حال الحذف كما تراه الذاكرة والتخزين والقاعدة واللوحة
