@@ -13,9 +13,14 @@ function statusPill(L) { const p = PROG[L.id] || {};
   /* D252: إتقان مسار الشاشة «مدخل» عند الكبار حتى يُعاد الدرس بالأشياء الحقيقية، والنجمة للطفل كما هي */
   if (p.mastered) return (p.entry ? '<span class="pill think">أتقنه على الشاشة، مدخل</span> <span class="muted">يصير تأسيساً حين يُعاد بالأشياء</span>' : '<span class="pill good">متقن</span>') + redo;
   /* اختبار الوحدة دون النجاح (A-03، D266): الشريحة والدرجة، ومتى يُعاد */
-  if (L.test && p.failAt && !p.mastered && !p.resume) { const W = LDATA[p.weak], wd = ((PROG[p.weak] || {}).at || 0) > p.failAt, open = retakeOpen(p);
-    return `<span class="pill think">${p.band === 'support' ? 'متقدّم مع دعم: الحيّ التالي مفتوح' : 'يحتاج دعماً: الحيّ التالي مقفل'}</span>${p.score != null ? ` <span class="pill">${DG(p.score)} من ${DG(p.of)}</span>` : ''}`
-      + ` <span class="muted">${open ? 'يُعاد الاختبار الآن' : `يُعاد ${wd ? 'غداً' : `بعد درس «${esc(W ? plain(W.title) : '')}» ومرور يوم`}`}</span>`; }
+  /* والحيّ التالي كما في الخريطة نفسها (unitOpen): لا جملة عن حيٍّ تالٍ بعد آخر حيّ، و«يحتاج دعماً» بعد «متقدّم مع دعم» سابق يبقي الحيّ مفتوحاً ولا يُقفله
+     (الفحص المستقل للقرارات، 4). وموعد الإعادة: اليوم بساعته إن كان اليوم، وإلا غداً؛ وبلا اسم درسٍ إن أسقطه التحقّق (6 و7) */
+  if (L.test && p.failAt && !p.mastered && !p.resume) { const W = LDATA[p.weak], wd = weakDone(p), open = retakeOpen(p), due = dueAfter(p.failAt, 1);
+    const ui = UNITS.findIndex(u => u.id === L.unit), nx = ui >= 0 && ui + 1 < UNITS.length, nOpen = nx && unitOpen(ui + 1);
+    const next = !nx ? '' : nOpen ? (p.band === 'support' ? ': الحيّ التالي مفتوح' : ': الحيّ التالي بقي مفتوحاً من محاولةٍ سابقة') : ': الحيّ التالي مقفل';
+    const at = d => `${DG(d.getHours())}:${DG(String(d.getMinutes()).padStart(2, '0'))}`, when = dayStart(due) <= dayStart(Date.now()) ? `اليوم بعد الساعة ${at(new Date(due))}` : 'غداً';
+    return `<span class="pill think">${p.band === 'support' ? 'متقدّم مع دعم' : 'يحتاج دعماً'}${next}</span>${p.score != null ? ` <span class="pill">${DG(p.score)} من ${DG(p.of)}</span>` : ''}`
+      + ` <span class="muted">${open ? 'يُعاد الاختبار الآن' : `يُعاد ${wd ? when : W ? `بعد درس «${esc(plain(W.title))}» ومرور يوم` : 'بعد مرور يوم'}`}</span>`; }
   if (p.resume) return '<span class="pill">توقّف في منتصفه</span>';
   if (!p.done) return '—';
   const def = Object.entries(p.cs || {}).filter(([C, c]) => isObj(c) && c.deferred && !c.mastered && !adultSays(L, C)).map(([C]) => conceptName(L, C)).filter(Boolean);

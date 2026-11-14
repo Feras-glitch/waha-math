@@ -40,6 +40,7 @@ public class MainActivity extends Activity {
     /* صورةٌ وصلت بعد أن أعاد أندرويد إنشاء الشاشة أثناء الكاميرا (مراجعة الخصم C-23): ضاع طلب الصفحة معها،
        فتُحفظ وتُسلَّم لأول طلب صورة خلال عشر دقائق بدل أن يُفتح التصوير من جديد */
     private Uri pendingPhoto;
+    private boolean chooserCapture, pendingCapture;   // نوع الطلب: التقاط («صيد الأشكال») أم اختيار (صورة ملف الطفل)، فلا تذهب صورة أحدهما إلى الآخر
     private long pendingAt;
     static final long PENDING_MS = 10 * 60 * 1000L;
 
@@ -65,6 +66,7 @@ public class MainActivity extends Activity {
 
         File shared = new File(getCacheDir(), FilesProvider.SHARED);
         FilesProvider.clean(shared);
+        if (savedInstanceState != null) chooserCapture = savedInstanceState.getBoolean("chooserCapture", false);
         if (savedInstanceState != null && savedInstanceState.getString("cameraUri") != null) {
             cameraUri = Uri.parse(savedInstanceState.getString("cameraUri"));   // أُعيد إنشاء الشاشة والكاميرا مفتوحة: صورتها في الطريق، فلا يُمسح مجلدها
         } else {
@@ -108,13 +110,14 @@ public class MainActivity extends Activity {
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (fileCallback != null) fileCallback.onReceiveValue(null);
-                if (pendingPhoto != null && wantsImage(params) && SystemClock.elapsedRealtime() - pendingAt < PENDING_MS) {
+                if (pendingPhoto != null && wantsImage(params) && params.isCaptureEnabled() == pendingCapture && SystemClock.elapsedRealtime() - pendingAt < PENDING_MS) {
                     callback.onReceiveValue(new Uri[]{pendingPhoto});   // الصورة التي التُقطت قبل إعادة إنشاء الشاشة
                     pendingPhoto = null;
                     return true;
                 }
                 pendingPhoto = null;
                 fileCallback = callback;
+                chooserCapture = params.isCaptureEnabled();
                 try {
                     startActivityForResult(chooserIntent(params), REQ_FILE);
                 } catch (Exception e) {
@@ -222,7 +225,8 @@ public class MainActivity extends Activity {
             if (fileCallback != null) {
                 fileCallback.onReceiveValue(picked);
             } else if (picked != null && picked.length == 1) {
-                pendingPhoto = picked[0];           // الشاشة أُعيد إنشاؤها: لا طلب ينتظرها، فتُحفظ لأول طلب صورة
+                pendingPhoto = picked[0];           // الشاشة أُعيد إنشاؤها: لا طلب ينتظرها، فتُحفظ لأول طلب صورة من النوع نفسه
+                pendingCapture = chooserCapture;
                 pendingAt = SystemClock.elapsedRealtime();
             }
             fileCallback = null;
@@ -263,6 +267,7 @@ public class MainActivity extends Activity {
     protected void onSaveInstanceState(Bundle out) {
         super.onSaveInstanceState(out);
         if (cameraUri != null) out.putString("cameraUri", cameraUri.toString());   // الكاميرا مفتوحة: يُعرف عنوان صورتها بعد إعادة الإنشاء
+        out.putBoolean("chooserCapture", chooserCapture);
     }
 
     @Override

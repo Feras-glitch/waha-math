@@ -1098,9 +1098,14 @@ export function lint(content, js) {
   // 4ج4) المربع والمستطيل بالركن (مراجعة الخصم M-05: «أربعة أضلاع متساوية» وحدها تعريف المعيّن، و«كل ضلعين متقابلين متساويان» وحدها تعريف متوازي الأضلاع):
   //      من درس «ركن» (m1.u1.d3) فصاعداً، كل جملة تصف بهما شكلاً (لا سؤال) فيها الركن. ودرسا d1 وd2 قبل الركن، فيصفان بالحوافّ والرؤوس
   { const pre = new Set(['m1.u1.d1', 'm1.u1.d2']), nk = t => String(t || '').replace(/[\u064B-\u0652\u0670]/g, '');
-    const defs = t => /أربعة أضلاع متساوية|أضلاعه الأربعة متساوية|كل ضلعين متقابلين (فيه |فيهما )?متساويان/.test(t) && !/ليست كلها/.test(t);
+    const defs = t => /أربعة أضلاع متساوية|أضلاعه الأربعة متساوية|أضلاع[هي] كلها متساوية|كل ضلعين متقابلين (فيه |فيهما )?متساويان/.test(t) && !/ليست كلها|كل ما في المستطيل/.test(t);   /* و«أضلاعي كلها متساوية» في لغز «من أنا؟» (الفحص المستقل للقرارات، 10) */
     for (const L of Object.values(lessons)) { if (pre.has(L.id)) continue;
-      for (const [k, v] of Object.entries(L.lines || {})) { const t = nk(Array.isArray(v) ? v[v.length - 1] : v); if (typeof t === 'string' && defs(t) && !/؟\s*$/.test(t) && !/ركن|أركان/.test(t)) errors.push(`${L.id}.${k}: يصف المربع أو المستطيل بأضلاعه بلا الركن («${t.slice(0, 60)}»)، فيصدق على المعيّن ومتوازي الأضلاع (M-05)`); } } }
+      for (const [k, v] of Object.entries(L.lines || {})) { const t = nk(Array.isArray(v) ? v[v.length - 1] : v); if (typeof t === 'string' && defs(t) && !/؟\s*$/.test(t.replace(/من أنا؟\s*$/, '')) && !/ركن|أركان/.test(t)) errors.push(`${L.id}.${k}: يصف المربع أو المستطيل بأضلاعه بلا الركن («${t.slice(0, 60)}»)، فيصدق على المعيّن ومتوازي الأضلاع (M-05)`); } } }
+  // 4ج5) المجسّم «له سُمك» لا «يملأ الكفّ» (القرار 6، M-16، D266): الكرة الزجاجية مجسّم ولا تملأ الكفّ. والبحث بلا تشكيل، لأن ترتيب الشدّة والفتحة يختلف
+  //      بين الجمل (الفحص المستقل للقرارات، 3: بقيت ثماني جمل لم يبلغها بحثٌ بالتشكيل)
+  { const nk5 = t => String(t || '').replace(/[\u064B-\u0652\u0670]/g, ''); const walk5 = (v, at) => { if (typeof v === 'string') { if (/[يت]ملأ ال?كف/.test(nk5(v))) errors.push(`${at}: «يملأ الكفّ» وصفاً للمجسّم («${nk5(v).slice(0, 60)}»)، والمعتمد «له سُمك» (M-16)`); return; }
+      if (Array.isArray(v)) v.forEach((x, i) => walk5(x, at + '[' + i + ']')); else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk5(x, at + '.' + k); };
+    walk5(content, 'المحتوى'); }
   // 4ج3) «نعم/لا» في التقييم (الإتقان ومشتبكه، والمراجعة، والاختبار) جوابها «نعم» مرةً و«لا» مرةً على الأقل (مراجعة الخصم A-12: كان البندان الوحيدان جوابهما «لا»)
   { const Y = []; const grab = (v, where) => { if (Array.isArray(v)) return v.forEach(x => grab(x, where)); if (!v || typeof v !== 'object') return;
       if (v.t === 'yesno') Y.push({ where: where + ' «' + v.q + '»', ans: !!v.ans }); for (const [k, x] of Object.entries(v)) if (k !== 'twin' && x && typeof x === 'object') grab(x, where); };

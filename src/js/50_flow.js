@@ -151,13 +151,19 @@ function starBurst() { const svg = $('#stage svg'); if (!svg) return; const g = 
    ودون النجاح: الدرس الأضعف أولاً، ولا إعادة قبل أن يُعاد ويمضي يوم (retakeOpen)، فلا تُنال الشارة بحفظ أجوبةٍ رآها الطفل للتوّ.
    و«متقدّم مع دعم» يفتح الوحدة التالية (support:الوحدة)، ويُقرِّب مراجعة دروس الخطأ إلى الغد؛ وأقلّ منه تبقى الوحدة التالية مقفلة */
 const testNeed = n => Math.floor(n * 0.85), supportNeed = n => Math.floor(n * 0.6);
-const retakeOpen = P => !P.failAt || P.mastered || (((PROG[P.weak] || {}).at || 0) > P.failAt && Date.now() >= dueAfter(P.failAt, 1));
+/* والدرس الأضعف التالف أو المحذوف (أسقطه التحقّق) لا يقفلها أبداً: يكفي مرور اليوم (الفحص المستقل للقرارات، 7) */
+const weakDone = P => !P.weak || !LDATA[P.weak] || ((PROG[P.weak] || {}).at || 0) > P.failAt;
+const retakeOpen = P => !P.failAt || P.mastered || (weakDone(P) && Date.now() >= dueAfter(P.failAt, 1));
 async function testStage(L) {
   const T = L.test; const P = progOf(L.id); newStage(250, { oasisOpacity: .3 });
   await S(T.intro || 'gen.test.intro');
-  const order = T.keepOrder ? T.items : shuffle(T.items); let ok = 0; const wrong = [];
-  for (const q of order) { const r = await runItem(q.item, 'test', { scene: 'test' }); if (r.ok) { ok++; const Cs = LDATA[q.of] ? srsConcepts(LDATA[q.of]) : []; if (Cs.length === 1) maintCredit(q.of, Cs[0]); } else wrong.push(q); await sleep(700); }   // بند اختبار صحيح يُحسب صيانةً لمفهوم درسه إن كان له مفهوم واحد (R02)
-  const n = order.length, band = ok >= testNeed(n) ? 'pass' : ok >= supportNeed(n) ? 'support' : 'low';
+  /* ما أُجيب من بنوده محفوظٌ بعد كل بند (P.trun): من خرج قبل آخره يُكمل من حيث ترك بأجوبته، ولو اختار «من البداية»؛ فلا يُعاد الاختبار
+     في اليوم نفسه بالخروج قبل آخره (الفحص المستقل للقرارات، 2: كان الخارج قبل آخره يعيده كاملاً فوراً) */
+  const known = new Set(T.items.map(q => q.id)), run = isObj(P.trun) ? P.trun : { a: [], w: [] };
+  run.a = (run.a || []).filter(id => known.has(id)); run.w = (run.w || []).filter(id => run.a.includes(id)); P.trun = run;
+  const order = (T.keepOrder ? T.items : shuffle(T.items)).filter(q => !run.a.includes(q.id)); let ok = run.a.length - run.w.length; const wrong = T.items.filter(q => run.w.includes(q.id));
+  for (const q of order) { const r = await runItem(q.item, 'test', { scene: 'test' }); run.a.push(q.id); if (r.ok) { ok++; const Cs = LDATA[q.of] ? srsConcepts(LDATA[q.of]) : []; if (Cs.length === 1) maintCredit(q.of, Cs[0]); } else { wrong.push(q); run.w.push(q.id); } saveProg(); await sleep(700); }   // بند اختبار صحيح يُحسب صيانةً لمفهوم درسه إن كان له مفهوم واحد (R02)
+  delete P.trun; const n = T.items.length, band = ok >= testNeed(n) ? 'pass' : ok >= supportNeed(n) ? 'support' : 'low';
   P.score = ok; P.of = n; P.at = Date.now(); saveProg();
   logAttempt({ scene: 'test', tag: 'result', ok: band === 'pass', band, score: ok, of: n, wrongIds: wrong.map(q => q.id) });
   if (band === 'pass') { P.mastered = true; delete P.band; delete P.failAt; delete P.weak; PROG['badge:' + L.unit] = true; saveProg(); await stoneScene(L); return; }

@@ -158,13 +158,18 @@ async def r02_cases(b):
   check('R02', not rep and not errs, 'ضابط: حقل الصيانة يُقبل بعد إعادة الفتح، ولا أخطاء', [rep, errs[:2]]); await ctx.close()
   # البند المشتبك في إتقان m1.u4.d5 يسأل عن D001: صوابه يُحسب صيانةً
   ctx, pg, errs = await fresh(b)
-  await pg.evaluate(MAINT, ['m1.u4.d4', 'D001', 29, 4, None, None]); r = await drive(pg, 'm1.u4.d5')
-  last = await pg.evaluate("() => Math.round((Date.now() - PROG.srs['m1.u4.d4'].cs.D001.last) / 864e5)")
-  check('R02', r == 'done' and last == 0, 'صوابٌ في البند المشتبك (إتقان درسٍ لاحق) يُحسب صيانةً لمفهومه الثابت', [r, last])
+  await pg.evaluate(MAINT, ['m1.u4.d4', 'D001', 31, 4, None, None]); r = await drive(pg, 'm1.u4.d5')
+  x = await pg.evaluate("() => { const x = PROG.srs['m1.u4.d4'].cs.D001; return { last: Math.round((Date.now() - x.last) / 864e5), m: x.m == null ? null : x.m, next: Math.round((maintDue(LDATA['m1.u4.d4'], 'D001', x) - x.last) / 864e5) }; }")
+  check('R02', r == 'done' and x['last'] == 0 and x['m'] == 1 and x['next'] in (59, 60), 'صوابٌ في البند المشتبك (إتقان درسٍ لاحق) والصيانة حانت: يُحسب الصيانةَ نفسها، فالتالية بعد 60 يوماً', [r, x])
   await gate_pass(pg); t = await pg.evaluate("() => document.querySelector('#panel').textContent")
   check('R02', 'صيانة بعد' in t and 'صيانةٌ بعد ٣٠' in t, 'لوحة الكبار تقول موعد الصيانة وقاعدتها', t[t.find('المراجعة المتباعدة'):][:160] if 'المراجعة المتباعدة' in t else '')
   check('A-04', 'فـ«ثابت» هنا مبدئي' in t, 'سطر «ثابت مبدئي» في جدول المراجعة في لوحة الكبار', '')
   check('R02', not errs, 'لا أخطاء في الصفحة (البند المشتبك)', errs[:3]); await ctx.close()
+  # ضابط: قبل أن تحين لا يُحسب شيء ولا يؤجّلها
+  ctx, pg, errs = await fresh(b)
+  await pg.evaluate(MAINT, ['m1.u4.d4', 'D001', 29, 4, None, None]); r = await drive(pg, 'm1.u4.d5')
+  x = await pg.evaluate("() => { const x = PROG.srs['m1.u4.d4'].cs.D001; return { last: Math.round((Date.now() - x.last) / 864e5), m: x.m == null ? null : x.m }; }")
+  check('R02', r == 'done' and x['last'] == 29 and not x['m'], 'ضابط: صوابٌ عرضي قبل أن تحين الصيانة لا يُحسب ولا يؤجّلها', [r, x]); await ctx.close()
 
 async def d6_cases(b):
   ctx, pg, errs = await fresh(b)
@@ -252,6 +257,94 @@ async def small_cases(b):
   check('SMALL', bool(u6) and u6['cls'] == 'soon' and 'رِحْلَاتٌ قَادِمَةٌ فِي الوَاحَةِ' in u6['text'] and u6['afterLast'], 'U6 آخر الخريطة سطر «رحلات قادمة في الواحة» بلا موعد', u6)
   check('SMALL', not errs, 'لا أخطاء في الصفحة (القرارات الصغيرة)', errs[:3]); await ctx.close()
 
+TEST_N = "() => LOG.attempts.filter(a => a.scene === 'test' && a.type).length"
+async def leave_mid_test(pg, lid, k, how='wrong'):
+  """يقود الدرس حتى يُجاب k من بنود الاختبار، ثم يخرج إلى الخريطة بزرّها"""
+  base = await pg.evaluate(TEST_N); await pg.evaluate("(l) => { runLesson(l); }", lid); await pg.wait_for_timeout(150); last = -1; idle = 0
+  while True:
+    st = await pg.evaluate(ST)
+    if st['crash']: return 'crash'
+    if st['mode'] == 'test' and await pg.evaluate(TEST_N) - base >= k:
+      await pg.wait_for_timeout(300); await pg.click('#mapBtn'); await pg.wait_for_timeout(200); await pg.click('#exLeave'); await pg.wait_for_timeout(200); return 'left'
+    a = st['auto']
+    if a and a['n'] != last:
+      last = a['n']
+      if st['scene'].endswith(':bag'): await pg.evaluate("() => { const b = [...document.querySelectorAll('.choices .pick')]; (b.find(x => x.dataset.k === 'screen') || b[0]).click(); }"); continue
+      await pg.evaluate("(h) => { const a = window.__auto; if (a) (h === 'wrong' && a.wrong ? a.wrong : a.ok)(); }", how if st['mode'] == 'test' else 'ok'); idle = 0; continue
+    if not a and st['go']: await pg.click('#go'); idle = 0; await pg.wait_for_timeout(20); continue
+    idle += 1; await pg.wait_for_timeout(30)
+    if idle > 500: return 'stuck:' + st['scene']
+async def rev_cases(b):
+  # (2أ) الخروج قبل آخر الاختبار ثم العودة: يُكمَل من حيث تُرك بأجوبته، فلا يُعاد كاملاً في اليوم نفسه
+  ctx, pg, errs = await fresh(b, prog_u2())
+  r = await leave_mid_test(pg, 'm1.u2.d6', 6)
+  mid = await pg.evaluate("() => { const P = PROG['m1.u2.d6']; return { trun: P.trun ? [P.trun.a.length, P.trun.w.length] : null, resume: !!P.resume }; }")
+  await reopen(pg); kept = await pg.evaluate("() => { const P = PROG['m1.u2.d6']; return P.trun ? [P.trun.a.length, P.trun.w.length] : null; }")
+  base = await pg.evaluate(TEST_N); r2 = await drive(pg, 'm1.u2.d6'); n2 = await pg.evaluate(TEST_N) - base; s = await pg.evaluate(STATE)
+  check('REV', r == 'left' and mid['trun'] == [6, 6] and kept == [6, 6], 'الخروج بعد 6 أجوبة خاطئة: تُحفظ الأجوبة وتبقى بعد إعادة الفتح', [r, mid, kept])
+  check('REV', r2 == 'done' and n2 == 6 and s['score'] == 6 and s['of'] == 12 and not s['badge'] and s['band'] == 'low', 'والعودة تُكمل البنود الستة الباقية فقط: 6 من 12 بالأجوبة الأولى («يحتاج دعماً»)، بلا شارة', [r2, n2, s])
+  check('REV', not errs, 'لا أخطاء في الصفحة (الخروج من الاختبار)', errs[:3]); await ctx.close()
+  # وإن اختار «من البداية»: الأجوبة المحفوظة تبقى
+  ctx, pg, errs = await fresh(b, prog_u2()); await leave_mid_test(pg, 'm1.u2.d6', 3)
+  await pg.evaluate("() => document.querySelector('[data-lesson=\"m1.u2.d6\"]').click()"); await pg.wait_for_timeout(300)
+  has = await pg.evaluate("() => !!document.querySelector('#rsNew') && !document.querySelector('#exitCover').hidden")
+  if has: await pg.click('#rsNew'); await pg.wait_for_timeout(200)
+  base = await pg.evaluate(TEST_N)
+  while True:
+    st = await pg.evaluate(ST)
+    if st['mode'] == 'test' or st['crash']: break
+    a = st['auto']
+    if a: await pg.evaluate("() => { const a = window.__auto; if (a) a.ok(); }"); await pg.wait_for_timeout(60); continue
+    if st['go']: await pg.click('#go'); await pg.wait_for_timeout(30); continue
+    await pg.wait_for_timeout(40)
+  t = await pg.evaluate("() => { const P = PROG['m1.u2.d6']; return P.trun ? [P.trun.a.length, P.trun.w.length] : null; }")
+  check('REV', has and t == [3, 3], '«من البداية» يعيد مراحل الدرس، والاختبار يُكمَل بأجوبته الثلاث المحفوظة', [has, t]); await ctx.close()
+  # (2ب) لا نغمة صواب ولا خطأ في الاختبار، ولا علامة على الخيار
+  ctx, pg, errs = await fresh(b, prog_u2())
+  await pg.evaluate("() => { window.__tones = []; const g0 = SFX.good, s0 = SFX.soft; SFX.good = (...a) => { if (window.__itemMode === 'test') window.__tones.push('good'); return g0(...a); }; SFX.soft = (...a) => { if (window.__itemMode === 'test') window.__tones.push(NEUTRAL_ANS ? 'tick' : 'soft'); return s0(...a); }; }")
+  r = await drive(pg, 'm1.u2.d6', test_ok=8); tones = await pg.evaluate("() => window.__tones")
+  check('REV', r == 'done' and 'good' not in tones and 'soft' not in tones, 'الاختبار بلا نغمة صواب ولا نغمة خطأ (8 صحيحة و4 خاطئة)', [r, tones[:6]]); await ctx.close()
+  # (4) الحيّ الأخير: لا جملة عن حيٍّ تالٍ؛ و«يحتاج دعماً» بعد «متقدّم مع دعم» سابق: اللوحة كالخريطة
+  P4 = {'badge:m1.u3': True, 'ws': {'m1.u4': 1}}
+  for u in ['m1.u1.d%d' % i for i in range(1, 7)] + ['m1.u2.d%d' % i for i in range(1, 7)] + ['m1.u3.d%d' % i for i in range(1, 8)] + ['m1.u4.d%d' % i for i in range(1, 8)]: P4[u] = {'done': True, 'at': 1, 'mastered': True}
+  for k in ('badge:m1.u1', 'badge:m1.u2'): P4[k] = True
+  ctx, pg, errs = await fresh(b, P4); r = await drive(pg, 'm1.u4.d8', test_ok=7)
+  await gate_pass(pg); t = await pg.evaluate("() => document.querySelector('#panel').textContent")
+  check('REV', r == 'done' and 'متقدّم مع دعم' in t and 'الحيّ التالي' not in t, 'آخر حيّ بـ7 من 12: «متقدّم مع دعم» بلا جملةٍ عن حيٍّ تالٍ', [r, t[t.find('متقدّم'):][:80] if 'متقدّم' in t else '']); await ctx.close()
+  ctx, pg, errs = await fresh(b, prog_u2())
+  await pg.evaluate("() => { const P = PROG['m1.u2.d6'] = PROG['m1.u2.d6'] || {}; Object.assign(P, { done: true, at: Date.now() - 2 * 864e5, score: 3, of: 12, band: 'low', failAt: Date.now() - 2 * 864e5, weak: 'm1.u2.d1' }); PROG['support:m1.u2'] = true; saveProg(); }")
+  await reopen(pg); open3 = await pg.evaluate("() => unitOpen(2)"); await gate_pass(pg); t = await pg.evaluate("() => document.querySelector('#panel').textContent")
+  check('REV', open3 and 'الحيّ التالي بقي مفتوحاً' in t and 'الحيّ التالي مقفل' not in t, '«يحتاج دعماً» بعد «متقدّم مع دعم» سابق: الحيّ الثالث مفتوح في الخريطة، واللوحة تقول ذلك', [open3, t[t.find('يحتاج'):][:80] if 'يحتاج' in t else '']); await ctx.close()
+  # (6) الساعة مثبّتة على التاسعة صباحاً: إخفاقٌ أمس العاشرة مساءً يُفتح اليوم الثانية ظهراً، فالخريطة «لاحقاً اليوم» واللوحة الساعة؛ وإخفاقٌ اليوم الثامنة: «غداً»
+  ctx, pg, errs = await fresh(b, prog_u2())
+  six = await pg.evaluate("""() => { const d = new Date(); d.setHours(9, 0, 0, 0); const T = d.getTime(); Date.now = () => T; const out = [];
+    for (const back of [11, 1]) { const P = PROG['m1.u2.d6'] = PROG['m1.u2.d6'] || {}, fa = T - back * 36e5; Object.assign(P, { done: true, at: fa, score: 7, of: 12, band: 'support', failAt: fa, weak: 'm1.u2.d1' }); PROG['m1.u2.d1'].at = fa + 1000; saveProg(); showHome();
+      out.push({ open: retakeOpen(P), text: document.querySelector('[data-lesson="m1.u2.d6"]').textContent.slice(-30) }); }
+    return out; }""")
+  await gate_pass(pg); t = await pg.evaluate("() => document.querySelector('#panel').textContent")
+  check('REV', not six[0]['open'] and 'لَاحِقًا اليَوْمَ' in six[0]['text'] and not six[1]['open'] and 'غَدًا' in six[1]['text'], 'إخفاقٌ أمس مساءً والموعد اليوم: «نعود لاحقاً اليوم»؛ وإخفاقٌ اليوم صباحاً: «نعود غداً»', six)
+  check('REV', 'يُعاد غداً' in t, 'واللوحة للإخفاق الأخير: «يُعاد غداً»', t[t.find('يُعاد'):][:40] if 'يُعاد' in t else '')
+  await pg.evaluate("""() => { const T = Date.now(), P = PROG['m1.u2.d6'], fa = T - 11 * 36e5; P.failAt = fa; P.at = fa; PROG['m1.u2.d1'].at = fa + 1000; saveProg(); openPanel(); }""")
+  t = await pg.evaluate("() => document.querySelector('#panel').textContent")
+  check('REV', 'يُعاد اليوم بعد الساعة' in t, 'واللوحة لإخفاق الأمس: «يُعاد اليوم بعد الساعة …»', t[t.find('يُعاد'):][:40] if 'يُعاد' in t else ''); await ctx.close()
+  # (7) درسٌ أضعف تالف، وإخفاقٌ بوقتٍ في المستقبل: لا قفل أبدي
+  ctx, pg, errs = await fresh(b, prog_u2())
+  await pg.evaluate("() => { const P = PROG['m1.u2.d6'] = PROG['m1.u2.d6'] || {}; Object.assign(P, { done: true, at: 1, score: 3, of: 12, band: 'low', failAt: Date.now() - 2 * 864e5, weak: 'x' }); localStorage.setItem('hp_prog:k1', JSON.stringify(PROG)); }")
+  await reopen(pg); a7 = await pg.evaluate("() => ({ open: retakeOpen(PROG['m1.u2.d6']), weak: PROG['m1.u2.d6'].weak || null })")
+  await gate_pass(pg); t = await pg.evaluate("() => document.querySelector('#panel').textContent")
+  check('REV', a7['open'] and a7['weak'] is None and 'درس «»' not in t, 'درسٌ أضعف تالف يسقطه التحقّق: يُفتح الاختبار بعد مرور اليوم، واللوحة لا تذكر درساً فارغاً', [a7, t[t.find('يُعاد'):][:50] if 'يُعاد' in t else '']); await ctx.close()
+  ctx, pg, errs = await fresh(b, prog_u2())
+  await pg.evaluate("() => { const P = PROG['m1.u2.d6'] = PROG['m1.u2.d6'] || {}; Object.assign(P, { done: true, at: 1, score: 3, of: 12, band: 'low', failAt: Date.now() + 30 * 864e5, weak: 'm1.u2.d1' }); localStorage.setItem('hp_prog:k1', JSON.stringify(PROG)); }")
+  await reopen(pg); fa = await pg.evaluate("() => PROG['m1.u2.d6'].failAt - Date.now()")
+  await pg.evaluate("() => { const P = PROG['m1.u2.d6']; PROG['m1.u2.d1'].at = Date.now(); P.failAt -= 2 * 864e5; PROG['m1.u2.d1'].at = P.failAt + 1000; saveProg(); }"); o7 = await pg.evaluate("() => retakeOpen(PROG['m1.u2.d6'])")
+  check('REV', fa <= 0 and o7, 'إخفاقٌ بوقتٍ بعد 30 يوماً (ساعةٌ كانت متقدّمة): يُعدّ الآن عند الفتح، فيُفتح بالدرس الأضعف ومرور اليوم', [fa, o7]); await ctx.close()
+  # (9) اختبارٌ لم يُنجح قبل القرار (بلا failAt): «حاول من جديد»
+  ctx, pg, errs = await fresh(b, prog_u2())
+  await pg.evaluate("() => { PROG['m1.u2.d6'] = { done: true, at: 1, score: 10, of: 12 }; saveProg(); showHome(); }")
+  t9 = await pg.evaluate("() => document.querySelector('[data-lesson=\"m1.u2.d6\"]').textContent"); want = await pg.evaluate("() => G(labelText('tryAgain'))")
+  check('REV', want in t9, 'اختبارٌ قديم لم يُنجح (بلا failAt): المحطة تقول «حاول من جديد»', [t9[-40:], want])
+  check('REV', not errs, 'لا أخطاء في الصفحة (إصلاحات الفحص المستقل)', errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch()
@@ -260,6 +353,7 @@ async def main():
     if on('R02') or on('A-04'): await r02_cases(b)
     if on('D6'): await d6_cases(b)
     if on('SMALL'): await small_cases(b)
+    if on('REV'): await rev_cases(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())

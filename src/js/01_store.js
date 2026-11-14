@@ -95,7 +95,8 @@ const V_CS = vRec({ ok: int0, of: int0, round: Pr(v => isInt(v, 0, 9)), at: time
 const V_LESSON = vRec({ done: bool, mastered: bool, deferred: bool, entry: bool, at: time, path: Pr(v => v === 'mat' || v === 'screen'), resume: vRec({ stage: Pr(v => isInt(v, 0, 99)), t: time }, ['stage']),
   runs: int0, chose: Pr(v => v === 'normal' || v === 'challenge'), cs: vMap(CONCEPT_ID, V_CS), face: Pr(v => v === 'easy' || v === 'ok' || v === 'hard'),
   score: Pr(v => v === null || isInt(v)), of: Pr(v => v === null || isInt(v)),
-  band: Pr(v => v === 'support' || v === 'low'), failAt: time, weak: Pr(v => typeof v === 'string' && LESSON_ID.test(v)) });   // اختبار الوحدة دون النجاح (A-03، D266)
+  band: Pr(v => v === 'support' || v === 'low'), failAt: time, weak: Pr(v => typeof v === 'string' && LESSON_ID.test(v)),
+  trun: vRec({ a: vArr(Pr(v => typeof v === 'string' && /^[A-Za-z][A-Za-z0-9]{0,7}$/.test(v)), 40), w: vArr(Pr(v => typeof v === 'string' && /^[A-Za-z][A-Za-z0-9]{0,7}$/.test(v)), 40) }, ['a', 'w']) });   // اختبار الوحدة دون النجاح (A-03، D266)
 const V_PROG_TOP = { schema: Pr(v => v === SCHEMA), srs: vMap(LESSON_ID, V_SRS), ws: vMap(UNIT_ID, int0),
   streams: vMap(/^[a-z]{1,16}$/, vRec({ seen: bool, n: int0, ok: int0, day: time })), adult: vMap(LESSON_ID, vArr(Pr(v => v === true || v === false || v === null), 12)),
   redo: vMap(LESSON_ID, time), review: Pr(v => typeof v === 'string' && LESSON_ID.test(v)), unlockAll: bool };
@@ -191,6 +192,8 @@ const PROG = (() => { const P = store.read(kk('hp_prog'), null, isObj) || {};
   F.schema = SCHEMA; return F; })();
 if (!isObj(PROG.srs)) PROG.srs = {}; if (!isObj(PROG.ws)) PROG.ws = {}; if (!isObj(PROG.streams)) PROG.streams = {};
 const saveProg = () => { if (PROG_HOLD) { if (!PROG_HOLD()) return false; PROG_HOLD = null; STORE_ISSUES.migrateHeld = false; } return store.set(kk('hp_prog'), PROG); };
+/* إخفاقٌ في اختبار سُجّل وساعة الجهاز متقدّمة (وقته في المستقبل) لا يقفل الإعادة إلى ذلك الوقت: يُعدّ كأنه الآن، ويُحفظ (الفحص المستقل للقرارات، 7) */
+{ let fixed = false; for (const v of Object.values(PROG)) if (isObj(v) && typeof v.failAt === 'number' && v.failAt > Date.now() + 6e4) { v.failAt = Date.now(); fixed = true; } if (fixed) saveProg(); }
 /* المراجعة المتباعدة لكل مفهوم (المبدأ 14، D237، الفحص الخصم A07): srsStart وsrsUpdate وجدولها في 70_review.js */
 const srsDue = r => r && r.due != null && r.due <= Date.now();
 

@@ -90,8 +90,8 @@ function showHome() {
       if (open && want && !nowSet) { btn.classList.add('now'); nowSet = true; }
       const st = !open ? ST_ICON.lock(css('--muted')) : resting && !p.done ? ST_ICON.moon(css('--muted')) : p.mastered ? ST_ICON.star() : p.done ? ST_ICON.done(css('--good')) : '';
       /* الاختبار بعد إخفاقٍ مقفلٌ حتى يُعاد الدرس الأضعف ويمضي يوم (A-03): يقول له لماذا */
-      const wait = L.test && p.failAt && !p.mastered && !retakeOpen(p) ? labelText(((PROG[p.weak] || {}).at || 0) > p.failAt ? 'testTomorrow' : 'testAfterReview') : '';
-      const sub = p.resume ? labelText('resumeHere') : wait ? wait : PROG.review === id ? labelText('reviewThis') : redo ? labelText('redoThis') : L.test && p.failAt && !p.mastered ? labelText('tryAgain') : '';   /* لا رقم درس مكتوباً على الخريطة (الأرقام تُتعلَّم في الدرس الخامس) */
+      const wait = L.test && p.failAt && !p.mastered && !retakeOpen(p) ? labelText(!weakDone(p) ? 'testAfterReview' : dayStart(dueAfter(p.failAt, 1)) <= dayStart(Date.now()) ? 'testLaterToday' : 'testTomorrow') : '';   /* اليوم إن حان اليوم (الفحص المستقل للقرارات، 6) */
+      const sub = p.resume ? labelText('resumeHere') : wait ? wait : PROG.review === id ? labelText('reviewThis') : redo ? labelText('redoThis') : L.test && !p.mastered && (p.failAt || p.score != null) ? labelText('tryAgain') : '';   /* ومعه اختبارٌ لم يُنجح قبل القرار A-03 (بلا failAt، الفحص المستقل للقرارات، 9) */   /* لا رقم درس مكتوباً على الخريطة (الأرقام تُتعلَّم في الدرس الخامس) */
       const tag = p.entry ? `<em class="tag">${esc(labelText('entry'))}</em>` : '';
       btn.innerHTML = stopIcon(L) + `<span>${esc(L.title)}${tag}${sub ? `<small>${esc(G(sub))}</small>` : ''}</span>` + st; btn.setAttribute('aria-label', plain(L.title));
       btn.onclick = () => { if (!open) { SFX.soft(); return; } SFX.tick(); startLesson(id); };

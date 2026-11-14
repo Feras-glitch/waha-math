@@ -34,7 +34,8 @@ const MAINT_DAYS = [30, 60, 90];
 const maintPool = (L, C) => !!L && (L.review || []).filter(x => x.c === C).length >= 4;
 function maintDue(L, C, x) { if (!isObj(x) || x.due != null || x.step < SRS_DAYS.length || !maintPool(L, C)) return null;
   const m = isInt(x.m) ? x.m : 0; return m >= MAINT_DAYS.length ? null : dueAfter(isT(x.last) ? x.last : 0, MAINT_DAYS[m]); }
-function maintCredit(id, C) { const r = srsRec(id), x = r && r.cs[C]; if (maintDue(LDATA[id], C, x) == null) return; x.last = Date.now(); saveProg(); }
+function maintCredit(id, C) { const r = srsRec(id), x = r && r.cs[C], due = maintDue(LDATA[id], C, x); if (due == null || Date.now() < due) return;   /* المستحقّة وحدها، وتُحسب كالصيانة نفسها: خطوتها التالية (الفحص المستقل للقرارات، 8) */
+  x.m = (isInt(x.m) ? x.m : 0) + 1; x.last = Date.now(); saveProg(); }
 function srsUpdate(id, C, ok) { const r = srsRec(id); if (!r || !isObj(r.cs[C])) return; const x = r.cs[C], now = Date.now();
   const maint = maintDue(LDATA[id], C, x) != null;
   if (maint) { if (ok) x.m = (isInt(x.m) ? x.m : 0) + 1; else { x.step = 1; x.due = dueAfter(now, SRS_DAYS[1]); x.m = 0; } }
