@@ -26,8 +26,19 @@ function srsSoon(ids) { const t = dueAfter(Date.now(), 1); let ch = false;
     for (const C of srsConcepts(LDATA[id])) { const x = r.cs[C]; if (!isObj(x)) continue;
       if (x.due == null) { x.step = SRS_DAYS.length - 1; x.due = t; ch = true; } else if (x.due > t) { x.due = t; ch = true; } } }
   if (ch) saveProg(); }
+/* صيانة «الثابت» (القرار R02، D266): بعد «ثابت» يعود المفهوم بعد 30 يوماً، ثم 60 بعدها، ثم 90 بعدها (x.m عدد ما مضى منها)،
+   ولا تعمل إلا لمفهومٍ له 4 بنود مراجعة فأكثر: صيانةٌ ببندين محفوظين لا تقيس شيئاً (الشرط الأول، وA-04 بعد التجربة).
+   والخطأ فيها يُرجع المفهوم إلى خطوة 3 أيام (لا إلى البداية: خطأٌ بعد أشهر لا يعني أنه لم يتعلّم)،
+   وبندٌ عرضي صحيح من المحاولة الأولى (البند المشتبك في إتقان درسٍ لاحق، وبند اختبار درسٍ له مفهوم واحد) يُحسب صيانةً (maintCredit) */
+const MAINT_DAYS = [30, 60, 90];
+const maintPool = (L, C) => !!L && (L.review || []).filter(x => x.c === C).length >= 4;
+function maintDue(L, C, x) { if (!isObj(x) || x.due != null || x.step < SRS_DAYS.length || !maintPool(L, C)) return null;
+  const m = isInt(x.m) ? x.m : 0; return m >= MAINT_DAYS.length ? null : dueAfter(isT(x.last) ? x.last : 0, MAINT_DAYS[m]); }
+function maintCredit(id, C) { const r = srsRec(id), x = r && r.cs[C]; if (maintDue(LDATA[id], C, x) == null) return; x.last = Date.now(); saveProg(); }
 function srsUpdate(id, C, ok) { const r = srsRec(id); if (!r || !isObj(r.cs[C])) return; const x = r.cs[C], now = Date.now();
-  if (ok) { x.step = Math.min(SRS_DAYS.length, x.step + 1); x.due = x.step >= SRS_DAYS.length ? null : dueAfter(now, SRS_DAYS[x.step]); }
+  const maint = maintDue(LDATA[id], C, x) != null;
+  if (maint) { if (ok) x.m = (isInt(x.m) ? x.m : 0) + 1; else { x.step = 1; x.due = dueAfter(now, SRS_DAYS[1]); x.m = 0; } }
+  else if (ok) { x.step = Math.min(SRS_DAYS.length, x.step + 1); x.due = x.step >= SRS_DAYS.length ? null : dueAfter(now, SRS_DAYS[x.step]); if (x.due == null) x.m = 0; }
   else { x.step = Math.max(0, x.step - 1); x.due = dueAfter(now, SRS_DAYS[x.step]); }
   x.last = now;
   /* مفهومٌ أُجّل إلى المراجعة ثم ثبت فيها لم يعد «مؤجَّلاً» (مراجعة الخصم A-06: قال التقرير «ثابت» واللوحة «مؤجَّل» في آنٍ واحد) */
@@ -45,14 +56,18 @@ function srsUpdate(id, C, ok) { const r = srsRec(id); if (!r || !isObj(r.cs[C]))
 /* ما حان من المفاهيم: [{L, C, due}] بترتيب الدروس */
 function reviewDue() { const out = [];
   for (const id of UNITS.flatMap(u => u.lessons)) { const L = LDATA[id], r = srsRec(id); if (!L || !r || !L.review || !L.review.length) continue;
-    for (const C of srsConcepts(L)) if (srsDue(r.cs[C])) out.push({ L, C, due: r.cs[C].due }); }
+    for (const C of srsConcepts(L)) { const x = r.cs[C], md = maintDue(L, C, x);
+      if (srsDue(x)) out.push({ L, C, due: x.due, step: x.step }); else if (md != null && md <= Date.now()) out.push({ L, C, due: md, step: x.step, maint: true }); } }
   return out; }
 const reviewLessonsDue = () => new Set(reviewDue().map(d => d.L.id)).size;
 function streamsDue() { const today = dayStart(Date.now()); return STREAMS.filter(s => streamOpen(s) && (PROG.streams[s.id] || {}).day !== today); }
 const reviewWaiting = () => reviewDue().length + streamsDue().length > 0;
 /* بنود الجلسة: ثلاثة على الأكثر كما كانت (حدّ الجلسة)، أقدمها موعداً أولاً، ومفهومٌ من كل درس قبل مفهومٍ ثانٍ منه (تداخل الدروس) */
 const REVIEW_MAX = 3;
-function reviewPick() { const due = reviewDue().sort((a, b) => a.due - b.due), pick = [], used = new Set();
+/* القرار A-09 (D266): السقف لكل جلسة كما هو، ومراجعتا «بعد يوم» و«بعد 3 أيام» (الخطوتان 0 و1) قبل غيرهما، ثم الأقدم موعداً:
+   الذاكرة الطرية أسرع نسياناً، فهي أحقّ بالمكان حين يزيد المستحق على السقف */
+const reviewRank = d => d.step <= 1 ? 0 : 1;
+function reviewPick() { const due = reviewDue().sort((a, b) => reviewRank(a) - reviewRank(b) || a.due - b.due), pick = [], used = new Set();
   for (const d of due) if (pick.length < REVIEW_MAX && !used.has(d.L.id)) { pick.push(d); used.add(d.L.id); }
   for (const d of due) if (pick.length < REVIEW_MAX && !pick.includes(d)) pick.push(d);
   return pick; }
@@ -157,7 +172,7 @@ async function weeklyReport() {
     <div class="card"><h2>تقرير الأسبوع: ${PROFILE ? esc(PROFILE.name || '') : ''}</h2><p class="muted">من ${fmt.date(w0)} إلى ${fmt.date(now)} · واحة الرياضيات، المرحلة الأولى</p></div>
     <div class="card"><b>ما أُنجز:</b> ${doneW.length ? doneW.map(id => `${plain(LDATA[id].title)}${(PROG[id] || {}).mastered ? ((PROG[id] || {}).entry ? ' (أتقنه على الشاشة، مدخل)' : ' (متقن)') : (PROG[id] || {}).entry ? ' (مدخل)' : ''}`).join('، ') : 'لا دروس جديدة هذا الأسبوع'}.
       <br><b>الصواب من المحاولة الأولى:</b> ${p1 == null ? 'لا محاولات هذا الأسبوع' : DG(p1) + '٪ (' + DG(ok1) + ' من ' + DG(n1) + ')'}${trend ? ' · الأسبوع السابق ' + DG(p0) + '٪' : n1 && n1 < 20 ? ' · لا نعرض اتجاهاً قبل عشرين بنداً' : ''}
-      <br><b>المراجعة المتباعدة:</b> ${nw(strong, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${strong === 1 ? 'ثابت' : strong === 2 ? 'ثابتان' : 'ثابتة'}، و${nw(due, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${due === 1 ? 'ينتظر' : due === 2 ? 'ينتظران' : 'تنتظر'} المراجعة اليوم.
+      <br><b>المراجعة المتباعدة:</b> ${nw(strong, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${strong === 1 ? 'ثابت' : strong === 2 ? 'ثابتان' : 'ثابتة'}، و${nw(due, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${due === 1 ? 'ينتظر' : due === 2 ? 'ينتظران' : 'تنتظر'} المراجعة اليوم.${strong ? ' <span class="muted">في المرحلة الأولى بندا مراجعة لكل مفهوم، فـ«ثابت» هنا مبدئي.</span>' : ''}
       <br><b>الورشة:</b> ${Object.entries(PROG.ws || {}).filter(([u]) => WS[u]).map(([u, n]) => `${plain(UNITS.find(x => x.id === u).title)}: ${DG(n)} من ${DG(WS[u].puzzles.length)} ألغاز`).join('، ') || 'لم تُفتح بعد'}.
       <br><b>المعرض:</b> ${nw(photos, 'صورة صيد واحدة', 'صورتا صيد', 'صور صيد', 'صورة صيد')}، و${nw(designs, 'تصميم واحد', 'تصميمان', 'تصاميم', 'تصميماً')} هذا الأسبوع.</div>
     <div class="card"><b>أخطاء تكرّرت:</b><br>${Object.keys(errs).length ? Object.entries(errs).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${esc(ERRN[k])}: ${DG(n)}`).join('<br>') : 'لا شيء يُذكر'}</div>

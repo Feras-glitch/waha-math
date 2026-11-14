@@ -5,6 +5,9 @@
 const allLessons = () => UNITS.flatMap(U => U.lessons);
 function nextLessonId() { for (const [ui, U] of UNITS.entries()) { if (!unitOpen(ui)) break; for (const [i, id] of U.lessons.entries()) if (!(PROG[id] || {}).done && lessonOpen(U, i)) return id; } return null; }
 const conceptName = (L, C) => (L.concepts || {})[C] || '';
+/* موعد صيانة «الثابت» في جدول المراجعة (R02، D266) */
+function maintNote(L, C, x) { const md = maintDue(L, C, x); if (md == null) return ''; const d = daysBetween(Date.now(), md);
+  return ` <span class="muted">صيانة ${d <= 0 ? 'اليوم' : 'بعد ' + nw(d, 'يوم واحد', 'يومين', 'أيام', 'يوماً')}</span>`; }
 function statusPill(L) { const p = PROG[L.id] || {};
   const redo = isObj(PROG.redo) && PROG.redo[L.id] ? ' <span class="pill think">يُعاد: خطآن متتاليان في المراجعة</span>' : '';
   /* D252: إتقان مسار الشاشة «مدخل» عند الكبار حتى يُعاد الدرس بالأشياء الحقيقية، والنجمة للطفل كما هي */
@@ -68,9 +71,9 @@ function openPanel() {
       return `<tr><td>${esc(name)}</td><td>${st}</td></tr>`; }).join('')).join('') || '<tr><td>تظهر بعد أول درس.</td></tr>'}</tbody></table></details>
     ${done.some(L => L.adultCard) ? `<div class="card"><b>بطاقات يحكم بها الكبير</b> (ما لا يُتعلَّم من الشاشة):${done.filter(L => L.adultCard).map(adultCardHTML).join('')}</div>` : ''}
     <div class="card"><b>بطاقات الحوار ومهام البيت</b> (بعد كل درس أُنجز):${done.filter(L => TALK[L.id]).map(L => `<div class="talkcard"><b>${esc(plain(L.title))}</b><br>${esc(G(TALK[L.id]))}${homeTask(L.id) ? `<br><span class="muted">مهمة البيت: ${esc(homeTask(L.id))}</span>` : ''}</div>`).join('') || '<br>تظهر هنا بعد أول درس.'}</div>
-    <details class="card"><summary><b>المراجعة المتباعدة</b> (لكل فكرة: بعد يوم ثم ٣ ثم ٧ ثم ٢١ يوماً، والخطأ يرجعها وحدها خطوة واحدة)</summary>${Object.keys(PROG.srs).length ? `<table><thead><tr><th>الفكرة</th><th>المرحلة</th><th>الموعد</th></tr></thead><tbody>${Object.entries(PROG.srs).map(([id, r]) => { const L = LDATA[id]; if (!L || !isObj(r) || !isObj(r.cs)) return '';
+    <details class="card"><summary><b>المراجعة المتباعدة</b> (لكل فكرة: بعد يوم ثم ٣ ثم ٧ ثم ٢١ يوماً، والخطأ يرجعها وحدها خطوة واحدة؛ وبعد «ثابت» صيانةٌ بعد ٣٠ ثم ٦٠ ثم ٩٠ يوماً لما له أربعة بنود مراجعة فأكثر)</summary>${Object.keys(PROG.srs).length ? `<table><thead><tr><th>الفكرة</th><th>المرحلة</th><th>الموعد</th></tr></thead><tbody>${Object.entries(PROG.srs).map(([id, r]) => { const L = LDATA[id]; if (!L || !isObj(r) || !isObj(r.cs)) return '';
       return `<tr class="uh"><td colspan="3">${esc(plain(L.title))}</td></tr>` + Object.entries(r.cs).map(([C, x]) => { const d = x.due ? daysBetween(Date.now(), x.due) : null;
-        return `<tr><td>${esc(conceptName(L, C))}</td><td>${DG(Math.min(x.step, 4))} من ${DG(4)}</td><td>${x.due == null ? '<span class="pill good">ثابت</span>' : d <= 0 ? '<span class="pill think">اليوم</span>' : 'بعد ' + nw(d, 'يوم واحد', 'يومين', 'أيام', 'يوماً')}</td></tr>`; }).join(''); }).join('')}</tbody></table>` : '<p>تبدأ بعد أول درس.</p>'}
+        return `<tr><td>${esc(conceptName(L, C))}</td><td>${DG(Math.min(x.step, 4))} من ${DG(4)}</td><td>${x.due == null ? '<span class="pill good">ثابت</span>' + maintNote(L, C, x) : d <= 0 ? '<span class="pill think">اليوم</span>' : 'بعد ' + nw(d, 'يوم واحد', 'يومين', 'أيام', 'يوماً')}</td></tr>`; }).join(''); }).join('')}</tbody></table><p class="muted">في المرحلة الأولى بندا مراجعة لكل مفهوم، فـ«ثابت» هنا مبدئي.</p>` : '<p>تبدأ بعد أول درس.</p>'}
       ${Object.entries(PROG.streams).filter(([, s]) => s.n).map(([k, s]) => `<p>${{ glance: 'اللمحة السريعة', fluency: 'أصابعي الخمس', story: 'قصص الواحة' }[k] || k}: ${DG(s.ok || 0)} من ${DG(s.n)} من المحاولة الأولى</p>`).join('')}</details>
     <div class="card"><b>إشارات</b> (من آخر المحاولات):<br>${signals().map(([t, x]) => `<span class="pill think">${t}</span> ${esc(x)}`).join('<br>') || 'لا شيء يدعو للقلق.'}
       ${faces.length ? `<p class="muted">«كيف كان؟»: ${esc(faces.join(' · '))}</p>` : ''}

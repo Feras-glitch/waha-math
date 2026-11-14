@@ -136,7 +136,7 @@ async function masteryStage(L) {
     else { cs.deferred = !cs.mastered; await S('gen.ms.later'); }
     saveProg();
   }
-  if (M.mixed) { const prev = CUR; CUR = LDATA[M.mixed.lesson]; let r; try { r = await runItem(M.mixed.item, 'mastery', { scene: 'mastery:mixed' }); } finally { CUR = prev; } const R = srsRec(M.mixed.lesson), MC = M.mixed.concept; if (!r.firstTry && R && isObj(R.cs[MC])) { srsUpdate(M.mixed.lesson, MC, false); R.cs[MC].due = addDays(Date.now(), 1); } }   // البند المشتبك يُحكم بإعدادات درسه، وخطؤه يرجع مفهومه (concept) وحده
+  if (M.mixed) { const prev = CUR; CUR = LDATA[M.mixed.lesson]; let r; try { r = await runItem(M.mixed.item, 'mastery', { scene: 'mastery:mixed' }); } finally { CUR = prev; } const R = srsRec(M.mixed.lesson), MC = M.mixed.concept; if (!r.firstTry && R && isObj(R.cs[MC])) { srsUpdate(M.mixed.lesson, MC, false); R.cs[MC].due = addDays(Date.now(), 1); } else if (r.firstTry && r.ok) maintCredit(M.mixed.lesson, MC); }   // وصوابه يُحسب صيانةً لمفهومه الثابت (R02)   // البند المشتبك يُحكم بإعدادات درسه، وخطؤه يرجع مفهومه (concept) وحده
   const real = Object.keys(M.concepts).filter(C => !(M.entryOnly || []).includes(C));
   P.mastered = real.every(C => P.cs[C].mastered); P.deferred = real.some(C => P.cs[C].deferred && !P.cs[C].mastered); saveProg();
   if (P.mastered) { SFX.win(); starBurst(); await S(M.ok || 'gen.ms.ok'); }
@@ -156,7 +156,7 @@ async function testStage(L) {
   const T = L.test; const P = progOf(L.id); newStage(250, { oasisOpacity: .3 });
   await S(T.intro || 'gen.test.intro');
   const order = T.keepOrder ? T.items : shuffle(T.items); let ok = 0; const wrong = [];
-  for (const q of order) { const r = await runItem(q.item, 'test', { scene: 'test' }); if (r.ok) ok++; else wrong.push(q); await sleep(700); }
+  for (const q of order) { const r = await runItem(q.item, 'test', { scene: 'test' }); if (r.ok) { ok++; const Cs = LDATA[q.of] ? srsConcepts(LDATA[q.of]) : []; if (Cs.length === 1) maintCredit(q.of, Cs[0]); } else wrong.push(q); await sleep(700); }   // بند اختبار صحيح يُحسب صيانةً لمفهوم درسه إن كان له مفهوم واحد (R02)
   const n = order.length, band = ok >= testNeed(n) ? 'pass' : ok >= supportNeed(n) ? 'support' : 'low';
   P.score = ok; P.of = n; P.at = Date.now(); saveProg();
   logAttempt({ scene: 'test', tag: 'result', ok: band === 'pass', band, score: ok, of: n, wrongIds: wrong.map(q => q.id) });

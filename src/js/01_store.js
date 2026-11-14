@@ -87,7 +87,7 @@ const vArr = (f, max) => (a, bad, at) => { if (!Array.isArray(a)) { bad.push(at)
   const out = []; a.slice(-max).forEach((v, i) => { const r = f(v, bad, at + '[' + i + ']'); if (r !== NO) out.push(r); }); return out; };
 const int0 = Pr(v => isInt(v)), bool = Pr(isBool), time = Pr(isT);
 const SRS_DAYS = [1, 3, 7, 21];                           // المراجعة المتباعدة (المبدأ 14): بعد الإتقان 1 ثم 3 ثم 7 ثم 21 يوماً
-const V_STEP = { step: Pr(v => isInt(v, 0, SRS_DAYS.length)), due: Pr(v => v === null || isT(v)), last: time };
+const V_STEP = { step: Pr(v => isInt(v, 0, SRS_DAYS.length)), due: Pr(v => v === null || isT(v)), last: time, m: Pr(v => isInt(v, 0, 3)) };   // m: صيانات «الثابت» الماضية (R02، D266)
 const V_SRS1 = vRec({ ...V_STEP, k: int0, k2: int0 }, ['step']);                       // جدول الدرس الواحد قبل الفحص الخصم A07 (يُرحَّل عند الفتح، 70_review.js)
 const V_SRS2 = vRec({ cs: vMap(CONCEPT_ID, vRec(V_STEP, ['step', 'due'])), k: vMap(CONCEPT_ID, int0), k2: int0 }, ['cs']);   // جدول لكل مفهوم
 const V_SRS = (v, bad, at) => (isObj(v) && 'cs' in v ? V_SRS2 : V_SRS1)(v, bad, at);

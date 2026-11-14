@@ -119,10 +119,55 @@ async def a03_cases(b):
   await reopen(pg); rep = await pg.evaluate("() => STORE_ISSUES.repaired")
   check('A-03', not rep and not errs, 'ضابط: الحقول الجديدة تُقبل بعد إعادة الفتح، ولا أخطاء', [rep, errs[:2]]); await ctx.close()
 
+async def a09_cases(b):
+  # مستحقٌّ أكثر من السقف: نصفه خطوة 3 (21 يوماً) متأخّرٌ عشرة أيام، ونصفه خطوة 0 أو 1 مستحقٌّ منذ ساعة
+  ctx, pg, errs = await fresh(b)
+  r = await pg.evaluate("""() => { const now = Date.now(); let i = 0; const ids = Object.keys(LDATA).filter(id => (LDATA[id].review || []).length);
+    for (const id of ids) { const cs = {}; for (const C of srsConcepts(LDATA[id])) { const shortStep = i++ % 2 === 0; cs[C] = shortStep ? { step: i % 4 === 1 ? 0 : 1, due: now - 36e5, last: now - 2 * 864e5 } : { step: 3, due: now - 10 * 864e5, last: now - 30 * 864e5 }; } PROG.srs[id] = { cs, k: {}, k2: 0 }; }
+    const due = reviewDue(), pick = reviewPick(); return { due: due.length, short: due.filter(d => PROG.srs[d.L.id].cs[d.C].step <= 1).length, pick: pick.map(d => PROG.srs[d.L.id].cs[d.C].step) }; }""")
+  check('A-09', r['due'] > 3 and r['short'] >= 3 and len(r['pick']) == 3 and all(x <= 1 for x in r['pick']), 'المستحق أكثر من السقف: «بعد يوم» و«بعد 3 أيام» تُختار قبل «بعد 21 يوماً» الأقدم منها موعداً', r)
+  r2 = await pg.evaluate("""() => { for (const r of Object.values(PROG.srs)) for (const x of Object.values(r.cs)) if (x.step <= 1) x.due = Date.now() + 5 * 864e5; return reviewPick().map(d => PROG.srs[d.L.id].cs[d.C].step); }""")
+  check('A-09', len(r2) == 3 and all(x == 3 for x in r2), 'ضابط: ولا قصير مستحقّاً: يُختار الأقدم موعداً، والسقف 3 كما هو', r2)
+  check('A-09', not errs, 'لا أخطاء في الصفحة', errs[:3]); await ctx.close()
+
+MAINT = """([id, C, last, step, due, m]) => { const now = Date.now(); PROG.srs[id] = { cs: {}, k: {}, k2: 0 }; for (const c of srsConcepts(LDATA[id])) PROG.srs[id].cs[c] = { step: 1, due: now + 864e5 * 9, last: now };
+  const x = { step, due, last: now - last * 864e5 }; if (m != null) x.m = m; PROG.srs[id].cs[C] = x; saveProg(); return reviewDue().filter(d => d.L.id === id && d.C === C).length; }"""
+async def r02_cases(b):
+  ctx, pg, errs = await fresh(b)
+  n4 = await pg.evaluate("() => LDATA['m1.u4.d4'].review.filter(x => x.c === 'D001').length"); n2 = await pg.evaluate("() => LDATA['m1.u1.d1'].review.filter(x => x.c === 'C001').length")
+  d31 = await pg.evaluate(MAINT, ['m1.u4.d4', 'D001', 31, 4, None, None])
+  d29 = await pg.evaluate(MAINT, ['m1.u4.d4', 'D001', 29, 4, None, None])
+  two = await pg.evaluate(MAINT, ['m1.u1.d1', 'C001', 200, 4, None, None])
+  check('R02', n4 >= 4 and d31 == 1, 'مفهومٌ له 4 بنود مراجعة، «ثابت» منذ 31 يوماً: يعود في المراجعة (صيانة)', [n4, d31])
+  check('R02', d29 == 0, 'ضابط: و«ثابت» منذ 29 يوماً لم يحن بعد', d29)
+  check('R02', n2 == 2 and two == 0, 'ومفهومٌ له بندان: لا صيانة ولو مضى 200 يوم (الشرط الأول: لا صيانة ببندين محفوظين)', [n2, two])
+  ok = await pg.evaluate("""() => { const id = 'm1.u4.d4'; srsUpdate(id, 'D001', true); const x = PROG.srs[id].cs.D001; const due60 = typeof maintDue === 'function' ? maintDue(LDATA[id], 'D001', x) : null;
+    return { m: x.m, due: x.due, step: x.step, gap: due60 ? Math.round((due60 - x.last) / 864e5) : null }; }""")
+  check('R02', ok['m'] == 1 and ok['due'] is None and ok['step'] == 4 and ok['gap'] in (59, 60), 'صيانة صحيحة: يبقى «ثابتاً»، والتالية بعد 60 يوماً', ok)
+  await pg.evaluate(MAINT, ['m1.u4.d4', 'D001', 95, 4, None, 2])
+  bad = await pg.evaluate("""() => { const id = 'm1.u4.d4'; srsUpdate(id, 'D001', false); const x = PROG.srs[id].cs.D001; return { m: x.m, step: x.step, days: x.due ? Math.round((x.due - Date.now()) / 864e5) : null }; }""")
+  check('R02', bad['step'] == 1 and bad['m'] == 0 and bad['days'] in (2, 3), 'صيانة خاطئة: يعود المفهوم إلى خطوة 3 أيام، لا إلى البداية', bad)
+  await pg.evaluate(MAINT, ['m1.u4.d4', 'D001', 95, 4, None, 3])
+  done = await pg.evaluate("() => reviewDue().filter(d => d.L.id === 'm1.u4.d4').length")
+  check('R02', done == 0, 'بعد الصيانات الثلاث لا يعود', done)
+  await reopen(pg); rep = await pg.evaluate("() => STORE_ISSUES.repaired")
+  check('R02', not rep and not errs, 'ضابط: حقل الصيانة يُقبل بعد إعادة الفتح، ولا أخطاء', [rep, errs[:2]]); await ctx.close()
+  # البند المشتبك في إتقان m1.u4.d5 يسأل عن D001: صوابه يُحسب صيانةً
+  ctx, pg, errs = await fresh(b)
+  await pg.evaluate(MAINT, ['m1.u4.d4', 'D001', 29, 4, None, None]); r = await drive(pg, 'm1.u4.d5')
+  last = await pg.evaluate("() => Math.round((Date.now() - PROG.srs['m1.u4.d4'].cs.D001.last) / 864e5)")
+  check('R02', r == 'done' and last == 0, 'صوابٌ في البند المشتبك (إتقان درسٍ لاحق) يُحسب صيانةً لمفهومه الثابت', [r, last])
+  await gate_pass(pg); t = await pg.evaluate("() => document.querySelector('#panel').textContent")
+  check('R02', 'صيانة بعد' in t and 'صيانةٌ بعد ٣٠' in t, 'لوحة الكبار تقول موعد الصيانة وقاعدتها', t[t.find('المراجعة المتباعدة'):][:160] if 'المراجعة المتباعدة' in t else '')
+  check('A-04', 'فـ«ثابت» هنا مبدئي' in t, 'سطر «ثابت مبدئي» في جدول المراجعة في لوحة الكبار', '')
+  check('R02', not errs, 'لا أخطاء في الصفحة (البند المشتبك)', errs[:3]); await ctx.close()
+
 async def main():
   async with async_playwright() as p:
     b = await p.chromium.launch()
     if on('A-03'): await a03_cases(b)
+    if on('A-09'): await a09_cases(b)
+    if on('R02') or on('A-04'): await r02_cases(b)
     await b.close()
   print('FAILS:', len(FAILS)); sys.exit(1 if FAILS else 0)
 asyncio.run(main())
