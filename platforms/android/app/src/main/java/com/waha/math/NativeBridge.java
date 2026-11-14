@@ -26,6 +26,7 @@ public class NativeBridge {
     private volatile int state = 0;
     private final ArrayList<Object[]> waiting = new ArrayList<Object[]>();
     private byte[] pendingSave;
+    private volatile boolean dead = false;   // أُغلقت الشاشة أو انهار مُرسِمها (C-23): لا نداء لصفحةٍ زالت
 
     public NativeBridge(MainActivity act, WebView web) {
         this.act = act;
@@ -51,7 +52,8 @@ public class NativeBridge {
 
     private void event(String type, String id) {
         String js = "window.__ttsEvent&&window.__ttsEvent(" + JSONObject.quote(type) + "," + JSONObject.quote(id) + ")";
-        web.post(() -> web.evaluateJavascript(js, null));
+        if (dead) return;
+        web.post(() -> { if (!dead) web.evaluateJavascript(js, null); });
     }
 
     // ---------- النطق ----------
@@ -115,7 +117,8 @@ public class NativeBridge {
     /** نتيجة الحفظ إلى الصفحة: لوحة الكبار لا تقول «حُفظ» قبلها (مراجعة الخصم C-16) */
     private void saveResult(String r) {
         String js = "window.wahaSaveResult&&window.wahaSaveResult(" + JSONObject.quote(r) + ")";
-        web.post(() -> web.evaluateJavascript(js, null));
+        if (dead) return;
+        web.post(() -> { if (!dead) web.evaluateJavascript(js, null); });
     }
 
     // ---------- الطباعة (تقرير الأسبوع) ----------
@@ -132,6 +135,7 @@ public class NativeBridge {
     }
 
     public void shutdown() {
+        dead = true;
         if (tts != null) { tts.stop(); tts.shutdown(); tts = null; }
     }
 }

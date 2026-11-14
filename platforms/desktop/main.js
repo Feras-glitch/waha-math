@@ -3,7 +3,10 @@
 const { app, BrowserWindow, Menu, screen, session } = require('electron');
 const path = require('path');
 
-if (!app.requestSingleInstanceLock()) { app.quit(); }   // نافذة واحدة: نافذتان تكتبان التقدّم نفسه
+/* نافذة واحدة: نافذتان تكتبان التقدّم نفسه. والنسخة الثانية تخرج فوراً بلا نافذة (مراجعة الخصم C-18):
+   app.quit() وحده لا يوقف ما بعده، فكانت whenReady تفتح نافذةً لحظية تكتب hp_lock، فيظهر غطاء «التبويب الآخر» في الأولى */
+const FIRST = app.requestSingleInstanceLock();
+if (!FIRST) app.exit(0);
 app.setAppUserModelId('com.waha.math');
 
 let win = null;
@@ -32,6 +35,8 @@ app.on('web-contents-created', (e, wc) => {
   wc.on('will-redirect', (ev, url) => { if (!LOCAL(url)) ev.preventDefault(); });
 });
 
-app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
-app.whenReady().then(createWindow);
+if (FIRST) {
+  app.on('second-instance', () => { if (win) { if (win.isMinimized()) win.restore(); win.focus(); } });
+  app.whenReady().then(createWindow);
+}
 app.on('window-all-closed', () => app.quit());
