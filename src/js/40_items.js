@@ -49,7 +49,7 @@ async function runItem0(spec, mode, ctx) {
       return { firstTry: tries === 1, ok: true, item };
     }
     if (T.onWrong && mode !== 'mastery') await T.onWrong(item, r, j);
-    if (mode === 'test') { if (T.mark) T.mark(item, r); return { firstTry: false, ok: false, item }; }
+    if (mode === 'test') return { firstTry: false, ok: false, item };   // لا يُرسم الجواب الصحيح في الاختبار (القرار A-03، D266): الإعادة بالبنود نفسها
     if (mode === 'mastery') { await S('gen.ms.noted'); return { firstTry: false, ok: false, item }; }
     if (mode === 'review') { await T.reveal(item, r); const why = T.reason && T.reason(item); if (why) await S(why); return { firstTry: false, ok: false, item }; }
     if (tries === 1) { await S(errQ(j.err, item)); await sleep(300); continue; }                       // المستوى 1: سؤال

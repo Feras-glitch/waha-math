@@ -146,21 +146,30 @@ function starBurst() { const svg = $('#stage svg'); if (!svg) return; const g = 
   el('path', { d: 'M0 -46 L13 -14 L46 -12 L20 9 L28 42 L0 24 L-28 42 L-20 9 L-46 -12 L-13 -14 Z', fill: '#f2b33d', stroke: '#fff', 'stroke-width': 4 }, g);
   anim(g, [{ transform: 'translate(180px,110px) scale(0) rotate(-60deg)' }, { transform: 'translate(180px,110px) scale(1.15) rotate(8deg)' }, { transform: 'translate(180px,110px) scale(1) rotate(0)' }], { duration: 800, fill: 'forwards', easing: 'ease-out' }); confetti(18); }
 
-/* اختبار الوحدة (المبدأ 3: العتبة 85%، فالمطلوب ceil(0.85 × عدد البنود)): من المحاولة الأولى بلا مساعدة، ولا درجة تُقال للطفل (D233) */
-const testNeed = n => Math.ceil(n * 0.85);
+/* اختبار الوحدة (المبدأ 3): من المحاولة الأولى بلا مساعدة، ولا درجة تُقال للطفل (D233)، ولا يُكشف الجواب أثناءه (القرار A-03، D266).
+   والحدّان يُقرَّبان إلى الأسفل (A-11): النجاح floor(0.85 × البنود)، أي 10 من 12 و9 من 11؛ و«متقدّم مع دعم» floor(0.6 × البنود)، أي 7 من 12 و6 من 11.
+   ودون النجاح: الدرس الأضعف أولاً، ولا إعادة قبل أن يُعاد ويمضي يوم (retakeOpen)، فلا تُنال الشارة بحفظ أجوبةٍ رآها الطفل للتوّ.
+   و«متقدّم مع دعم» يفتح الوحدة التالية (support:الوحدة)، ويُقرِّب مراجعة دروس الخطأ إلى الغد؛ وأقلّ منه تبقى الوحدة التالية مقفلة */
+const testNeed = n => Math.floor(n * 0.85), supportNeed = n => Math.floor(n * 0.6);
+const retakeOpen = P => !P.failAt || P.mastered || (((PROG[P.weak] || {}).at || 0) > P.failAt && Date.now() >= dueAfter(P.failAt, 1));
 async function testStage(L) {
   const T = L.test; const P = progOf(L.id); newStage(250, { oasisOpacity: .3 });
   await S(T.intro || 'gen.test.intro');
   const order = T.keepOrder ? T.items : shuffle(T.items); let ok = 0; const wrong = [];
   for (const q of order) { const r = await runItem(q.item, 'test', { scene: 'test' }); if (r.ok) ok++; else wrong.push(q); await sleep(700); }
-  P.score = ok; P.of = order.length; P.at = Date.now(); saveProg();
-  logAttempt({ scene: 'test', tag: 'result', ok: ok >= testNeed(order.length), score: ok, of: order.length, wrongIds: wrong.map(q => q.id) });
-  if (ok >= testNeed(order.length)) { P.mastered = true; PROG['badge:' + L.unit] = true; saveProg(); await stoneScene(L); return; }
+  const n = order.length, band = ok >= testNeed(n) ? 'pass' : ok >= supportNeed(n) ? 'support' : 'low';
+  P.score = ok; P.of = n; P.at = Date.now(); saveProg();
+  logAttempt({ scene: 'test', tag: 'result', ok: band === 'pass', band, score: ok, of: n, wrongIds: wrong.map(q => q.id) });
+  if (band === 'pass') { P.mastered = true; delete P.band; delete P.failAt; delete P.weak; PROG['badge:' + L.unit] = true; saveProg(); await stoneScene(L); return; }
   const cnt = {}; wrong.forEach(q => cnt[q.of] = (cnt[q.of] || 0) + 1);
-  const weak = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0][0]; PROG.review = weak; saveProg();
+  const weak = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0][0]; PROG.review = weak;
+  P.band = band; P.failAt = Date.now(); P.weak = weak;
+  if (band === 'support') { PROG['support:' + L.unit] = true; srsSoon(Object.keys(cnt)); }
+  saveProg();
   const svg = newStage(250, { oasisOpacity: .2 }); const sv = el('g', { transform: 'translate(108 40) scale(2)' }, svg); sv.innerHTML = stopIconInner(LDATA[weak]);
   label(svg, 180, 200, plain(LDATA[weak].title), 22);
-  await S('gen.test.again'); await S(T.remedial || 'gen.test.remedial');
+  const ui = UNITS.findIndex(u => u.id === L.unit);
+  await S(band === 'support' ? 'gen.test.again' : 'gen.test.low'); if (band === 'support' && UNITS[ui + 1]) await S('gen.test.open'); await S(T.remedial || 'gen.test.remedial');
 }
 /* فوضى تضع حجر النبع في مكانه (قوس فوضى، D236)، فيجري الماء في جدول الحيّ (D230) */
 async function stoneScene(L) {

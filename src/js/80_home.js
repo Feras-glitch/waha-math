@@ -38,10 +38,10 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     if (SOLIDC[k]) thingAt(s, { solid: k, size: 44 }, x, 28); else shapeAt(s, { type: k, size: 28, w: k === 'rect' ? 36 : k === 'triangle' ? 32 : undefined, h: k === 'rect' ? 22 : k === 'triangle' ? 28 : undefined, color: css(IDC[k]) }, x, 28); });
   return s.innerHTML; }
 const stopIcon = L => `<svg viewBox="0 0 72 56" aria-hidden="true">${stopIconInner(L)}</svg>`;
-const unitOpen = ui => ui === 0 || !!PROG['badge:' + UNITS[ui - 1].id] || !!PROG.unlockAll;
+const unitOpen = ui => ui === 0 || !!PROG['badge:' + UNITS[ui - 1].id] || !!PROG['support:' + UNITS[ui - 1].id] || !!PROG.unlockAll;   // «متقدّم مع دعم» يفتح الوحدة التالية (A-03، D266)
 const isTestLesson = id => !!LDATA[id].test;
 function lessonOpen(U, i) { const ids = U.lessons; if (PROG.unlockAll) return true; if (i > 0 && !(PROG[ids[i - 1]] || {}).done) return false;
-  if (isTestLesson(ids[i]) && WS[U.id] && wsSolved(U.id) < 1) return false; return true; }
+  if (isTestLesson(ids[i]) && WS[U.id] && wsSolved(U.id) < 1) return false; if (isTestLesson(ids[i]) && !retakeOpen(PROG[ids[i]] || {})) return false; return true; }
 const wsOpen = U => PROG.unlockAll || !!PROG['badge:' + U.id] || !!(PROG[U.lessons[U.lessons.length - 2]] || {}).done;
 
 /* لافتة الواحة: النبع بحجارة الشارات، وجدول لكل حيّ أُتقن، ونخيل يخضرّ */
@@ -89,7 +89,9 @@ function showHome() {
       const want = PROG.review ? PROG.review === id : isObj(PROG.redo) && Object.keys(PROG.redo).length ? redo : (!p.done || (L.test && !p.mastered));
       if (open && want && !nowSet) { btn.classList.add('now'); nowSet = true; }
       const st = !open ? ST_ICON.lock(css('--muted')) : resting && !p.done ? ST_ICON.moon(css('--muted')) : p.mastered ? ST_ICON.star() : p.done ? ST_ICON.done(css('--good')) : '';
-      const sub = p.resume ? labelText('resumeHere') : PROG.review === id ? labelText('reviewThis') : redo ? labelText('redoThis') : L.test && p.done && !p.mastered ? labelText('tryAgain') : '';   /* لا رقم درس مكتوباً على الخريطة (الأرقام تُتعلَّم في الدرس الخامس) */
+      /* الاختبار بعد إخفاقٍ مقفلٌ حتى يُعاد الدرس الأضعف ويمضي يوم (A-03): يقول له لماذا */
+      const wait = L.test && p.failAt && !p.mastered && !retakeOpen(p) ? labelText(((PROG[p.weak] || {}).at || 0) > p.failAt ? 'testTomorrow' : 'testAfterReview') : '';
+      const sub = p.resume ? labelText('resumeHere') : wait ? wait : PROG.review === id ? labelText('reviewThis') : redo ? labelText('redoThis') : L.test && p.failAt && !p.mastered ? labelText('tryAgain') : '';   /* لا رقم درس مكتوباً على الخريطة (الأرقام تُتعلَّم في الدرس الخامس) */
       const tag = p.entry ? `<em class="tag">${esc(labelText('entry'))}</em>` : '';
       btn.innerHTML = stopIcon(L) + `<span>${esc(L.title)}${tag}${sub ? `<small>${esc(G(sub))}</small>` : ''}</span>` + st; btn.setAttribute('aria-label', plain(L.title));
       btn.onclick = () => { if (!open) { SFX.soft(); return; } SFX.tick(); startLesson(id); };

@@ -9,6 +9,10 @@ function statusPill(L) { const p = PROG[L.id] || {};
   const redo = isObj(PROG.redo) && PROG.redo[L.id] ? ' <span class="pill think">يُعاد: خطآن متتاليان في المراجعة</span>' : '';
   /* D252: إتقان مسار الشاشة «مدخل» عند الكبار حتى يُعاد الدرس بالأشياء الحقيقية، والنجمة للطفل كما هي */
   if (p.mastered) return (p.entry ? '<span class="pill think">أتقنه على الشاشة، مدخل</span> <span class="muted">يصير تأسيساً حين يُعاد بالأشياء</span>' : '<span class="pill good">متقن</span>') + redo;
+  /* اختبار الوحدة دون النجاح (A-03، D266): الشريحة والدرجة، ومتى يُعاد */
+  if (L.test && p.failAt && !p.mastered && !p.resume) { const W = LDATA[p.weak], wd = ((PROG[p.weak] || {}).at || 0) > p.failAt, open = retakeOpen(p);
+    return `<span class="pill think">${p.band === 'support' ? 'متقدّم مع دعم: الحيّ التالي مفتوح' : 'يحتاج دعماً: الحيّ التالي مقفل'}</span>${p.score != null ? ` <span class="pill">${DG(p.score)} من ${DG(p.of)}</span>` : ''}`
+      + ` <span class="muted">${open ? 'يُعاد الاختبار الآن' : `يُعاد ${wd ? 'غداً' : `بعد درس «${esc(W ? plain(W.title) : '')}» ومرور يوم`}`}</span>`; }
   if (p.resume) return '<span class="pill">توقّف في منتصفه</span>';
   if (!p.done) return '—';
   const def = Object.entries(p.cs || {}).filter(([C, c]) => isObj(c) && c.deferred && !c.mastered && !adultSays(L, C)).map(([C]) => conceptName(L, C)).filter(Boolean);

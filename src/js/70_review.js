@@ -19,6 +19,13 @@ function srsStart(id) { const L = LDATA[id]; if (!L || !L.review || !L.review.le
   const r = PROG.srs[id] = srsRec(id) || { cs: {}, k: {}, k2: 0 }; let ch = false;
   for (const C of srsConcepts(L)) if (!isObj(r.cs[C])) { r.cs[C] = { step: 0, due: dueAfter(Date.now(), SRS_DAYS[0]) }; ch = true; }
   if (ch) saveProg(); }
+/* «متقدّم مع دعم» في اختبار الوحدة (القرار A-03، D266): دروس البنود الخاطئة تُراجَع من الغد. ما موعده أبعد يُقرَّب إلى الغد،
+   والثابت يعود إلى خطوة 21 يوماً بموعدٍ غداً (الاختبار أظهر أنه لم يثبت) */
+function srsSoon(ids) { const t = dueAfter(Date.now(), 1); let ch = false;
+  for (const id of ids) { if (!LDATA[id] || !(PROG[id] || {}).done) continue; srsStart(id); const r = srsRec(id); if (!r) continue;
+    for (const C of srsConcepts(LDATA[id])) { const x = r.cs[C]; if (!isObj(x)) continue;
+      if (x.due == null) { x.step = SRS_DAYS.length - 1; x.due = t; ch = true; } else if (x.due > t) { x.due = t; ch = true; } } }
+  if (ch) saveProg(); }
 function srsUpdate(id, C, ok) { const r = srsRec(id); if (!r || !isObj(r.cs[C])) return; const x = r.cs[C], now = Date.now();
   if (ok) { x.step = Math.min(SRS_DAYS.length, x.step + 1); x.due = x.step >= SRS_DAYS.length ? null : dueAfter(now, SRS_DAYS[x.step]); }
   else { x.step = Math.max(0, x.step - 1); x.due = dueAfter(now, SRS_DAYS[x.step]); }

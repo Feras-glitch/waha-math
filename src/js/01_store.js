@@ -94,12 +94,13 @@ const V_SRS = (v, bad, at) => (isObj(v) && 'cs' in v ? V_SRS2 : V_SRS1)(v, bad, 
 const V_CS = vRec({ ok: int0, of: int0, round: Pr(v => isInt(v, 0, 9)), at: time, mastered: bool, deferred: bool, entry: bool, appOk: bool, byAdult: bool, viaReview: bool });
 const V_LESSON = vRec({ done: bool, mastered: bool, deferred: bool, entry: bool, at: time, path: Pr(v => v === 'mat' || v === 'screen'), resume: vRec({ stage: Pr(v => isInt(v, 0, 99)), t: time }, ['stage']),
   runs: int0, chose: Pr(v => v === 'normal' || v === 'challenge'), cs: vMap(CONCEPT_ID, V_CS), face: Pr(v => v === 'easy' || v === 'ok' || v === 'hard'),
-  score: Pr(v => v === null || isInt(v)), of: Pr(v => v === null || isInt(v)) });
+  score: Pr(v => v === null || isInt(v)), of: Pr(v => v === null || isInt(v)),
+  band: Pr(v => v === 'support' || v === 'low'), failAt: time, weak: Pr(v => typeof v === 'string' && LESSON_ID.test(v)) });   // اختبار الوحدة دون النجاح (A-03، D266)
 const V_PROG_TOP = { schema: Pr(v => v === SCHEMA), srs: vMap(LESSON_ID, V_SRS), ws: vMap(UNIT_ID, int0),
   streams: vMap(/^[a-z]{1,16}$/, vRec({ seen: bool, n: int0, ok: int0, day: time })), adult: vMap(LESSON_ID, vArr(Pr(v => v === true || v === false || v === null), 12)),
   redo: vMap(LESSON_ID, time), review: Pr(v => typeof v === 'string' && LESSON_ID.test(v)), unlockAll: bool };
 function V_PROG(o, bad, at) { if (!isObj(o)) { bad.push(at); return NO; } const out = {};
-  for (const [k, v] of Object.entries(o)) { const f = Object.prototype.hasOwnProperty.call(V_PROG_TOP, k) ? V_PROG_TOP[k] : LESSON_ID.test(k) ? V_LESSON : /^badge:/.test(k) && UNIT_ID.test(k.slice(6)) ? bool : null;
+  for (const [k, v] of Object.entries(o)) { const f = Object.prototype.hasOwnProperty.call(V_PROG_TOP, k) ? V_PROG_TOP[k] : LESSON_ID.test(k) ? V_LESSON : /^badge:/.test(k) && UNIT_ID.test(k.slice(6)) ? bool : /^support:/.test(k) && UNIT_ID.test(k.slice(8)) ? bool : null;
     if (!f) { bad.push(at + '.' + k); continue; } const r = f(v, bad, at + '.' + k); if (r !== NO) out[k] = r; } return out; }
 const str = Pr(v => typeof v === 'string'), optStr = Pr(v => v == null || typeof v === 'string');
 /* المحاولة حقولها كثيرة بحسب البند: يُفحص ما تقرؤه اللوحة والتقرير، والباقي قيمٌ بسيطة أو قوائمها */
@@ -171,7 +172,8 @@ const fmt = {
 
 /* ---------- التقدّم ---------- */
 /* PROG[درس] = {done, mastered, deferred, at, path:'mat'|'screen', resume, runs, cs:{مفهوم:{ok,of,mastered,deferred,round}}, face, score, of}
-   و«badge:الوحدة»، وsrs، وws، وreview، وunlockAll، وstreams */
+   ولاختبار الوحدة دون النجاح: band ('support'|'low') وfailAt وweak (D266)
+   و«badge:الوحدة»، و«support:الوحدة» (متقدّم مع دعم يفتح التالية)، وsrs، وws، وreview، وunlockAll، وstreams */
 let PROG_HOLD = null;   // تقدّمٌ قديم لم تُحفظ نسخته بعد: لا يُكتب فوقه (C-05)
 const PROG = (() => { const P = store.read(kk('hp_prog'), null, isObj) || {};
   /* تقدّم من بنية دروس أقدم (النسختان 1 و2 قبل D248) لا يُقرأ بمعرّفات الدروس الجديدة: d4 في الوحدة 2 صار درساً آخر.
