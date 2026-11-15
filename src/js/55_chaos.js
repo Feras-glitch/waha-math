@@ -66,13 +66,16 @@ async function chaosCard(C) {
 async function chaosCards(C) {
   const svg = newStage(220, { oasisOpacity: .2 }); compassAt(svg, 250, 110, .8); chaosAt(svg, 110, 110, .5);
   await S('gen.chaos.cards');
+  let won = false;
   for (let round = 0; round < 3; round++) {
     /* البطاقتان متماثلتان بلا نصّ (D236): لا تُعرف الصحيحة بالنظر، والخاطئة تسبقها النغمة و«فوضى تظنّ…»؛ ويُكشف نصّ الصحيحة بعد اختيارها */
     const cp = cardPick([{ id: C.right, k: 'r', ok: true, hide: true }, { id: C.wrong, k: 'w', ok: false, hide: true, pre: async () => { SFX.chaos(); await S('gen.chaos.thinks', { free: true }); } }]);
     const pickd = await cp.p; cp.done(); const ok = pickd.k === 'r'; logAttempt({ scene: 'chaos', tag: 'cards', ok, firstTry: round === 0 });
     cp.btns.find(b => b.dataset.k === pickd.k).classList.add(ok ? 'ok' : 'no'); if (ok) cp.reveal('r');
     await sleep(500); cp.box.remove();
-    if (ok) break; SFX.soft(); await S(round < 1 ? 'gen.chaos.listenAgain' : 'gen.chaos.together');
+    if (ok) { won = true; break; } SFX.soft(); if (round < 2) await S(round < 1 ? 'gen.chaos.listenAgain' : 'gen.chaos.together');
   }
-  SFX.good(); await S('gen.chaos.right'); await S(C.right);
+  /* بعد ثلاثة اختيارات خاطئة: لا «نعم!» ولا نغمة نجاح، ولا «اسمعهما مرة أخرى» بلا جولة بعدها. كشفٌ محايد للجملة، ثم أن فوضى هي المخطئة */
+  if (won) { SFX.good(); await S('gen.chaos.right'); await S(C.right); }
+  else { await S('gen.chaos.reveal'); await S(C.right); await S('gen.chaos.wasWrong'); }
 }

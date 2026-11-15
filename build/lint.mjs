@@ -17,6 +17,28 @@ const REF_ONE = ['mk', 'show', 'shape'], REF_MANY = ['objs', 'opts', 'shapes', '
 const STAGES = new Set(['hook', 'explore', 'worked', 'practice', 'game', 'chaos', 'mastery', 'test', 'wrap']);
 
 const KAF_OK = new Set(['ذلك', 'ذاك', 'هناك', 'تلك', 'أولئك', 'مشابك', 'مشبك', 'سمك', 'سلك', 'تفكيك']); const TA_OK = new Set(['تحت', 'بيت', 'وقت', 'صوت', 'اخت', 'بنت']);   /* أسماء إشارة وكلمات كافها من أصلها (4ب7 العامة) */
+/* يمحو التعليقات ويُبقي النصوص والقوالب والتعابير النمطية والأسطر في مواضعها (طول كل سطر كما هو): يمرّ على الكود حرفاً حرفاً،
+   فلا يبدأ تعليقٌ داخل نص («image/*») ولا يبدأ نصٌّ داخل تعبير نمطي (/[<>"'&`]/) */
+export function stripComments(js) {
+  const out = js.split(''); let i = 0, prev = '';   // prev: آخر حرفٍ له معنى خارج التعليقات والمسافات
+  const regexOK = () => !prev || /[=(,:\[!&|?{};+\-*%<>~^]/.test(prev) || /\b(?:return|typeof|case|in|of|void|delete|throw|new)$/.test(js.slice(Math.max(0, i - 8), i).trimEnd());
+  const blank = (a, b) => { for (let k = a; k < b; k++) if (js[k] !== '\n') out[k] = ' '; };
+  const tpl = [];   // أعماق ${ } في القوالب المفتوحة
+  while (i < js.length) { const c = js[i], d = js[i + 1];
+    if (tpl.length && c === '}' && tpl[tpl.length - 1] === 0) { tpl.pop(); i++; i = skipTpl(i); prev = '`'; continue; }
+    if (c === '/' && d === '*') { const e = js.indexOf('*/', i + 2); const end = e < 0 ? js.length : e + 2; blank(i, end); i = end; continue; }
+    if (c === '/' && d === '/') { let e = js.indexOf('\n', i); if (e < 0) e = js.length; blank(i, e); i = e; continue; }
+    if (c === '\'' || c === '"') { let k = i + 1; while (k < js.length && js[k] !== c && js[k] !== '\n') k += js[k] === '\\' ? 2 : 1; i = k + 1; prev = c; continue; }
+    if (c === '`') { i = skipTpl(i + 1); prev = '`'; continue; }
+    if (c === '/' && regexOK()) { let k = i + 1, cls = false; while (k < js.length && js[k] !== '\n') { if (js[k] === '\\') { k += 2; continue; } if (js[k] === '[') cls = true; else if (js[k] === ']') cls = false; else if (js[k] === '/' && !cls) break; k++; }
+      i = k + 1; while (/[a-z]/i.test(js[i] || '')) i++; prev = '/'; continue; }
+    if (tpl.length && (c === '{' || c === '}')) tpl[tpl.length - 1] += c === '{' ? 1 : -1;
+    if (!/\s/.test(c)) prev = c; i++; }
+  /* داخل القالب: حتى «`» الخاتمة أو «${» (يُعدّ ما بعدها كوداً حتى «}» المقابلة) */
+  function skipTpl(k) { while (k < js.length) { if (js[k] === '\\') { k += 2; continue; } if (js[k] === '`') return k + 1; if (js[k] === '$' && js[k + 1] === '{') { tpl.push(0); return k + 2; } k++; } return k; }
+  return out.join('');
+}
+
 export function lint(content, js) {
   const errors = [], warn = [];
   /* كلمةٌ آخرها «كَ» خارج الصيغتين (4ب7 العامة): في الجمل والتسميات، والكلمة كل ما بين غير الحروف العربية وحركاتها (الفحص المستقل E2: نجت «قَلَمَكَ…» وتسميةٌ «صَدِيقِكَ») */
@@ -108,7 +130,9 @@ export function lint(content, js) {
     kafCheck(c.text, c.full); waslCheck(c.text, c.full);
   }
   // 2) JS
-  const code = js.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`\\])\/\/[^\n]*/g, '$1');
+  /* التعليقات تُمحى بماسحٍ يعرف النصوص والقوالب والتعابير النمطية (المراجعة بعين جديدة، 13 نوفمبر 2026): كان «/*» داخل نصٍّ (accept="image/*")
+     يُعدّ بداية تعليق يُغلقه أول ختام تعليق بعده، فغابت عن فحوص الكود 39 سطراً حقيقية في ثلاثة مواضع (حفظ الطفل، وصيد الصور، واستيراد حزمة الصوت) */
+  const code = stripComments(js);
   for (const m of code.matchAll(/\b(?:say|S)\(\s*(?:'(?:compass|chaos)'\s*,\s*'[^']*'\s*,\s*)?'([^']*)'/g)) if (AR.test(m[1])) errors.push('جملة منطوقة مكتوبة في الكود: ' + m[1].slice(0, 40));
   js.split('\n').forEach((l, i) => { if (/Math\.random\(/.test(l) && !/rng-ok/.test(l)) errors.push('Math.random بلا علامة rng-ok في السطر ' + (i + 1)); });
   /* والخفوت إلى الصفر يبقى أو يُزال (الفحص المستقل D2 لبوابة S1-U4 (7): فوضى في إشعال S1-U2 د5 خفتت بلا fill فعادت ظاهرة «واختبأت بهما!»): anim(x, […, { opacity: 0 }], …)
@@ -134,7 +158,7 @@ export function lint(content, js) {
      وP.preventDefault() وP.stopPropagation() وP.stopImmediatePropagation()، فلا يُمرَّر إلى دالة أخرى (isEnter(e) خارج المستمع)، ولا يُسمّى باسم آخر، ولا يُفكَّك، ولا
      معامل بقية ولا arguments؛ ونوع حدث addEventListener نصٌّ صريح، ومستمع المفاتيح بصيغةٍ تُقرأ (لا bind). و«Enter» و«NumpadEnter» و«Space(bar)» بحروفها في نصٍّ أو تعبير
      نمطي ممنوعة، لا «enter» و«space» كلمتين (صنف CSS، وpointerenter)، و«which» تُمنع قراءةً من الحدث وحده (q.which و{ which: 1 } مشروعان) */
-  { const bare = code.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:\\'"`])\/\/[^\n]*/g, '$1');
+  { const bare = code;   /* التعليقات ممحوّة في code نفسه بالماسح (stripComments) */
     const DEF = "const isActKey = e => e.key === 'Enter' || e.key === ' ',", nDef = bare.split(DEF).length - 1;
     if (nDef !== 1) errors.push(`isActKey (بصيغتها «${DEF}» ${nDef} مرة، حتى فاصلتها) لا يقبل Enter والمسافة كليهما، أو عُرِّفت بغيرها أو أُلحق بها شرط (المطلوب مرة)`);
     const src = bare.split(DEF).join(' '.repeat(DEF.length)), at = i => src.slice(0, i).split('\n').length;
@@ -200,6 +224,17 @@ export function lint(content, js) {
   const SWALLOW = /\b(await|const|let|return|if|else)\b\s|\w\([^)]*\);|\};|\)\s*;\s*\w/;
   const swallowIn = (txt, name) => txt.split('\n').forEach((l, i) => { const m = l.match(/\s\/\/\s(.*)$/); if (m && SWALLOW.test(m[1])) errors.push('كود بعد تعليق السطر (يُبتلع) في ' + name + ' السطر ' + (i + 1) + ': ' + m[1].slice(0, 50)); });
   swallowIn(js, 'src/js'); for (const f of readdirSync(join(ROOT, 'build')).filter(f => f.endsWith('.mjs'))) swallowIn(read(join(ROOT, 'build', f)), 'build/' + f);
+  /* استدعاء طريقةٍ لا وجود لها في كائنات الوحدة (مراجعة الخصم C-01: أزال إصلاحٌ IDB.clear وبقي استدعاؤها في لوحة الكبار، فانهار الزرّ ولم يكشفه فحص):
+     لكل كائن حرفي على مستوى الملف، كل ‎OBJ.name(‎ في الكود اسمٌ معرَّف فيه (بعمقه الأول) أو مُسنَد إليه لاحقاً (‎OBJ.name =‎) */
+  { const JS = js.split('\n').map(ln => ln.replace(/\/\*.*?\*\//g, '').replace(/\s\/\/\s.*$/, '')).join('\n');
+    for (const o of ['IDB', 'VPACK', 'store', 'SFX', 'fmt']) {
+      const m = JS.match(new RegExp('(?:const|let|var)\\s+' + o + '\\s*=\\s*\\{')); if (!m) { errors.push(`الكائن ${o} لم يُعثر على تعريفه الحرفي (فحص الاستدعاءات)`); continue; }
+      let i = m.index + m[0].length, depth = 1, top = '';
+      while (depth && i < JS.length) { const c = JS[i++]; if (depth === 1) top += c; if ('{(['.includes(c)) depth++; else if ('})]'.includes(c)) depth--; }   // المستوى الأول بفتحاته
+      const keys = new Set([...top.matchAll(/(?:^|[,{\s])(?:async\s+)?([A-Za-z_$][\w$]*)\s*(?:\(|:)/g)].map(x => x[1]));
+      for (const x of JS.matchAll(new RegExp('\\b' + o + '\\.([A-Za-z_$][\\w$]*)\\s*=(?!=)', 'g'))) keys.add(x[1]);
+      const miss = new Set(); for (const x of JS.matchAll(new RegExp('(?<![\\w$.])' + o + '\\.([A-Za-z_$][\\w$]*)\\s*\\(', 'g'))) if (!keys.has(x[1])) miss.add(x[1]);
+      for (const k of miss) errors.push(`استدعاء ${o}.${k}() ولا طريقة بهذا الاسم في ${o} (مراجعة الخصم C-01)`); } }
   const genKeys = [...LINES.keys()].filter(k => k.startsWith('gen.'));
   for (const m of code.matchAll(/'(gen\.[\w.]*)'/g)) { const id = m[1];
     if (id.endsWith('.')) { if (!genKeys.some(k => k.startsWith(id))) errors.push('بادئة جملة بلا جمل في المحتوى: ' + id); }
@@ -235,6 +270,8 @@ export function lint(content, js) {
         if (typeof v.t === 'string' && !ITEMS.has(v.t)) bad.add(`${L.id}: نوع بند غير معروف «${v.t}» في ${path}`);
         if (v.t === 'sort' && v.mk === undefined) bad.add(`${L.id}: بند فرز بلا mk في ${path}`);
         if (v.t === 'splitMake' && new Set((v.avoid || []).map(p => Math.min(...p))).size >= Math.floor(v.n / 2) + 1) bad.add(`${L.id}: بند «لوّن بطريقة جديدة» بلا طريقة جديدة ممكنة في ${path}`);
+        /* وطريقةٌ جديدة غير «بلا تلوين» (مراجعة الخصم A-08: كان جواب إتقان N005 الوحيد 0|5، أي «تمّ» بلا لمسة، فيُحسب صواباً لطفلٍ لم يفعل شيئاً) */
+        if (v.t === 'splitMake') { const used = new Set((v.avoid || []).map(p => Math.min(...p))); if (![...Array(Math.floor(v.n / 2) + 1).keys()].some(lo => lo >= 1 && !used.has(lo))) bad.add(`${L.id}: بند «لوّن بطريقة جديدة» طريقته الجديدة الوحيدة بلا تلوين (0|${v.n}) في ${path}`); }
         if (Array.isArray(v.mk) || (typeof v.mk === 'string' && !isMaker(v.mk))) { if (!isMaker(v.mk)) bad.add(`${L.id}: مولّد غير معروف ${JSON.stringify(v.mk)} في ${path}`); }
         for (const [k, x] of Object.entries(v)) if (!(path === '' && SKIP.has(k)) && !(k === 'bag' && false)) walk(x, path + '.' + k, k);
       }
@@ -816,6 +853,20 @@ export function lint(content, js) {
         if ((v.mode || 'read') === 'pic' && !/تَوَقَّع/.test(q)) errors.push(`${L.id}: ميزان من الصورة «${v.q}»: جملته لا تقول «توقّع» والطفل يتوقّع ولا ميزان أمامه («${q.slice(0, 60)}»)`); }
       for (const x of Object.values(v)) if (x && typeof x === 'object') walk(L, x); };
     for (const L of Object.values(lessons)) walk(L, [L.flow, L.practice, L.mastery, L.review, L.test]); }
+  // 4ب21) لا رقم قرار في ما يراه الكبار (المراجعة بعين جديدة U2: «يقرؤه صوت الجهاز (D181)» في لوحة الكبار، و(D252) و(D221) في «ما على الشاشة» للدرس التالي):
+  //      نصّ في المحتوى (غير معرّف مفهوم وحده) فيه Dثلاثة أرقام، ونصٌّ في الكود خارج التعليقات فيه رقم قرار بين قوسين
+  { const walk = (v, at) => { if (typeof v === 'string') { if (v.length > 12 && /(^|[^\w])D\d{3}([^\w]|$)/.test(v)) errors.push(`${at}: رقم قرار في نصٍّ يُعرض («${v.match(/.{0,30}D\d{3}.{0,10}/)[0]}»)`); return; }
+      if (Array.isArray(v)) v.forEach((x, i) => walk(x, at + '[' + i + ']')); else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk(x, at + '.' + k); };
+    walk(content, 'المحتوى');
+    for (const m of code.matchAll(/\((?:D\d{3}|D\d{3}[،,][^)]*)\)/g)) { const ln = code.slice(0, m.index).split('\n').length; errors.push(`الكود (السطر ${ln} من الوحدات مجموعةً): رقم قرار في نصٍّ يُعرض «${m[0]}»`); } }
+  // 4ب20) «أيّ البرجين مكعباته أكثر؟» بمكعبين مختلفي الحجم لا يُجاب بـ«الأقصر» (مراجعة الخصم M-10: في البنود السبعة كلها كان الأكثرُ مكعباتٍ الأقصرَ،
+  //      فنجحت قاعدة «اختر الأقصر» دائماً). ففي تقييم كل درس (كل مفهوم في الإتقان، والمراجعة، والاختبار) فيه بند كهذا، بندٌ تخطئ فيه القاعدة:
+  //      العددان متساويان، أو الأكثرُ الأطولُ. والطول عدد المكعبات في حجمها (sa، sb؛ وبلا حجم 24)
+  { const shortWins = v => { const a = v.a, b = v.b, ha = a * (v.sa || 24), hb = b * (v.sb || 24); if (a === b || ha === hb) return false; return (a > b) === (ha < hb); };
+    const towers = node => { const out = []; const walk = v => { if (Array.isArray(v)) return v.forEach(walk); if (!v || typeof v !== 'object') return;
+      if (v.t === 'compare' && (v.sa || 24) !== (v.sb || 24)) out.push(v); for (const [k, x] of Object.entries(v)) if (k !== 'twin' && x && typeof x === 'object') walk(x); }; walk(node); return out; };
+    for (const L of Object.values(lessons)) { const groups = [...Object.entries((L.mastery && L.mastery.concepts) || {}).map(([C, v]) => ['إتقان ' + C, v]), ['المراجعة', L.review], ['الاختبار', L.test]];
+      for (const [nm, g] of groups) { const T = towers(g || []); if (T.length && T.every(shortWins)) errors.push(`${L.id}: ${nm}: بنود البرجين بمكعبين مختلفي الحجم (${T.map(v => v.a + '/' + v.b).join('، ')}) كلها الأكثرُ مكعباتٍ فيها الأقصر، فتُجاب بـ«اختر الأقصر» بلا عدّ`); } } }
   // 4ب14) التعدّي لا يُجاب بقاعدةٍ لا تقارن (الفحوص المستقلة C2 وD1 وE1 لبوابة S1-U4). ثلاث قواعد: (1) مطابقة كلمة السؤال باسم السلّة أو رمزها («أطول؟» ← سلّة «أطول»)،
   //      وتخطئ حين الجواب في سلّة «بطول الشبر»؛ (2) لمس صاحب ≈ («بطوله»)، وتخطئ حين الجواب في «أطول/أقصر» وصاحبه «بطوله»؛ (3) الأولى حين تسمّي الجملة السلّتين
   //      والثانية حين لا تسمّيهما. ففي كل مسار تمرين فيه التعدّي، وفي تقييم كل درس فيه (الإتقان والمراجعة والمشتبك والاختبار)، بندٌ تخطئ فيه كلٌّ من الثلاث، فلا يكفي
@@ -1035,6 +1086,31 @@ export function lint(content, js) {
       if (ok.length && bad.length && Math.max(...ok) > 1.2 * Math.max(...bad)) errors.push(`${where}: في بند ${v.t === 'reason' ? 'التعليل' : 'البطاقتين'} «${v.q}» الصحيح ${Math.max(...ok)} حرفاً وأطول المشتّتين ${Math.max(...bad)}: الطول قرينة`); }
     for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkWhy(x, where, L); };
   for (const L of Object.values(lessons)) walkWhy(L, L.id, L);
+  // 4ج2) وعلى مستوى التقييم كله (مراجعة الخصم A-13: في 6 من 10 بنود تعليل في الإتقان والاختبار كان الصحيح أطولَ البطاقات وحده، والطفل يسمعها فالأطول أطول زمناً):
+  //      عدد بنود التعليل في التقييم (الإتقان ومشتبكه، والمراجعة، والاختبار) التي الصحيحُ فيها أطولُ البطاقات وحده لا يزيد على ثلثها (مقرَّباً إلى أعلى)، وكذلك أقصرها وحده
+  { const R = []; const grab = (v, L, where) => { if (Array.isArray(v)) return v.forEach(x => grab(x, L, where)); if (!v || typeof v !== 'object') return;
+      if (v.t === 'reason' && Array.isArray(v.opts)) { const txt = id => (L.lines && L.lines[id]) || (content.gen.lines || {})[id] || ''; const ok = v.opts.filter(o => o.ok).map(o => bare(txt(o.id))), bad = v.opts.filter(o => !o.ok).map(o => bare(txt(o.id)));
+        if (ok.length === 1 && bad.length) R.push({ where: where + ' «' + v.q + '»', long: ok[0] > Math.max(...bad), short: ok[0] < Math.min(...bad) }); }
+      for (const [k, x] of Object.entries(v)) if (k !== 'twin' && x && typeof x === 'object') grab(x, L, where); };
+    for (const L of Object.values(lessons)) { const M = L.mastery || {}; grab([M.concepts || {}, M.mixed || {}], L, L.id + ' الإتقان'); grab(L.review || [], L, L.id + ' المراجعة'); grab(L.test || {}, L, L.id + ' الاختبار'); }
+    const cap = Math.ceil(R.length / 3);
+    for (const [k, w] of [['long', 'أطول'], ['short', 'أقصر']]) { const H = R.filter(r => r[k]); if (H.length > cap) errors.push(`بنود التعليل في التقييم: الصحيح ${w} البطاقات وحده في ${H.length} من ${R.length} (الحدّ ${cap})، فيُعرف بطوله: ${H.map(r => r.where).join('، ')}`); } }
+  // 4ج4) المربع والمستطيل بالركن (مراجعة الخصم M-05: «أربعة أضلاع متساوية» وحدها تعريف المعيّن، و«كل ضلعين متقابلين متساويان» وحدها تعريف متوازي الأضلاع):
+  //      من درس «ركن» (m1.u1.d3) فصاعداً، كل جملة تصف بهما شكلاً (لا سؤال) فيها الركن. ودرسا d1 وd2 قبل الركن، فيصفان بالحوافّ والرؤوس
+  { const pre = new Set(['m1.u1.d1', 'm1.u1.d2']), nk = t => String(t || '').replace(/[\u064B-\u0652\u0670]/g, '');
+    const defs = t => /أربعة أضلاع متساوية|أضلاعه الأربعة متساوية|أضلاع[هي] كلها متساوية|كل ضلعين متقابلين (فيه |فيهما )?متساويان/.test(t) && !/ليست كلها|كل ما في المستطيل/.test(t);   /* و«أضلاعي كلها متساوية» في لغز «من أنا؟» (الفحص المستقل للقرارات، 10) */
+    for (const L of Object.values(lessons)) { if (pre.has(L.id)) continue;
+      for (const [k, v] of Object.entries(L.lines || {})) { const t = nk(Array.isArray(v) ? v[v.length - 1] : v); if (typeof t === 'string' && defs(t) && !/؟\s*$/.test(t.replace(/من أنا؟\s*$/, '')) && !/ركن|أركان/.test(t)) errors.push(`${L.id}.${k}: يصف المربع أو المستطيل بأضلاعه بلا الركن («${t.slice(0, 60)}»)، فيصدق على المعيّن ومتوازي الأضلاع (M-05)`); } } }
+  // 4ج5) المجسّم «له سُمك» لا «يملأ الكفّ» (القرار 6، M-16، D266): الكرة الزجاجية مجسّم ولا تملأ الكفّ. والبحث بلا تشكيل، لأن ترتيب الشدّة والفتحة يختلف
+  //      بين الجمل (الفحص المستقل للقرارات، 3: بقيت ثماني جمل لم يبلغها بحثٌ بالتشكيل)
+  { const nk5 = t => String(t || '').replace(/[\u064B-\u0652\u0670]/g, ''); const walk5 = (v, at) => { if (typeof v === 'string') { if (/[يت]ملأ ال?كف/.test(nk5(v))) errors.push(`${at}: «يملأ الكفّ» وصفاً للمجسّم («${nk5(v).slice(0, 60)}»)، والمعتمد «له سُمك» (M-16)`); return; }
+      if (Array.isArray(v)) v.forEach((x, i) => walk5(x, at + '[' + i + ']')); else if (v && typeof v === 'object') for (const [k, x] of Object.entries(v)) walk5(x, at + '.' + k); };
+    walk5(content, 'المحتوى'); }
+  // 4ج3) «نعم/لا» في التقييم (الإتقان ومشتبكه، والمراجعة، والاختبار) جوابها «نعم» مرةً و«لا» مرةً على الأقل (مراجعة الخصم A-12: كان البندان الوحيدان جوابهما «لا»)
+  { const Y = []; const grab = (v, where) => { if (Array.isArray(v)) return v.forEach(x => grab(x, where)); if (!v || typeof v !== 'object') return;
+      if (v.t === 'yesno') Y.push({ where: where + ' «' + v.q + '»', ans: !!v.ans }); for (const [k, x] of Object.entries(v)) if (k !== 'twin' && x && typeof x === 'object') grab(x, where); };
+    for (const L of Object.values(lessons)) { const M = L.mastery || {}; grab([M.concepts || {}, M.mixed || {}], L.id + ' الإتقان'); grab(L.review || [], L.id + ' المراجعة'); grab(L.test || {}, L.id + ' الاختبار'); }
+    for (const a of [true, false]) if (Y.length >= 2 && !Y.some(y => y.ans === a)) errors.push(`بنود «نعم/لا» في التقييم كلها جوابها «${a ? 'لا' : 'نعم'}» (${Y.map(y => y.where).join('، ')}): لا بند جوابه «${a ? 'نعم' : 'لا'}»`); }
   // 4د) «ابحث في الغرفة» (D255): الغرفة تسع ستة أشياء في صفّين مبعثرين، وتُختار من قائمة أطول منها، ولكل نوع يُسأل عنه شيء في القائمة
   const MSIG = makerSigs(code); const walkRoom = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkRoom(x, where)); if (!v || typeof v !== 'object') return;
     if (v.scene === 'roomHunt') { const n = v.n || 6, th = v.things || [], kinds = new Set(th.map(r => (MSIG[r] || {}).kind).filter(Boolean));

@@ -82,8 +82,8 @@ async def main():
         pg = await ctx.new_page(); errs = []; pg.on('pageerror', lambda e: errs.append(str(e)))
         await to_lesson(pg); await pg.wait_for_timeout(500)
         nv = await pg.evaluate("""async () => { hush(); const t0 = performance.now(); const text = 'هذه جملةٌ تُقرأ صامتةً حين لا يوجد صوتٌ عربي في الجهاز.';
-          await say('compass', 'gen.review.intro', text, { free: true }); return { ms: performance.now() - t0, need: 3000 + Math.max(1800, plain(text).length * 95) }; }""")
-        check(nv['ms'] >= nv['need'] - 300, 'بلا صوت عربي: الجملة تبقى زمن قراءتها (%d م.ث، والمطلوب نحو %d)' % (nv['ms'], nv['need']))
+          await say('compass', 'gen.review.intro', text, { free: true }); return { ms: performance.now() - t0, need: Math.max(1800, plain(text).length * 95) }; }""")   # زمن القراءة وحده: الجسر «لا صوت» يُقرأ صامتاً فوراً بلا انتظار الثواني الثلاث (مراجعة الخصم X-02، D264)
+        check(nv['need'] - 300 <= nv['ms'] <= nv['need'] + 1500, 'بلا صوت عربي: الجملة تبقى زمن قراءتها، بلا انتظار ثلاث ثوانٍ قبلها (%d م.ث، والمطلوب نحو %d)' % (nv['ms'], nv['need']))
         check(not errs, 'لا أخطاء في الصفحة بلا صوت %s' % errs[:3])
         await ctx.close()
 

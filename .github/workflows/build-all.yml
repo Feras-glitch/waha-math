@@ -17,8 +17,10 @@ on:
   pull_request:
   workflow_dispatch:
 
+# والنشر (2 و3 و6) من main وحده (مراجعة الخصم C-22): تشغيلٌ يدوي على فرعٍ آخر يفحص ويبني نسخ الفحص (1 و4 و5 ونسخة APK التجريبية)
+# ولا ينشر شيئاً ولا يلمس مفتاح التوقيع. وصلاحية الكتابة للوظيفتين اللتين تنشران وحدهما (pages وrelease)، والباقي يقرأ فقط.
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: build-all-${{ github.ref }}
@@ -61,8 +63,10 @@ jobs:
         run: python3 platforms/tests/test_android_shim.py out
 
   pages:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: checks
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
@@ -124,7 +128,7 @@ jobs:
 
   # نسخة النشر: موقّعة بمفتاح العائلة من الأسرار (SIGNING-AR.md). بلا أسرارٍ لا تُبنى، ويُنشر الباقي
   android-release:
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     needs: checks
     runs-on: ubuntu-24.04
     steps:
@@ -276,7 +280,7 @@ jobs:
           EXE="$(ls dist/win-unpacked/*.exe | head -1)"; echo "::notice title=Windows::$(ls dist | tr '\n' ' ') — $EXE"
           ("$EXE" --remote-debugging-port=9333 > /dev/null 2>&1 &)
           cp ../tests/desktop_smoke.js ./desktop_smoke.js   # يجد playwright في node_modules هنا
-          python ../tests/ci_run.py "Windows app walk-through" node desktop_smoke.js
+          WAHA_EXE="$EXE" python ../tests/ci_run.py "Windows app walk-through" node desktop_smoke.js   # ومعه تشغيلٌ ثانٍ وهو مفتوح (C-18)
           taskkill //IM "$(basename "$EXE")" //F || true
       - uses: actions/upload-artifact@v4
         with:
@@ -289,8 +293,10 @@ jobs:
   # يُنشر ما بُني: ويندوز والويب دائماً، وAPK حين يصحّ مفتاح التوقيع (ويُضاف إلى الإصدار المنشور حين يُبنى بعدُ)
   release:
     # والإصدار بعد نجاح فحص الهاتف والتابلت (إعادة الفحص المستقلة: نجاح النشر كان لا يعني نجاحهما)
-    if: github.event_name != 'pull_request' && !cancelled() && needs.windows.result == 'success' && needs.android-device.result == 'success'
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && !cancelled() && needs.windows.result == 'success' && needs.android-device.result == 'success'
     needs: [ android-release, windows, android-device ]
+    permissions:
+      contents: write
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5

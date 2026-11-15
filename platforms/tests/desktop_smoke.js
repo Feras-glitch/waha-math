@@ -20,9 +20,17 @@ const { chromium } = require('playwright');
     ok.home = await p.evaluate(() => !document.getElementById('home').hidden && document.querySelectorAll('.stop[data-lesson]').length >= 27);
     await p.click('.stop.now'); await p.waitForTimeout(2500);
     ok.bag = await p.evaluate(() => [...document.querySelectorAll('.choices .pick')].map(x => x.dataset.k).join() === 'mat,screen');
-    await p.evaluate(() => [...document.querySelectorAll('.choices .pick')].find(x => x.dataset.k === 'screen').click()); await p.waitForTimeout(5000);
+    await p.evaluate(() => [...document.querySelectorAll('.choices .pick')].find(x => x.dataset.k === 'screen').click());
+    /* بلا صوت عربي تُعرض الجمل بزمن قراءتها (مراجعة الخصم X-02، X-11): يُنتظر المشهد لا خمس ثوانٍ ثابتة */
+    await p.waitForFunction(() => !!document.querySelector('#stage svg [role=button]') && document.getElementById('say').textContent.length > 10, null, { timeout: 60000 }).catch(() => {});
     ok.scene = await p.evaluate(() => !!document.querySelector('#stage svg [role=button]') && document.getElementById('say').textContent.length > 10);
     ok.fonts = await p.evaluate(() => [...document.fonts].filter(f => f.status === 'loaded').map(f => f.family.replace(/"/g, '')).includes('Waha Naskh'));
+    /* النسخة الثانية (مراجعة الخصم C-18): تشغيل البرنامج وهو مفتوح لا يفتح نافذةً تأخذ القفل، فلا يظهر غطاء «التبويب الآخر» في الأولى */
+    if (process.env.WAHA_EXE) {
+      require('child_process').spawn(process.env.WAHA_EXE, [], { detached: true, stdio: 'ignore' }).unref();
+      await p.waitForTimeout(9000);
+      ok.single = await p.evaluate(() => !TAB_LOST && (JSON.parse(localStorage.getItem('hp_lock') || '{}').tab === TAB) && document.querySelectorAll('.cover:not([hidden])').length === 0);
+    }
     ok.noErrors = errs.length === 0;
     const voices = await p.evaluate(() => new Promise(res => { let v = speechSynthesis.getVoices(); if (v.length) return res(v); speechSynthesis.onvoiceschanged = () => res(speechSynthesis.getVoices()); setTimeout(() => res(speechSynthesis.getVoices()), 3000); })
       .then(v => v.map(x => x.name + ' (' + x.lang + ')')));
@@ -30,7 +38,7 @@ const { chromium } = require('playwright');
     console.log('::notice::أصوات النطق في جهاز البناء: ' + (voices.join('، ') || 'لا شيء') + (ar.length ? '' : ' — ولا صوت عربي فيه، فتُقرأ الجمل صامتة'));
   } catch (e) { ok.run = false; console.log('::error::' + String(e).split('\n')[0]); }
   console.log(JSON.stringify(ok), errs.slice(0, 3));
-  const pass = Object.values(ok).every(Boolean) && Object.keys(ok).length >= 6;
+  const pass = Object.values(ok).every(Boolean) && Object.keys(ok).length >= (process.env.WAHA_EXE ? 7 : 6);
   console.log(pass ? '::notice::نسخة ويندوز تعمل: الترحيب وملف الطفل والشاشة الرئيسية وأول درس' : '::error::نسخة ويندوز لا تعمل: ' + JSON.stringify(ok));
   await b.close().catch(() => {});
   process.exit(pass ? 0 : 1);

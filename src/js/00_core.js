@@ -115,6 +115,9 @@ function onColor(hex) { const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
 
 /* الأيام المحلية (D246: حدود الأيام في المراجعة المتباعدة): الموعد منتصف ليل اليوم المستحق */
 const DAY = 864e5;
+let NEUTRAL_ANS = false;   // الإتقان بلا إشارة صواب أو خطأ (مراجعة الخصم A-01؛ يضبطه runItem، ويقرؤه choosePick وSFX.soft)
 const dayStart = t => { const d = new Date(t); d.setHours(0, 0, 0, 0); return d.getTime(); };
 const addDays = (t, n) => { const d = new Date(dayStart(t)); d.setDate(d.getDate() + n); return d.getTime(); };
+/* موعد المراجعة: منتصف ليل اليوم المستحق، ولا يقلّ عن المدة نفسها ناقصاً ثماني ساعات (مراجعة الخصم A-14: درسٌ انتهى قبيل منتصف الليل كان يحين بعد دقيقة) */
+const dueAfter = (t, n) => Math.max(addDays(t, n), t + n * DAY - 8 * 36e5);
 const daysBetween = (a, b) => Math.round((dayStart(b) - dayStart(a)) / DAY);

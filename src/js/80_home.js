@@ -38,10 +38,10 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     if (SOLIDC[k]) thingAt(s, { solid: k, size: 44 }, x, 28); else shapeAt(s, { type: k, size: 28, w: k === 'rect' ? 36 : k === 'triangle' ? 32 : undefined, h: k === 'rect' ? 22 : k === 'triangle' ? 28 : undefined, color: css(IDC[k]) }, x, 28); });
   return s.innerHTML; }
 const stopIcon = L => `<svg viewBox="0 0 72 56" aria-hidden="true">${stopIconInner(L)}</svg>`;
-const unitOpen = ui => ui === 0 || !!PROG['badge:' + UNITS[ui - 1].id] || !!PROG.unlockAll;
+const unitOpen = ui => ui === 0 || !!PROG['badge:' + UNITS[ui - 1].id] || !!PROG['support:' + UNITS[ui - 1].id] || !!PROG.unlockAll;   // «متقدّم مع دعم» يفتح الوحدة التالية (A-03، D266)
 const isTestLesson = id => !!LDATA[id].test;
 function lessonOpen(U, i) { const ids = U.lessons; if (PROG.unlockAll) return true; if (i > 0 && !(PROG[ids[i - 1]] || {}).done) return false;
-  if (isTestLesson(ids[i]) && WS[U.id] && wsSolved(U.id) < 1) return false; return true; }
+  if (isTestLesson(ids[i]) && WS[U.id] && wsSolved(U.id) < 1) return false; if (isTestLesson(ids[i]) && !retakeOpen(PROG[ids[i]] || {})) return false; return true; }
 const wsOpen = U => PROG.unlockAll || !!PROG['badge:' + U.id] || !!(PROG[U.lessons[U.lessons.length - 2]] || {}).done;
 
 /* لافتة الواحة: النبع بحجارة الشارات، وجدول لكل حيّ أُتقن، ونخيل يخضرّ */
@@ -52,11 +52,27 @@ function oasisBanner() { const n = UNITS.filter(U => PROG['badge:' + U.id]).leng
     anim(p, [{ strokeDasharray: '4 200' }, { strokeDasharray: '200 0' }], { duration: 1600, fill: 'forwards' }); });
   springAt(b, 180, 128, 1, { stones: n, total: 6, level: n / 6 }); return b.outerHTML; }
 
+/* تنبيه الكبار في الخريطة حين لا صوت عربي (المراجعة بعين جديدة U2، S2): قائمة الأصوات ومحرّك أندرويد قد يتأخران، فـ«لم تصل بعد» يُعاد فحصها كل ثانية
+   (3 مرات في المتصفح، و15 مع جسر أندرويد: محرّكه يبدأ بعد فتح التطبيق) ثم تُعدّ «لا صوت»، فلا يُقال للكبار «لا صوت» وهو يبدأ.
+   ويُخفيه الكبار لهذا الجهاز (hp_voice_note)، ويبقى تنبيه اللوحة. والنص للكبار فلا يُسجَّل */
+let VN_TRIES = 0, VN_TIMER = 0;
+function voiceHow() { const ua = navigator.userAgent || '';
+  if (window.AndroidBridge) return 'الإعدادات ← اللغة والإدخال (أو الإدارة العامة) ← تحويل النص إلى كلام ← محرّك Google ← تثبيت بيانات الصوت ← العربية. ثم أعيدوا فتح التطبيق.';
+  if (/Windows/.test(ua)) return 'الإعدادات ← الوقت واللغة ← الكلام ← إضافة أصوات ← العربية. ثم أعيدوا فتح التطبيق.';
+  if (/iPad|iPhone|iPod/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return 'الإعدادات ← تسهيلات الاستخدام ← المحتوى المنطوق ← الأصوات ← العربية. ثم أعيدوا فتح التطبيق.';
+  return 'أضيفوا صوتاً عربياً من إعدادات النطق في الجهاز، أو افتحوا التطبيق في Chrome أو Edge.'; }
+function voiceNote() { const n = $('#voiceNote'); if (!n) return; const st = voiceState(); const off = store.read('hp_voice_note', '', v => v === 'off') === 'off';
+  if (st === 'wait' && VN_TRIES < (window.AndroidBridge ? 15 : 3)) { n.hidden = true; if (!VN_TIMER) VN_TIMER = setTimeout(() => { VN_TIMER = 0; VN_TRIES++; if (!$('#home').hidden) voiceNote(); }, FAST ? 30 : 1000); return; }
+  if (st === 'ok' || off || $('#home').hidden) { n.hidden = true; return; }
+  if (!n.firstChild) { n.innerHTML = `<p><b>للكبار:</b> لا صوت عربي في هذا الجهاز، فالطفل يرى الجمل مكتوبةً ولا يسمعها. <button class="pick" id="vnHow">كيف نضيفه؟</button> <button class="pick" id="vnHide">إخفاء</button></p><p id="vnText" hidden></p>`;
+    $('#vnHow').onclick = () => { const t = $('#vnText'); t.textContent = voiceHow() + ' أو استوردوا حزمة الصوت من لوحة الكبار.'; t.hidden = !t.hidden; };
+    $('#vnHide').onclick = () => { store.set('hp_voice_note', 'off'); n.hidden = true; }; }
+  n.hidden = false; }
 function showHome() {
-  show('home'); CUR = null; FLOW++; disarmIdle(); SCENE_NOW = 'home'; /*T*/window.__scene = 'home';/*/T*/
+  show('home'); CUR = null; FLOW++; disarmIdle(); gateEnd(); SCENE_NOW = 'home'; /*T*/window.__scene = 'home';/*/T*/
   $('#helloName').textContent = PROFILE && PROFILE.name ? G(labelText('hello')).replace('{name}', PROFILE.name) : '';
   const me = $('#meBtn'); me.innerHTML = ''; me.appendChild(avatarNode(PROFILE)); $('#galBtn').innerHTML = ICON.gallery; renderDigits(); renderMute();
-  $('#oasisBanner').innerHTML = oasisBanner();
+  $('#oasisBanner').innerHTML = oasisBanner(); voiceNote();
   const path = $('#path'); path.innerHTML = ''; let nowSet = false; const resting = needBreak();
   if (reviewWaiting()) { const rb = document.createElement('button'); rb.className = 'stop review now'; nowSet = true; rb.dataset.review = '1';
     rb.innerHTML = `<svg viewBox="0 0 72 56" aria-hidden="true"><circle cx="36" cy="28" r="22" fill="${css('--paper')}" stroke="${css('--compass')}" stroke-width="4"/><path d="M36 14v14l10 6" stroke="${css('--compass')}" stroke-width="4" fill="none" stroke-linecap="round"/></svg>`
@@ -73,11 +89,17 @@ function showHome() {
       const want = PROG.review ? PROG.review === id : isObj(PROG.redo) && Object.keys(PROG.redo).length ? redo : (!p.done || (L.test && !p.mastered));
       if (open && want && !nowSet) { btn.classList.add('now'); nowSet = true; }
       const st = !open ? ST_ICON.lock(css('--muted')) : resting && !p.done ? ST_ICON.moon(css('--muted')) : p.mastered ? ST_ICON.star() : p.done ? ST_ICON.done(css('--good')) : '';
-      const sub = p.resume ? labelText('resumeHere') : PROG.review === id ? labelText('reviewThis') : redo ? labelText('redoThis') : L.test && p.done && !p.mastered ? labelText('tryAgain') : '';   /* لا رقم درس مكتوباً على الخريطة (الأرقام تُتعلَّم في الدرس الخامس) */
+      /* الاختبار بعد إخفاقٍ مقفلٌ حتى يُعاد الدرس الأضعف ويمضي يوم (A-03): يقول له لماذا */
+      const wait = L.test && p.failAt && !p.mastered && !retakeOpen(p) ? labelText(!weakDone(p) ? 'testAfterReview' : dayStart(dueAfter(p.failAt, 1)) <= dayStart(Date.now()) ? 'testLaterToday' : 'testTomorrow') : '';   /* اليوم إن حان اليوم (الفحص المستقل للقرارات، 6) */
+      const sub = p.resume ? labelText('resumeHere') : wait ? wait : PROG.review === id ? labelText('reviewThis') : redo ? labelText('redoThis') : L.test && !p.mastered && (p.failAt || p.score != null) ? labelText('tryAgain') : '';   /* ومعه اختبارٌ لم يُنجح قبل القرار A-03 (بلا failAt، الفحص المستقل للقرارات، 9) */   /* لا رقم درس مكتوباً على الخريطة (الأرقام تُتعلَّم في الدرس الخامس) */
       const tag = p.entry ? `<em class="tag">${esc(labelText('entry'))}</em>` : '';
       btn.innerHTML = stopIcon(L) + `<span>${esc(L.title)}${tag}${sub ? `<small>${esc(G(sub))}</small>` : ''}</span>` + st; btn.setAttribute('aria-label', plain(L.title));
       btn.onclick = () => { if (!open) { SFX.soft(); return; } SFX.tick(); startLesson(id); };
       path.appendChild(btn); }); });
+  /* بعد الحيّ الأخير سطرٌ بلا موعد (القرار الصغير U6): لا ينتهي الطريق في الفراغ بعد آخر ورشة */
+  const soon = document.createElement('div'); soon.className = 'soon'; soon.setAttribute('role', 'note');
+  soon.innerHTML = `<svg viewBox="0 0 72 40" aria-hidden="true">${[14, 36, 58].map(x => `<circle cx="${x}" cy="20" r="6" fill="${css('--muted')}" opacity=".5"/>`).join('')}</svg><span>${esc(G(labelText('soonTrips')))}</span>`;
+  path.appendChild(soon);
   const nowBtn = path.querySelector('.stop.now'); if (nowBtn && !FAST) setTimeout(() => { try { nowBtn.scrollIntoView({ block: 'nearest', behavior: RM ? 'auto' : 'smooth' }); } catch (e) {} }, 300);
 }
 function wsStop(U, uOpen) { const open = uOpen && wsOpen(U); const solved = wsSolved(U.id), total = WS[U.id].puzzles.length;

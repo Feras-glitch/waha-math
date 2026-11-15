@@ -17,12 +17,33 @@ const srsConcepts = L => [...new Set((L.review || []).map(x => x.c).filter(Boole
 const srsRec = id => { const r = PROG.srs[id]; return isObj(r) && isObj(r.cs) ? r : null; };
 function srsStart(id) { const L = LDATA[id]; if (!L || !L.review || !L.review.length) return;
   const r = PROG.srs[id] = srsRec(id) || { cs: {}, k: {}, k2: 0 }; let ch = false;
-  for (const C of srsConcepts(L)) if (!isObj(r.cs[C])) { r.cs[C] = { step: 0, due: addDays(Date.now(), SRS_DAYS[0]) }; ch = true; }
+  for (const C of srsConcepts(L)) if (!isObj(r.cs[C])) { r.cs[C] = { step: 0, due: dueAfter(Date.now(), SRS_DAYS[0]) }; ch = true; }
   if (ch) saveProg(); }
+/* «متقدّم مع دعم» في اختبار الوحدة (القرار A-03، D266): دروس البنود الخاطئة تُراجَع من الغد. ما موعده أبعد يُقرَّب إلى الغد،
+   والثابت يعود إلى خطوة 21 يوماً بموعدٍ غداً (الاختبار أظهر أنه لم يثبت) */
+function srsSoon(ids) { const t = dueAfter(Date.now(), 1); let ch = false;
+  for (const id of ids) { if (!LDATA[id] || !(PROG[id] || {}).done) continue; srsStart(id); const r = srsRec(id); if (!r) continue;
+    for (const C of srsConcepts(LDATA[id])) { const x = r.cs[C]; if (!isObj(x)) continue;
+      if (x.due == null) { x.step = SRS_DAYS.length - 1; x.due = t; ch = true; } else if (x.due > t) { x.due = t; ch = true; } } }
+  if (ch) saveProg(); }
+/* صيانة «الثابت» (القرار R02، D266): بعد «ثابت» يعود المفهوم بعد 30 يوماً، ثم 60 بعدها، ثم 90 بعدها (x.m عدد ما مضى منها)،
+   ولا تعمل إلا لمفهومٍ له 4 بنود مراجعة فأكثر: صيانةٌ ببندين محفوظين لا تقيس شيئاً (الشرط الأول، وA-04 بعد التجربة).
+   والخطأ فيها يُرجع المفهوم إلى خطوة 3 أيام (لا إلى البداية: خطأٌ بعد أشهر لا يعني أنه لم يتعلّم)،
+   وبندٌ عرضي صحيح من المحاولة الأولى (البند المشتبك في إتقان درسٍ لاحق، وبند اختبار درسٍ له مفهوم واحد) يُحسب صيانةً (maintCredit) */
+const MAINT_DAYS = [30, 60, 90];
+const maintPool = (L, C) => !!L && (L.review || []).filter(x => x.c === C).length >= 4;
+function maintDue(L, C, x) { if (!isObj(x) || x.due != null || x.step < SRS_DAYS.length || !maintPool(L, C)) return null;
+  const m = isInt(x.m) ? x.m : 0; return m >= MAINT_DAYS.length ? null : dueAfter(isT(x.last) ? x.last : 0, MAINT_DAYS[m]); }
+function maintCredit(id, C) { const r = srsRec(id), x = r && r.cs[C], due = maintDue(LDATA[id], C, x); if (due == null || Date.now() < due) return;   /* المستحقّة وحدها، وتُحسب كالصيانة نفسها: خطوتها التالية (الفحص المستقل للقرارات، 8) */
+  x.m = (isInt(x.m) ? x.m : 0) + 1; x.last = Date.now(); saveProg(); }
 function srsUpdate(id, C, ok) { const r = srsRec(id); if (!r || !isObj(r.cs[C])) return; const x = r.cs[C], now = Date.now();
-  if (ok) { x.step = Math.min(SRS_DAYS.length, x.step + 1); x.due = x.step >= SRS_DAYS.length ? null : addDays(now, SRS_DAYS[x.step]); }
-  else { x.step = Math.max(0, x.step - 1); x.due = addDays(now, SRS_DAYS[x.step]); }
-  x.last = now; }
+  const maint = maintDue(LDATA[id], C, x) != null;
+  if (maint) { if (ok) x.m = (isInt(x.m) ? x.m : 0) + 1; else { x.step = 1; x.due = dueAfter(now, SRS_DAYS[1]); x.m = 0; } }
+  else if (ok) { x.step = Math.min(SRS_DAYS.length, x.step + 1); x.due = x.step >= SRS_DAYS.length ? null : dueAfter(now, SRS_DAYS[x.step]); if (x.due == null) x.m = 0; }
+  else { x.step = Math.max(0, x.step - 1); x.due = dueAfter(now, SRS_DAYS[x.step]); }
+  x.last = now;
+  /* مفهومٌ أُجّل إلى المراجعة ثم ثبت فيها لم يعد «مؤجَّلاً» (مراجعة الخصم A-06: قال التقرير «ثابت» واللوحة «مؤجَّل» في آنٍ واحد) */
+  if (ok && x.due == null) { const c = ((PROG[id] || {}).cs || {})[C]; if (isObj(c) && c.deferred && !c.mastered) { c.deferred = false; c.viaReview = true; } } }
 /* ترحيل جدول الدرس الواحد (قبل A07): لا يأخذ مفهومٌ خطواتٍ أكثر من مرات سؤاله (بنوده بالتناوب حتى k)، وما تأخّر عن خطوة الدرس يحين اليوم */
 (function srsMigrate() { let ch = false;
   for (const [id, r] of Object.entries(PROG.srs)) { if (!isObj(r) || isObj(r.cs)) continue; ch = true; const L = LDATA[id];
@@ -36,14 +57,18 @@ function srsUpdate(id, C, ok) { const r = srsRec(id); if (!r || !isObj(r.cs[C]))
 /* ما حان من المفاهيم: [{L, C, due}] بترتيب الدروس */
 function reviewDue() { const out = [];
   for (const id of UNITS.flatMap(u => u.lessons)) { const L = LDATA[id], r = srsRec(id); if (!L || !r || !L.review || !L.review.length) continue;
-    for (const C of srsConcepts(L)) if (srsDue(r.cs[C])) out.push({ L, C, due: r.cs[C].due }); }
+    for (const C of srsConcepts(L)) { const x = r.cs[C], md = maintDue(L, C, x);
+      if (srsDue(x)) out.push({ L, C, due: x.due, step: x.step }); else if (md != null && md <= Date.now()) out.push({ L, C, due: md, step: x.step, maint: true }); } }
   return out; }
 const reviewLessonsDue = () => new Set(reviewDue().map(d => d.L.id)).size;
 function streamsDue() { const today = dayStart(Date.now()); return STREAMS.filter(s => streamOpen(s) && (PROG.streams[s.id] || {}).day !== today); }
 const reviewWaiting = () => reviewDue().length + streamsDue().length > 0;
 /* بنود الجلسة: ثلاثة على الأكثر كما كانت (حدّ الجلسة)، أقدمها موعداً أولاً، ومفهومٌ من كل درس قبل مفهومٍ ثانٍ منه (تداخل الدروس) */
 const REVIEW_MAX = 3;
-function reviewPick() { const due = reviewDue().sort((a, b) => a.due - b.due), pick = [], used = new Set();
+/* القرار A-09 (D266): السقف لكل جلسة كما هو، ومراجعتا «بعد يوم» و«بعد 3 أيام» (الخطوتان 0 و1) قبل غيرهما، ثم الأقدم موعداً:
+   الذاكرة الطرية أسرع نسياناً، فهي أحقّ بالمكان حين يزيد المستحق على السقف */
+const reviewRank = d => d.step <= 1 ? 0 : 1;
+function reviewPick() { const due = reviewDue().sort((a, b) => reviewRank(a) - reviewRank(b) || a.due - b.due), pick = [], used = new Set();
   for (const d of due) if (pick.length < REVIEW_MAX && !used.has(d.L.id)) { pick.push(d); used.add(d.L.id); }
   for (const d of due) if (pick.length < REVIEW_MAX && !pick.includes(d)) pick.push(d);
   return pick; }
@@ -61,9 +86,11 @@ async function runReview() {
   const total = due.length + streams.length; setSteps(total + 1); setStep(0);
   { const svg = newStage(300, { oasisOpacity: .3 }); due.forEach(({ L }, i) => { const g = el('g', { transform: `translate(${250 - i * 70} 120) scale(1.1)` }, svg); g.innerHTML = stopIconInner(L); }); }
   await S('gen.review.intro'); await nextBtn(labelText('letsGo'));
-  const res = []; let step = 1, allOk = true;
+  let step = 1, allOk = true;
   for (const { L, C } of due) { CUR = L; setStep(step++); SCENE_NOW = 'review:' + L.id; /*T*/window.__scene = 'review:' + L.id;/*/T*/
-    const first = nextReviewItem(L, C); const r = await runItem(first, 'review', { scene: 'review' }); res.push([L.id, C, r.firstTry]); allOk = allOk && r.firstTry;
+    const first = nextReviewItem(L, C); const r = await runItem(first, 'review', { scene: 'review' }); allOk = allOk && r.firstTry;
+    srsUpdate(L.id, C, r.firstTry); saveProg();   /* يُحفظ فوراً (مراجعة الخصم A-02: كان يُكتب بعد الجلسة كلها، فمن خرج بعد الخطأ مُحي خطؤه وجاءه في إعادتها
+                                                      البندُ الآخر)؛ والخطأ يؤجّل المفهوم يوماً فأكثر فلا يعود في اليوم نفسه */
     if (!r.firstTry) { await sleep(400); const r2 = await runItem(secondReviewItem(L, first), 'review', { scene: 'review:second' });   /* المبدأ 14: بند ثانٍ فوري */
       if (!r2.firstTry) { PROG.redo = isObj(PROG.redo) ? PROG.redo : {}; PROG.redo[L.id] = Date.now(); saveProg(); } }   /* خطآن متتاليان: يُعاد الدرس (D237) */
     await sleep(400); }
@@ -72,7 +99,7 @@ async function runReview() {
     if (!st.seen) { await streamModel(s); st.seen = true; saveProg(); await nextBtn(); }       // أول لقاء: فرجار يحلّ نموذجاً
     for (const it of s.items()) { const r = await runItem(it, 'review', { scene: 'stream:' + s.id }); allOk = allOk && r.firstTry; st.n = (st.n || 0) + 1; st.ok = (st.ok || 0) + (r.firstTry ? 1 : 0); }
     st.day = dayStart(Date.now()); saveProg(); await sleep(400); }
-  for (const [id, C, ok] of res) srsUpdate(id, C, ok); saveProg();
+  saveProg();
   setStep(total + 1); SCENE_NOW = 'review:end'; /*T*/window.__scene = 'review:end';/*/T*/ newStage(300, { oasisOpacity: .9 });
   if (allOk) { SFX.win(); starBurst(); await S('gen.review.done'); } else await S('gen.review.later');
   await nextBtn(labelText('toMap')); showHome();
@@ -94,22 +121,28 @@ function breakScene(next) { hush(); /*T*/window.__scene = 'break';/*/T*/
   [p1, p2].forEach((p, i) => anim(p, [{ transform: p.getAttribute('transform').replace(/translate\(([-\d.]+) ([-\d.]+)\)/, 'translate($1px,$2px)') + ' rotate(-2deg)' }, { transform: p.getAttribute('transform').replace(/translate\(([-\d.]+) ([-\d.]+)\)/, 'translate($1px,$2px)') + ' rotate(2deg)' }], { duration: 3000 + i * 400, iterations: 10, direction: 'alternate', easing: 'ease-in-out' }));
   coverSay(c, 'gen.session.break');
   $('#restBtn').onclick = () => { hush(); c.hidden = true; SFX.tick(); showHome(); };
-  $('#moreBtn').onclick = () => { hush(); adultGate(() => { $('#panel').hidden = true; c.hidden = true; SESSION.n = Math.max(0, SET.sessionMax - 1); store.set(kk('hp_session'), SESSION); next(); }, () => {}); };
+  $('#moreBtn').onclick = () => { hush(); adultGate(() => { $('#panel').hidden = true; c.hidden = true; SESSION.n = Math.max(0, SET.sessionMax - 1); store.set(kk('hp_session'), SESSION); next(); }, () => {}, true); };   // حدّ الجلسة يُسأل عنه دائماً (مراجعة الخصم X-06، C-21)
 }
 
 /* ---------- بوابة الكبار (المبدأ 12): سؤال ضرب لا يجيبه طفل م1، والخطأ يؤخّر المحاولة التالية ---------- */
-let gateUntil = 0, gateWait = 0;
-function adultGate(then, onBack) {
-  if (Date.now() < gateUntil) return then();
-  const a = R(6, 9), b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
-  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="ltr">${visualLine([DG(a), '×', DG(b), '=', '؟'])}</bdo></p>
-    <form id="gateForm"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit" id="gateGo">متابعة</button></form><p id="gateMsg" class="msg" role="status"></p><button class="pick" id="gateBack">رجوع</button></div>`;
-  P.hidden = false; setTimeout(() => { try { $('#gateIn').focus(); } catch (e) {} }, 50);
-  $('#gateBack').onclick = () => { P.hidden = true; if (onBack) onBack(); };
+/* المهلة (عشر دقائق بلا سؤال) لا تبقى بعد أن يعود الجهاز إلى الطفل: تنتهي عند الخريطة وبدء الدرس (مراجعة الخصم X-06: كان الطفل يدخل اللوحة
+   بعد أن أغلقها الكبير)، و«درس إضافي» يُسأل دائماً (always). وإعادة السؤال بعد الخطأ لا تعود بعد «رجوع» ولا فوق غير البوابة (C-02) */
+let gateUntil = 0, gateWait = 0, gateSeq = 0;
+const gateEnd = () => { gateUntil = 0; gateSeq++; };
+function adultGate(then, onBack, always) {
+  if (!always && Date.now() < gateUntil) return then();
+  /* عددٌ من رقمين في رقم (القرار الصغير U4): جدول الضرب حتى 9 × 9 يعرفه أخٌ في الصف الثالث. بلا مضاعفات العشرة والأحد عشر، فلا يُحسب بالنظر */
+  const seq = ++gateSeq; let a; do a = R(12, 49); while (a % 10 === 0 || a % 11 === 0); const b = R(6, 9); /*T*/if (TESTHOOK) window.__gateAns = a * b;/*/T*/
+  /* «رجوع» زرٌّ بأيقونة الخريطة في أعلى الصفحة، لا نصٌّ باهت في أسفلها يغطّيه لوح المفاتيح (مراجعة الخصم X-07): الطفل الذي دخلها لا يقرأ */
+  const P = $('#panel'); P.innerHTML = `<div class="wrap gate"><button class="pick gateback" id="gateBack" aria-label="رجوع إلى الخريطة">${ICON.map}<span>رجوع</span></button><h2>للكبار</h2><p>هذه الصفحة للكبار. للمتابعة اكتبوا ناتج:</p><p class="gq"><bdo dir="ltr">${visualLine([DG(a), '×', DG(b), '=', '؟'])}</bdo></p>
+    <form id="gateForm"><input id="gateIn" inputmode="numeric" autocomplete="off" aria-label="الناتج"><button class="go" type="submit" id="gateGo">متابعة</button></form><p id="gateMsg" class="msg" role="status"></p></div>`;
+  /* ولا يُركَّز الحقل في جهاز لمسي: كان لوح المفاتيح يقفز فوق الصفحة لمجرّد لمسةٍ خاطئة على «للكبار» (مراجعة الخصم X-07) */
+  P.hidden = false; let coarse = false; try { coarse = matchMedia('(pointer: coarse)').matches; } catch (e) {} if (!coarse) setTimeout(() => { try { $('#gateIn').focus(); } catch (e) {} }, 50);
+  $('#gateBack').onclick = () => { gateSeq++; P.hidden = true; if (onBack) onBack(); };
   $('#gateForm').onsubmit = e => { e.preventDefault(); if (Date.now() < gateWait) return; const v = fmt.parse($('#gateIn').value);
     if (v === a * b) { gateUntil = Date.now() + 10 * 60 * 1000; then(); return; }
     gateWait = Date.now() + (FAST ? 50 : 3000); $('#gateMsg').textContent = 'الناتج غير صحيح. انتظروا لحظة ثم حاولوا من جديد.'; $('#gateGo').disabled = true;
-    setTimeout(() => adultGate(then, onBack), FAST ? 60 : 3000); };
+    setTimeout(() => { if (seq === gateSeq && !P.hidden && $('#gateForm')) adultGate(then, onBack, always); }, FAST ? 60 : 3000); };
 }
 
 /* ---------- إشارات للمشرف (D203): يخمّن، وعالق، ومتوقف ---------- */
@@ -129,7 +162,7 @@ function signals() { const A = LOG.attempts, out = [];
 /* ---------- التقرير الأسبوعي للأهل (D204، D240: لا اتجاه بأقل من 20 بنداً) ---------- */
 async function weeklyReport() {
   const now = Date.now(), w0 = now - 7 * DAY, w1 = now - 14 * DAY; const A = LOG.attempts;
-  const score = (from, to) => { const f = A.filter(a => a.t >= from && a.t < to && a.firstTry !== undefined && isAssess(a) && a.firstTry !== null); return [f.filter(a => a.ok && a.firstTry).length, f.length]; };
+  const score = (from, to) => { const f = A.filter(a => a.t >= from && a.t < to && a.firstTry === true && isAssess(a)); return [f.filter(a => a.ok).length, f.length]; };   // المقام المحاولات الأولى وحدها (مراجعة الخصم A-05: كانت الإعادات فيه)
   const [ok1, n1] = score(w0, now + 1), [ok0, n0] = score(w1, w0); const pct = (a, b) => b ? Math.round(a / b * 100) : null;
   const all = UNITS.flatMap(u => u.lessons); const doneW = all.filter(id => (PROG[id] || {}).at >= w0);
   const errs = {}; A.filter(a => a.t >= w0 && a.err && ERRN[a.err] && a.scene !== 'ws').forEach(a => errs[a.err] = (errs[a.err] || 0) + 1);
@@ -141,7 +174,7 @@ async function weeklyReport() {
     <div class="card"><h2>تقرير الأسبوع: ${PROFILE ? esc(PROFILE.name || '') : ''}</h2><p class="muted">من ${fmt.date(w0)} إلى ${fmt.date(now)} · واحة الرياضيات، المرحلة الأولى</p></div>
     <div class="card"><b>ما أُنجز:</b> ${doneW.length ? doneW.map(id => `${plain(LDATA[id].title)}${(PROG[id] || {}).mastered ? ((PROG[id] || {}).entry ? ' (أتقنه على الشاشة، مدخل)' : ' (متقن)') : (PROG[id] || {}).entry ? ' (مدخل)' : ''}`).join('، ') : 'لا دروس جديدة هذا الأسبوع'}.
       <br><b>الصواب من المحاولة الأولى:</b> ${p1 == null ? 'لا محاولات هذا الأسبوع' : DG(p1) + '٪ (' + DG(ok1) + ' من ' + DG(n1) + ')'}${trend ? ' · الأسبوع السابق ' + DG(p0) + '٪' : n1 && n1 < 20 ? ' · لا نعرض اتجاهاً قبل عشرين بنداً' : ''}
-      <br><b>المراجعة المتباعدة:</b> ${nw(strong, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${strong === 1 ? 'ثابت' : strong === 2 ? 'ثابتان' : 'ثابتة'}، و${nw(due, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${due === 1 ? 'ينتظر' : due === 2 ? 'ينتظران' : 'تنتظر'} المراجعة اليوم.
+      <br><b>المراجعة المتباعدة:</b> ${nw(strong, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${strong === 1 ? 'ثابت' : strong === 2 ? 'ثابتان' : 'ثابتة'}، و${nw(due, 'درس واحد', 'درسان', 'دروس', 'درساً')} ${due === 1 ? 'ينتظر' : due === 2 ? 'ينتظران' : 'تنتظر'} المراجعة اليوم.${strong ? ' <span class="muted">في المرحلة الأولى بندا مراجعة لكل مفهوم، فـ«ثابت» هنا مبدئي.</span>' : ''}
       <br><b>الورشة:</b> ${Object.entries(PROG.ws || {}).filter(([u]) => WS[u]).map(([u, n]) => `${plain(UNITS.find(x => x.id === u).title)}: ${DG(n)} من ${DG(WS[u].puzzles.length)} ألغاز`).join('، ') || 'لم تُفتح بعد'}.
       <br><b>المعرض:</b> ${nw(photos, 'صورة صيد واحدة', 'صورتا صيد', 'صور صيد', 'صورة صيد')}، و${nw(designs, 'تصميم واحد', 'تصميمان', 'تصاميم', 'تصميماً')} هذا الأسبوع.</div>
     <div class="card"><b>أخطاء تكرّرت:</b><br>${Object.keys(errs).length ? Object.entries(errs).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, n]) => `${esc(ERRN[k])}: ${DG(n)}`).join('<br>') : 'لا شيء يُذكر'}</div>

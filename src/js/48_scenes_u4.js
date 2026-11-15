@@ -176,7 +176,7 @@ SCENES.contractorBoard = async c => { const got = { short: 0, same: 0, long: 0 }
     const dz = dragAlign(svg, [{ o: sp, label: labelText('spanTool') }], { tap: true }); if (i === 0) say(...lineOf(c.lines[1]), { free: true }); else say(...lineOf('gen.board.next'), { free: true });
     const want = spanCat(len); let t = 0; while (true) { const ans = await choosePick(CAT_OPTS(), want); t++; logAttempt({ scene: 'explore', tag: 'ssort' + i, ok: ans === want, firstTry: t === 1 }); if (ans === want) break;
       SFX.soft(); await S(Math.abs(sp.x0 - MS_X) < .5 ? 'gen.err.ssortWrong.01' : 'gen.err.ssortAlign.01'); await dz.all(); }
-    dz.off(); got[want]++; SFX.good(); await sleep(250); }
+    dz.off(); got[want]++; SFX.good(); await sleep(FAST ? 250 : 650); }   // يبقى الجواب ظاهراً لحظة قبل البيت التالي (مراجعة الخصم X-01)
   if (c.trans) await transTap(c);
   /* الأعمدة: مربع لكل شيء، من خط واحد */
   const cats = ['short', 'same', 'long'], counts = cats.map(k => got[k]); const svg = newStage(300, { oasis: false, ground: 0 }); basketsRow(svg, cats, counts, 54);
@@ -299,7 +299,8 @@ SCENES.completeFrame = async c => { if (c.intro) await S(c.intro);
   for (const [i, rd] of c.rounds.entries()) { const svg = newStage(290, { oasis: false, ground: 0 }); digitCard(svg, 180, 44, rd.need, { size: .9 });
     const Fs = rd.frames.map((m, j) => { const g = el('g', { 'data-k': m }, svg); const f = frameAt(g, 180, 116 + j * 62, { cell: 26 }); f.fill(m, CUBE.lemon); return { g, k: m, label: labelText('frameOne') }; });
     await Promise.all(Fs.map((f, j) => anim(f.g, [{ transform: 'translateX(-360px)' }, { transform: 'translateX(0)' }], { duration: 700 + j * 150, easing: 'ease-out' }).done));
-    say(...lineOf(i === 0 ? c.q : 'gen.cframe.again'), { free: true }); await say(...lineOf(numw(rd.need)), { append: true, free: true });
+    /* التعليمة كاملة بعددها في كل جولة (قرارات فراس في 15 نوفمبر: من الثانية كان يبقى «وهذه البطاقة: خمسة» وحده) */
+    say(...lineOf(c.q), { free: true }); await say(...lineOf(numw(rd.need)), { append: true, free: true });
     const want = 10 - rd.need; let t = 0; while (true) { const k = await tapOne(Fs, { ok: want, pad: 64 }); hush(); t++; logAttempt({ scene: 'game', tag: 'cframe' + i, ok: k === want, firstTry: t === 1, err: k === want ? null : 'friendWrong' }); if (k === want) break; SFX.soft(); await S('gen.err.friendWrong.01'); }
     SFX.good(); const f = Fs.find(x => x.k === want); okRing(svg, f.g, 4); await sleep(500); }
   if (c.after) await S(c.after); };
@@ -331,7 +332,7 @@ SCENES.tenBus = async c => { if (c.intro) await S(c.intro);
     await gate(new Promise(res => { out.forEach(o => { o.g.style.cursor = 'pointer'; o.g.setAttribute('role', 'button'); o.g.setAttribute('aria-label', plain(labelText('counterOne'))); hitPad(o.g, 52); o.g.dataset.move = 1; o.g.dataset.twin = 'out';
         o.g.onclick = () => { if (o.inF || moved >= need) return; o.inF = true; o.g.remove(); F.put(F.firstEmpty(), COUNTER2); moved++; SFX.pop(); hush(); if (moved === need) { AUTO_CLEAR(); setTimeout(res, FAST ? 30 : 400); } }; keyOn(o.g, () => o.g.onclick()); });
       AUTO({ kind: 'frameMove', ok: () => out.filter(o => !o.inF).slice(0, need - moved).forEach(o => o.g.dispatchEvent(new MouseEvent('click', { bubbles: true }))) }); }));
-    untarget(out.map(o => o.g)); await S('gen.bus.full'); const want = rd.a + rd.b; await S('gen.bus.ask');
+    untarget(out.map(o => o.g)); await Promise.all([flashSecond(svg), S('gen.bus.full')]); const want = rd.a + rd.b; await S('gen.bus.ask');   /* الركّاب الجدد كلهم يومضون: من صعد ومن ينتظر (D267) */
     await numUntil(() => optsWith(want, [10]), want, { intro: [lineOf('gen.bus.ask')], scene: 'game', tag: 'bus' + i, err: a => a === 10 ? 'tenOnly' : 'tenJoinBus', wrong: a => a === 10 ? 'gen.err.tenOnly.01' : 'gen.err.tenJoinBus.01' });
     await readSentence(rd.a, '+', rd.b, want); }
   if (c.after) await S(c.after); };

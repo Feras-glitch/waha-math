@@ -12,7 +12,7 @@ function posErr(w, g) { const p = new Set([w, g]), has = (a, b) => p.has(a) && p
   if (/^g\d+$/.test(w)) { const a = +w.slice(1), b = +String(g).slice(1); return Math.abs(a - b) === 1 && a > 0 && b > 0 ? { ok: false, err: 'posBetween' } : { ok: false, err: 'posFrontBack' }; }   /* فراغات الطابور: g0 أمام الأول */
   if (has('in', 'on')) return { ok: false, err: 'posInOn' }; if (has('on', 'under')) return { ok: false, err: 'posOnUnder' };
   if (w === 'beside' || g === 'beside') return { ok: false, err: 'posBeside' };
-  if (['inC', 'inS', 'both', 'none'].includes(w)) return { ok: false, err: 'posInOut' };
+  if (['inC', 'inS', 'both', 'none'].includes(w) || has('in', 'out')) return { ok: false, err: 'posInOut' };   // و«داخل» مقابل «خارج» (مراجعة الخصم M-13: كان يسقط إلى posWord «ما الكلمة التي سمعتها؟»)
   if (has('front', 'behind')) return { ok: false, err: 'posFrontBack' }; if (w === 'between' || g === 'between') return { ok: false, err: 'posBetween' };
   return { ok: false, err: 'posWord' }; }
 
@@ -59,7 +59,9 @@ function spotPick(svg, thing, home, spots, okKeys, opt = {}) {
     el('circle', { r: 30, fill: '#fff', 'fill-opacity': .25, stroke: css('--compass'), 'stroke-width': 3, 'stroke-dasharray': '7 6' }, g); hitPad(g, 64, 56);
     /*T*/if (TESTHOOK) g.dataset.ok = [].concat(okKeys).includes(s.k);/*/T*/ return { ...s, g }; });
   if (opt.strong) { const r = rings.find(q => [].concat(okKeys).includes(q.k)); if (r) { r.g.querySelector('circle').setAttribute('stroke-width', 6); anim(r.g, [{ opacity: .5 }, { opacity: 1 }], { duration: 600, iterations: 4, direction: 'alternate' }); } }
-  svg.appendChild(thing); thing.style.cursor = 'grab'; thing.setAttribute('role', 'button'); thing.setAttribute('aria-label', plain(opt.label || labelText('thing'))); hitPad(thing, 64, 64);
+  /* الشيء يُرفع فوق الحلقات؛ إلا ما وُضع في طبقةٍ من المسرح (الدمية داخل الصندوق): إحداثياته نسبةً إلى طبقته، فرفعُه كان يقذفه خارج المسرح
+     (في «قال المرشد» اختفت الدمية في الجولة الأخيرة بعد «داخل»، كشفه فحص الهاتف بالعرض). فيبقى في طبقته مرئياً كما رُسم، ويُسحب فيها (طبقاتٌ بإزاحةٍ لا تكبير) */
+  if (thing.parentNode === svg || !svg.contains(thing)) svg.appendChild(thing); thing.style.cursor = 'grab'; thing.setAttribute('role', 'button'); thing.setAttribute('aria-label', plain(opt.label || labelText('thing'))); hitPad(thing, 64, 64);
   const okR = rings.find(r => [].concat(okKeys).includes(r.k)) || rings[0], badR = rings.find(r => r !== okR && ![].concat(okKeys).includes(r.k)) || okR;
   AUTO({ kind: 'place', ok: () => okR.g.dispatchEvent(new MouseEvent('click', { bubbles: true })), wrong: () => badR.g.dispatchEvent(new MouseEvent('click', { bubbles: true })) });
   const off = pulse(rings.map(r => r.g)); let done = false, cleanup = null;

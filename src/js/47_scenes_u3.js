@@ -10,7 +10,9 @@ const STAY_ICON = '<svg viewBox="0 0 40 40" width="40" height="40" aria-hidden="
 SCENES.simonSays = async c => { const svg = newStage(300, null); const P = posPic(svg, { ref: 'chest' }); const tr = trayAt(svg); let cur = 'tray';
   let doll = placeThingAt(svg, 'doll', tr.x, tr.y, { scale: .75 }); if (c.intro) await S(c.intro);
   for (const [i, rd] of c.rounds.entries()) { const keys = Object.keys(P.spots).filter(k => posKey(k) !== posKey(cur));
-    const spots = keys.map(k => ({ k, x: P.spots[k].x, y: bodyY(P.spots[k], 'doll') }));
+    /* والدمية داخل الصندوق يطلّ نصفها الأعلى تحت حلقة «فوق»، فكان لمسُها أو سحبها من وجهها يقع على الحلقة («فوق») لا عليها: الحلقة تعلو عنها */
+    const top0 = cur === 'in' ? P.C.top + (.45 - 1) * THING_H.doll * P.spots.in.s : null;   // رأس الدمية كما يضعها P.put في الصندوق
+    const spots = keys.map(k => ({ k, x: P.spots[k].x, y: k === 'on' && top0 != null ? Math.min(bodyY(P.spots[k], 'doll'), top0 - 34) : bodyY(P.spots[k], 'doll') }));
     const okKeys = rd.want ? keys.filter(k => posKey(k) === rd.want) : [];
     const box = document.createElement('div'); box.className = 'choices icons'; $('#stage').appendChild(box); const stay = document.createElement('button'); stay.className = 'pick'; stay.dataset.k = 'stay';
     stay.innerHTML = STAY_ICON + `<span>${esc(G(labelText('stayPut')))}</span>`; stay.setAttribute('aria-label', plain(G(labelText('stayPut')))); box.appendChild(stay);

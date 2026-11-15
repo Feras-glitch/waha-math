@@ -2,6 +2,17 @@
    واجهة الدرس: الزرّ الكبير، وشريط المراحل، والمسرح، والفانوس، والخيارات المسموعة
    ===================================================================== */
 const go = $('#go'), help = $('#helpBtn');
+/* اللمسة الثانية من نقرةٍ مزدوجة لا تُحسب جواباً لما رُسم بعد الأولى (مراجعة الخصم X-01: في «لوحة المقاول» والإتقان كانت تقع بعد 250–300 م.ث
+   على السؤال التالي فتُسجَّل خطأً لم يرتكبه الطفل). كل جوابٍ مسجَّل (logAttempt) يحفظ لحظة لمسته، ولمسةٌ بإصبع أو فأرة بدأت بعدها بأقلّ من TAP_ARM
+   لا تصل إلى شيء. ولوحة المفاتيح (detail = 0) والنقر من الشيفرة لا يمرّان بهذا، ولا وضع الفحص السريع */
+let TAP_DOWN = -1e9, ANS_DOWN = -1e9; const TAP_ARM = 450;
+document.addEventListener('pointerdown', () => { TAP_DOWN = performance.now(); }, true);
+window.addEventListener('click', e => { if (FAST || !e.isTrusted || !e.detail) return;
+  if (TAP_DOWN !== ANS_DOWN && TAP_DOWN - ANS_DOWN < TAP_ARM) { e.stopImmediatePropagation(); e.preventDefault(); /*T*/window.__tapSwallowed = (window.__tapSwallowed || 0) + 1;/*/T*/ } }, true);
+/* الإتقان بلا إشارة صواب أو خطأ (مراجعة الخصم A-01: علامةُ الخطأ وصوته و«حسناً» بعده مقابل التعليل بعد الصواب كانت تُعلِم الطفل أين أخطأ،
+   فيقلب أجوبته في الدورة الثانية التي تعيد البنود نفسها): الخيار المختار يُعلَّم بعلامةٍ واحدة للحالين */
+/* NEUTRAL_ANS معرّف في 00_core.js (تقرؤه نغمات 10_speech.js قبل هذا الملف) */
+const tapAnswered = () => { if (performance.now() - TAP_DOWN < 1500) ANS_DOWN = TAP_DOWN; };
 /* الزرّ الكبير يُخفى حين لا فعل له (M2)، ولا يبقى معطّلاً بعنوان مضلِّل */
 function setGo(label, onClick) { go.innerHTML = `<span>${esc(G(label))}</span>${ICON.play}`; go.onclick = onClick; go.disabled = false; go.classList.remove('idle'); }
 function lockGo() { go.disabled = true; go.onclick = null; go.classList.add('idle'); }
@@ -49,7 +60,7 @@ function armIdle(h, opt = {}) { idleHandler = h; help.hidden = false; help.class
   resetIdle(opt); }
 function resetIdle(opt = {}) { if (idleTimer) idleTimer.cancel(); idleTimer = null; if (!idleHandler) return;
   const wait = FAST ? 1500 : (opt.first ? 10000 : 20000);   // T9: أقصر في أول لقاء بالأداة
-  idleTimer = ptimeout(async () => { if (speechBusy() || PAUSED) { resetIdle(opt); return; }   /* ولا يعرض المساعدة تحت غطاء الخروج (F2 (3)) */ help.classList.add('glow'); await S('gen.hintOffer.01', { ifIdle: true, free: true, aside: true }); }, wait); }
+  idleTimer = ptimeout(async () => { if (speechBusy() || PAUSED) { resetIdle(opt); return; }   /* ولا يعرض المساعدة تحت غطاء الخروج (F2 (3)) */ help.classList.add('glow'); await S('gen.hintOffer.01', { ifIdle: true, free: true, aside: true, keep: true }); }, wait); }   /* keep: يُسمع العرض ويتوهّج الفانوس، والسؤال باقٍ في الفقاعة (الألعاب، 15 نوفمبر: كان يحلّ محلّه بعد 10 ثوانٍ أو 20) */
 function disarmIdle() { idleHandler = null; if (idleTimer) idleTimer.cancel(); idleTimer = null; help.hidden = true; help.classList.remove('glow'); }
 document.addEventListener('pointerdown', e => { if (idleHandler && !help.contains(e.target)) { help.classList.remove('glow'); resetIdle(); } }, true);
 /* أول لقاء بأداة (M4): عرض تلقائي قصير، ثم يبدأ الطفل. يُحفظ لكل طفل */
@@ -76,7 +87,7 @@ function choosePick(options, okKey, opt = {}) {
     /*T*/if (TESTHOOK) b.dataset.ok = okKey == null ? '' : (Array.isArray(okKey) ? okKey.includes(k) : k === okKey);/*/T*/ box.appendChild(b); return b; });
   AUTO({ kind: 'pick', ok: () => (btns.find(b => okKey == null || (Array.isArray(okKey) ? okKey.includes(b.dataset.k) : b.dataset.k === okKey)) || btns[0]).click(), wrong: () => (btns.find(b => okKey != null && !(Array.isArray(okKey) ? okKey.includes(b.dataset.k) : b.dataset.k === okKey)) || btns[0]).click() });
   const r = gate(new Promise(res => btns.forEach(b => b.onclick = () => { if (box.dataset.done) return; box.dataset.done = 1; AUTO_CLEAR(); hush();
-    b.classList.add(okKey == null || (Array.isArray(okKey) ? okKey.includes(b.dataset.k) : b.dataset.k === okKey) ? 'ok' : 'no'); SFX.tick(); res(b.dataset.k); })))
+    b.classList.add(NEUTRAL_ANS ? 'chosen' : okKey == null || (Array.isArray(okKey) ? okKey.includes(b.dataset.k) : b.dataset.k === okKey) ? 'ok' : 'no'); SFX.tick(); res(b.dataset.k); })))
     .then(k => { psleep(FAST ? 30 : 700).then(() => box.remove()); return k; });
   if (options.every(o => o[3])) readChoices(options.map((o, i) => ({ line: lineOf(o[3]), el: btns[i] })), { host: box });
   return r;
@@ -131,6 +142,9 @@ const digitsKnown = () => !!(PROG['m1.u1.d5'] || {}).done || !!PROG.unlockAll;
 /* الأرقام المكتوبة في الرسم (الشارات والعدّادات): من درس «أرقام الواحة» نفسه فصاعداً (N003)، وقبله نقاط وعلامات عدّ */
 const LESSON_SEQ = () => UNITS.flatMap(u => u.lessons);
 const digitsShown = () => digitsKnown() || (!!CUR && LESSON_SEQ().indexOf(CUR.id) >= LESSON_SEQ().indexOf('m1.u1.d5'));
+/* «ركن» يُعرَّف في درس المستطيل (m1.u1.d3): من بعده يقول الحلّ المشترك للمربع إن كل ركن فيه مثل ركن الورقة (مراجعة الخصم M-05: «أربعة أضلاع متساوية» وحدها تعريف المعيّن)، وقبله لا */
+const cornerKnown = () => !!(PROG['m1.u1.d3'] || {}).done || (!!CUR && LESSON_SEQ().indexOf(CUR.id) >= LESSON_SEQ().indexOf('m1.u1.d3'));
+const solveLine = kind => 'gen.solve.' + (kind === 'square' && cornerKnown() ? 'squareC' : kind);
 const tallyText = n => '•'.repeat(n);
 /* الأعداد فوق العشرة تُسمع منذ طريق الأعداد (S1-U3 د5) ولا تُكتب في خيار قبل درس «عشرة وآحاد» (N010، S1-U4 د5) الذي يعلّم كتابتها (D229):
    داخل الدرس بموضعه من المنهاج (فتدريب الفحص بفتح كل الدروس لا يغيّره)، وخارجه بإنجاز درس الجسر */
@@ -157,7 +171,15 @@ let MAT_AVOID = null; const avoidOk = v => !MAT_AVOID || !MAT_AVOID.has(v);
 /* وثلاثة خيارات دائماً: إن لم تبلغها المسافات القريبة (أعداد «معي» أو حدّ المدى) تُوسَّع، ثم يُقبل عددٌ من «معي» آخراً (الفحص المستقل I2 (7): nearNums(0) بأعداد «معي»
    من واحد إلى ستة أعطت خياراً واحداً). وما بلغ ثلاثة لا يمرّ هنا، فلا يتغيّر ما يُولَّد اليوم */
 function fillOpts(s, n, lo, hi) { for (const strict of [true, false]) for (let d = 1; s.size < 3 && d <= hi - lo; d++) for (const v of shuffle([n - d, n + d])) if (s.size < 3 && v >= lo && v <= hi && (!strict || avoidOk(v))) s.add(v); return s; }
-function nearNums(n, max = 10, lo = 0) { const set = new Set([n]); for (const d of [...shuffle([-1, 1, -2, 2]), ...shuffle([-3, 3])]) { if (set.size >= 3) break; const v = n + d; if (v >= lo && v <= max && avoidOk(v)) set.add(v); } return shuffle([...fillOpts(set, n, lo, max)]); }   /* lo: أصغر خيار (1 حيث لا صفر)، لا ترشيحٌ بعده يُنقص الثلاثة (الفحص المستقل J2 (5)) */
+/* ورتبة الجواب بين الخيارات الثلاثة (أصغرها أو أوسطها أو أكبرها) بالتساوي ما أمكن (مراجعة الخصم A-10: كان الأوسطَ في ثلثي الحالات، فـ«اختر الأوسط» يصيب
+   ضعف الصدفة): تُختار الرتبة أولاً ثم المشتّتان من جهتيهما على مسافة 1–3، وما لا تسعه الحدود أو أعداد «معي» يرجع إلى الطريقة الأولى */
+function nearNums(n, max = 10, lo = 0) { const ok = v => v >= lo && v <= max && avoidOk(v), side = s => [1, 2, 3].map(d => n + s * d).filter(ok);
+  const B = side(-1), A = side(1), two = L => [L[0], L[R(1, Math.min(2, L.length - 1))]];
+  for (const rk of shuffle([0, 1, 2])) {
+    if (rk === 0 && A.length >= 2) return shuffle([n, ...two(A)]);
+    if (rk === 2 && B.length >= 2) return shuffle([n, ...two(B)]);
+    if (rk === 1 && A.length && B.length) return shuffle([n, B[R(0, Math.min(1, B.length - 1))], A[R(0, Math.min(1, A.length - 1))]]); }
+  const set = new Set([n]); for (const d of [...shuffle([-1, 1, -2, 2]), ...shuffle([-3, 3])]) { if (set.size >= 3) break; const v = n + d; if (ok(v)) set.add(v); } return shuffle([...fillOpts(set, n, lo, max)]); }   /* lo: أصغر خيار (1 حيث لا صفر)، لا ترشيحٌ بعده يُنقص الثلاثة (الفحص المستقل J2 (5)) */
 /* زرّ «تمّ» على المسرح للمهام المفتوحة (الإخراج والبناء) */
 function doneBtn(onClick) { const b = document.createElement('button'); b.className = 'pick done'; b.innerHTML = ICON.check + `<span>${esc(G(labelText('done')))}</span>`; b.setAttribute('aria-label', plain(labelText('done')));
   const bar = document.createElement('div'); bar.className = 'choices donebar'; bar.appendChild(b); $('#stage').appendChild(bar); b.onclick = onClick; return { bar, b }; }

@@ -5,10 +5,22 @@
 const allLessons = () => UNITS.flatMap(U => U.lessons);
 function nextLessonId() { for (const [ui, U] of UNITS.entries()) { if (!unitOpen(ui)) break; for (const [i, id] of U.lessons.entries()) if (!(PROG[id] || {}).done && lessonOpen(U, i)) return id; } return null; }
 const conceptName = (L, C) => (L.concepts || {})[C] || '';
+/* موعد صيانة «الثابت» في جدول المراجعة (R02، D266) */
+function maintNote(L, C, x) { const md = maintDue(L, C, x); if (md == null) return ''; const d = daysBetween(Date.now(), md);
+  return ` <span class="muted">صيانة ${d <= 0 ? 'اليوم' : 'بعد ' + nw(d, 'يوم واحد', 'يومين', 'أيام', 'يوماً')}</span>`; }
 function statusPill(L) { const p = PROG[L.id] || {};
   const redo = isObj(PROG.redo) && PROG.redo[L.id] ? ' <span class="pill think">يُعاد: خطآن متتاليان في المراجعة</span>' : '';
   /* D252: إتقان مسار الشاشة «مدخل» عند الكبار حتى يُعاد الدرس بالأشياء الحقيقية، والنجمة للطفل كما هي */
   if (p.mastered) return (p.entry ? '<span class="pill think">أتقنه على الشاشة، مدخل</span> <span class="muted">يصير تأسيساً حين يُعاد بالأشياء</span>' : '<span class="pill good">متقن</span>') + redo;
+  /* اختبار الوحدة دون النجاح (A-03، D266): الشريحة والدرجة، ومتى يُعاد */
+  /* والحيّ التالي كما في الخريطة نفسها (unitOpen): لا جملة عن حيٍّ تالٍ بعد آخر حيّ، و«يحتاج دعماً» بعد «متقدّم مع دعم» سابق يبقي الحيّ مفتوحاً ولا يُقفله
+     (الفحص المستقل للقرارات، 4). وموعد الإعادة: اليوم بساعته إن كان اليوم، وإلا غداً؛ وبلا اسم درسٍ إن أسقطه التحقّق (6 و7) */
+  if (L.test && p.failAt && !p.mastered && !p.resume) { const W = LDATA[p.weak], wd = weakDone(p), open = retakeOpen(p), due = dueAfter(p.failAt, 1);
+    const ui = UNITS.findIndex(u => u.id === L.unit), nx = ui >= 0 && ui + 1 < UNITS.length, nOpen = nx && unitOpen(ui + 1);
+    const next = !nx ? '' : nOpen ? (p.band === 'support' ? ': الحيّ التالي مفتوح' : ': الحيّ التالي بقي مفتوحاً من محاولةٍ سابقة') : ': الحيّ التالي مقفل';
+    const at = d => `${DG(d.getHours())}:${DG(String(d.getMinutes()).padStart(2, '0'))}`, when = dayStart(due) <= dayStart(Date.now()) ? `اليوم بعد الساعة ${at(new Date(due))}` : 'غداً';
+    return `<span class="pill think">${p.band === 'support' ? 'متقدّم مع دعم' : 'يحتاج دعماً'}${next}</span>${p.score != null ? ` <span class="pill">${DG(p.score)} من ${DG(p.of)}</span>` : ''}`
+      + ` <span class="muted">${open ? 'يُعاد الاختبار الآن' : `يُعاد ${wd ? when : W ? `بعد درس «${esc(plain(W.title))}» ومرور يوم` : 'بعد مرور يوم'}`}</span>`; }
   if (p.resume) return '<span class="pill">توقّف في منتصفه</span>';
   if (!p.done) return '—';
   const def = Object.entries(p.cs || {}).filter(([C, c]) => isObj(c) && c.deferred && !c.mastered && !adultSays(L, C)).map(([C]) => conceptName(L, C)).filter(Boolean);
@@ -26,13 +38,14 @@ const adultSays = (L, C) => !!(L && L.adultCard && L.adultCard.concept === C && 
     if (c.byAdult && !app) { delete c.mastered; if (!entry) c.deferred = true; } delete c.byAdult; }
   if (ch) saveProg(); })();
 function adultCardHTML(L) { const A = L.adultCard; const saved = adultAnswers(L);
-  return `<div class="talkcard"><b>${esc(plain(L.title))}: ${esc(A.title)}</b><p class="muted">${esc(A.how)}</p>${A.qs.map((q, i) => `<div class="aq"><span>${DG(i + 1)}. ${esc(q)}</span><span class="seg">
+  return `<div class="talkcard"><b>${esc(plain(L.title))}: ${esc(A.title)}</b><p class="muted">${esc(G(A.how))}</p>${A.qs.map((q, i) => `<div class="aq"><span>${DG(i + 1)}. ${esc(G(q))}</span><span class="seg">
     <button class="pick" data-ac="${esc(L.id)}" data-i="${i}" data-v="1" aria-pressed="${saved[i] === true}">نعم</button><button class="pick" data-ac="${esc(L.id)}" data-i="${i}" data-v="0" aria-pressed="${saved[i] === false}">ليس بعد</button></span></div>`).join('')}
     ${A.concept && adultSays(L, A.concept) ? '<span class="pill good">متقن بحكم الكبير</span>' : ''}</div>`; }
 /* حالة المفهوم في خريطة الإتقان: إتقان التطبيق وحكم الكبير مصدران، والعرض منهما */
 function conceptPill(L, C) { const c = ((PROG[L.id] || {}).cs || {})[C] || {}, adult = adultSays(L, C);
   if (c.mastered) return (PROG[L.id] || {}).entry && !adult ? '<span class="pill think">أتقنه على الشاشة، مدخل</span>' : '<span class="pill good">متقن</span>';
   if (adult) return '<span class="pill good">متقن بحكم الكبير</span>';
+  if (c.viaReview) return '<span class="pill good">ثابت بالمراجعة</span>';   // أُجّل ثم ثبت في المراجعة (A-06)
   return c.entry ? '<span class="pill think">مدخل: يحكم الكبير</span>' : c.deferred ? '<span class="pill think">مؤجَّل إلى المراجعة</span>' : (L.mastery && L.mastery.concepts[C]) ? '—' : '<span class="pill">مدخل</span>'; }
 /* حذفٌ لم يكتمل يُقال بسببه، ويُعرض إكماله بضغطة (الفحص المستقل WM101-R1-01، R1-03): الطفل باقٍ في القائمة كما في التخزين حتى يكتمل */
 const KID_DEL_WHY = { mark: 'تعذّر بدء الحذف، فلم يُحذف شيء', photos: 'تعذّر الوصول إلى صوره على هذا الجهاز، فلم يكتمل حذفه',
@@ -53,7 +66,7 @@ function openPanel() {
   const faces = LOG.faces.slice(-6).map(f => `${plain(LDATA[f.lesson] ? LDATA[f.lesson].title : '')}: ${{ easy: 'سهل', ok: 'مناسب', hard: 'صعب' }[f.k] || ''}`);
   $('#panel').innerHTML = `<div class="wrap">
     <div><h2>للكبار${PROFILE && PROFILE.name ? ': ' + esc(PROFILE.name) : ''}</h2><p class="muted">ما جرى في الدروس. البيانات على هذا الجهاز فقط.</p></div>
-    <div class="card warn" id="storeWarn"${STORE_ISSUES.writeFail || STORE_ISSUES.corrupt.length || STORE_ISSUES.repaired.length || STORE_ISSUES.migrated || STORE_ISSUES.restore ? '' : ' hidden'}><b>تنبيه التخزين:</b> ${STORE_ISSUES.writeFail ? 'تعذّر حفظ التقدّم الأخير (المساحة ممتلئة أو التصفّح الخاص). ' : ''}${STORE_ISSUES.corrupt.length ? 'وُجدت بيانات تالفة فحُفظت نسخة منها وبدأت القيم من جديد: ' + esc(STORE_ISSUES.corrupt.join('، ')) + '. ' : ''}${STORE_ISSUES.repaired.length ? 'وفي بعض البيانات أجزاءٌ تالفة فأُسقطت وحدها وبقي الباقي، وحُفظت نسخة منها كما كانت: ' + esc(STORE_ISSUES.repaired.join('، ')) + '. ' : ''}${STORE_ISSUES.migrated ? 'تغيّرت بنية دروس الوحدتين (ستة دروس لكلٍّ منهما)، فبدأ التقدّم من جديد، وحُفظ التقدّم القديم كاملاً في الجهاز (hp_prog_bak). ' : ''}${{ undone: 'لم تكتمل استعادة نسخةٍ سابقة (أُغلق التطبيق في أثنائها)، فأُرجع ما كان على الجهاز قبلها كاملاً.', failed: 'لم تكتمل استعادة نسخةٍ سابقة، وتعذّر إرجاع ما كان؛ وهو محفوظ في الجهاز (hp_before_restore). أعيدوا الاستعادة أو أبلغوا الدعم.', lost: 'لم تكتمل استعادة نسخةٍ سابقة، ولم توجد نسخة مما كان قبلها.' }[STORE_ISSUES.restore] || ''}</div>
+    <div class="card warn" id="storeWarn"${STORE_ISSUES.photoMem || STORE_ISSUES.writeFail || STORE_ISSUES.corrupt.length || STORE_ISSUES.repaired.length || STORE_ISSUES.migrated || STORE_ISSUES.restore ? '' : ' hidden'}><b>تنبيه التخزين:</b> ${STORE_ISSUES.photoMem ? 'صور الصيد في هذه الجلسة لم تُحفظ في الجهاز (تعذّر الوصول إلى مخزن الصور)، فلن تبقى بعد إغلاق التطبيق. ' : ''}${STORE_ISSUES.writeFail ? 'تعذّر حفظ التقدّم الأخير (المساحة ممتلئة أو التصفّح الخاص). ' : ''}${STORE_ISSUES.corrupt.length ? 'وُجدت بيانات تالفة فحُفظت نسخة منها وبدأت القيم من جديد: ' + esc(STORE_ISSUES.corrupt.join('، ')) + '. ' : ''}${STORE_ISSUES.repaired.length ? 'وفي بعض البيانات أجزاءٌ تالفة فأُسقطت وحدها وبقي الباقي، وحُفظت نسخة منها كما كانت: ' + esc(STORE_ISSUES.repaired.join('، ')) + '. ' : ''}${STORE_ISSUES.migrated ? (STORE_ISSUES.migrateHeld ? 'تغيّرت بنية دروس الوحدتين، ولم تتّسع مساحة الجهاز لنسخةٍ من التقدّم القديم، فبقي كما هو ولم يُكتب فوقه، ولا يُحفظ تقدّم جديد حتى تتّسع المساحة. ' : 'تغيّرت بنية دروس الوحدتين (ستة دروس لكلٍّ منهما)، فبدأ التقدّم من جديد، وحُفظ التقدّم القديم كاملاً في الجهاز (hp_prog_bak). ') : ''}${{ undone: 'لم تكتمل استعادة نسخةٍ سابقة (أُغلق التطبيق في أثنائها)، فأُرجع ما كان على الجهاز قبلها كاملاً.', failed: 'لم تكتمل استعادة نسخةٍ سابقة، وتعذّر إرجاع ما كان؛ وهو محفوظ في الجهاز (hp_before_restore). أعيدوا الاستعادة أو أبلغوا الدعم.', lost: 'لم تكتمل استعادة نسخةٍ سابقة، ولم توجد نسخة مما كان قبلها.' }[STORE_ISSUES.restore] || ''}</div>
     <div class="card"><b>قبل الدرس القادم: حقيبة الدرس</b>${NL ? `<p><b>${esc(plain(NL.title))}</b>${NL.bag && !NL.bag.screenOnly ? `: ${esc(NL.bag.adult)}` : ': لا يحتاج أشياء من البيت.'}</p>
       <p class="muted">أحضروها وابقوا قريبين واسمعوا، ولا تشرحوا: التطبيق يشرح. ${NL.bag && NL.bag.screenPath ? esc(NL.bag.screenPath) : ''}</p>` : '<p>أُنجزت الدروس المتاحة.</p>'}</div>
     <div class="card"><table><thead><tr><th>الدرس</th><th>الحالة</th></tr></thead><tbody>${UNITS.map(U => `<tr class="uh"><td colspan="2">${esc(plain(U.title))}${PROG['badge:' + U.id] ? ' <span class="pill good">الشارة</span>' : ''}</td></tr>` + U.lessons.map(id => { const L = LDATA[id];
@@ -63,27 +76,28 @@ function openPanel() {
       return `<tr><td>${esc(name)}</td><td>${st}</td></tr>`; }).join('')).join('') || '<tr><td>تظهر بعد أول درس.</td></tr>'}</tbody></table></details>
     ${done.some(L => L.adultCard) ? `<div class="card"><b>بطاقات يحكم بها الكبير</b> (ما لا يُتعلَّم من الشاشة):${done.filter(L => L.adultCard).map(adultCardHTML).join('')}</div>` : ''}
     <div class="card"><b>بطاقات الحوار ومهام البيت</b> (بعد كل درس أُنجز):${done.filter(L => TALK[L.id]).map(L => `<div class="talkcard"><b>${esc(plain(L.title))}</b><br>${esc(G(TALK[L.id]))}${homeTask(L.id) ? `<br><span class="muted">مهمة البيت: ${esc(homeTask(L.id))}</span>` : ''}</div>`).join('') || '<br>تظهر هنا بعد أول درس.'}</div>
-    <details class="card"><summary><b>المراجعة المتباعدة</b> (لكل فكرة: بعد يوم ثم ٣ ثم ٧ ثم ٢١ يوماً، والخطأ يرجعها وحدها خطوة واحدة)</summary>${Object.keys(PROG.srs).length ? `<table><thead><tr><th>الفكرة</th><th>المرحلة</th><th>الموعد</th></tr></thead><tbody>${Object.entries(PROG.srs).map(([id, r]) => { const L = LDATA[id]; if (!L || !isObj(r) || !isObj(r.cs)) return '';
+    <details class="card"><summary><b>المراجعة المتباعدة</b> (لكل فكرة: بعد يوم ثم ٣ ثم ٧ ثم ٢١ يوماً، والخطأ يرجعها وحدها خطوة واحدة؛ وبعد «ثابت» صيانةٌ بعد ٣٠ ثم ٦٠ ثم ٩٠ يوماً لما له أربعة بنود مراجعة فأكثر)</summary>${Object.keys(PROG.srs).length ? `<table><thead><tr><th>الفكرة</th><th>المرحلة</th><th>الموعد</th></tr></thead><tbody>${Object.entries(PROG.srs).map(([id, r]) => { const L = LDATA[id]; if (!L || !isObj(r) || !isObj(r.cs)) return '';
       return `<tr class="uh"><td colspan="3">${esc(plain(L.title))}</td></tr>` + Object.entries(r.cs).map(([C, x]) => { const d = x.due ? daysBetween(Date.now(), x.due) : null;
-        return `<tr><td>${esc(conceptName(L, C))}</td><td>${DG(Math.min(x.step, 4))} من ${DG(4)}</td><td>${x.due == null ? '<span class="pill good">ثابت</span>' : d <= 0 ? '<span class="pill think">اليوم</span>' : 'بعد ' + nw(d, 'يوم واحد', 'يومين', 'أيام', 'يوماً')}</td></tr>`; }).join(''); }).join('')}</tbody></table>` : '<p>تبدأ بعد أول درس.</p>'}
+        return `<tr><td>${esc(conceptName(L, C))}</td><td>${DG(Math.min(x.step, 4))} من ${DG(4)}</td><td>${x.due == null ? '<span class="pill good">ثابت</span>' + maintNote(L, C, x) : d <= 0 ? '<span class="pill think">اليوم</span>' : 'بعد ' + nw(d, 'يوم واحد', 'يومين', 'أيام', 'يوماً')}</td></tr>`; }).join(''); }).join('')}</tbody></table><p class="muted">في المرحلة الأولى بندا مراجعة لكل مفهوم، فـ«ثابت» هنا مبدئي.</p>` : '<p>تبدأ بعد أول درس.</p>'}
       ${Object.entries(PROG.streams).filter(([, s]) => s.n).map(([k, s]) => `<p>${{ glance: 'اللمحة السريعة', fluency: 'أصابعي الخمس', story: 'قصص الواحة' }[k] || k}: ${DG(s.ok || 0)} من ${DG(s.n)} من المحاولة الأولى</p>`).join('')}</details>
     <div class="card"><b>إشارات</b> (من آخر المحاولات):<br>${signals().map(([t, x]) => `<span class="pill think">${t}</span> ${esc(x)}`).join('<br>') || 'لا شيء يدعو للقلق.'}
       ${faces.length ? `<p class="muted">«كيف كان؟»: ${esc(faces.join(' · '))}</p>` : ''}
       <div class="seg"><button class="pick" id="repBtn">تقرير الأسبوع للطباعة</button></div></div>
     <details class="card"><summary><b>الأخطاء الشائعة التي ظهرت</b></summary>${Object.keys(errs).length ? Object.entries(errs).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${esc(ERRN[k])}: ${DG(n)}`).join('<br>') : 'لا شيء بعد'}</details>
-    <div class="card"><b>حدّ الجلسة:</b> عدد الدروس قبل أن يقترح فرجار استراحة («مراجعة اليوم» لا تُحسب).
+    <div class="card"><b>حدّ الجلسة:</b> عدد الدروس قبل أن يقترح فرجار استراحة. و«مراجعة اليوم» والورشة لا تُحسبان فيه: الورشة لعبٌ حرّ قصير، يخرج منه الطفل متى شاء.
       <div class="seg" id="segMax">${[1, 2, 3, 0].map(n => `<button class="pick" data-n="${n}" aria-pressed="${SET.sessionMax === n}">${n ? nw(n, 'درس واحد', 'درسان', 'دروس', 'درساً') : 'بلا حدّ'}</button>`).join('')}</div>
       <p class="muted">في هذه الجلسة: ${nw(sessionNow().n, 'درس واحد', 'درسان', 'دروس', 'درساً')}.</p>
       <div class="seg"><button class="pick" id="slowBtn" aria-pressed="${!!SET.slow}">قراءة أبطأ: ${SET.slow ? 'تعمل' : 'متوقفة'}</button></div></div>
     <div class="card"><b>أطفال هذا الجهاز</b> (لكل طفل تقدّمه ومعرضه وإعداداته، ويختار صورته عند الدخول):
-      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')}</span>${k.id === KID || kidDelBusy() ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة</button></div>${kidDelNote()}</div>
+      <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')} (${k.gender === 'f' ? 'بنت' : 'ولد'})</span>${k.id === KID || kidDelBusy() ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة وصيغة الخطاب</button></div>${kidDelNote()}</div>
     <div class="card"><b>الصوت:</b> <span id="vpStat">${vpStatText()}</span>
-      <p class="muted">حزمة الصوت ملف zip (أو ملفات صوتية) اسم كل تسجيل فيه معرّف جملته في جدول التسجيل، مثل <code dir="ltr">m1.u1.d2.hook.01.mp3</code>، و<code dir="ltr">…_f.mp3</code> للصيغة المؤنثة. تُستورد مرة واحدة وتبقى في هذا الجهاز، وما لم يُسجَّل يقرؤه صوت الجهاز (D181).</p>
+      ${NO_TTS ? `<p class="note" id="noTts">صوت الجهاز لا يقرأ العربية الآن، فتُعرض الجمل مكتوبةً بزمن قراءتها. ${window.AndroidBridge ? 'لإضافة الصوت: الإعدادات ← اللغة والإدخال ← تحويل النص إلى كلام ← تثبيت بيانات الصوت العربية.' : 'لإضافة الصوت: ثبّتوا الصوت العربي في إعدادات الكلام في الجهاز، ثم أعيدوا فتح التطبيق.'}</p>` : ''}
+      <p class="muted">حزمة الصوت ملف zip (أو ملفات صوتية) اسم كل تسجيل فيه معرّف جملته في جدول التسجيل، مثل <code dir="ltr">m1.u1.d2.hook.01.mp3</code>، و<code dir="ltr">…_f.mp3</code> للصيغة المؤنثة. تُستورد مرة واحدة وتبقى في هذا الجهاز، وما لم يُسجَّل يقرؤه صوت الجهاز.</p>
       <div class="seg"><button class="pick" id="vpPick">استيراد حزمة الصوت</button><button class="pick" id="vpDel"${VPACK.n ? '' : ' hidden'}>حذف الحزمة</button></div><input type="file" id="vpIn" accept=".zip,audio/*" multiple hidden><p id="vpMsg" class="muted" aria-live="polite"></p></div>
     <div class="card"><b>نسخة احتياطية:</b> ملف فيه أطفال هذا الجهاز وتقدّمهم وإعداداتهم وتصميماتهم، يُحفظ أو يُنقل إلى جهاز آخر. الصور وحزمة الصوت لا تدخل الملف.
       <div class="seg"><button class="pick" id="bkSave">حفظ نسخة في ملف</button><button class="pick" id="bkPick">استعادة نسخة</button></div><input type="file" id="bkIn" accept=".json,application/json" hidden><div id="bkMsg" aria-live="polite"></div></div>
     <details class="card"><summary><b>للتجربة والدعم</b></summary>
-      <div class="seg"><button class="pick" id="unlockAll">${PROG.unlockAll ? 'إعادة قفل الدروس' : 'فتح كل الدروس للتجربة'}</button><button class="pick" id="resetAll">بدء كل الدروس من جديد</button></div>
+      <div class="seg"><button class="pick" id="unlockAll">${PROG.unlockAll ? 'إعادة قفل الدروس' : 'فتح كل الدروس للتجربة'}</button><button class="pick" id="resetAll">بدء كل الدروس من جديد</button></div><p id="resetMsg" class="note" aria-live="polite"></p>
       ${LOG.errors.length ? `<p><b>سجلّ الأعطال</b> (يُرسل عند البلاغ):</p><pre class="errlog" dir="ltr">${esc(LOG.errors.slice(-8).map(e => new Date(e.t).toISOString().slice(0, 16) + ' ' + e.scene + '\n' + e.msg.split('\n').slice(0, 3).join('\n')).join('\n\n'))}</pre>` : ''}</details>
     <div class="row"><button class="go" id="closePanel">رجوع</button></div></div>`;
   $('#panel').hidden = false; $('#panel').scrollTop = 0;
@@ -102,8 +116,17 @@ function openPanel() {
   $('#slowBtn').onclick = () => { SET.slow = !SET.slow; saveSet(); openPanel(); };
   $('#segMax').querySelectorAll('.pick').forEach(b => b.onclick = () => { SET.sessionMax = +b.dataset.n; saveSet(); openPanel(); });
   $('#unlockAll').onclick = () => { if (PROG.unlockAll) delete PROG.unlockAll; else PROG.unlockAll = true; saveProg(); $('#panel').hidden = true; showHome(); };
-  $('#resetAll').onclick = () => { if ($('#resetAll').dataset.sure !== '1') { $('#resetAll').dataset.sure = '1'; $('#resetAll').textContent = 'متأكد؟ يُمحى التقدّم كله لهذا الطفل'; return; }
-    for (const k of Object.keys(PROG)) delete PROG[k]; PROG.schema = SCHEMA; PROG.srs = {}; PROG.ws = {}; PROG.streams = {}; SESSION = { n: 0, t: 0 }; store.set(kk('hp_session'), SESSION); saveProg(); LOG.attempts = []; LOG.faces = []; store.set(kk('hp_log'), LOG); store.set(designsKey(), []); IDB.clear(); $('#panel').hidden = true; showHome(); };
+  /* الصور أولاً، وما لم تُحذف لا يُمحى شيء (مراجعة الخصم C-01: أزال إصلاح WM101-R1 الدالة IDB.clear وبقي استدعاؤها هنا،
+     فكان الزرّ يمحو التقدّم ثم ينهار قبل الصور، وتبقى اللوحة مفتوحة فوق غطاء العطل) */
+  $('#resetAll').onclick = async () => { const b = $('#resetAll'), m = $('#resetMsg'); if (b.disabled) return;
+    if (b.dataset.sure !== '1') { b.dataset.sure = '1'; b.textContent = 'متأكد؟ يُمحى التقدّم كله لهذا الطفل، وصوره'; return; }
+    b.disabled = true; m.textContent = ''; let ph; try { ph = await IDB.dropKid(KID); } catch (e) { ph = 'fail'; }
+    b.disabled = false; b.dataset.sure = ''; b.textContent = 'بدء كل الدروس من جديد';
+    if (ph !== 'ok') { m.textContent = ph === 'tab' ? 'لم يُمحَ شيء لأن التطبيق فُتح في نافذة أخرى.' : 'تعذّر حذف صور هذا الطفل من الجهاز، فلم يُمحَ شيء. جرّبوا مرة أخرى.'; return; }
+    for (const k of Object.keys(PROG)) delete PROG[k]; PROG.schema = SCHEMA; PROG.srs = {}; PROG.ws = {}; PROG.streams = {}; SESSION = { n: 0, t: 0 }; LOG.attempts = []; LOG.faces = [];
+    const ok = [store.set(kk('hp_session'), SESSION), saveProg(), store.set(kk('hp_log'), LOG), store.set(designsKey(), [])].every(x => x !== false);
+    if (!ok) { m.textContent = 'حُذفت الصور، لكن تعذّر حفظ البدء من جديد في الجهاز كاملاً؛ قد يعود بعض التقدّم بعد إعادة فتح التطبيق.'; return; }
+    $('#panel').hidden = true; showHome(); };
   /* حزمة الصوت (D181) */
   $('#vpPick').onclick = () => $('#vpIn').click();
   $('#vpIn').onchange = async e => { const files = [...e.target.files]; e.target.value = ''; if (!files.length) return; const m = $('#vpMsg'); m.textContent = 'يستورد…';
@@ -116,18 +139,27 @@ function openPanel() {
     if (r !== 'ok') { $('#vpMsg').textContent = r === 'tab' ? 'لم تُحذف الحزمة لأن التطبيق فُتح في نافذة أخرى.' : 'تعذّر حذف الحزمة من الجهاز، فبقيت كما هي. جرّبوا مرة أخرى.'; return; }   // لا يُعلن الحذف قبل التزامه (WM102-R3-01)
     $('#vpStat').textContent = vpStatText(); b.hidden = true; $('#vpMsg').textContent = 'حُذفت الحزمة.'; };
   /* النسخة الاحتياطية (D246) */
-  $('#bkSave').onclick = () => { backupSave(); $('#bkMsg').textContent = 'حُفظ الملف في التنزيلات.'; };
+  /* لا «حُفظ» قبل أن يُحفظ (مراجعة الخصم C-16): في أندرويد تُفتح نافذة الحفظ وتعود نتيجتها، وفي المتصفح يُرسل الملف إلى التنزيلات وحده يقرّر */
+  $('#bkSave').onclick = () => { const m = $('#bkMsg');
+    if (window.AndroidBridge) { window.wahaSaveResult = r => { m.textContent = { ok: 'حُفظ الملف في المكان الذي اخترتموه.', cancel: 'لم يُحفظ الملف: أُغلقت نافذة الحفظ.', fail: 'تعذّر حفظ الملف. جرّبوا مكاناً آخر.' }[r] || ''; }; m.textContent = 'اختاروا مكان حفظ الملف…'; }
+    else m.textContent = 'أُرسل الملف إلى التنزيلات في هذا المتصفح. تأكّدوا من وجوده هناك قبل الاعتماد عليه.';
+    backupSave(); };
   $('#bkPick').onclick = () => $('#bkIn').click();
   $('#bkIn').onchange = async e => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; const box = $('#bkMsg'); let chk;
+    if (f.size > 10 * 1024 * 1024) { box.textContent = 'هذا الملف أكبر من أن يكون نسخةً من واحة الرياضيات، فلم يُفتح.'; return; }   // لا يُقرأ ملفٌ ضخم كله في الذاكرة (C-12)
     try { chk = backupCheck(await f.text()); } catch (x) { chk = { ok: false, why: 'notJson' }; }
     if (!chk.ok) { box.textContent = { notJson: 'هذا ليس ملف نسخة من واحة الرياضيات.', notOurs: 'هذا ليس ملف نسخة من واحة الرياضيات.', empty: 'ملف النسخة فارغ.', noKids: 'ملف النسخة بلا أطفال.', badKey: 'في الملف بيانات لا يعرفها التطبيق، فلم يُستعمل.', badValue: 'ملف النسخة تالف، فلم يُستعمل.', oldVersion: 'هذه النسخة من إصدارٍ آخر للتطبيق بغير بنية دروسه الحالية، فلم تُستعمل.' }[chk.why] || 'ملف النسخة تالف، فلم يُستعمل.'; return; }
     box.innerHTML = `<p>في النسخة: ${chk.kids.map(k => esc(k.name || 'بلا اسم') + ' (' + (k.done ? 'أنجز ' + nw(k.done, 'درساً واحداً', 'درسين', 'دروس', 'درساً') : 'لم يبدأ') + ')').join('، ')}.</p>
-      <p class="muted">الاستعادة تضع ما في النسخة مكان أطفال هذا الجهاز وتقدّمهم، وتُحفظ قبلها نسخة مما على الجهاز الآن. الصور وحزمة الصوت لا تتغيّر.</p><div class="seg"><button class="pick" id="bkGo">استعادة</button><button class="pick" id="bkNo">إلغاء</button></div>`;
-    $('#bkGo').onclick = () => { const g = $('#bkGo'); if (g.dataset.sure !== '1') { g.dataset.sure = '1'; g.textContent = 'متأكد؟ يُستبدل ما على هذا الجهاز'; return; }
+      <p class="muted">الاستعادة تضع ما في النسخة مكان أطفال هذا الجهاز وتقدّمهم. وتُحفظ قبلها نسخة مما على الجهاز الآن يُرجَع إليها إن انقطعت، وتُمحى بعد تمامها، فاحفظوا نسخةً في ملف قبل الاستعادة إن أردتم الرجوع إلى ما على الجهاز. صور الطفل تبقى له إن كان في النسخة نفسه، وتُحذف صور من ليس فيها. وحزمة الصوت لا تتغيّر.</p><div class="seg"><button class="pick" id="bkGo">استعادة</button><button class="pick" id="bkNo">إلغاء</button></div>`;
+    $('#bkGo').onclick = async () => { const g = $('#bkGo'); if (g.disabled) return; if (g.dataset.sure !== '1') { g.dataset.sure = '1'; g.textContent = 'متأكد؟ يُستبدل ما على هذا الجهاز'; return; }
+      /* صور طفلٍ ليس في النسخة، أو طفلٍ آخر بالمعرّف نفسه (اسماً أو جنساً)، تُحذف بعد الاستعادة (مراجعة الخصم C-07: «كريم» المستعاد بالمعرّف k1 كان يرى صور «سلمى») */
+      let nk = []; try { nk = JSON.parse(chk.d.data.hp_kids); } catch (x) {}
+      const gone = KIDS.filter(o => !nk.some(n => n.id === o.id && n.name === o.name && n.gender === o.gender)).map(o => o.id);
       const r = backupApply(chk); if (r.why === 'tab') return;
-      box.textContent = r.ok ? 'استُعيدت النسخة. يُعاد فتح التطبيق…' : { rescue: 'لم تُستعَد النسخة: تعذّر أولاً حفظ نسخةٍ مما على الجهاز (المساحة ممتلئة؟)، فلم يتغيّر شيء.',
+      let left = 0; if (r.ok) { g.disabled = true; for (const id of gone) { let ph; try { ph = await IDB.dropKid(id); } catch (x) { ph = 'fail'; } if (ph !== 'ok') left++; } }
+      box.textContent = r.ok ? 'استُعيدت النسخة.' + (left ? ' وتعذّر حذف صور من ليس في النسخة، فبقيت على الجهاز.' : '') + ' يُعاد فتح التطبيق…' : { rescue: 'لم تُستعَد النسخة: تعذّر أولاً حفظ نسخةٍ مما على الجهاز (المساحة ممتلئة؟)، فلم يتغيّر شيء.',
         space: 'لم تُستعَد النسخة: تعذّرت كتابة بياناتها (المساحة ممتلئة؟)، فبقي ما على الجهاز كما كان.', partial: 'لم تُستعَد النسخة، وتعذّر إرجاع ما كان في الحال؛ يُعاد فتح التطبيق ليُرجعه من نسخته المحفوظة.' }[r.why];
-      if (r.ok || r.why === 'partial') setTimeout(() => location.reload(), r.ok ? 700 : 2500); };
+      if (r.ok || r.why === 'partial') setTimeout(() => location.reload(), r.ok ? (left ? 2500 : 700) : 2500); };
     $('#bkNo').onclick = () => { box.textContent = ''; }; };
 }
 const vpStatText = () => VPACK.n ? `حزمة الصوت: ${DG(VPACK.n)} من ${DG(voiceIds().size)} تسجيلاً` : 'صوت الجهاز (لا حزمة مستوردة)';

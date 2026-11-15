@@ -36,7 +36,7 @@ function bagIcon(svg, r, x, y, sc = 1, maxW = 112) {
     mail: () => { mailboxAt(g, 0, 10, 2).g.setAttribute('transform', 'translate(0 10) scale(.7)'); },
     cubes: () => { towerAt(g, -16, 40, 4, { size: 18, color: CUBE.lemon }); towerAt(g, 16, 40, 3, { size: 18, color: CUBE.white }); },
     cut: () => { shapeAt(g, { type: 'circle', size: 30, color: css('--circle') }, -26, -10); shapeAt(g, { type: 'square', size: 28, color: css('--square') }, 10, -14); shapeAt(g, { type: 'triangle', size: 30, color: css('--triangle') }, -8, 22); shapeAt(g, { type: 'rect', w: 34, h: 18, color: css('--rect') }, 28, 20); },
-    hat: () => thingAt(g, { solid: 'cone', size: 80, color: '#6c7fa8' }, 0, 0), tube: () => thingAt(g, { solid: 'cylinder', size: 76, color: '#c9a072' }, 0, 0), box: () => thingAt(g, { solid: 'box', size: 84, color: BOXC }, 0, 0),
+    hat: () => thingAt(g, { solid: 'cone', size: 80, color: '#6c7fa8' }, 0, 0), can: () => thingAt(g, { solid: 'cylinder', object: 'can', size: 76, color: '#9aa7b0' }, 0, 0), box: () => thingAt(g, { solid: 'box', size: 84, color: BOXC }, 0, 0),
     stickers: () => { for (let i = 0; i < 4; i++) el('rect', { x: -30 + (i % 2) * 30, y: -24 + Math.floor(i / 2) * 26, width: 24, height: 20, rx: 3, fill: '#f6cf7e', stroke: '#c98f55', 'stroke-width': 2, transform: `rotate(${i * 7 - 10})` }, g); },
     /* S1-U3 */
     chest: () => chestAt(g, 0, 44, { w: 76, h: 36, legs: 34, open: false }), doll: () => placeThingAt(g, 'doll', 0, 40, {}), teddy: () => placeThingAt(g, 'teddy', 0, 40, {}), ball: () => placeThingAt(g, 'ball', 0, 30, { scale: 1.3 }),
@@ -66,7 +66,7 @@ function bagIcon(svg, r, x, y, sc = 1, maxW = 112) {
   if (lbl) labelFit(svg, x, y + 72, lbl, 15, css('--muted'), maxW); }
 
 async function runLesson(id, opt = {}) {
-  if (TAB_LOST) { showTabLost(); return; }
+  if (TAB_LOST) { showTabLost(); return; } gateEnd();   // الجهاز عاد إلى الطفل: لا مهلة للبوابة (مراجعة الخصم X-06)
   const L = LDATA[id]; CUR = L; FLOW++; colorIx = 0; streak = 0; const P = progOf(id);
   const resumeAt = opt.resume && P.resume ? Math.min(P.resume.stage, L.flow.length - 1) : 0;
   if (!opt.resume) { P.runs = (P.runs || 0) + 1; }
@@ -136,7 +136,7 @@ async function masteryStage(L) {
     else { cs.deferred = !cs.mastered; await S('gen.ms.later'); }
     saveProg();
   }
-  if (M.mixed) { const prev = CUR; CUR = LDATA[M.mixed.lesson]; let r; try { r = await runItem(M.mixed.item, 'mastery', { scene: 'mastery:mixed' }); } finally { CUR = prev; } const R = srsRec(M.mixed.lesson), MC = M.mixed.concept; if (!r.firstTry && R && isObj(R.cs[MC])) { srsUpdate(M.mixed.lesson, MC, false); R.cs[MC].due = addDays(Date.now(), 1); } }   // البند المشتبك يُحكم بإعدادات درسه، وخطؤه يرجع مفهومه (concept) وحده
+  if (M.mixed) { const prev = CUR; CUR = LDATA[M.mixed.lesson]; let r; try { r = await runItem(M.mixed.item, 'mastery', { scene: 'mastery:mixed' }); } finally { CUR = prev; } const R = srsRec(M.mixed.lesson), MC = M.mixed.concept; if (!r.firstTry && R && isObj(R.cs[MC])) { srsUpdate(M.mixed.lesson, MC, false); R.cs[MC].due = addDays(Date.now(), 1); } else if (r.firstTry && r.ok) maintCredit(M.mixed.lesson, MC); }   // وصوابه يُحسب صيانةً لمفهومه الثابت (R02)   // البند المشتبك يُحكم بإعدادات درسه، وخطؤه يرجع مفهومه (concept) وحده
   const real = Object.keys(M.concepts).filter(C => !(M.entryOnly || []).includes(C));
   P.mastered = real.every(C => P.cs[C].mastered); P.deferred = real.some(C => P.cs[C].deferred && !P.cs[C].mastered); saveProg();
   if (P.mastered) { SFX.win(); starBurst(); await S(M.ok || 'gen.ms.ok'); }
@@ -146,21 +146,36 @@ function starBurst() { const svg = $('#stage svg'); if (!svg) return; const g = 
   el('path', { d: 'M0 -46 L13 -14 L46 -12 L20 9 L28 42 L0 24 L-28 42 L-20 9 L-46 -12 L-13 -14 Z', fill: '#f2b33d', stroke: '#fff', 'stroke-width': 4 }, g);
   anim(g, [{ transform: 'translate(180px,110px) scale(0) rotate(-60deg)' }, { transform: 'translate(180px,110px) scale(1.15) rotate(8deg)' }, { transform: 'translate(180px,110px) scale(1) rotate(0)' }], { duration: 800, fill: 'forwards', easing: 'ease-out' }); confetti(18); }
 
-/* اختبار الوحدة (المبدأ 3: العتبة 85%، فالمطلوب ceil(0.85 × عدد البنود)): من المحاولة الأولى بلا مساعدة، ولا درجة تُقال للطفل (D233) */
-const testNeed = n => Math.ceil(n * 0.85);
+/* اختبار الوحدة (المبدأ 3): من المحاولة الأولى بلا مساعدة، ولا درجة تُقال للطفل (D233)، ولا يُكشف الجواب أثناءه (القرار A-03، D266).
+   والحدّان يُقرَّبان إلى الأسفل (A-11): النجاح floor(0.85 × البنود)، أي 10 من 12 و9 من 11؛ و«متقدّم مع دعم» floor(0.6 × البنود)، أي 7 من 12 و6 من 11.
+   ودون النجاح: الدرس الأضعف أولاً، ولا إعادة قبل أن يُعاد ويمضي يوم (retakeOpen)، فلا تُنال الشارة بحفظ أجوبةٍ رآها الطفل للتوّ.
+   و«متقدّم مع دعم» يفتح الوحدة التالية (support:الوحدة)، ويُقرِّب مراجعة دروس الخطأ إلى الغد؛ وأقلّ منه تبقى الوحدة التالية مقفلة */
+const testNeed = n => Math.floor(n * 0.85), supportNeed = n => Math.floor(n * 0.6);
+/* والدرس الأضعف التالف أو المحذوف (أسقطه التحقّق) لا يقفلها أبداً: يكفي مرور اليوم (الفحص المستقل للقرارات، 7) */
+const weakDone = P => !P.weak || !LDATA[P.weak] || ((PROG[P.weak] || {}).at || 0) > P.failAt;
+const retakeOpen = P => !P.failAt || P.mastered || (weakDone(P) && Date.now() >= dueAfter(P.failAt, 1));
 async function testStage(L) {
   const T = L.test; const P = progOf(L.id); newStage(250, { oasisOpacity: .3 });
   await S(T.intro || 'gen.test.intro');
-  const order = T.keepOrder ? T.items : shuffle(T.items); let ok = 0; const wrong = [];
-  for (const q of order) { const r = await runItem(q.item, 'test', { scene: 'test' }); if (r.ok) ok++; else wrong.push(q); await sleep(700); }
-  P.score = ok; P.of = order.length; P.at = Date.now(); saveProg();
-  logAttempt({ scene: 'test', tag: 'result', ok: ok >= testNeed(order.length), score: ok, of: order.length, wrongIds: wrong.map(q => q.id) });
-  if (ok >= testNeed(order.length)) { P.mastered = true; PROG['badge:' + L.unit] = true; saveProg(); await stoneScene(L); return; }
+  /* ما أُجيب من بنوده محفوظٌ بعد كل بند (P.trun): من خرج قبل آخره يُكمل من حيث ترك بأجوبته، ولو اختار «من البداية»؛ فلا يُعاد الاختبار
+     في اليوم نفسه بالخروج قبل آخره (الفحص المستقل للقرارات، 2: كان الخارج قبل آخره يعيده كاملاً فوراً) */
+  const known = new Set(T.items.map(q => q.id)), run = isObj(P.trun) ? P.trun : { a: [], w: [] };
+  run.a = (run.a || []).filter(id => known.has(id)); run.w = (run.w || []).filter(id => run.a.includes(id)); P.trun = run;
+  const order = (T.keepOrder ? T.items : shuffle(T.items)).filter(q => !run.a.includes(q.id)); let ok = run.a.length - run.w.length; const wrong = T.items.filter(q => run.w.includes(q.id));
+  for (const q of order) { const r = await runItem(q.item, 'test', { scene: 'test' }); run.a.push(q.id); if (r.ok) { ok++; const Cs = LDATA[q.of] ? srsConcepts(LDATA[q.of]) : []; if (Cs.length === 1) maintCredit(q.of, Cs[0]); } else { wrong.push(q); run.w.push(q.id); } saveProg(); await sleep(700); }   // بند اختبار صحيح يُحسب صيانةً لمفهوم درسه إن كان له مفهوم واحد (R02)
+  delete P.trun; const n = T.items.length, band = ok >= testNeed(n) ? 'pass' : ok >= supportNeed(n) ? 'support' : 'low';
+  P.score = ok; P.of = n; P.at = Date.now(); saveProg();
+  logAttempt({ scene: 'test', tag: 'result', ok: band === 'pass', band, score: ok, of: n, wrongIds: wrong.map(q => q.id) });
+  if (band === 'pass') { P.mastered = true; delete P.band; delete P.failAt; delete P.weak; PROG['badge:' + L.unit] = true; saveProg(); await stoneScene(L); return; }
   const cnt = {}; wrong.forEach(q => cnt[q.of] = (cnt[q.of] || 0) + 1);
-  const weak = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0][0]; PROG.review = weak; saveProg();
+  const weak = Object.entries(cnt).sort((a, b) => b[1] - a[1])[0][0]; PROG.review = weak;
+  P.band = band; P.failAt = Date.now(); P.weak = weak;
+  if (band === 'support') { PROG['support:' + L.unit] = true; srsSoon(Object.keys(cnt)); }
+  saveProg();
   const svg = newStage(250, { oasisOpacity: .2 }); const sv = el('g', { transform: 'translate(108 40) scale(2)' }, svg); sv.innerHTML = stopIconInner(LDATA[weak]);
   label(svg, 180, 200, plain(LDATA[weak].title), 22);
-  await S('gen.test.again'); await S(T.remedial || 'gen.test.remedial');
+  const ui = UNITS.findIndex(u => u.id === L.unit);
+  await S(band === 'support' ? 'gen.test.again' : 'gen.test.low'); if (band === 'support' && UNITS[ui + 1]) await S('gen.test.open'); await S(T.remedial || 'gen.test.remedial');
 }
 /* فوضى تضع حجر النبع في مكانه (قوس فوضى، D236)، فيجري الماء في جدول الحيّ (D230) */
 async function stoneScene(L) {

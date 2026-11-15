@@ -6,6 +6,9 @@ import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
+import android.os.SystemClock;
+import android.view.ViewGroup;
+import android.webkit.RenderProcessGoneDetail;
 import android.webkit.PermissionRequest;
 import android.webkit.ValueCallback;
 import android.webkit.WebChromeClient;
@@ -34,6 +37,12 @@ public class MainActivity extends Activity {
     private NativeBridge bridge;
     private ValueCallback<Uri[]> fileCallback;
     private Uri cameraUri;
+    /* صورةٌ وصلت بعد أن أعاد أندرويد إنشاء الشاشة أثناء الكاميرا (مراجعة الخصم C-23): ضاع طلب الصفحة معها،
+       فتُحفظ وتُسلَّم لأول طلب صورة خلال عشر دقائق بدل أن يُفتح التصوير من جديد */
+    private Uri pendingPhoto;
+    private boolean chooserCapture, pendingCapture;   // نوع الطلب: التقاط («صيد الأشكال») أم اختيار (صورة ملف الطفل)، فلا تذهب صورة أحدهما إلى الآخر
+    private long pendingAt;
+    static final long PENDING_MS = 10 * 60 * 1000L;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -57,7 +66,12 @@ public class MainActivity extends Activity {
 
         File shared = new File(getCacheDir(), FilesProvider.SHARED);
         FilesProvider.clean(shared);
-        FilesProvider.clean(new File(getCacheDir(), FilesProvider.CAMERA));
+        if (savedInstanceState != null) chooserCapture = savedInstanceState.getBoolean("chooserCapture", false);
+        if (savedInstanceState != null && savedInstanceState.getString("cameraUri") != null) {
+            cameraUri = Uri.parse(savedInstanceState.getString("cameraUri"));   // أُعيد إنشاء الشاشة والكاميرا مفتوحة: صورتها في الطريق، فلا يُمسح مجلدها
+        } else {
+            FilesProvider.clean(new File(getCacheDir(), FilesProvider.CAMERA));
+        }
         bridge = new NativeBridge(this, web);
         web.addJavascriptInterface(bridge, "AndroidBridge");
 
@@ -71,6 +85,20 @@ public class MainActivity extends Activity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 return !HOST.equals(request.getUrl().getHost());   // لا مغادرة إلى موقع خارجي
             }
+
+            /* انهار مُرسِم الصفحة (ضغط الذاكرة في جهازٍ ضعيف، مراجعة الخصم C-23): كان يُغلق التطبيق كله.
+               الآن تُبنى الشاشة من جديد، والتقدّم محفوظ في التخزين، فيعود الطفل إلى الخريطة */
+            @Override
+            public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+                if (view == web) {
+                    ViewGroup parent = (ViewGroup) view.getParent();
+                    if (parent != null) parent.removeView(view);
+                    view.destroy();
+                    web = null;
+                    recreate();
+                }
+                return true;
+            }
         });
 
         web.setWebChromeClient(new WebChromeClient() {
@@ -82,7 +110,14 @@ public class MainActivity extends Activity {
             @Override
             public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
                 if (fileCallback != null) fileCallback.onReceiveValue(null);
+                if (pendingPhoto != null && wantsImage(params) && params.isCaptureEnabled() == pendingCapture && SystemClock.elapsedRealtime() - pendingAt < PENDING_MS) {
+                    callback.onReceiveValue(new Uri[]{pendingPhoto});   // الصورة التي التُقطت قبل إعادة إنشاء الشاشة
+                    pendingPhoto = null;
+                    return true;
+                }
+                pendingPhoto = null;
                 fileCallback = callback;
+                chooserCapture = params.isCaptureEnabled();
                 try {
                     startActivityForResult(chooserIntent(params), REQ_FILE);
                 } catch (Exception e) {
@@ -133,10 +168,14 @@ public class MainActivity extends Activity {
      *  - صورة بالتقاط (capture، «صيد الأشكال»): تطبيق الكاميرا مباشرة، والصورة تُكتب في ذاكرة التطبيق المؤقتة لا في معرض الجهاز.
      *  - صورة بلا التقاط (صورة ملف الطفل): اختيار صورة، ومعه الكاميرا.
      *  - غير ذلك (حزمة الصوت، النسخة الاحتياطية): كل الملفات، لأن أكثر مديري الملفات لا يعرفون نوع json وzip فيُخفونه. */
-    private Intent chooserIntent(WebChromeClient.FileChooserParams params) {
+    static boolean wantsImage(WebChromeClient.FileChooserParams params) {
         String[] acc = params.getAcceptTypes();
-        boolean image = false;
-        if (acc != null) for (String a : acc) if (a != null && a.startsWith("image/")) image = true;
+        if (acc != null) for (String a : acc) if (a != null && a.startsWith("image/")) return true;
+        return false;
+    }
+
+    private Intent chooserIntent(WebChromeClient.FileChooserParams params) {
+        boolean image = wantsImage(params);
         cameraUri = null;
         if (image) {
             Intent cam = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -178,12 +217,18 @@ public class MainActivity extends Activity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (requestCode == REQ_FILE && fileCallback != null) {
+        if (requestCode == REQ_FILE) {
             Uri[] picked = pickedUris(resultCode, data);
             if (picked == null && resultCode == Activity.RESULT_OK && cameraUri != null && FilesProvider.hasData(this, cameraUri)) {
                 picked = new Uri[]{cameraUri};      // الكاميرا تكتب في العنوان الذي أعطيناها ولا تعيد بيانات
             }
-            fileCallback.onReceiveValue(picked);
+            if (fileCallback != null) {
+                fileCallback.onReceiveValue(picked);
+            } else if (picked != null && picked.length == 1) {
+                pendingPhoto = picked[0];           // الشاشة أُعيد إنشاؤها: لا طلب ينتظرها، فتُحفظ لأول طلب صورة من النوع نفسه
+                pendingCapture = chooserCapture;
+                pendingAt = SystemClock.elapsedRealtime();
+            }
             fileCallback = null;
             cameraUri = null;
         } else if (requestCode == REQ_SAVE) {
@@ -208,6 +253,7 @@ public class MainActivity extends Activity {
     /** زر الرجوع: يفعل ما يفعله الطفل بالأزرار (غطاء الخروج من الدرس، و«رجوع» في اللوحة والمعرض)، وفي الشاشة الرئيسية يُصغَّر التطبيق ولا يُغلق */
     @Override
     public void onBackPressed() {
+        if (web == null) { moveTaskToBack(true); return; }
         web.evaluateJavascript("(function(){try{return window.__androidBack?window.__androidBack():0;}catch(e){return 0;}})()", new ValueCallback<String>() {
             @Override
             public void onReceiveValue(String value) {
@@ -218,22 +264,29 @@ public class MainActivity extends Activity {
     }
 
     @Override
+    protected void onSaveInstanceState(Bundle out) {
+        super.onSaveInstanceState(out);
+        if (cameraUri != null) out.putString("cameraUri", cameraUri.toString());   // الكاميرا مفتوحة: يُعرف عنوان صورتها بعد إعادة الإنشاء
+        out.putBoolean("chooserCapture", chooserCapture);
+    }
+
+    @Override
     protected void onPause() {
         super.onPause();
         bridge.stopSpeech();
-        web.onPause();
+        if (web != null) web.onPause();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        web.onResume();
+        if (web != null) web.onResume();
     }
 
     @Override
     protected void onDestroy() {
         bridge.shutdown();
-        web.destroy();
+        if (web != null) web.destroy();
         super.onDestroy();
     }
 }

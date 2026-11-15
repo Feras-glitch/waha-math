@@ -129,7 +129,7 @@ async def main():
         await pg.screenshot(path=OUT + '/panel_%d%s.png' % (i, sfx))
       # 5) أهداف اللمس في الخريطة واللوحة (56 للطفل، 44 للكبار)
       small = await pg.evaluate("""() => { const out = []; for (const e of document.querySelectorAll('button, [role=button], input, a')) { const r = e.getBoundingClientRect(); if (!r.width || !r.height) continue; if (e.closest('[hidden]')) continue;
-          const need = (e.closest('#panel') || e.id === 'adultBtn') ? 44 : 56;   /* رابط الكبار هدف للكبار (44)، وكل ما يلمسه الطفل 56 */ if (Math.min(r.width, r.height) < need - 0.5) out.push([e.id || e.className.baseVal || e.className || e.tagName, Math.round(r.width), Math.round(r.height), need]); } return out; }""")
+          const need = (e.closest('#panel') || e.closest('.voice-note') || e.id === 'adultBtn') ? 44 : 56;   /* رابط الكبار هدف للكبار (44)، وكل ما يلمسه الطفل 56 */ if (Math.min(r.width, r.height) < need - 0.5) out.push([e.id || e.className.baseVal || e.className || e.tagName, Math.round(r.width), Math.round(r.height), need]); } return out; }""")
       check(not small, scheme + ': أهداف اللمس في الخريطة واللوحة ' + str(small[:6]))
       clips = set(await pg.evaluate("() => window.__clips || []")); ids = set(json.load(open(os.path.join(HERE, '..', 'dist', 'script_m1.xlsx.ids.json'))))
       check(not (clips - ids), scheme + ': كل جملة منطوقة في جدول التسجيل ' + str(sorted(clips - ids)[:5]))

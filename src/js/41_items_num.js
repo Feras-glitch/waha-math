@@ -223,7 +223,7 @@ async function buildPanel(svg, start, x = 110, base = 240, opt = {}) { let n = s
   const bar = document.createElement('div'); bar.className = 'choices icons build'; $('#stage').appendChild(bar);
   const mk = (k, ic, lbl, f) => { const b = document.createElement('button'); b.className = 'pick'; b.dataset.k = k; b.innerHTML = ic + `<span>${esc(G(labelText(lbl)))}</span>`; b.onclick = f && (() => { if (bar.querySelector('.reading')) { hush(); bar.querySelectorAll('.reading').forEach(x => x.classList.remove('reading')); } f(); }); bar.appendChild(b); return b; };   /* أول لمسة تُسكت قراءة الخيارات */
   mk('plus', ICON.plus.replace('<svg', '<svg width="34" height="34"'), 'addCube', () => { if (n >= 10) return; n++; redraw(); SFX.pop(); if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); });
-  mk('minus', ICON.minus.replace('<svg', '<svg width="34" height="34"'), 'removeCube', () => { if (n <= 0) return; n--; redraw(); SFX.soft(); });
+  mk('minus', ICON.minus.replace('<svg', '<svg width="34" height="34"'), 'removeCube', () => { if (n <= 0) return; n--; redraw(); SFX.soft(); if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); });   /* و«أبعد» تنطق العدد الجديد كـ«أضف»، فآخر عددٍ يُسمع عددُ البرج (الألعاب، 15 نوفمبر: بعد ثلاث إضافات وإبعادٍ سُمع «ستة» والبرج خمسة) */
   const done = mk('done', ICON.check.replace('<svg', '<svg width="34" height="34"'), 'done', null);
   /* «أضف» و«أبعد» تُقرآن بعد السؤال، وكلٌّ يضيء حين يُقرأ (D254 (2)): السؤال لا يسمّيهما */
   const readOpts = intro => readChoices([['plus', 'gen.opt.addCube'], ['minus', 'gen.opt.removeCube']].map(([k, id]) => ({ line: lineOf(id), el: bar.querySelector(`[data-k="${k}"]`) })), { intro, host: bar });   /* «أعد الجملة» يعيد السؤال ثم الخيارين */
@@ -313,12 +313,16 @@ ITEM.remove = { ...numItem,
   async together() {}, async reveal(item, r) { markNum(r, item.want, 'ok'); await readSentence(item.a, '-', item.b, item.want); },
   twin(item) { return { ...item.spec, b: Math.max(1, Math.min(item.spec.a - 1, item.spec.b + (rand() < .5 ? -1 : 1))) }; },
 };
+/* رأس سهمٍ عند (x, y) متّجهٍ مع (dx, dy): مثلّث بلونه */
+function arrowTip(svg, x, y, dx, dy, col) { const l = Math.hypot(dx, dy) || 1, ux = dx / l, uy = dy / l, s = 13, w = s * .62;
+  return el('path', { d: `M${x} ${y} L${(x - ux * s - uy * w).toFixed(1)} ${(y - uy * s + ux * w).toFixed(1)} L${(x - ux * s + uy * w).toFixed(1)} ${(y - uy * s - ux * w).toFixed(1)}Z`, fill: col, 'data-arrowhead': 1, 'pointer-events': 'none' }, svg); }
 /* اختيار الجملة العددية لصورة (ضمّ أو إبعاد) من بطاقتين تُقرآن */
 ITEM.sentence = {
   make(spec) { const c = spec.op === '+' ? spec.a + spec.b : spec.a - spec.b; return { ...spec, tag: 'sentence', want: spec.op, c }; },
   async ask(item, mode, tries) { const svg = newStage(220, { oasis: false, ground: 14 }); const A = towerAt(svg, 180, 200, item.a, { size: 20, color: CUBE.lemon });
-    if (item.op === '+') { const B = towerAt(svg, 70, 200, item.b, { size: 20, color: CUBE.white }); el('path', { d: 'M100 120 q30 -30 50 0', fill: 'none', stroke: css('--compass'), 'stroke-width': 4, 'marker-end': '' }, svg); }
-    else { A.cubes.slice(item.a - item.b).forEach(c => c.setAttribute('opacity', .3)); el('path', { d: 'M230 80 q40 -10 60 20', fill: 'none', stroke: css('--think'), 'stroke-width': 4 }, svg); }
+    /* السهم برأسه: التلميح يقول «انظر إلى السهم»، وكان قوساً بلا رأس فلا تُعرف جهته (الألعاب، 15 نوفمبر) */
+    if (item.op === '+') { const B = towerAt(svg, 70, 200, item.b, { size: 20, color: CUBE.white }); el('path', { d: 'M100 120 q30 -30 50 0', fill: 'none', stroke: css('--compass'), 'stroke-width': 4 }, svg); arrowTip(svg, 152, 123, 20, 30, css('--compass')); }
+    else { A.cubes.slice(item.a - item.b).forEach(c => c.setAttribute('opacity', .3)); el('path', { d: 'M230 80 q40 -10 60 20', fill: 'none', stroke: css('--think'), 'stroke-width': 4 }, svg); arrowTip(svg, 292, 103, 20, 30, css('--think')); }
     await S(tries >= 3 ? 'gen.sentence.together' : 'gen.sentence.ask');
     const plus = { a: item.a, b: item.b, c: item.a + item.b }, minus = { a: item.a, b: item.b, c: item.a - item.b };
     const box = document.createElement('div'); box.className = 'choices cards sentences'; $('#stage').appendChild(box);
@@ -400,17 +404,40 @@ ITEM.fact = { ...numItem,
   async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */
   async reveal(item, r) { markNum(r, item.want, 'ok'); await readSentence(item.a, item.op, item.b, item.want); }, twin(item) { return item.twin || null; },
 };
-/* ⑩ قصص الواحة (مراجعة اليوم): القصة مسموعة، ويمثّلها الطفل بالمكعبات، ثم «كم؟» والجملة العددية */
+/* ⑩ قصص الواحة (مراجعة اليوم): القصة مسموعة، ويمثّلها الطفل بالمكعبات، ثم «كم؟» والجملة العددية.
+   (قرارات فراس في 15 نوفمبر بعد تجربته الألعاب) القصة باقية في الفقاعة حتى الجواب، وعدداها رقمان على المسرح بلا «+» ولا «−»: كانت التعليمة تمحوها فلا يرى الطفل ما يجمع.
+   ولا يُسأل «كم معنا الآن؟» إلا وبرجه يطابق القصة، فجوابه ما يراه: كانت «تمّ» تقبل أيّ برج ثم يُحكم بالقصة (بنى أربعة واختارها فقيل خطأ).
+   وخطأ البناء يُصلَح على البرج نفسه: «لا يطابق القصة بعد» وتُعاد، ثم تلميحها وتُعاد، ثم نمثّلها معاً؛ ويُحسب محاولةً (slip) فلا يكون البند من أول محاولة.
+   وبعد خطأ العدّ يبقى البرج مبنياً كما في القصة (الليموني ما كان، والأبيض ما جاء) */
 ITEM.story = { ...numItem,
   make(spec) { return { ...spec, tag: 'story', want: spec.op === '+' ? spec.a + spec.b : spec.a - spec.b }; },
   async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 14 });
-    await S(item.line); const bp = await buildPanel(svg, item.a, 180); await S(item.op === '+' ? 'gen.story.add' : 'gen.story.remove');
-    AUTO({ kind: 'story', ok: () => { bp.n = item.want; bp.done.click(); } });
-    await gate(new Promise(res => bp.done.onclick = () => { AUTO_CLEAR(); hush(); bp.bar.remove(); res(); }));
-    await S('gen.story.ask'); const np = numberPick(nearNums(item.want), item.want, { intro: [lineOf(item.line), lineOf('gen.story.ask')] }); return { ans: await np.p, ctx: { svg, np, T: bp.tower() } }; },
+    for (const [x, n] of [[312, item.a], [48, item.b]]) digitCard(svg, x, 50, n, { size: .8 }).dataset.storyNum = n;   /* الأول على اليمين كما يُقرأ */
+    const askCount = async T => { await S('gen.story.ask', { append: true });   /* السؤال بعد القصة في الفقاعة */
+      const np = numberPick(nearNums(item.want), item.want, { intro: [lineOf(item.line), [...lineOf('gen.story.ask'), { append: true }]] }); return { ans: await np.p, ctx: { svg, np, T } }; };
+    if (tries) { const T = towerAt(svg, 180, 240, item.want, { size: 26, colors: Array.from({ length: item.want }, (_, i) => item.op === '+' && i >= item.a ? CUBE.white : CUBE.lemon) }); await S(item.line);
+      /* الحلّ المشترك (المستوى 3) على برج هذه المحاولة: نعدّ معاً ونقف قبل الأخير */
+      if (tries >= 3) { await S('gen.count.together'); (await badgeCount(svg, zig(Array.from({ length: item.want - 1 }, (_, i) => ({ x: T.x + 26, y: T.baseY - T.size * .62 - i * T.step }))))).dataset.help = 1; await S(item.line); }
+      return askCount(T); }
+    await S(item.line); const bp = await buildPanel(svg, item.a, 180); await S(item.op === '+' ? 'gen.story.add' : 'gen.story.remove', { keep: true });   /* التعليمة تُسمع، والقصة باقية في الفقاعة */
+    const dir = item.op === '+' ? 1 : -1; let slips = 0;
+    while (true) {
+      AUTO({ kind: 'story', ok: () => { bp.n = item.want; bp.done.click(); } });
+      const n = await gate(new Promise(res => bp.done.onclick = () => { AUTO_CLEAR(); hush(); res(bp.n); }));
+      if (n === item.want) break;
+      slips++; SFX.soft();
+      if (slips < 3) { await S(slips === 1 ? 'gen.story.notYet' : item.op === '+' ? 'gen.story.hintAdd' : 'gen.story.hintRemove'); await S(item.line); continue; }
+      /* الثالثة: نمثّلها معاً من أول القصة، وفرجار يضيف أو يبعد وهو يعدّ */
+      bp.bar.style.pointerEvents = 'none'; await S('gen.story.together'); bp.n = item.a; await sleep(FAST ? 30 : 500);
+      for (let k = item.a + dir; k !== item.want + dir; k += dir) { bp.n = k; if (dir > 0) SFX.pop(); else SFX.soft(); await S(numw(k), { num: true, noGap: true }); await sleep(FAST ? 20 : 250); }
+      await S(item.line); break; }
+    bp.bar.remove(); const r = await askCount(bp.tower()); if (slips) r.slip = true; return r; },
   judge(item, ans) { return ans === item.want ? { ok: true } : { ok: false, err: item.op === '+' ? 'joinCount' : 'removeCount' }; },
   async onOk(item, r) { SFX.good(); markNum(r, r.ans, 'ok'); sentenceAt(r.ctx.svg, 180, 40, item.a, item.op, item.b, item.want); await readSentence(item.a, item.op, item.b, item.want); },
-  async hint2(item) { await S(item.op === '+' ? 'gen.story.hintAdd' : 'gen.story.hintRemove'); }, async together() {},
+  /* المستوى 2 على البرج المطابق: في الضمّ نبدأ من العدد الأول ونعدّ ما جاء، وفي الإبعاد نعدّ ما بقي */
+  async hint2(item, r) { const T = r.ctx.T; if (item.op === '+') { await S(numw(item.a), { noGap: true }); await badgeCount(r.ctx.svg, zig(Array.from({ length: item.b }, (_, i) => ({ x: T.x + 34, y: T.baseY - T.size * .62 - (item.a + i) * T.step }))), css('--square'), item.a + 1); }
+    else await badgeCount(r.ctx.svg, zig(Array.from({ length: item.want }, (_, i) => ({ x: T.x + 34, y: T.baseY - T.size * .62 - i * T.step }))), css('--square')); },
+  async together() {},   /* في ask عند المحاولة الرابعة (tries >= 3) */
   async reveal(item, r) { markNum(r, item.want, 'ok'); sentenceAt(r.ctx.svg, 180, 40, item.a, item.op, item.b, item.want); await readSentence(item.a, item.op, item.b, item.want); }, twin(item) { return item.twin || null; },
 };
 /* مجموعتان، إحداهما متباعدة (N002): أيّهما أكثر؟ أم متساويتان؟ */

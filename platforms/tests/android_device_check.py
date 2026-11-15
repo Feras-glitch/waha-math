@@ -1,6 +1,6 @@
 # فحص APK على جهاز أندرويد افتراضي (يشغّله build-all.yml بـ android-emulator-runner على هاتف وتابلت):
 # يُثبَّت التطبيق ويُفتح، ثم يُسار فيه كالطفل عبر أدوات المطوّر في WebView (نسخة الفحص debuggable وحدها):
-# الترحيب، وملف الطفل، والشاشة الرئيسية، وأول درس، وزر الرجوع الحقيقي (غطاء الخروج ثم «نبقى»)؛ مع لقطات شاشة.
+# الترحيب، وملف الطفل، والشاشة الرئيسية، وأول درس، وزر الرجوع الحقيقي (غطاء الخروج ثم «نبقى»)، وانهيار المُرسِم (C-23: يعود التطبيق إلى الخريطة)؛ مع لقطات شاشة.
 # الاستعمال: python3 platforms/tests/android_device_check.py <apk> <مجلد اللقطات>
 import json, os, subprocess, sys, time, traceback, urllib.request
 import websocket
@@ -133,8 +133,37 @@ def main():
     res['back_stay'] = wait("document.getElementById('exitCover').hidden && !document.getElementById('lesson').hidden", 10)
     res['size'] = ev("[innerWidth, innerHeight, devicePixelRatio]")
     res['errors'] = ev('__errs')
+    # C-23: انهيار مُرسِم WebView (نفاد ذاكرة أو خلل فيه) لا يُغلق التطبيق: onRenderProcessGone يُتلف WebView ويعيد إنشاء النشاط بصفحة جديدة،
+    # وعمليّة التطبيق نفسها باقية، والطفل وتقدّمه باقيان فتفتح الخريطة. (Page.crash من أدوات المطوّر يُسقط المُرسِم وحده: WebView في عمليّة منفصلة منذ أندرويد 8)
+    pid0 = adb('shell', 'pidof', PKG, check=False).strip()
+    ev("localStorage.setItem('hp_c23', '1'); 1"); time.sleep(0.5)
+    n[0] += 1; ws.send(json.dumps({'id': n[0], 'method': 'Page.crash'}))
+    try:
+        ws.close()
+    except Exception:
+        pass
+    ws = None; time.sleep(3)
+    page2 = None
+    for _ in range(60):
+        try:
+            page2 = next((t for t in json.load(urllib.request.urlopen('http://127.0.0.1:9222/json')) if t.get('type') == 'page' and 'index.html' in t.get('url', '') and t.get('id') != page.get('id')), None)
+        except Exception:
+            page2 = None
+        if page2:
+            break
+        time.sleep(1)
+    pid1 = adb('shell', 'pidof', PKG, check=False).strip()
+    res['crash_same_process'] = bool(pid0) and pid1 == pid0
+    res['crash_new_page'] = bool(page2)
+    if page2:
+        ws = websocket.create_connection(page2['webSocketDebuggerUrl'], suppress_origin=True, timeout=60)
+        ev("window.__errs = []; addEventListener('error', e => __errs.push(String(e.message))); addEventListener('unhandledrejection', e => __errs.push(String(e.reason))); 1")
+        res['crash_kept'] = ev("localStorage.getItem('hp_c23') === '1' && JSON.parse(localStorage.getItem('hp_kids') || '[]').length === 1")
+        res['crash_home'] = wait("!document.getElementById('home').hidden && document.querySelectorAll('.stop[data-lesson]').length >= 27", 40)
+        time.sleep(1); shot('05_after_render_crash')
+        res['errors'] = (res.get('errors') or []) + (ev('__errs') or [])
     print(json.dumps({k: v for k, v in res.items() if k != 'mem'}, ensure_ascii=False, indent=1))
-    need = ['installed', 'start', 'shim', 'home', 'bag', 'scene', 'back_cover', 'back_stay']
+    need = ['installed', 'start', 'shim', 'home', 'bag', 'scene', 'back_cover', 'back_stay', 'crash_same_process', 'crash_new_page', 'crash_kept', 'crash_home']
     bad = [k for k in need if not res.get(k)] + (['errors'] if res.get('errors') else [])
     print('::notice::محرك النطق في الجهاز الافتراضي: %s' % {0: 'يُجهَّز', 1: 'صوت عربي', 2: 'لا صوت عربي (تُقرأ الجمل صامتة)'}.get(res.get('tts'), res.get('tts')))
     print(('::error::أخفق: ' + ', '.join(bad)) if bad else '::notice::التطبيق يعمل على الجهاز الافتراضي')

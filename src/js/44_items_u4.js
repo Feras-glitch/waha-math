@@ -131,7 +131,16 @@ ITEM.orderBy = {
 ITEM.sizePick = {
   make(spec) { const v = spec.ask === 'small' ? Math.min(...spec.vals) : Math.max(...spec.vals); return { ...spec, tag: 'size-' + (spec.ask || 'big'), want: spec.vals.indexOf(v) }; },
   async ask(item, mode, tries) { const svg = newStage(250, { oasis: false, ground: 0 }); const T = sizeRow(svg, { ...item, colors: item.colors || item.vals.map(() => NEUTRAL[item.color ?? 1]) });
-    if (tries >= 3) { const m = helpG(svg); T.forEach(t => el('line', { x1: 14, y1: SIZE_FLOOR - 2 * t.r, x2: 346, y2: SIZE_FLOOR - 2 * t.r, stroke: css('--compass'), 'stroke-width': 2.5, 'stroke-dasharray': '4 5' }, m)); }
+    /* الحلّ المشترك بالتطابق لا بالارتفاع (مراجعة الخصم M-03: خطٌّ عند أعلى كلٍّ جعل «الأكبر» «الأعلى»): يُرسم حدّ الأصغر فوق الأكبر في موضعه،
+       فيُرى الأكبر يزيد عليه من كل جهة. «أكبر»: حدود الباقية فوق الكبرى؛ «أصغر»: حدّ الصغرى فوق كل واحدة */
+    if (tries >= 3) { const m = helpG(svg), big = item.ask !== 'small', W = T[item.want];
+      /* حدٌّ واحد لكل شيء (لا خطوطه الداخلية)، أبيض متقطّع فوق خطٍّ داكن: يُرى على أيّ لون */
+      const ghost = (r, host) => { const cy = SIZE_FLOOR - host.r;
+        const edge = (stroke, w, dash) => { const g = (item.kind === 'box') ? sizeThingAt(m, 'box', r, host.x, cy, 'none') : el('circle', { cx: host.x, cy, r }, m);
+          [g, ...g.querySelectorAll('*')].forEach(e => { if (e.tagName === 'g') return; e.removeAttribute('filter'); e.setAttribute('fill', 'none'); e.setAttribute('stroke', stroke); e.setAttribute('stroke-width', w); if (dash) e.setAttribute('stroke-dasharray', dash); else e.removeAttribute('stroke-dasharray'); });
+          if (item.kind !== 'box') g.setAttribute('data-size', r); return g; };
+        edge(css('--ink'), 5); edge('#fff', 2.5, '6 4'); };
+      T.forEach(t => { if (t === W) return; if (big) ghost(t.r, W); else ghost(W.r, t); }); }
     say(...lineOf(tries >= 3 ? 'gen.size.together.' + (item.ask || 'big') + SIZE_G(item) : item.q), { free: true });
     const k = await tapOne(T.map(t => ({ g: t.g, k: t.k, label: t.label })), { ok: item.want, pad: 56 }); hush(); return { ans: k, ctx: { svg, T } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'sizeWrong' }; },
@@ -568,7 +577,8 @@ ITEM.framePaint = {
 ITEM.frameGlance = { ...numItem,
   make(spec) { return { ...spec, tag: 'fglance', want: spec.n }; },
   async ask(item, mode, tries) { const svg = newStage(230, { oasis: false, ground: 0 }); const F = frameAt(svg, 180, 104); F.fill(item.n, CUBE.lemon);
-    if (tries >= 3) { await S('gen.fglance.together'); const h = helpG(svg); el('path', { d: `M${F.cx + 112} 76 h-224`, stroke: css('--compass'), 'stroke-width': 3 }, h); label(h, 180, 40, labelText('fiveRow'), 15, css('--compass')); }
+    /* «الصف الأعلى خمسة» إن كان فيه خمسٌ فعلاً، وإلا فالقطع كلها في الصف الأعلى (مراجعة الخصم M-02: كانت «خمسة» تُقال وتُكتب فوق ثلاث قطع) */
+    if (tries >= 3) { const full = item.n >= 5; await S(full ? 'gen.fglance.together' : 'gen.fglance.togetherTop'); const h = helpG(svg); el('path', { d: `M${F.cx + 112} 76 h-224`, stroke: css('--compass'), 'stroke-width': 3 }, h); if (full) label(h, 180, 40, labelText('fiveRow'), 15, css('--compass')); }
     let eye = null; if (tries < 3) { await S('gen.fglance.look'); await gate(psleep(FAST ? 150 : 1400));   /* مدّة اللمحة تقف مع الدرس (الفحص المستقل G2 (4)) */ const cover = el('rect', { x: 60, y: 46, width: 240, height: 116, rx: 16, fill: css('--paper'), stroke: css('--line'), 'stroke-width': 3 }, svg);
       eye = glanceEye(svg, cover, 180, 104, mode, 'fglance'); }
     await S('gen.fglance.ask'); const np = numberPick(nearNums(item.n, 10, 1), item.n); const ans = await np.p; if (eye) eye.off(); return { ans, ctx: { svg, F, np } }; },
@@ -580,6 +590,10 @@ ITEM.frameGlance = { ...numItem,
 /* ================= ⑭ نكوّن العشرة أولاً (N012) ================= */
 /* a في الإطار، وb خارجه؛ يلمس الطفل ما في الخارج فيدخل الإطار حتى يمتلئ، ثم: ask = total (كم صار؟) | moved (كم أخذت لتكمل العشرة؟). story: جملة القصة */
 const OUT_Y = 196;
+/* حين يمتلئ الإطار تومض القطع الزرقاء كلها معاً، ما دخله وما بقي خارجه: هي العدد الثاني كله (قرار فراس في 15 نوفمبر:
+   «سبعة وأحضرنا ستة» ثم سبع صفراء وثلاث زرقاء في الإطار، فظُنّ أن الست لم تُرسم) */
+function flashSecond(svg) { const ks = [...svg.querySelectorAll('[data-counter]')].filter(k => k.querySelector('circle').getAttribute('fill') === COUNTER2); ks.forEach(k => k.dataset.flash = 1);
+  return Promise.all(ks.map(k => anim(k, [{ opacity: 1 }, { opacity: .3 }, { opacity: 1 }], { duration: FAST ? 40 : 560, iterations: 2 }).done)); }
 /* خيارات ثلاثة: الجواب، وخطأٌ شائع بعينه إن كان غيره (العشرة وحدها، أو ما أُخذ كله…)، وجارٌ للجواب */
 const optsWith = (n, errs = [], max = 20) => { const s = new Set([n]); for (const e of errs) if (s.size < 2 && e !== n && e >= 0 && e <= max && avoidOk(e)) s.add(e); for (const d of [...shuffle([1, -1, 2]), ...shuffle([-2, 3])]) { if (s.size >= 3) break; if (n + d >= 1 && n + d <= max && avoidOk(n + d)) s.add(n + d); } return shuffle([...fillOpts(s, n, 1, max)]); };
 ITEM.makeTen = { ...numItem,
@@ -592,13 +606,15 @@ ITEM.makeTen = { ...numItem,
     if (tries >= 3) { out.slice(0, need).forEach(move); const h = helpG(svg); label(h, 180, 156, labelText('tenWord'), 17, css('--compass'));
       if ((item.ask || 'total') === 'moved') for (let j = 0; j < need - 1; j++) { const p = F.pos(item.a + j); badge(h, p.x, p.y, j + 1); }
       else out.slice(need, -1).forEach((o, j) => badge(h, o.x, o.y + 32, 11 + j)); }   /* الشارات تحت القطع: فوقها كانت تغطّي كلمة «عشرة» (الفحص المستقل B لبوابة S1-U4) */
-    else { say(...lineOf('gen.makeTen.fill'), { free: true });
+    /* والقصة باقية في الفقاعة حتى الجواب: ما بعدها يُسمع ولا يمحوها (قرارات فراس في 15 نوفمبر: كانت «أكمل الإطار» تمحو «سبعة مشابك وأحضرنا ستة») */
+    else { say(...lineOf('gen.makeTen.fill'), { free: true, keep: !!item.story });
       await gate(new Promise(res => { let moved = 0; out.forEach(o => { o.g.style.cursor = 'pointer'; o.g.setAttribute('role', 'button'); o.g.setAttribute('tabindex', 0); o.g.setAttribute('aria-label', plain(labelText('counterOne'))); hitPad(o.g, 56); o.g.dataset.move = 1; o.g.dataset.twin = 'out';   /* القطع خارج الإطار سواء: أيّها لُمس دخل */
           const act = () => { if (moved >= need) return; if (move(o)) { moved++; hush(); if (moved === need) { AUTO_CLEAR(); setTimeout(res, FAST ? 30 : 400); } } }; o.g.onclick = act; o.g.onkeydown = e => { if (actKey(e)) act(); }; });
         AUTO({ kind: 'frameMove', ok: () => { out.filter(o => !o.inF).slice(0, need - F.count() + item.a).forEach(o => o.g.dispatchEvent(new MouseEvent('click', { bubbles: true }))); } }); }));
-      untarget(out.map(o => o.g)); logAttempt({ scene: 'explore', tag: 'makeTen-fill', ok: true }); await S('gen.makeTen.full'); }
-    const q = (item.ask || 'total') === 'moved' ? (tries >= 3 ? 'gen.makeTen.togetherMoved' : item.q) : (tries >= 3 ? 'gen.makeTen.together' : 'gen.makeTen.ask'); await S(q);
-    const np = numberPick((item.ask || 'total') === 'moved' ? optsWith(need, [item.b]) : optsWith(item.a + item.b, [10]), item.want, { intro: [...(item.story ? [lineOf(item.story)] : []), lineOf(q)] }); return { ans: await np.p, ctx: { svg, F, out, np } }; },
+      untarget(out.map(o => o.g)); logAttempt({ scene: 'explore', tag: 'makeTen-fill', ok: true }); await Promise.all([flashSecond(svg), S('gen.makeTen.full', { keep: !!item.story })]); }
+    const q = (item.ask || 'total') === 'moved' ? (tries >= 3 ? 'gen.makeTen.togetherMoved' : item.q) : (tries >= 3 ? 'gen.makeTen.together' : 'gen.makeTen.ask'); const keepQ = !!item.story && (item.ask || 'total') === 'total';   /* القصة تنتهي بسؤالها «كم صارت؟» */
+    await S(q, { keep: keepQ });
+    const np = numberPick((item.ask || 'total') === 'moved' ? optsWith(need, [item.b]) : optsWith(item.a + item.b, [10]), item.want, { intro: [...(item.story ? [lineOf(item.story)] : []), keepQ ? [...lineOf(q), { keep: true }] : lineOf(q)] }); return { ans: await np.p, ctx: { svg, F, out, np } }; },
   judge(item, k) { if (k === item.want) return { ok: true }; if ((item.ask || 'total') === 'moved') return { ok: false, err: k === item.b ? 'movedAll' : 'movedWrong' }; return { ok: false, err: k === 10 ? 'tenOnly' : 'tenJoin' }; },
   /* حركة الأداة: «عشرة» على الإطار الممتلئ، ثم نعدّ ما بقي خارجه بعدها؛ وفي «كم أخذت؟» تومض القطع التي دخلت الإطار من الخارج، بلا عدّ */
   async hint2(item, r) { const m = el('g', { 'pointer-events': 'none' }, r.ctx.svg);
@@ -620,16 +636,17 @@ ITEM.backTen = { ...numItem,
     if (tries >= 3) { const h = helpG(svg); out.forEach(o => { o.done = true; h.appendChild(cross(o.g)); }); taken = r0; label(h, 180, 156, labelText('tenWord'), 17, css('--compass')); }
     const all = [...out.map(o => ({ g: o.g, o })), ...F.slots.map((g, i) => ({ g, i })).reverse()];
     /* وبعد الحلّ المشترك (ما خارج الإطار مشطوب) يُطلب الباقي من الإطار بعدده (الفحص المستقل D1 لبوابة S1-U4: كان «أبعد خمسة، ابدأ بالتي خارج الإطار» ولا شيء خارجه) */
-    if (tries >= 3) await S('gen.backTen.together'); const left = item.b - (tries >= 3 ? r0 : 0);
+    const keep = item.story ? { keep: true } : {};   /* والقصة باقية في الفقاعة حتى الجواب (قرارات فراس في 15 نوفمبر) */
+    if (tries >= 3) await S('gen.backTen.together', keep); const left = item.b - (tries >= 3 ? r0 : 0);
     /* والواحدة والاثنتان بلفظهما: «أَبْعِدْ قِطْعَةً وَاحِدَةً» لا «قِطَعًا عَدَدُهَا وَاحِد» (الفحص المستقل E1 (7): الباقي واحد في توأمي 17−8 و13−4) */
     const takeN = n => n === 1 ? [lineOf('gen.backTen.takeOne')] : n === 2 ? [lineOf('gen.backTen.takeTwo')] : [lineOf('gen.backTen.take'), [...lineOf(numw(n)), { append: true }]];
     const intro = item.q ? [lineOf(item.q)] : tries >= 3 ? (left > 0 ? [...takeN(left), [...lineOf('gen.backTen.fromFrame'), { append: true }]] : [])
-      : [...takeN(item.b), [...lineOf('gen.backTen.first'), { append: true }]];
-    for (const l of intro) await say(l[0], l[1], l[2], l[3] || {});
+      : [...takeN(item.b), [...lineOf('gen.backTen.first'), { append: true, sep: '. ' }]];   /* «ابدأ…» جملة جديدة بعد العدد: «عددها ستة. ابدئي…» لا «ستة ابدئي» */
+    for (const l of intro) await say(l[0], l[1], l[2], { ...(l[3] || {}), ...keep });
     await gate(new Promise(res => { all.forEach(t => { if (t.o && t.o.done) return; t.g.style.cursor = 'pointer'; t.g.setAttribute('role', 'button'); t.g.setAttribute('tabindex', 0); t.g.setAttribute('aria-label', plain(labelText('counterOne'))); hitPad(t.g, 52); t.g.dataset.take = 1; t.g.dataset.twin = t.o ? 'out' : 'in';   /* ما خارج الإطار سواء، وما فيه سواء */
         const act = () => { if (t.done || taken >= item.b) return; t.done = true; cross(t.g); taken++; SFX.soft(); hush(); if (taken === item.b) { AUTO_CLEAR(); setTimeout(res, FAST ? 30 : 400); } }; t.g.onclick = act; t.g.onkeydown = e => { if (actKey(e)) act(); }; });
       if (taken >= item.b) res(); AUTO({ kind: 'frameTake', ok: () => { all.filter(t => !t.done && !(t.o && t.o.done)).slice(0, item.b - taken).forEach(t => t.g.dispatchEvent(new MouseEvent('click', { bubbles: true }))); } }); }));
-    untarget(all.map(t => t.g)); await S('gen.backTen.ask'); const np = numberPick(nearNums(item.a - item.b, 10), item.a - item.b, { intro: [lineOf('gen.backTen.ask')] }); return { ans: await np.p, ctx: { svg, F, out, np } }; },
+    untarget(all.map(t => t.g)); await S('gen.backTen.ask', keep); const np = numberPick(nearNums(item.a - item.b, 10), item.a - item.b, { intro: item.story ? [lineOf(item.story), [...lineOf('gen.backTen.ask'), { keep: true }]] : [lineOf('gen.backTen.ask')] }); return { ans: await np.p, ctx: { svg, F, out, np } }; },
   judge(item, k) { return k === item.a - item.b ? { ok: true } : { ok: false, err: 'subTeen' }; },
   /* حركة الأداة: نُبعد ما خارج الإطار أولاً فنرجع إلى العشرة، ثم ما بقي من الإطار */
   async hint2(item, r) { const m = el('g', { 'pointer-events': 'none' }, r.ctx.svg); const r0 = item.a - 10; const F = r.ctx.F;

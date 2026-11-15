@@ -272,7 +272,7 @@ CONTENT = [
   # ومسألة «معي» بمفتاح d240، فلا تكون مسألة تقييم (الفحص المستقل G1 (3)): الأربع كما أدخلها إصلاح F1 (3)، و«معي» بلا مسائلها أو بعدد بلا مسألة
   ('«معي» د5 بمسألة الإتقان', '../u4/d5.json', lambda d: [line_rep('mat.01', 'أَرْبَعَةً مُنْفَرِدَةً', 'سِتَّةً مُنْفَرِدَةً')(d), line_rep('mat.02', 'عَشَرَةٌ وَأَرْبَعَةٌ: أَرْبَعَةَ عَشَرَ. ', '')(d), d['flow'][1]['mat'].update(facts=[{'of': 'rodCount', 'n': 16}])], 'إتقان N010[0]: المسألة نفسها (teen|read|16) في «معي»'),
   ('«معي» د7 بمسألة الاختبار', '../u4/d7.json', lambda d: [line_rep('mat.01', 'تِسْعَ قِطَعٍ', 'سَبْعَ قِطَعٍ')(d), d['flow'][1]['mat'].update(facts=[{'of': 'makeTen', 'a': 7, 'b': 7}])], 'الاختبار t12: المسألة نفسها (add|7,7) في «معي»'),
-  ('«معي» S1-U2 د3 بمسألة الاختبار', '../u2/d3.json', lambda d: [line_rep('mat.01', 'مِنْ ثَلَاثَةِ مُكَعَّبَاتٍ، وَبُرْجًا مِنِ اثْنَيْنِ', 'مِنْ أَرْبَعَةِ مُكَعَّبَاتٍ، وَبُرْجًا مِنْ ثَلَاثَةٍ')(d), d['flow'][1]['mat'].update(facts=[{'of': 'compare', 'a': 4, 'b': 3}])], 'الاختبار t9: المسألة نفسها (compare|3,4) في «معي»'),
+  ('«معي» S1-U2 د3 بمسألة الاختبار', '../u2/d3.json', lambda d: [line_rep('mat.01', 'مِنْ ثَلَاثَةِ مُكَعَّبَاتٍ، وَبُرْجًا مِنِ اثْنَيْنِ', 'مِنْ ثَلَاثَةِ مُكَعَّبَاتٍ، وَبُرْجًا مِنْ ثَلَاثَةٍ')(d), d['flow'][1]['mat'].update(facts=[{'of': 'compare', 'a': 3, 'b': 3}])], 'الاختبار t9: المسألة نفسها (compare|3,3) في «معي»'),   # t9 صار 3 و3 (M-10)
   ('«معي» S1-U1 د5 بمسألة المراجعة', '../u1/d5.json', lambda d: [line_rep('mat.01', 'رَقْمَ أَرْبَعَةٍ، ثُمَّ رَقْمَ سَبْعَة', 'رَقْمَ اثْنَيْنِ، ثُمَّ رَقْمَ أَرْبَعَة')(d), d['flow'][3]['mat'].update(facts=[{'of': 'trace', 'n': 2}, {'of': 'trace', 'n': 4}])], 'المراجعة[1]: المسألة نفسها (trace|2) في «معي»'),
   ('«معي» بلا مسائلها', '../u4/d5.json', lambda d: d['flow'][1]['mat'].pop('facts'), '«معي» mat.01 فيها 4، 14 بلا mat.facts'),
   ('«معي» بعدد بلا مسألة', '../u4/d7.json', lambda d: d['flow'][1]['mat'].update(facts=[]), '«معي» mat.01 تقول 9، 7، 16، 6 ولا مسألة لها في mat.facts'),
@@ -357,7 +357,7 @@ CONTENT = [
    '«أيّها أطول/أقصر؟» (3 خيارات) في تقييم الوحدة: الجواب في الموضع 3 في 4 من 5'),
   ('مراجعة N004 كما كانت (S1-U2 د3)', '../u2/d3.json', lambda d: d['review'][0].update(a=5, b=2), 'الشيئان يميناً ويساراً (cmpDigits، compare) في مراجعة N004: صاحب الصفة في الموضع 1 في 2 من 2'),   # compare وcmpDigits في عائلة H2
   ('«أيّ العددين أكبر؟» في التمرين كما كان (S1-U2 د3)', '../u2/d3.json', lambda d: d['practice']['normal'][3].update(a=3, b=8), '«أيّ العددين أكبر؟» في التمرين العادي: الأكبر في الموضع 2 في 2 من 2'),
-  ('التحدّي كما كان (S1-U2 د3)', '../u2/d3.json', lambda d: [d['practice']['challenge'][0].pop('ask'), d['practice']['challenge'][1].update(a=9, b=6)], 'الشيئان يميناً ويساراً (compare، cmpDigits) في التحدّي: صاحب الصفة في الموضع 1 في 3 من 4'),
+  ('التحدّي كما كان (S1-U2 د3)', '../u2/d3.json', lambda d: [d['practice']['challenge'][0].pop('ask'), d['practice']['challenge'][1].update(a=9, b=6)], 'الشيئان يميناً ويساراً (compare، cmpDigits) في التحدّي: صاحب الصفة في الموضع 1 في 3 من 3'),   # والرابع صار متساوياً بلا صاحب صفة (M-10)
   ('إتقان N004 كما كان (S1-U2 د3)', '../u2/d3.json', lambda d: d['mastery']['concepts']['N004'][2].update(a=4, b=7), 'في إتقان N004: الجواب في الموضع 2 في 2 من 2'),
   ('«تحت» قبل «فوق» كما كانت (S1-U3 د1 rv.1)', '../u3/d1.json', lambda d: [d['review'][0].update(words=['under', 'on']), line_rep('rv.1', 'فَوْقَ الكُرْسِيِّ، أَمْ تَحْتَهُ', 'تَحْتَ الكُرْسِيِّ، أَمْ فَوْقَهُ')(d)],
    '«أين هو؟» في تقييم الوحدة: الجواب في الموضع 1 في 3 من 4'),
@@ -373,7 +373,7 @@ CONTENT = [
   ('«الِاثْنُيْنِ» بكسرة اللام', '../../errors.json', deep_rep('قِسْنَا الِاثْنَيْنِ', 'قِسْنَا الِاثْنُيْنِ'), 'حركة «ن» غير ما في المعجم (اثنين:'),   # I1 (6أ)
   ('«الِاسْتَرَاحَةِ» بكسرة اللام', '../../strings/gen.json', deep_rep('وَقْتُ الاسْتِرَاحَةِ', 'وَقْتُ الِاسْتَرَاحَةِ'), 'حركة «ت» غير ما في المعجم (استرا:'),
   ('«لِاسْتَرَاحَةٍ»', '../../strings/gen.json', deep_rep('وَقْتُ الاسْتِرَاحَةِ', 'وَقْتٌ لِاسْتَرَاحَةٍ'), 'حركة «ت» غير ما في المعجم (استرا:'),   # I1 (6ب)
-  ('أمر «أَرْسَلْ» بفتح السين', '../u1/d5.json', line_rep('mat.03', 'فِي عُلْبَةٍ سَبْعًا', 'فِي عُلْبَةٍ سَبْعًا، وَ{أَرْسَلْ|أَرْسِلِي} رِسَالَةً'), 'حركة «س» غير ما في المعجم (أرسل:'),   # I1 (6ج): IV لكل رباعيّ
+  ('أمر «أَرْكَبْ» بفتح الكاف', '../u1/d5.json', line_rep('mat.03', 'فِي عُلْبَةٍ سَبْعًا', 'فِي عُلْبَةٍ سَبْعًا، وَ{أَرْكَبْ|أَرْكِبِي} دُمْيَةً'), 'حركة «ك» غير ما في المعجم (أركب:'),   # كانت «أَرْسَلْ»: حُذف مفتاح «أرسل» حين خرجت «أرسلناه» من المحتوى (M-20، D266)   # I1 (6ج): IV لكل رباعيّ
   ('ماضٍ «أَدْخِلْنَا» بكسر الخاء', '../u1/d5.json', line_rep('mat.03', 'فِي عُلْبَةٍ سَبْعًا', 'فِي عُلْبَةٍ سَبْعًا، فَقَدْ أَدْخِلْنَا رِسَالَةً'), 'حركة «خ» غير ما في المعجم (أدخل:'),
   ('بند علاجٍ يجيبه ما تعلّمه الوحدة بسؤاله (د1)', '../u4/d1.json', lambda d: d['mastery']['remedial']['C015'].append({'t': 'lenPick', 'q': 'ms.1', 'lens': [138, 196], 'ask': 'long', 'kind': 'strip', 'twin': {'t': 'lenPick', 'q': 'ms.1', 'lens': [190, 158], 'ask': 'long', 'kind': 'strip'}}),
    'يجيبه ما تعلّمه الوحدة لـ2 بسؤال «أطول؟» (صفّ:أسفل)'),   # J1 (2): LEARNQ في الأبواب؛ وlint قبله يمرّ عليها بلا مخالفة
@@ -396,6 +396,17 @@ CONTENT = [
   ('«أطول ← الأسفل» في بنود «أطول؟» من المسار العادي (د1)', '../u4/d1.json', lambda d: [d['practice']['normal'].insert(2, {'t': 'lenPick', 'q': 'ms.1', 'lens': [176, 212], 'ask': 'long', 'kind': 'strip', 'twin': {'t': 'lenPick', 'q': 'ms.1', 'lens': [212, 170], 'ask': 'long', 'kind': 'strip'}}),
      d['practice']['normal'].insert(3, {'t': 'lenPick', 'q': 'pr.c3', 'lens': [150, 120, 190], 'ask': 'short', 'kind': 'strip', 'colors': ['#6c7fa8', '#8c8c6e', '#7e9a4e'], 'twin': {'t': 'lenPick', 'q': 'pr.c3', 'lens': [190, 150, 116], 'ask': 'short', 'kind': 'strip'}})],
    'قاعدة «صفّ:أسفل بالقسمة» تصيب 3 من 5 بنود الطول بسؤال «أطول؟» في المسار العادي'),   # J1 (2): بنود كل سؤالٍ في المسار؛ وlint قبله يمرّ عليها بلا مخالفة
+  # المراجعة بعين جديدة (13 نوفمبر 2026): ما أُصلح في المحتوى يُعاد كما كان فيُمسك برسالته
+  ('M-10 إتقان N004 كما كان (8 و8 بحجمٍ واحد)', '../u2/d3.json', lambda d: d['mastery']['concepts']['N004'][1].update(a=8, b=8, sa=24, sb=24), 'إتقان N004: بنود البرجين'),
+  ('M-10 الاختبار t9 كما كان (3 و4)', '../u2/d6.json', lambda d: test_item(d, 't9').update(b=4, sa=44, sb=22), 'الاختبار: بنود البرجين'),
+  ('M-24 ميزان من الصورة بـ«أخفّ؟»', '../u4/d2.json', lambda d: d['practice']['normal'][3].update(ask='light'), 'ميزان من الصورة «pr.4» بـ«أيّهما أخفّ؟»'),
+  ('U2 رقم قرار في «ما على الشاشة» كما كان', '../u4/d2.json', lambda d: d['bag'].__setitem__('screenPath', d['bag']['screenPath'] + ' (D252)'), 'رقم قرار في نصٍّ يُعرض'),  # القرار 6 (D266، 14 نوفمبر 2026): النصوص المعتمدة تُعاد كما كانت فيُمسك بها
+  ('M-05 تعليل المربع بلا الركن كما كان (u1/d6)', '../u1/d6.json', line_rep('why.sq', '، وَكُلُّ رُكْنٍ فِيهِ مِثْلُ رُكْنِ الوَرَقَةِ', ''), 'يصف المربع أو المستطيل بأضلاعه بلا الركن'),
+  ('M-05 المستطيل الواقف بلا الركن كما كان (u1/d3)', '../u1/d3.json', line_rep('ch.after', '، وَأَرْكَانُهُ مِثْلُ رُكْنِ الوَرَقَةِ', ''), 'يصف المربع أو المستطيل بأضلاعه بلا الركن'),
+  ('A-13 بطاقتا التعليل في u2/d1 كما كانتا', '../u2/d1.json', lambda d: [line_rep('ms.whyS3', 'صَغِيرَةٌ، وَنُمْسِكُهَا بِيَدٍ وَاحِدَةٍ', 'صَغِيرَةٌ فِي اليَدِ')(d), line_rep('ms.whyC2', 'ثَقِيلٌ عَلَى الأَرْضِ', 'ثَقِيلٌ')(d)], 'الصحيح أطول البطاقات وحده'),
+  ('A-12 بند «نعم» في الاختبار جوابه «لا»', '../u1/d6.json', lambda d: test_item(d, 't12').update(ans=False), 'كلها جوابها «لا»'),
+  ('M-16 «يملأ الكفّ» كما كانت في ح2 د4 (بتشكيلٍ آخر)', '../u2/d4.json', line_rep('why.solid', 'لَهُ سُمْكٌ، لَيْسَ رَقِيقًا كَالوَرَقِ.', 'يَمْلَأُ الكَفَّ، وَلَهُ سُمْكٌ.'), '«يملأ الكفّ» وصفاً للمجسّم'),
+  ('M-05 لغز المربع بلا الركن كما كان (u1/d6)', '../u1/d6.json', line_rep('gm.r2', '، وَكُلُّ رُكْنٍ فِيَّ مِثْلُ رُكْنِ الوَرَقَةِ', ''), 'يصف المربع أو المستطيل بأضلاعه بلا الركن'),
 ]
 def gtext(v): return v[1] if isinstance(v, list) else v
 GEN = [
@@ -514,6 +525,13 @@ CODE = [
   ('نغمة بعد await psleep في السطر التالي', 'src/js/45_scenes.js', "sleep(900).then(() => SFX.soft());", "(async () => { await psleep(900);\n    SFX.soft(); })();", 'ما يُسمع بعد psleep بلا البوابة'),
   # والمثنّى المرفوع المذكّر: المضارع ليس عدداً («هَلْ يَتَسَاوَيَانِ؟» في S1-U1 د3)
   ('المثنّى بلا استثناء المضارع', 'build/lint.mjs', " && !DUAL_V.has(b)", "", 'm1.u1.d3: «معي» mat.03 فيها 2 بلا mat.facts'),
+  # مراجعة الخصم C-01 (5 نوفمبر 2026): استدعاء طريقةٍ أُزيلت يوقف البناء
+  ('C-01 استدعاء IDB.clear الذي أُزيل', 'src/js/85_panel.js', "ph = await IDB.dropKid(KID);", "ph = await IDB.clear();", 'استدعاء IDB.clear() ولا طريقة بهذا الاسم في IDB'),
+  ('C-01 استدعاء طريقة غير معرّفة في store', 'src/js/85_panel.js', "const ok = [store.set(kk('hp_session'), SESSION),", "const ok = [store.put(kk('hp_session'), SESSION),", 'استدعاء store.put() ولا طريقة بهذا الاسم في store'),
+  # المراجعة بعين جديدة: رقم قرار في نصّ اللوحة (U2)؛ ونوع ملفٍ في قالب («image/*») كان يبدأ تعليقاً عند فحص المحتوى فيُخفي ما بعده إلى أول ختام تعليق
+  ('U2 رقم قرار في نصّ اللوحة كما كان', 'src/js/85_panel.js', 'وما لم يُسجَّل يقرؤه صوت الجهاز.</p>', 'وما لم يُسجَّل يقرؤه صوت الجهاز (D181).</p>', 'رقم قرار في نصٍّ يُعرض «(D181)»'),
+  ('مفتاح Enter بعد «image/*» في قالب', 'src/js/60_kids.js', "$('#pName').value = draft.name || '';", "$('#pName').value = draft.name || ''; document.addEventListener('keydown', e => { if (e.key === 'Enter') draft.name = ''; });", 'مفتاح Enter وحده في السطر'),
+  ('مفتاح Enter بعد «audio/*» في قالب', 'src/js/85_panel.js', "$('#closePanel').onclick = () => { $('#panel').hidden = true; showHome(); };", "$('#closePanel').onclick = () => { $('#panel').hidden = true; showHome(); }; document.addEventListener('keydown', e => { if (e.key === 'Enter') return; });", 'مفتاح Enter وحده في السطر'),
 ]
 # وكودٌ مشروع يجب أن يمرّ به فحص المحتوى (الفحص المستقل G2 (10): كانت قاعدة المفتاح تمنع «space-between» و«white-space» و«err.code» و«{ code } = d» و«it.key» و«enter» في نصّ)
 CODE_OK = [
@@ -534,7 +552,7 @@ CODE_OK = [
   ('«لِلْقَلَمَيْنِ» معرَّفاً', 'content/m1/u1/d5.json', "فِي عُلْبَةٍ سَبْعًا", "فِي عُلْبَةٍ سَبْعًا، وَلِلْقَلَمَيْنِ عُلْبَةٌ"),
   ('رباعيّ «{أَوْصِلْهُمَا|أَوْصِلِيهِمَا}»', 'content/m1/u1/d5.json', "فِي عُلْبَةٍ سَبْعًا", "فِي عُلْبَةٍ سَبْعًا، وَ{أَوْصِلْهُمَا|أَوْصِلِيهِمَا} مَعًا"),
   ('رباعيّ «{أَبْعِدْنَا|أَبْعِدِينَا}»', 'content/m1/u1/d5.json', "فِي عُلْبَةٍ سَبْعًا", "فِي عُلْبَةٍ سَبْعًا، وَ{أَبْعِدْنَا|أَبْعِدِينَا} قَلِيلًا"),
-  ('رباعيّ «{أَرْسِلْ|أَرْسِلِي}»', 'content/m1/u1/d5.json', "فِي عُلْبَةٍ سَبْعًا", "فِي عُلْبَةٍ سَبْعًا، وَ{أَرْسِلْ|أَرْسِلِي} رِسَالَةً"),
+  ('رباعيّ «{أَرْكِبْ|أَرْكِبِي}»', 'content/m1/u1/d5.json', "فِي عُلْبَةٍ سَبْعًا", "فِي عُلْبَةٍ سَبْعًا، وَ{أَرْكِبْ|أَرْكِبِي} دُمْيَةً"),   # (كانت «أَرْسِلْ»، M-20)
   ('رباعيّ ماضٍ «أَدْخَلْنَا»', 'content/m1/u1/d5.json', "فِي عُلْبَةٍ سَبْعًا", "فِي عُلْبَةٍ سَبْعًا، فَقَدْ أَدْخَلْنَا رِسَالَةً"),
   ('رباعيّ «{أَدْخِلِ|أَدْخِلِي}» قبل همزة وصل', 'content/m1/u1/d5.json', "فِي عُلْبَةٍ سَبْعًا", "فِي عُلْبَةٍ سَبْعًا، وَ{أَدْخِلِ|أَدْخِلِي} الرِّسَالَةَ"),   # كانت «أَنْزِلِ»: حُذف مفتاح «أنزل» (لا تبلغه كلمة بعد تصحيح «الكَفَّةُ الأَنْزَلُ»، J1 (6))
   ('رباعيّ «{أَدْخِلْهُنَّ|أَدْخِلِيهِنَّ}»', 'content/m1/u1/d5.json', "فِي عُلْبَةٍ سَبْعًا", "فِي عُلْبَةٍ سَبْعًا، وَ{أَدْخِلْهُنَّ|أَدْخِلِيهِنَّ} العُلْبَةَ"),   # J1 (6أ): «هن» في لواحق صيغة البنت
@@ -548,11 +566,12 @@ def lint(root):
   r = subprocess.run(['node', 'build/lint.mjs'], cwd=root, capture_output=True, text=True); return r.returncode, r.stdout + r.stderr
 
 # وتُقسَم على جزأين حين يحدّ المشغّل زمن المهمة (MUT_PART=1: المحتوى والمولّد والكود ونصف طفرات المتصفح الأول، و2: نصفها الثاني؛ بوابة S1-U4 بعد E:
-# تجاوزت الطفرات كلها ساعة ونصفاً فقطعها الحدّ الزمني بعد ستين طفرة متصفح بلا إخفاق، والخلاصة رأت التوقّف)
+# تجاوزت الطفرات كلها ساعة ونصفاً فقطعها الحدّ الزمني بعد ستين طفرة متصفح بلا إخفاق، والخلاصة رأت التوقّف).
+# و`run_all.sh` يشغّلها منذ الدرس 299 شرائحَ تُستأنف: `CONTENT_ONLY=1` للمحتوى، ثم `MUT_SLICE` لطفرات المتصفح، وعددها من `MUT_COUNT=1`
 MUT_PART = os.environ.get('MUT_PART', '')
 tmp = tempfile.mkdtemp(prefix='mut_')
 try:
-  if MUT_PART == '2' or os.environ.get('MUT_ONLY'): raise StopIteration   # MUT_ONLY: طفرة متصفح واحدة بالاسم، لإعادة فحص طفرةٍ عُدّلت
+  if MUT_PART == '2' or os.environ.get('MUT_ONLY') or os.environ.get('MUT_SLICE') or os.environ.get('MUT_COUNT'): raise StopIteration   # MUT_ONLY: طفرة متصفح واحدة بالاسم، لإعادة فحص طفرةٍ عُدّلت
   root = os.path.join(tmp, 'engine')
   shutil.copytree(ROOT, root, ignore=shutil.ignore_patterns('dist', 'out', '.git', '__pycache__', 'node_modules'))
   rc, out = lint(root); check(rc == 0, 'الأصل: فحص المحتوى بلا مخالفة')
@@ -590,13 +609,64 @@ RUNTIME = [
   ('zip المضغوط لا يُفكّ', 'else if (method === 8)', 'else if (method === 88)', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL voice: four recordings imported'),
   ('النسخة تُقبل بلا فحص نوع القيمة', "if (r === NO || bad.length) return { ok: false, why: 'badValue', at: bad[0] || k };", '', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: rejected badval.json'),
   ('اسم الطفل المستورد بعلامات الصفحة', ".replace(/[<>\"'&`]/g, '').replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ".replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: a name with markup'),
+  # مراجعة الخصم الشاملة (5 نوفمبر 2026، test/adv_run.py)
+  ('C-02 إعادة السؤال بعد الخطأ تعود بعد «رجوع»', "if (seq === gateSeq && !P.hidden && $('#gateForm')) adultGate(then, onBack, always);", "adultGate(then, onBack, always);", ['test/adv_run.py', '{F}'], {'ONLY': 'C-02'}, 'FAIL C-02 جواب خاطئ ثم «رجوع» ثم درس'),
+  ('X-06 المهلة تبقى بعد العودة إلى الخريطة', "disarmIdle(); gateEnd(); SCENE_NOW = 'home';", "disarmIdle(); SCENE_NOW = 'home';", ['test/adv_run.py', '{F}'], {'ONLY': 'X-06'}, 'FAIL X-06 بعد أن يغلق الكبير اللوحة'),
+  ('X-06 «درس إضافي» بالمهلة بلا سؤال', "next(); }, () => {}, true); };", "next(); }, () => {}); };", ['test/adv_run.py', '{F}'], {'ONLY': 'X-06'}, 'FAIL X-06 «درس إضافي» في غطاء الاستراحة'),
+  ('X-02 إخفاق المحرّك قبل البدء يُعدّ نهاية الجملة', "u.onerror = e => { const er = e && e.error; if (!started && !done && er !== 'interrupted' && er !== 'canceled') { NO_TTS = 'fail'; try { synth.cancel(); } catch (x) {} readSilently(); return; }", 'u.onerror = e => {', ['test/adv_run.py', '{F}'], {'ONLY': 'X-02'}, 'FAIL X-02 محرّكٌ يخفق قبل البدء'),
+  ('X-02 لوحة الكبار لا تقول إن الجمل تُعرض مكتوبة', '${NO_TTS ? `<p class="note" id="noTts">', '${false ? `<p class="note" id="noTts">', ['test/adv_run.py', '{F}'], {'ONLY': 'X-02'}, 'FAIL X-02 وبعد أول إخفاق'),
+  ('X-04 جسر أندرويد بلا صوت عربي لا يُسأل', "if (!synth || FAST || NO_TTS || ttsBridgeDown()) { if (ttsBridgeDown()) NO_TTS = 'fail'; readSilently(); return; }", 'if (!synth || FAST || NO_TTS) { readSilently(); return; }', ['test/adv_run.py', '{F}'], {'ONLY': 'X-04'}, 'FAIL X-04 جسر أندرويد'),
+  ('X-04 محرّكٌ لا يبدأ يُنتظر كل مرة', "if (++TTS_MISS >= 2) NO_TTS = 'fail'; readSilently();", 'readSilently();', ['test/adv_run.py', '{F}'], {'ONLY': 'X-04'}, 'FAIL X-04 محرّكٌ لا يبدأ'),
+  ('X-05 بلا سقفٍ بطول النص بعد البدء', 'clearTimeout(safety); safety = setTimeout(() => { try { synth.cancel(); } catch (e) {} finish(); }, plain(text).length * (SET.slow ? 165 : 130) + 2000); };', '};', ['test/adv_run.py', '{F}'], {'ONLY': 'X-05'}, 'FAIL X-05 محرّكٌ يبدأ ولا يُطلق النهاية'),
+  ('X-11 صوتٌ غير عربي يقرأ العربية', "else if (!VOICE && v.length && !NO_TTS) NO_TTS = 'novoice';", '', ['test/adv_run.py', '{F}'], {'ONLY': 'X-11'}, 'FAIL X-11 أصوات الجهاز بلا عربي'),
+  ('C-17 تسجيلٌ تالف يُقرأ صامتاً', 'let fell = false; const fall = () => { if (fell || done) return; fell = true; try { a.pause(); } catch (e) {} viaDevice(); };', 'const fall = () => readSilently();', ['test/adv_run.py', '{F}'], {'ONLY': 'C-17'}, 'FAIL C-17 تسجيلٌ تالف'),
+  # حارسان متداخلان (الدرس 274): مهلة «لوحة المقاول» وحدها تمنع اللمسة الثانية هناك، والحارس وحده يمنعها (الطفرة التي تُسقط أحدهما تنجو)،
+  # وفي الإتقان تمنعها الجملة المحايدة (A-01). فالطفرة تُسقط الحارس والمهلة معاً
+  ('X-01 بلا حارس اللمسة الجديدة ولا مهلة «لوحة المقاول»', ('if (TAP_DOWN !== ANS_DOWN && TAP_DOWN - ANS_DOWN < TAP_ARM) {', 'got[want]++; SFX.good(); await sleep(FAST ? 250 : 650); }'), ('if (false) {', 'got[want]++; SFX.good(); await sleep(250); }'), ['test/adv_run.py', '{F}'], {'ONLY': 'X-01'}, 'FAIL X-01 «لوحة المقاول»'),
+  ('A-01 الخيار المختار في الإتقان يُعلَّم صواباً أو خطأً', "NEUTRAL_ANS = mode === 'mastery' || mode === 'test';", "NEUTRAL_ANS = mode === 'test';", ['test/adv_run.py', '{F}'], {'ONLY': 'A-01'}, 'FAIL A-01 الإتقان في'),
+  ('A-01 نغمة الصواب ورسمه في الإتقان', "if (T.onOk && mode !== 'mastery' && mode !== 'test') await T.onOk(item, r, j);", "if (T.onOk && mode !== 'test') await T.onOk(item, r, j);", ['test/adv_run.py', '{F}'], {'ONLY': 'A-01'}, 'FAIL A-01 الإتقان في'),
+  ('A-01 التعليل بعد الصواب في الإتقان', "else { await S('gen.ms.noted'); return { firstTry: tries === 1, ok: true, item }; }", 'else { const why = T.reason && T.reason(item); if (why) await S(why); return { firstTry: tries === 1, ok: true, item }; }', ['test/adv_run.py', '{F}'], {'ONLY': 'A-01'}, 'FAIL A-01 الإتقان في'),
+  ('A-01 علامة الخطأ ونغمته في الإتقان', "if (T.onWrong && mode !== 'mastery' && mode !== 'test') await T.onWrong(item, r, j);", "if (T.onWrong && mode !== 'test') await T.onWrong(item, r, j);", ['test/adv_run.py', '{F}'], {'ONLY': 'A-01'}, 'FAIL A-01 الإتقان في'),
+  # الفحص المستقل للقرارات (14 نوفمبر 2026، D266): كل إصلاحٍ في الكود تمسكه فحوص القبول
+  ('REV نغمة الصواب في الاختبار', "if (T.onOk && mode !== 'mastery' && mode !== 'test') await T.onOk(item, r, j);", "if (T.onOk && mode !== 'mastery') await T.onOk(item, r, j);", ['test/decisions_run.py', '{F}'], {'ONLY': 'REV'}, 'FAIL REV الاختبار بلا نغمة'),
+  ('REV نغمة الخطأ في الاختبار', "if (T.onWrong && mode !== 'mastery' && mode !== 'test') await T.onWrong(item, r, j);", "if (T.onWrong && mode !== 'mastery') await T.onWrong(item, r, j);", ['test/decisions_run.py', '{F}'], {'ONLY': 'REV'}, 'FAIL REV الاختبار بلا نغمة'),
+  ('REV الخروج قبل آخر الاختبار يعيده كاملاً', "run = isObj(P.trun) ? P.trun : { a: [], w: [] };", "run = { a: [], w: [] };", ['test/decisions_run.py', '{F}'], {'ONLY': 'REV'}, 'FAIL REV والعودة تُكمل'),
+  ('REV درسٌ أضعف تالف يقفل الإعادة', "const weakDone = P => !P.weak || !LDATA[P.weak] ||", "const weakDone = P =>", ['test/decisions_run.py', '{F}'], {'ONLY': 'REV'}, 'FAIL REV درسٌ أضعف تالف'),
+  ('C-20 نسخة ما قبل الاستعادة تبقى بعد تمامها', "try { localStorage.removeItem('hp_before_restore'); } catch (e) {}", "", ['test/decisions_run.py', '{F}'], {'ONLY': 'SMALL'}, 'FAIL SMALL C-20 بعد استعادةٍ'),
+  ('A-01 نغمة الخطأ داخل السؤال في الإتقان', 'soft: () => NEUTRAL_ANS ? tone([[880, .1]]) : tone([[330, .25]]),', 'soft: () => tone([[330, .25]]),', ['test/adv_run.py', '{F}'], {'ONLY': 'A-01'}, 'FAIL A-01 الإتقان في m1.u1.d1'),
+  ('A-02 المراجعة تُحفظ في آخر الجلسة وحده', 'srsUpdate(L.id, C, r.firstTry); saveProg();', 'window.__srsLater = (window.__srsLater || []).concat([[L.id, C, r.firstTry]]);', ['test/adv_run.py', '{F}'], {'ONLY': 'A-02'}, 'FAIL A-02'),
+  ('A-05 الإعادات في مقام التقرير', 'a.firstTry === true && isAssess(a)); return [f.filter(a => a.ok).length', 'a.firstTry !== undefined && isAssess(a)); return [f.filter(a => a.ok && a.firstTry).length', ['test/adv_run.py', '{F}'], {'ONLY': 'A-05'}, 'FAIL A-05'),
+  ('A-06 المؤجَّل يبقى مؤجَّلاً بعد ثباته', 'c.deferred = false; c.viaReview = true;', 'c.viaReview = true;', ['test/adv_run.py', '{F}'], {'ONLY': 'A-06'}, 'FAIL A-06'),
+  ('A-08 إتقان N005 جوابه بلا لمسة', '{"t":"splitMake","n":6,"avoid":[[0,6],[3,3],[2,4]]}', '{"t":"splitMake","n":5,"avoid":[[2,3],[1,4]]}', ['test/adv_run.py', '{F}'], {'ONLY': 'A-08'}, 'FAIL A-08'),
+  ('A-10 رتبة الجواب العددي كما كانت', 'for (const rk of shuffle([0, 1, 2])) {', 'for (const rk of []) {', ['test/adv_run.py', '{F}'], {'ONLY': 'A-10'}, 'FAIL A-10'),
+  ('A-14 موعد المراجعة منتصف الليل وحده', 'const dueAfter = (t, n) => Math.max(addDays(t, n), t + n * DAY - 8 * 36e5);', 'const dueAfter = (t, n) => addDays(t, n);', ['test/adv_run.py', '{F}'], {'ONLY': 'A-14'}, 'FAIL A-14'),
+  ('C-09 ساعةٌ رجعت تُبقي الجلسة', 'if (d > SESSION_GAP || d < 0) SESSION', 'if (d > SESSION_GAP) SESSION', ['test/adv_run.py', '{F}'], {'ONLY': 'C-09'}, 'FAIL C-09'),
+  ('C-05 الترحيل يكتب فوق ما لم تُحفظ نسخته', "if (keep()) store.set(kk('hp_prog'), P); else { STORE_ISSUES.migrateHeld = true; PROG_HOLD = keep; } return P; }", "keep(); store.set(kk('hp_prog'), P); return P; }", ['test/adv_run.py', '{F}'], {'ONLY': 'C-05'}, 'FAIL C-05 ترحيل'),
+  ('C-05 الإصلاح الجزئي يكتب فوق ما لم تُحفظ نسخته', 'if (this.corrupt(k, raw, true)) this.set(k, r); }', 'this.corrupt(k, raw, true); this.set(k, r); }', ['test/adv_run.py', '{F}'], {'ONLY': 'C-05'}, 'FAIL C-05 إصلاحٌ جزئي'),
+  ('C-06 اسم التالف يتكرّر في التنبيه', 'if (!partial && !STORE_ISSUES.corrupt.includes(k)) STORE_ISSUES.corrupt.push(k);', 'if (!partial) STORE_ISSUES.corrupt.push(k);', ['test/adv_run.py', '{F}'], {'ONLY': 'C-06'}, 'FAIL C-06'),
+  ('C-07 صور طفلٍ آخر بالمعرّف نفسه تبقى', 'const gone = KIDS.filter(o => !nk.some(n => n.id === o.id && n.name === o.name && n.gender === o.gender)).map(o => o.id);', 'const gone = KIDS.filter(o => !nk.some(n => n.id === o.id)).map(o => o.id);', ['test/adv_run.py', '{F}'], {'ONLY': 'C-07'}, 'FAIL C-07'),
+  ('C-08 الحذف المعلّق يبقى بعد الاستعادة', "if (ok) { try { localStorage.removeItem('hp_kid_del'); } catch (e) {}", 'if (ok) {', ['test/adv_run.py', '{F}'], {'ONLY': 'C-08'}, 'FAIL C-08'),
+  ('C-10 الطفل الجديد يضيع بلا كلمة', "if (KID && !(store.set('hp_kids', KIDS) && store.set('hp_kid', id))) {", "if (KID && !(store.set('hp_kids', KIDS) && store.set('hp_kid', id)) && false) {", ['test/adv_run.py', '{F}'], {'ONLY': 'C-10'}, 'FAIL C-10'),
+  ('C-11 صورةٌ في الذاكرة وحدها بلا تنبيه', "if (sv === 'mem') { STORE_ISSUES.photoMem = true;", 'if (false) { STORE_ISSUES.photoMem = true;', ['test/adv_run.py', '{F}'], {'ONLY': 'C-11'}, 'FAIL C-11'),
+  ('X-09 ملف صيدٍ ليس صورة يمرّ بصمت', "img.onerror = () => { SFX.soft(); coverSay(c, 'gen.hunt.again'); };", '', ['test/adv_run.py', '{F}'], {'ONLY': 'X-09'}, 'FAIL X-09 صيد الأشكال بملفٍ'),
+  ('C-16 «حُفظ» قبل نتيجة نافذة الحفظ', "m.textContent = 'اختاروا مكان حفظ الملف…'; }", "m.textContent = 'حُفظ الملف في التنزيلات.'; }", ['test/adv_run.py', '{F}'], {'ONLY': 'C-16'}, 'FAIL C-16'),
+  ('C-12 محاولةٌ بحجمٍ غير محدود في النسخة', 'big = Object.keys(o).length > 24 || JSON.stringify(o).length > 2000;', 'big = false;', ['test/adv_run.py', '{F}'], {'ONLY': 'C-12'}, 'FAIL C-12'),
+  ('C-12 ملفٌ ضخم يُقرأ كله', 'if (f.size > 10 * 1024 * 1024) {', 'if (false) {', ['test/adv_run.py', '{F}'], {'ONLY': 'C-12'}, 'FAIL C-12'),
+  ('M-13 داخل/خارج وسمه سؤال السمع', "|| has('in', 'out')) return { ok: false, err: 'posInOut' };", ") return { ok: false, err: 'posInOut' };", ['test/adv_run.py', '{F}'], {'ONLY': 'M-13'}, 'FAIL M-13'),
+  ('X-03 الهاتف بالعرض بلا تخطيط العمودين', '@media (orientation: landscape) and (max-height: 520px) {', '@media (orientation: landscape) and (max-height: 1px) {', ['test/adv_run.py', '{F}'], {'ONLY': 'X-03', 'LAND': 'm1.u1.d2,m1.u3.d5,m1.u4.d4', 'LANDVP': '640x360'}, 'FAIL X-03'),
+  ('X-03 زرّ «أعد» داخل الفقاعة الضيّقة (النصّ بين حاشيتين)', '#bubble { height: auto; max-height: calc(1.5em * 7 + 12px); padding: 6px 10px; overflow: visible; }', '#bubble { height: auto; max-height: calc(1.5em * 7 + 12px); padding-inline-start: 56px; }', ['test/adv_run.py', '{F}'], {'ONLY': 'X-03', 'LAND': 'm1.u1.d2,m1.u3.d5,m1.u4.d4', 'LANDVP': '640x360'}, 'FAIL X-03'),
+  ('N-01 الشيء المرسوم في طبقةٍ يُرفع بإحداثياتها فيُقذف خارج المسرح', 'if (thing.parentNode === svg || !svg.contains(thing)) svg.appendChild(thing);', 'svg.appendChild(thing);', ['test/adv_run.py', '{F}'], {'ONLY': 'N-01', 'LAND': 'm1.u3.d1', 'LANDVP': '412x860'}, 'FAIL N-01'),
+  ('N-01 حلقة «فوق» على رأس الدمية التي في الصندوق', "y: k === 'on' && top0 != null ? Math.min(bodyY(P.spots[k], 'doll'), top0 - 34) : bodyY(P.spots[k], 'doll') }));", "y: bodyY(P.spots[k], 'doll') }));", ['test/adv_run.py', '{F}'], {'ONLY': 'N-01', 'LAND': 'm1.u3.d1', 'LANDVP': '412x860'}, 'FAIL N-01'),
+  ('C-01 البدء من جديد يمحو قبل حذف الصور', "if (ph !== 'ok') { m.textContent = ph === 'tab'", "if (false) { m.textContent = ph === 'tab'", ['test/adv_run.py', '{F}'], {'ONLY': 'C-01'}, 'FAIL C-01 إخفاق حذف الصور'),
+  ('C-01 البدء من جديد لا يحذف الصور', "let ph; try { ph = await IDB.dropKid(KID); } catch (e) { ph = 'fail'; }", "let ph = 'ok';", ['test/adv_run.py', '{F}'], {'ONLY': 'C-01'}, 'FAIL C-01 بدء كل الدروس من جديد'),
+  ('C-01 اللوحة تبقى مفتوحة بعد البدء من جديد', "$('#panel').hidden = true; showHome(); };\n  /* حزمة الصوت", "showHome(); };\n  /* حزمة الصوت", ['test/adv_run.py', '{F}'], {'ONLY': 'C-01'}, 'FAIL C-01 بدء كل الدروس من جديد'),
   # تقرير المهندس الخصم (A01–A08): كل إصلاح تكسره طفرة فيخفق فحص قبوله
   ('A01 حكم الكبير من «نعم» واحدة', 'adultAnswers(L).every(x => x === true)', 'adultAnswers(L).some(x => x === true)', ['test/audit_run.py', '{F}'], {'ONLY': 'A01'}, 'FAIL A01'),
   ('A02 حكم الكبير يكتب إتقان التطبيق', 'PROG.adult[L.id] = a;\n', 'PROG.adult[L.id] = a; if (adultSays(L, L.adultCard.concept)) { const P = progOf(L.id); P.cs = P.cs || {}; P.cs[L.adultCard.concept] = { ...(P.cs[L.adultCard.concept] || {}), mastered: true }; }\n', ['test/audit_run.py', '{F}'], {'ONLY': 'A02'}, 'FAIL A02'),
   ('A03 معرّف الطفل بلا صيغته', "typeof k.id === 'string' && KID_ID.test(k.id)", "typeof k.id === 'string'", ['test/audit_run.py', '{F}'], {'ONLY': 'A03'}, 'FAIL A03'),
   ('A03 صورة الطفل أيّ عنوان', '(!k.photo || (PHOTO_RX.test(k.photo) && k.photo.length <= 300000))', 'true', ['test/audit_run.py', '{F}'], {'ONLY': 'A03'}, 'FAIL A03 تُرفض النسخة (صورة'),
   ('A04 الاستعادة تمضي بلا نسخة ما كان', "} catch (e) { return { ok: false, why: 'rescue' }; }", '} catch (e) {}', ['test/audit_run.py', '{F}'], {'ONLY': 'A04'}, 'FAIL A04'),
-  ('A04 الاستعادة المنقطعة لا تُرجع عند الفتح', 'if (j == null) return;', 'return;', ['test/audit_run.py', '{F}'], {'ONLY': 'A04'}, 'FAIL A04 انقطاع'),
+  ('A04 الاستعادة المنقطعة لا تُرجع عند الفتح', "if (j == null) { try { const o = JSON.parse(", "return; if (j == null) { try { const o = JSON.parse(", ['test/audit_run.py', '{F}'], {'ONLY': 'A04'}, 'FAIL A04 انقطاع'),
   ('A05 الحقل اللازم يسقط ويبقى سجلّه', 'if (req.some(k => !(k in out))) { bad.push(at); return NO; } return out; };', 'return out; };', ['test/audit_run.py', '{F}'], {'ONLY': 'A05'}, 'FAIL A05'),
   ('A06 الكتابة بلا مراجعة ما كتبه غيره', 'if (cur !== this.seen[k]) { tabLose(); return false; }', '', ['test/audit_run.py', '{F}'], {'ONLY': 'A06'}, 'FAIL A06 تبويبٌ عاد'),
   ('A06 غطاء التبويب للدرس وحده', 'onTabLost = () => showTabLost();', "onTabLost = () => { if (!$('#lesson').hidden) showTabLost(); };", ['test/audit_run.py', '{F}'], {'ONLY': 'A06'}, 'FAIL A06 التبويب الأقدم'),
@@ -632,7 +702,7 @@ RUNTIME = [
   ('اللمسة أثناء القفزة تُسقط', 'if (busy) { if (pend.length < 6) pend.push(t.n); return; }', 'if (busy) return;', ['test/quicktap_run.py'], {}, 'FAIL Pixel 5: pr.1'),
   ('الطريق لا يكشف البلاطة التالية', 'nx = Math.max(0, Math.min(R.S.tiles.length - 1, to + dir));', 'nx = to;', ['test/quicktap_run.py'], {}, 'FAIL Pixel 5: البلاطة'),
   ('العدد يصير «آخر جملة»', 'if (!opt.keep && !opt.num && !opt.aside) lastLine', 'if (!opt.keep && !opt.aside) lastLine', ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL لمس بلاطة'),
-  ('عرض المساعدة يصير «آخر جملة»', "'gen.hintOffer.01', { ifIdle: true, free: true, aside: true }", "'gen.hintOffer.01', { ifIdle: true, free: true }", ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL عرض المساعدة'),
+  ('عرض المساعدة يصير «آخر جملة»', "'gen.hintOffer.01', { ifIdle: true, free: true, aside: true, keep: true }", "'gen.hintOffer.01', { ifIdle: true, free: true }", ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL عرض المساعدة'),
   ('«نبقى» يعيد سؤال الخروج', 'lessonInert(false); lastLine = prev; resumeBack();', 'lessonInert(false); resumeBack();', ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL «نبقى»'),
   # وغطاء الخروج يوقف الدرس، و«أعد» عند سؤال حلّ التعدّي يعيد الحلّ كله (الفحص المستقل F2 (1) و(3))
   # الفحص المستقل H2: الإيقاف يوقف كل شيء بعد «نبقى» وإطفاء الشاشة (القسم 9 و(ز) و(ح) و(ل) و(م) و(ن) و(س) و(ع))، وثبات تقليل الحركة بمدّتين (RMHOLD3)، وحلقتا التعدّي (TRANSHOOKRM)
@@ -869,7 +939,7 @@ RUNTIME = [
   ('العطل لا يُسقط الإيقاف', "try { hush(); disarmIdle(); if (PAUSED) { resumeLesson(); $('#confetti').innerHTML = ''; } } catch (e) {}", "try { hush(); disarmIdle(); } catch (e) {}", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ص'}, 'FAIL مهلة الفانوس تحت غطاء العطل بعد الخروج'),   # نجت من J2
   ('غطاء التبويب بالدرس الجاري كما كان', "onTabLost = () => showTabLost();", "onTabLost = () => { if (CUR) showTabLost(); };", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ص'}, 'FAIL تبويبٌ آخر والطفل في الورشة'),   # J2 (6)
   ('اللمحة بترشيح الصفر كما كانت', "numberPick(nearNums(item.n, 6, 1), item.n)", "numberPick(nearNums(item.n, 6).filter(x => x > 0), item.n)", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ت'}, 'FAIL اللمحة في «مراجعة اليوم» بـ n=2'),   # J2 (5)
-  ('nearNums بلا حدّه الأدنى', "if (v >= lo && v <= max && avoidOk(v)) set.add(v); } return shuffle([...fillOpts(set, n, lo, max)]); }", "if (v >= 0 && v <= max && avoidOk(v)) set.add(v); } return shuffle([...fillOpts(set, n, 0, max)]); }", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ت'}, 'FAIL اللمحة في «مراجعة اليوم» بـ n=2'),
+  ('nearNums بلا حدّه الأدنى', "function nearNums(n, max = 10, lo = 0) { const ok = v => v >= lo && v <= max && avoidOk(v),", "function nearNums(n, max = 10, lo = 0) { lo = 0; const ok = v => v >= lo && v <= max && avoidOk(v),", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ت'}, 'FAIL اللمحة في «مراجعة اليوم» بـ n=2'),
   ('حارس الخيارين ميّت', "if (TESTHOOK && new Set(nums).size < 3) testBug(", "if (false) testBug(", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ت'}, 'FAIL اللمحة في «مراجعة اليوم» بـ n=2'),
   ('الصيد يعيد تعليمته بعد الصورة', "if (!f || !want) return; hush(); const rd", "if (!f || !want) return; const rd", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ض'}, 'FAIL الصيد'),   # J2 (7)
   ('«أرقامي» يعيد التمهيد في المطابقة', "c.dataset.ask = numw(d); say(", "say(", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'ض'}, 'FAIL «أرقامي» في المطابقة'),
@@ -880,7 +950,26 @@ RUNTIME = [
   ('المهلة لا تُعلَم بالشاشة المتروكة', "const st = TESTHOOK && FLOW !== f0;", "const st = false;", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'غ'}, 'FAIL حارس التشغيل'),
   ('سؤال الغطاء يُقال والصفحة مخفية', "if (opt.cover && PAUSED) { if (document.hidden) { VIS_COVER = opt.cover; return Promise.resolve(); } return speakNow(who, id, text, opt); }", "if (opt.cover && PAUSED) { return speakNow(who, id, text, opt); }", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'غ'}, 'FAIL غطاء الخروج يُفتح والصفحة مخفية'),
   ('مفتاحٌ غير مفتاح الفعل يلمس', "const isActKey = e => e.key === 'Enter' || e.key === ' ',", "const isActKey = e => e.key !== 'Tab',", ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u4.d1', 'STRICT': '1', 'SHOTS': '0', 'OUT': 'test/out/mut_auto'}, '(غير مفتاح الفعل) فعل شيئاً'),   # J2 (8): الحارس في السائق
+  # إصلاحات الألعاب بعد تجربة فراس نسخة الويب (15 نوفمبر 2026، D267، الدرس 300): كل إصلاح يمسكه test/games_run.py
+  ('G القصة تُمحى بتعليمة العمل', "await S(item.op === '+' ? 'gen.story.add' : 'gen.story.remove', { keep: true });", "await S(item.op === '+' ? 'gen.story.add' : 'gen.story.remove');", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY وقت البناء'),
+  ('G بلا رقمي القصة', "digitCard(svg, x, 50, n, { size: .8 }).dataset.storyNum = n;", "void n;", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY عددا القصة'),
+  ('G «تمّ» تقبل أيّ برج', "if (n === item.want) break;", "break;", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY (practice) «تمّ» ببرجٍ من أربعة'),
+  ('G خطأ البناء يُحسب من أول محاولة', "tries += r.slip ? 2 : 1;", "tries++;", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY (practice) جوابه عدد برجه'),
+  ('G لا نمثّل القصة معاً', "await S('gen.story.together');", "", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY +: ثلاث مرات'),
+  ('G بعد خطأ العدّ يُبنى البرج من جديد', "if (tries) { const T = towerAt(svg, 180, 240, item.want", "if (false) { const T = towerAt(svg, 180, 240, item.want", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY بعد خطأ العدّ'),
+  ('G «أبعد» صامتة', "redraw(); SFX.soft(); if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); });", "redraw(); SFX.soft(); });", ['test/games_run.py', '{F}'], {'ONLY': 'MINUS'}, 'FAIL MINUS ثلاث إضافات'),
+  ('G عرض المساعدة يمحو السؤال', "'gen.hintOffer.01', { ifIdle: true, free: true, aside: true, keep: true }", "'gen.hintOffer.01', { ifIdle: true, free: true, aside: true }", ['test/games_run.py', '{F}'], {'ONLY': 'OFFER'}, 'FAIL OFFER عرض'),
+  ('G «أكمل الإطار» بلا تعليمته بعد الأولى', "say(...lineOf(c.q), { free: true }); await say(...lineOf(numw(rd.need))", "say(...lineOf(i === 0 ? c.q : 'gen.bus.again'), { free: true }); await say(...lineOf(numw(rd.need))", ['test/games_run.py', '{F}'], {'ONLY': 'FRAME'}, 'FAIL FRAME الجولة 2'),
+  ('G قصة الإطار تمحوها «أكمل الإطار»', "say(...lineOf('gen.makeTen.fill'), { free: true, keep: !!item.story });", "say(...lineOf('gen.makeTen.fill'), { free: true });", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN makeTen: القصة في الفقاعة وقت frameMove'),
+  ('G قصة «نرجع إلى العشرة» تُمحى', "const keep = item.story ? { keep: true } : {};", "const keep = {};", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN backTen: القصة في الفقاعة وقت frameTake'),
+  ('G بلا فاصل بعد العدد', "{ append: true, sep: '. ' }", "{ append: true }", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN «أبعدي'),
+  ('G السهم بلا رأس', "arrowTip(svg, 152, 123, 20, 30, css('--compass'));", "", ['test/games_run.py', '{F}'], {'ONLY': 'DRAW'}, 'FAIL DRAW «أيّ الجملتين…» (+)'),
+  ('G الإطار يمتلئ بلا وميض الزرقاء', "await Promise.all([flashSecond(svg), S('gen.makeTen.full', { keep: !!item.story })]);", "await S('gen.makeTen.full', { keep: !!item.story });", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN makeTen: حين امتلأ'),
+  ('G الحافلة تمتلئ بلا وميض الركّاب', "await Promise.all([flashSecond(svg), S('gen.bus.full')]);", "await S('gen.bus.full');", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN «حافلة الواحة»'),
+  ('G الوميض لما في الإطار وحده', "const ks = [...svg.querySelectorAll('[data-counter]')].filter(k => k.querySelector('circle').getAttribute('fill') === COUNTER2);", "const ks = [...svg.querySelectorAll('[data-frame] [data-counter]')].filter(k => k.querySelector('circle').getAttribute('fill') === COUNTER2);", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN makeTen: حين امتلأ'),
+  ('G المكعب الأبيض بحدٍّ أبيض', "edge: color === CUBE.white ? CUBE_EDGE_W : '#ffffff'", "edge: '#ffffff'", ['test/games_run.py', '{F}'], {'ONLY': 'DRAW'}, 'FAIL DRAW المكعبات البيضاء'),
 ]
+if os.environ.get('MUT_COUNT'): print(len(RUNTIME)); sys.exit(0)   # عدد طفرات المتصفح وحده، لتقسيمها شرائح في run_all.sh (الدرس 299)
 def run(args, env, f):
   e = dict(os.environ, **env, FILE=f)
   try: r = subprocess.run(['python3'] + [a.replace('{F}', f) for a in args], cwd=ROOT, capture_output=True, text=True, env=e, timeout=1800)
@@ -900,7 +989,8 @@ for name, old, new, args, env, want in RUNTIME:
   if COUNTS(src, old, new) != [1] * len(PAIRS(old, new)): check(False, 'طفرة «%s»: النصّ يظهر %s مرة في نسخة الفحص (يجب مرة واحدة)' % (name, COUNTS(src, old, new)))
 if os.environ.get('CONTENT_ONLY'): print('FAILS:', len(FAILS)); shutil.rmtree(tmpd, ignore_errors=True); sys.exit(1 if FAILS else 0)
 K = (len(RUNTIME) + 1) // 2; RT = RUNTIME[:K] if MUT_PART == '1' else RUNTIME[K:] if MUT_PART == '2' else RUNTIME
-if os.environ.get('MUT_ONLY'): RT = [x for x in RUNTIME if any(x[0].startswith(q) for q in os.environ['MUT_ONLY'].split(','))]   # اسمٌ أو بدايات أسماء مفصولة بفواصل
+if os.environ.get('MUT_ONLY'): RT = [x for x in RUNTIME if any(x[0].startswith(q) for q in os.environ['MUT_ONLY'].split(','))]
+if os.environ.get('MUT_SLICE'): _a, _b = (int(v) for v in os.environ['MUT_SLICE'].split(':')); RT = RUNTIME[_a:_b]   # MUT_SLICE=من:إلى: شريحة من طفرات المتصفح بترتيبها، فيُستأنف التشغيل الطويل بعد انقطاع (طفرات المحتوى في جزئها وحدها)   # اسمٌ أو بدايات أسماء مفصولة بفواصل
 try:
   for args, env in dict.fromkeys((tuple(x[3]), tuple(sorted(x[4].items()))) for x in RT):   # كل فحص مرة على الأصل
     rc, out = run(list(args), dict(env), DEV); check(rc == 0, 'الأصل: %s %s ينجح %s' % (args[0], dict(env), ([l.strip()[:400] for l in out.splitlines() if l.startswith('FAIL ') or 'Traceback' in l or 'Error' in l][:6] if rc else []) + out.strip().splitlines()[-1:]))   # وسطور الإخفاق نفسها (كان السطر الأخير وحده «FAILS: 1»، فلم يُعرف ما أخفق)

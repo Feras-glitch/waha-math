@@ -14,20 +14,30 @@ function openProfile(isNew) {
     <div class="avatars" id="avList" role="group" aria-label="${esc(labelText('pickAvatar'))}"></div>
     <details class="adult"${fresh ? '' : ' open'}><summary>${esc(labelText('adultName'))}</summary>
       <input type="text" id="pName" maxlength="24" autocomplete="off" aria-label="${esc(labelText('nameField'))}">
-      <div class="photo-row"><span class="round" id="photoPrev"></span><label class="pick" for="pPhoto">${esc(labelText('photoOpt'))}</label><input type="file" id="pPhoto" accept="image/*" hidden></div></details>
+      <div class="photo-row"><span class="round" id="photoPrev"></span><label class="pick" for="pPhoto">${esc(labelText('photoOpt'))}</label><input type="file" id="pPhoto" accept="image/*" hidden></div>
+      <div class="seg gender" id="pGender" role="group" aria-label="${esc(plain(labelText('genderAsk')))}"><span>${esc(labelText('genderAsk'))}</span><button class="pick" data-g="m">${esc(labelText('genderM'))}</button><button class="pick" data-g="f">${esc(labelText('genderF'))}</button></div></details>
     <button class="go big" id="pSave" disabled aria-label="${esc(labelText('done'))}">${ICON.check}</button></div>`);
   $('#pName').value = draft.name || '';
+  // صيغة الخطاب اختيارٌ صريح للكبار (المراجعة بعين جديدة U1): كانت تُؤخذ من الصورة وحدها، فبنتٌ تختار صورة ولدٍ تُخاطَب بالمذكّر في الدروس كلها.
+  // الصورة تقترحها ما لم يخترها الكبار في هذه الشاشة. (تعليق سطري لا كتلي: نوع ملف الصورة في القالب فوقه يبدأ في فحص المحتوى تعليقاً كتلياً يُغلقه أول ختام تعليق بعده)
+  let gSet = false;
   const list = $('#avList'); const mark = () => { list.querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', b.dataset.av === draft.avatar)); $('#pSave').disabled = !draft.avatar;
+    $('#pGender').querySelectorAll('button').forEach(b => b.setAttribute('aria-pressed', (gSet || !!draft.avatar) && b.dataset.g === draft.gender));
     const pv = $('#photoPrev'); pv.innerHTML = ''; pv.appendChild(avatarNode(draft.avatar ? draft : { gender: 'm', photo: draft.photo })); };
   Object.keys(AVATARS).forEach(k => { const b = document.createElement('button'); b.className = 'av'; b.dataset.av = k; b.innerHTML = kidSVG(AVATARS[k].g, k); b.setAttribute('aria-label', labelText('avatar') + ' ' + DG(Object.keys(AVATARS).indexOf(k) + 1));
-    b.onclick = () => { draft.avatar = k; draft.gender = AVATARS[k].g; mark(); SFX.tick(); PROFILE_TMP(draft); coverSay(c, 'gen.first.picked'); }; list.appendChild(b); });
+    b.onclick = () => { draft.avatar = k; if (!gSet) draft.gender = AVATARS[k].g; mark(); SFX.tick(); PROFILE_TMP(draft); coverSay(c, 'gen.first.picked'); }; list.appendChild(b); });
+  $('#pGender').querySelectorAll('button').forEach(b => b.onclick = () => { gSet = true; draft.gender = b.dataset.g; if (PROFILE && !KIDS.includes(PROFILE)) PROFILE.gender = draft.gender; mark(); SFX.tick(); });
   $('#pPhoto').onchange = e => { const f = e.target.files && e.target.files[0]; if (!f) return; const rd = new FileReader();
     rd.onload = () => { const img = new Image(); img.onload = () => { const Z = 160, cv = document.createElement('canvas'); cv.width = cv.height = Z; const x = cv.getContext('2d'); const k = Math.max(Z / img.width, Z / img.height);
       x.drawImage(img, (Z - img.width * k) / 2, (Z - img.height * k) / 2, img.width * k, img.height * k); draft.photo = cv.toDataURL('image/jpeg', .8); mark(); }; img.src = rd.result; }; rd.readAsDataURL(f); };
   $('#pSave').onclick = () => { if (!draft.avatar) return; hush();
     draft.name = $('#pName').value.replace(/[<>"'&`]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
     const rec = { name: draft.name, gender: draft.gender, photo: draft.photo || '', avatar: draft.avatar };
-    if (fresh) { const id = 'k' + Date.now().toString(36); KIDS.push({ id, ...rec }); store.set('hp_kids', KIDS); store.set('hp_kid', id);
+    /* حفظٌ لم ينجح لا يُعاد بعده التحميل (مراجعة الخصم C-10: كان الطفل الجديد يضيع بلا كلمة حين تمتلئ المساحة) */
+    const pNote = t => { let m = $('#pMsg'); if (!m) { m = document.createElement('p'); m.id = 'pMsg'; m.className = 'msg'; m.setAttribute('role', 'status'); $('#pSave').before(m); } m.textContent = t; };
+    if (fresh) { const id = 'k' + Date.now().toString(36); KIDS.push({ id, ...rec });
+      if (KID && !(store.set('hp_kids', KIDS) && store.set('hp_kid', id))) { KIDS.pop(); store.set('hp_kids', KIDS); store.set('hp_kid', KID); pNote('تعذّر حفظ الطفل الجديد في هذا الجهاز (المساحة ممتلئة أو التصفّح خاص)، فلم يُضَف.'); return; }
+      if (!KID) { store.set('hp_kids', KIDS); store.set('hp_kid', id); }
       if (KID) { location.reload(); return; }                // طفل ثانٍ: نعيد التحميل لتُقرأ مفاتيحه هو
       KID = id; PROFILE = KIDS[KIDS.length - 1]; saveProg(); saveSet(); }
     else { Object.assign(PROFILE, rec); store.set('hp_kids', KIDS); }
@@ -139,7 +149,10 @@ async function openGallery() {
       cv.width = Math.round(img.width * k); cv.height = Math.round(img.height * k); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
       const sv = await IDB.put({ id: 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), kid: KID, k: want, t: Date.now(), data: cv.toDataURL('image/jpeg', .72) });   // rng-ok: معرّف الصورة
       if (sv === 'tab') return;   /* فقد التبويب القفل أثناء الحفظ: لم تُحفظ، فلا احتفال ولا «حُفظت» (الفحص المستقل WM101-R1-02) */
-      logAttempt({ scene: 'hunt', tag: want, ok: true }); SFX.win(); confetti(); await coverSay(c, 'gen.hunt.saved'); openGallery(); }; img.src = rd.result; }; rd.readAsDataURL(f); };
+      if (sv === 'mem') { STORE_ISSUES.photoMem = true; try { onStoreIssue(); } catch (x) {} }   /* صيدٌ صحيح، والصورة في الذاكرة وحدها: يُقال للكبير إنها لن تبقى (مراجعة الخصم C-11) */
+      logAttempt({ scene: 'hunt', tag: want, ok: true }); SFX.win(); confetti(); await coverSay(c, 'gen.hunt.saved'); openGallery(); };
+      img.onerror = () => { SFX.soft(); coverSay(c, 'gen.hunt.again'); };   /* ملفٌ ليس صورة أو تالف: يُقال له لا صمت (مراجعة الخصم X-09) */
+      img.src = rd.result; }; rd.onerror = () => { SFX.soft(); coverSay(c, 'gen.hunt.again'); }; rd.readAsDataURL(f); };
   $('#galClose').onclick = () => { hush(); c.hidden = true; showHome(); };
   coverSay(c, open.length ? 'gen.gallery.intro' : 'gen.gallery.empty');
 }

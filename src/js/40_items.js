@@ -26,6 +26,8 @@ async function runItem(spec, mode = 'practice', ctx = {}) {
   /*T*/const outer = { item: window.__item, mode: window.__itemMode, twin: window.__itemTwin };/*/T*/
   try { return await runItem0(spec, mode, ctx); } finally { /*T*/window.__item = outer.item; window.__itemMode = outer.mode || ''; window.__itemTwin = !!outer.twin;/*/T*/ }   /* وضع الفحص: نمط البند الجاري لا يبقى بعد انتهائه */
 }
+/* مواصفة البند في السجلّ (مراجعة الخصم A-07): بلا توأمه، وحتى 200 حرف (فوقها يُقصّ وينتهي بـ«…»)؛ تكفي ليُعرف أيّ بندٍ أُجيب */
+function specText(spec) { let t = ''; try { const o = {}; for (const k of Object.keys(spec || {})) if (k !== 'twin') o[k] = spec[k]; t = JSON.stringify(o); } catch (e) { return ''; } return t.length <= 200 ? t : t.slice(0, 199) + '…'; }
 async function runItem0(spec, mode, ctx) {
   const type = itemType(spec); const T = ITEM[type]; if (!T) throw new Error('نوع بند غير معروف: ' + type);
   const item = T.make(spec); item.itype = type; item.spec = spec;   // itype لا type: البند قد يكون شكلاً له type
@@ -35,19 +37,19 @@ async function runItem0(spec, mode, ctx) {
   while (true) {
     /* المساعدة عند السكوت أو بالفانوس: «لاحظ جيداً» ثم ما يريه نوع البند، أو السؤال من جديد (الفحص المستقل B: كان «لاحظ جيداً» وحدها) */
     if (help) armIdle(async () => { await S(T.idleLine ? T.idleLine(item) : 'gen.hint.look', { aside: true }); if (T.idle) await T.idle(item); else replayLine(); }, { first: firstTime('item:' + type) });
-    const t0 = Date.now(); const r = await T.ask(item, mode, tries); disarmIdle();
-    const j = T.judge(item, r.ans); tries++;
-    logAttempt({ scene, type, tag: item.tag, ans: r.ans, ok: j.ok, firstTry: tries === 1, err: j.ok ? null : (j.err || 'generic'), ms: Date.now() - t0 });
+    const t0 = Date.now(); NEUTRAL_ANS = mode === 'mastery' || mode === 'test'; let r; try { r = await T.ask(item, mode, tries); } finally { NEUTRAL_ANS = false; } disarmIdle();
+    const j = T.judge(item, r.ans); tries += r.slip ? 2 : 1;   /* خطأٌ في خطوةٍ داخل البند أُصلح قبل الجواب (بناء القصة): محاولة، فلا يُحسب من أول محاولة */
+    logAttempt({ scene, mode, type, tag: item.tag, ans: r.ans, ok: j.ok, firstTry: tries === 1, try: tries, err: j.ok ? null : (j.err || 'generic'), ms: Date.now() - t0, spec: specText(spec) });
     if (j.ok) {
-      if (T.onOk) await T.onOk(item, r, j);
+      if (T.onOk && mode !== 'mastery' && mode !== 'test') await T.onOk(item, r, j);   // الإتقان والاختبار بلا إشارة صواب (A-01؛ والاختبار: القرار A-03، D266)
       if (mode === 'test') return { firstTry: tries === 1, ok: true, item };
       if (mode !== 'mastery') { await praiseFor(item, tries); if (j.alt && T.altLine) await S(T.altLine(item, r, j)); const why = T.reason && T.reason(item); if (why) await S(why); }
-      else { const why = T.reason && T.reason(item); if (why) await S(why); }
+      else { await S('gen.ms.noted'); return { firstTry: tries === 1, ok: true, item }; }   // الإتقان: الجملة نفسها للصواب والخطأ، بلا تعليل يكشفه (A-01)
       if (together && help && mode !== 'explore' && T.twin && !ctx.isTwin) { const tw = T.twin(item); if (tw) { await S('gen.twin.01'); await runItem(tw, mode, { scene: scene + '-twin', isTwin: true }); } }
       return { firstTry: tries === 1, ok: true, item };
     }
-    if (T.onWrong) await T.onWrong(item, r, j);
-    if (mode === 'test') { if (T.mark) T.mark(item, r); return { firstTry: false, ok: false, item }; }
+    if (T.onWrong && mode !== 'mastery' && mode !== 'test') await T.onWrong(item, r, j);   /* ولا نغمة خطأ في الاختبار: في «نعم/لا» وبين خيارين تكشف الجواب، والإعادة بالبنود نفسها (الفحص المستقل للقرارات، 2) */
+    if (mode === 'test') return { firstTry: false, ok: false, item };   // لا يُرسم الجواب الصحيح في الاختبار (القرار A-03، D266): الإعادة بالبنود نفسها
     if (mode === 'mastery') { await S('gen.ms.noted'); return { firstTry: false, ok: false, item }; }
     if (mode === 'review') { await T.reveal(item, r); const why = T.reason && T.reason(item); if (why) await S(why); return { firstTry: false, ok: false, item }; }
     if (tries === 1) { await S(errQ(j.err, item)); await sleep(300); continue; }                       // المستوى 1: سؤال
@@ -119,7 +121,7 @@ ITEM.sort = {
   altLine(item) { const cfg = sortCfg(); return cfg.acceptLine && cfg.acceptLine[item.kind]; },
   praise() { return sortCfg().praise || 'praise'; },
   hint2(item, r, err) { const v = (ERRORS[err] && ERRORS[err].vis) || 'edges'; return (VIS[v] || VIS.edges)(item, r.ctx); },
-  async together(item) { await S('gen.solve.' + item.kind); },
+  async together(item) { await S(solveLine(item.kind)); },
   async reveal(item, r) { const b = r.ctx.binsEl.querySelector(`[data-k="${item.kind}"]`); if (b) b.classList.add('ok'); await sleep(500); },
   mark(item, r) { const b = r.ctx.binsEl.querySelector(`[data-k="${item.kind}"]`); if (b) b.classList.add('ok'); },
   /* شيء من درس آخر لا سلّة لنوعه هنا (البند المشتبك): السبب يسمّيه بنوعه الحقيقي، فلا يقال عن مكعب «ليس مكعباً» */
@@ -143,7 +145,7 @@ ITEM.pick = {
   onWrong() { SFX.soft(); },
   mark(item, r) { const t = r.ctx.gs.find(x => x.k === item.ans); el('circle', { cx: t.x, cy: t.y, r: t.r, fill: 'none', stroke: css('--good'), 'stroke-width': 5 }, r.ctx.svg); },
   async hint2(item, r) { for (const t of r.ctx.gs) await VIS.edges(null, { g: t.g, svg: r.ctx.svg }); },   // ننظر إلى كل خيار بالدور، بلا كشف
-  async together(item) { await S(item.solve || ('gen.solve.' + (item.opts[item.ans].kind || 'other'))); },
+  async together(item) { await S(item.solve || solveLine(item.opts[item.ans].kind || 'other')); },
   async reveal(item, r) { ITEM.pick.mark(item, r); await sleep(600); },
   reason(item) { return item.why || null; },
   twin(item) { return item.twin || null; },
