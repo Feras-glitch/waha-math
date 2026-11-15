@@ -332,7 +332,7 @@ SCENES.tenBus = async c => { if (c.intro) await S(c.intro);
     await gate(new Promise(res => { out.forEach(o => { o.g.style.cursor = 'pointer'; o.g.setAttribute('role', 'button'); o.g.setAttribute('aria-label', plain(labelText('counterOne'))); hitPad(o.g, 52); o.g.dataset.move = 1; o.g.dataset.twin = 'out';
         o.g.onclick = () => { if (o.inF || moved >= need) return; o.inF = true; o.g.remove(); F.put(F.firstEmpty(), COUNTER2); moved++; SFX.pop(); hush(); if (moved === need) { AUTO_CLEAR(); setTimeout(res, FAST ? 30 : 400); } }; keyOn(o.g, () => o.g.onclick()); });
       AUTO({ kind: 'frameMove', ok: () => out.filter(o => !o.inF).slice(0, need - moved).forEach(o => o.g.dispatchEvent(new MouseEvent('click', { bubbles: true }))) }); }));
-    untarget(out.map(o => o.g)); await S('gen.bus.full'); const want = rd.a + rd.b; await S('gen.bus.ask');
+    untarget(out.map(o => o.g)); await Promise.all([flashSecond(svg), S('gen.bus.full')]); const want = rd.a + rd.b; await S('gen.bus.ask');   /* الركّاب الجدد كلهم يومضون: من صعد ومن ينتظر (D267) */
     await numUntil(() => optsWith(want, [10]), want, { intro: [lineOf('gen.bus.ask')], scene: 'game', tag: 'bus' + i, err: a => a === 10 ? 'tenOnly' : 'tenJoinBus', wrong: a => a === 10 ? 'gen.err.tenOnly.01' : 'gen.err.tenJoinBus.01' });
     await readSentence(rd.a, '+', rd.b, want); }
   if (c.after) await S(c.after); };

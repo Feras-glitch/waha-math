@@ -590,6 +590,10 @@ ITEM.frameGlance = { ...numItem,
 /* ================= ⑭ نكوّن العشرة أولاً (N012) ================= */
 /* a في الإطار، وb خارجه؛ يلمس الطفل ما في الخارج فيدخل الإطار حتى يمتلئ، ثم: ask = total (كم صار؟) | moved (كم أخذت لتكمل العشرة؟). story: جملة القصة */
 const OUT_Y = 196;
+/* حين يمتلئ الإطار تومض القطع الزرقاء كلها معاً، ما دخله وما بقي خارجه: هي العدد الثاني كله (قرار فراس في 15 نوفمبر:
+   «سبعة وأحضرنا ستة» ثم سبع صفراء وثلاث زرقاء في الإطار، فظُنّ أن الست لم تُرسم) */
+function flashSecond(svg) { const ks = [...svg.querySelectorAll('[data-counter]')].filter(k => k.querySelector('circle').getAttribute('fill') === COUNTER2); ks.forEach(k => k.dataset.flash = 1);
+  return Promise.all(ks.map(k => anim(k, [{ opacity: 1 }, { opacity: .3 }, { opacity: 1 }], { duration: FAST ? 40 : 560, iterations: 2 }).done)); }
 /* خيارات ثلاثة: الجواب، وخطأٌ شائع بعينه إن كان غيره (العشرة وحدها، أو ما أُخذ كله…)، وجارٌ للجواب */
 const optsWith = (n, errs = [], max = 20) => { const s = new Set([n]); for (const e of errs) if (s.size < 2 && e !== n && e >= 0 && e <= max && avoidOk(e)) s.add(e); for (const d of [...shuffle([1, -1, 2]), ...shuffle([-2, 3])]) { if (s.size >= 3) break; if (n + d >= 1 && n + d <= max && avoidOk(n + d)) s.add(n + d); } return shuffle([...fillOpts(s, n, 1, max)]); };
 ITEM.makeTen = { ...numItem,
@@ -607,7 +611,7 @@ ITEM.makeTen = { ...numItem,
       await gate(new Promise(res => { let moved = 0; out.forEach(o => { o.g.style.cursor = 'pointer'; o.g.setAttribute('role', 'button'); o.g.setAttribute('tabindex', 0); o.g.setAttribute('aria-label', plain(labelText('counterOne'))); hitPad(o.g, 56); o.g.dataset.move = 1; o.g.dataset.twin = 'out';   /* القطع خارج الإطار سواء: أيّها لُمس دخل */
           const act = () => { if (moved >= need) return; if (move(o)) { moved++; hush(); if (moved === need) { AUTO_CLEAR(); setTimeout(res, FAST ? 30 : 400); } } }; o.g.onclick = act; o.g.onkeydown = e => { if (actKey(e)) act(); }; });
         AUTO({ kind: 'frameMove', ok: () => { out.filter(o => !o.inF).slice(0, need - F.count() + item.a).forEach(o => o.g.dispatchEvent(new MouseEvent('click', { bubbles: true }))); } }); }));
-      untarget(out.map(o => o.g)); logAttempt({ scene: 'explore', tag: 'makeTen-fill', ok: true }); await S('gen.makeTen.full', { keep: !!item.story }); }
+      untarget(out.map(o => o.g)); logAttempt({ scene: 'explore', tag: 'makeTen-fill', ok: true }); await Promise.all([flashSecond(svg), S('gen.makeTen.full', { keep: !!item.story })]); }
     const q = (item.ask || 'total') === 'moved' ? (tries >= 3 ? 'gen.makeTen.togetherMoved' : item.q) : (tries >= 3 ? 'gen.makeTen.together' : 'gen.makeTen.ask'); const keepQ = !!item.story && (item.ask || 'total') === 'total';   /* القصة تنتهي بسؤالها «كم صارت؟» */
     await S(q, { keep: keepQ });
     const np = numberPick((item.ask || 'total') === 'moved' ? optsWith(need, [item.b]) : optsWith(item.a + item.b, [10]), item.want, { intro: [...(item.story ? [lineOf(item.story)] : []), keepQ ? [...lineOf(q), { keep: true }] : lineOf(q)] }); return { ans: await np.p, ctx: { svg, F, out, np } }; },

@@ -964,6 +964,9 @@ RUNTIME = [
   ('G قصة «نرجع إلى العشرة» تُمحى', "const keep = item.story ? { keep: true } : {};", "const keep = {};", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN backTen: القصة في الفقاعة وقت frameTake'),
   ('G بلا فاصل بعد العدد', "{ append: true, sep: '. ' }", "{ append: true }", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN «أبعدي'),
   ('G السهم بلا رأس', "arrowTip(svg, 152, 123, 20, 30, css('--compass'));", "", ['test/games_run.py', '{F}'], {'ONLY': 'DRAW'}, 'FAIL DRAW «أيّ الجملتين…» (+)'),
+  ('G الإطار يمتلئ بلا وميض الزرقاء', "await Promise.all([flashSecond(svg), S('gen.makeTen.full', { keep: !!item.story })]);", "await S('gen.makeTen.full', { keep: !!item.story });", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN makeTen: حين امتلأ'),
+  ('G الحافلة تمتلئ بلا وميض الركّاب', "await Promise.all([flashSecond(svg), S('gen.bus.full')]);", "await S('gen.bus.full');", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN «حافلة الواحة»'),
+  ('G الوميض لما في الإطار وحده', "const ks = [...svg.querySelectorAll('[data-counter]')].filter(k => k.querySelector('circle').getAttribute('fill') === COUNTER2);", "const ks = [...svg.querySelectorAll('[data-frame] [data-counter]')].filter(k => k.querySelector('circle').getAttribute('fill') === COUNTER2);", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN makeTen: حين امتلأ'),
   ('G المكعب الأبيض بحدٍّ أبيض', "edge: color === CUBE.white ? CUBE_EDGE_W : '#ffffff'", "edge: '#ffffff'", ['test/games_run.py', '{F}'], {'ONLY': 'DRAW'}, 'FAIL DRAW المكعبات البيضاء'),
 ]
 if os.environ.get('MUT_COUNT'): print(len(RUNTIME)); sys.exit(0)   # عدد طفرات المتصفح وحده، لتقسيمها شرائح في run_all.sh (الدرس 299)

@@ -4,7 +4,8 @@
 #   MINUS  «أبعد» تنطق العدد الجديد كـ«أضف»: بعد ثلاث إضافات وإبعادٍ آخر عددٍ مسموع عدد البرج (بزمنٍ حقيقي وصوتٍ غير مكتوم).
 #   OFFER  عرض «هل نفكّر معاً؟» يُسمع والسؤال باقٍ في الفقاعة.
 #   FRAME  لعبة «أكمل الإطار»: التعليمة كاملة بعددها في الجولات الثلاث.
-#   TEN    قصص «نكوّن العشرة أولاً» و«نرجع إلى العشرة» باقية في الفقاعة وقت العمل ووقت السؤال؛ و«…عددها ستة. ابدئي…» بفاصلٍ بعد العدد.
+#   TEN    قصص «نكوّن العشرة أولاً» و«نرجع إلى العشرة» باقية في الفقاعة وقت العمل ووقت السؤال؛ و«…عددها ستة. ابدئي…» بفاصلٍ بعد العدد؛
+#          وحين يمتلئ الإطار (والحافلة) تومض القطع الزرقاء كلها، ما دخله وما بقي خارجه.
 #   DRAW   «أيّ الجملتين تناسب الصورة؟»: السهم برأس؛ والمكعب الأبيض بحدٍّ غير أبيض.
 # والضوابط (تنجح على 6e2e386 أيضاً): «الصحيح من أول محاولة»، والجولة الأولى في «أكمل الإطار» وانتهاء اللعبة، و«بلا خطأ في الصفحة».
 # الاستعمال: python3 test/games_run.py [ملف نسخة الفحص]   (ONLY=STORY,MINUS لبعضها؛ يخرج بـ 1 مع أي إخفاق)
@@ -33,6 +34,7 @@ ST = """() => { const a = window.__auto, st = document.querySelector('#stage'), 
   return { say: (document.querySelector('#say') || {}).textContent || '', auto: a ? { n: a.n, kind: a.kind } : null, res: window.__res, err: window.__err, clips: window.__clips || [],
     nums: st ? [...st.querySelectorAll('.choices.nums button')].map(b => +b.dataset.k) : [], cubes, storyNums: st ? [...st.querySelectorAll('[data-story-num]')].map(g => +g.dataset.storyNum) : [],
     glow: document.querySelector('#helpBtn') ? document.querySelector('#helpBtn').classList.contains('glow') : null }; }"""
+FLASH = "() => { const f = [...document.querySelectorAll('#stage svg [data-counter][data-flash]')]; return [f.length, f.filter(k => k.closest('[data-frame]')).length, f.filter(k => !k.closest('[data-frame]')).length]; }"
 async def until(pg, pred, t=20000):
   """ينتظر حالةً تحقّق pred، ويعيدها (أو آخر حالة عند المهلة)"""
   st = None
@@ -119,8 +121,19 @@ async def ten(b):
     await pg.evaluate(START, ['m1.u4.d7', spec, 'practice']); last = -1
     for k in kinds:
       st = await until(pg, wait_kind(k, last)); last = st['auto']['n']
-      check('TEN', words in st['say'], '%s: القصة في الفقاعة وقت %s' % (spec['t'], k), st['say']); await ok_now(pg)
+      check('TEN', words in st['say'], '%s: القصة في الفقاعة وقت %s' % (spec['t'], k), st['say'])
+      if spec['t'] == 'makeTen' and k == 'num':
+        fl = await pg.evaluate(FLASH); check('TEN', fl == [6, 3, 3], 'makeTen: حين امتلأ الإطار ومضت الزرقاء الست كلها: ثلاث فيه وثلاث خارجه', fl)
+      await ok_now(pg)
     await until(pg, lambda s: s['res'])
+  # ولعبة «حافلة الواحة»: الجولة الأولى 7 و5، فحين تمتلئ يومض الركّاب الخمسة الجدد: ثلاثة صعدوا واثنان ينتظرون
+  await pg.evaluate(START, ['m1.u4.d7', 3, 'game']); st = await until(pg, wait_kind('frameMove')); a0 = st['auto']['n']; await ok_now(pg)
+  st = await until(pg, wait_kind('num', a0)); fl = await pg.evaluate(FLASH)
+  check('TEN', fl == [5, 3, 2], '«حافلة الواحة»: حين امتلأت ومض الركّاب الخمسة الجدد كلهم: ثلاثة فيها واثنان ينتظرون', fl)
+  for _ in range(12):
+    st = await until(pg, lambda s: s['res'] or s['auto'], 8000)
+    if st['res']: break
+    await ok_now(pg); await pg.wait_for_timeout(60)
   await pg.evaluate(START, ['m1.u4.d7', {'t': 'backTen', 'a': 14, 'b': 6}, 'practice']); st = await until(pg, wait_kind('frameTake'))
   check('TEN', re.search(r'سِتَّة\. اِبْدَئِي', st['say']) is not None, '«أبعدي قطعاً عددها ستة. ابدئي بالتي خارج الإطار»: فاصلٌ بعد العدد', st['say'])
   await ok_now(pg); st = await until(pg, wait_kind('num')); await ok_now(pg); await until(pg, lambda s: s['res'])
