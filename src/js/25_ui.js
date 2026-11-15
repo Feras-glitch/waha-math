@@ -60,7 +60,7 @@ function armIdle(h, opt = {}) { idleHandler = h; help.hidden = false; help.class
   resetIdle(opt); }
 function resetIdle(opt = {}) { if (idleTimer) idleTimer.cancel(); idleTimer = null; if (!idleHandler) return;
   const wait = FAST ? 1500 : (opt.first ? 10000 : 20000);   // T9: أقصر في أول لقاء بالأداة
-  idleTimer = ptimeout(async () => { if (speechBusy() || PAUSED) { resetIdle(opt); return; }   /* ولا يعرض المساعدة تحت غطاء الخروج (F2 (3)) */ help.classList.add('glow'); await S('gen.hintOffer.01', { ifIdle: true, free: true, aside: true }); }, wait); }
+  idleTimer = ptimeout(async () => { if (speechBusy() || PAUSED) { resetIdle(opt); return; }   /* ولا يعرض المساعدة تحت غطاء الخروج (F2 (3)) */ help.classList.add('glow'); await S('gen.hintOffer.01', { ifIdle: true, free: true, aside: true, keep: true }); }, wait); }   /* keep: يُسمع العرض ويتوهّج الفانوس، والسؤال باقٍ في الفقاعة (الألعاب، 15 نوفمبر: كان يحلّ محلّه بعد 10 ثوانٍ أو 20) */
 function disarmIdle() { idleHandler = null; if (idleTimer) idleTimer.cancel(); idleTimer = null; help.hidden = true; help.classList.remove('glow'); }
 document.addEventListener('pointerdown', e => { if (idleHandler && !help.contains(e.target)) { help.classList.remove('glow'); resetIdle(); } }, true);
 /* أول لقاء بأداة (M4): عرض تلقائي قصير، ثم يبدأ الطفل. يُحفظ لكل طفل */

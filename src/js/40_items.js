@@ -38,7 +38,7 @@ async function runItem0(spec, mode, ctx) {
     /* المساعدة عند السكوت أو بالفانوس: «لاحظ جيداً» ثم ما يريه نوع البند، أو السؤال من جديد (الفحص المستقل B: كان «لاحظ جيداً» وحدها) */
     if (help) armIdle(async () => { await S(T.idleLine ? T.idleLine(item) : 'gen.hint.look', { aside: true }); if (T.idle) await T.idle(item); else replayLine(); }, { first: firstTime('item:' + type) });
     const t0 = Date.now(); NEUTRAL_ANS = mode === 'mastery' || mode === 'test'; let r; try { r = await T.ask(item, mode, tries); } finally { NEUTRAL_ANS = false; } disarmIdle();
-    const j = T.judge(item, r.ans); tries++;
+    const j = T.judge(item, r.ans); tries += r.slip ? 2 : 1;   /* خطأٌ في خطوةٍ داخل البند أُصلح قبل الجواب (بناء القصة): محاولة، فلا يُحسب من أول محاولة */
     logAttempt({ scene, mode, type, tag: item.tag, ans: r.ans, ok: j.ok, firstTry: tries === 1, try: tries, err: j.ok ? null : (j.err || 'generic'), ms: Date.now() - t0, spec: specText(spec) });
     if (j.ok) {
       if (T.onOk && mode !== 'mastery' && mode !== 'test') await T.onOk(item, r, j);   // الإتقان والاختبار بلا إشارة صواب (A-01؛ والاختبار: القرار A-03، D266)

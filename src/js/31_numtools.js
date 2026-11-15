@@ -1,10 +1,10 @@
 /* =====================================================================
    أدوات خيط العدد في م1 (D222): المكعبات والأبراج، وصناديق البريد، وبطاقات الأرقام وتتبّعها، والنقاط، والأصابع
    ===================================================================== */
-const CUBE = { lemon: '#c9dd3a', white: '#f4f1e8', plain: '#9cc53b', big: '#9cc53b' };
+const CUBE = { lemon: '#c9dd3a', white: '#f4f1e8', plain: '#9cc53b', big: '#9cc53b' }, CUBE_EDGE_W = '#a39b88';
 /* مكعب صغير بإسقاط ثابت (للأبراج): يعيد المجموعة، ومركزه عند (x, y) */
 function cubeAt(parent, x, y, size = 30, color = CUBE.plain) { const g = el('g', { transform: `translate(${x} ${y})` }, parent);
-  drawBox(g, { w: size, h: size, d: size * .7, yaw: 18, pitch: 16, color, edge: '#ffffff' }); return g; }
+  drawBox(g, { w: size, h: size, d: size * .7, yaw: 18, pitch: 16, color, edge: color === CUBE.white ? CUBE_EDGE_W : '#ffffff' }); return g; }   /* المكعب الأبيض بحدٍّ رماديّ: الأبيض على السماء الفاتحة كان باهتاً (الألعاب، 15 نوفمبر) */
 /* برج من n مكعبات قاعدته عند baseY؛ colors اختياري لكل مكعب */
 function towerAt(parent, x, baseY, n, opt = {}) { const size = opt.size || 30, step = size * (opt.k || 1.02); const g = el('g', {}, parent); const cubes = [];
   for (let i = 0; i < n; i++) cubes.push(cubeAt(g, x, baseY - size * .62 - i * step, size, (opt.colors && opt.colors[i]) || opt.color || CUBE.plain));

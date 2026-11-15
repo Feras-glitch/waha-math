@@ -702,7 +702,7 @@ RUNTIME = [
   ('اللمسة أثناء القفزة تُسقط', 'if (busy) { if (pend.length < 6) pend.push(t.n); return; }', 'if (busy) return;', ['test/quicktap_run.py'], {}, 'FAIL Pixel 5: pr.1'),
   ('الطريق لا يكشف البلاطة التالية', 'nx = Math.max(0, Math.min(R.S.tiles.length - 1, to + dir));', 'nx = to;', ['test/quicktap_run.py'], {}, 'FAIL Pixel 5: البلاطة'),
   ('العدد يصير «آخر جملة»', 'if (!opt.keep && !opt.num && !opt.aside) lastLine', 'if (!opt.keep && !opt.aside) lastLine', ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL لمس بلاطة'),
-  ('عرض المساعدة يصير «آخر جملة»', "'gen.hintOffer.01', { ifIdle: true, free: true, aside: true }", "'gen.hintOffer.01', { ifIdle: true, free: true }", ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL عرض المساعدة'),
+  ('عرض المساعدة يصير «آخر جملة»', "'gen.hintOffer.01', { ifIdle: true, free: true, aside: true, keep: true }", "'gen.hintOffer.01', { ifIdle: true, free: true }", ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL عرض المساعدة'),
   ('«نبقى» يعيد سؤال الخروج', 'lessonInert(false); lastLine = prev; resumeBack();', 'lessonInert(false); resumeBack();', ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL «نبقى»'),
   # وغطاء الخروج يوقف الدرس، و«أعد» عند سؤال حلّ التعدّي يعيد الحلّ كله (الفحص المستقل F2 (1) و(3))
   # الفحص المستقل H2: الإيقاف يوقف كل شيء بعد «نبقى» وإطفاء الشاشة (القسم 9 و(ز) و(ح) و(ل) و(م) و(ن) و(س) و(ع))، وثبات تقليل الحركة بمدّتين (RMHOLD3)، وحلقتا التعدّي (TRANSHOOKRM)
@@ -950,6 +950,21 @@ RUNTIME = [
   ('المهلة لا تُعلَم بالشاشة المتروكة', "const st = TESTHOOK && FLOW !== f0;", "const st = false;", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'غ'}, 'FAIL حارس التشغيل'),
   ('سؤال الغطاء يُقال والصفحة مخفية', "if (opt.cover && PAUSED) { if (document.hidden) { VIS_COVER = opt.cover; return Promise.resolve(); } return speakNow(who, id, text, opt); }", "if (opt.cover && PAUSED) { return speakNow(who, id, text, opt); }", ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'غ'}, 'FAIL غطاء الخروج يُفتح والصفحة مخفية'),
   ('مفتاحٌ غير مفتاح الفعل يلمس', "const isActKey = e => e.key === 'Enter' || e.key === ' ',", "const isActKey = e => e.key !== 'Tab',", ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u4.d1', 'STRICT': '1', 'SHOTS': '0', 'OUT': 'test/out/mut_auto'}, '(غير مفتاح الفعل) فعل شيئاً'),   # J2 (8): الحارس في السائق
+  # إصلاحات الألعاب بعد تجربة فراس نسخة الويب (15 نوفمبر 2026، D267، الدرس 300): كل إصلاح يمسكه test/games_run.py
+  ('G القصة تُمحى بتعليمة العمل', "await S(item.op === '+' ? 'gen.story.add' : 'gen.story.remove', { keep: true });", "await S(item.op === '+' ? 'gen.story.add' : 'gen.story.remove');", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY وقت البناء'),
+  ('G بلا رقمي القصة', "digitCard(svg, x, 50, n, { size: .8 }).dataset.storyNum = n;", "void n;", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY عددا القصة'),
+  ('G «تمّ» تقبل أيّ برج', "if (n === item.want) break;", "break;", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY (practice) «تمّ» ببرجٍ من أربعة'),
+  ('G خطأ البناء يُحسب من أول محاولة', "tries += r.slip ? 2 : 1;", "tries++;", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY (practice) جوابه عدد برجه'),
+  ('G لا نمثّل القصة معاً', "await S('gen.story.together');", "", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY +: ثلاث مرات'),
+  ('G بعد خطأ العدّ يُبنى البرج من جديد', "if (tries) { const T = towerAt(svg, 180, 240, item.want", "if (false) { const T = towerAt(svg, 180, 240, item.want", ['test/games_run.py', '{F}'], {'ONLY': 'STORY'}, 'FAIL STORY بعد خطأ العدّ'),
+  ('G «أبعد» صامتة', "redraw(); SFX.soft(); if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); });", "redraw(); SFX.soft(); });", ['test/games_run.py', '{F}'], {'ONLY': 'MINUS'}, 'FAIL MINUS ثلاث إضافات'),
+  ('G عرض المساعدة يمحو السؤال', "'gen.hintOffer.01', { ifIdle: true, free: true, aside: true, keep: true }", "'gen.hintOffer.01', { ifIdle: true, free: true, aside: true }", ['test/games_run.py', '{F}'], {'ONLY': 'OFFER'}, 'FAIL OFFER عرض'),
+  ('G «أكمل الإطار» بلا تعليمته بعد الأولى', "say(...lineOf(c.q), { free: true }); await say(...lineOf(numw(rd.need))", "say(...lineOf(i === 0 ? c.q : 'gen.bus.again'), { free: true }); await say(...lineOf(numw(rd.need))", ['test/games_run.py', '{F}'], {'ONLY': 'FRAME'}, 'FAIL FRAME الجولة 2'),
+  ('G قصة الإطار تمحوها «أكمل الإطار»', "say(...lineOf('gen.makeTen.fill'), { free: true, keep: !!item.story });", "say(...lineOf('gen.makeTen.fill'), { free: true });", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN makeTen: القصة في الفقاعة وقت frameMove'),
+  ('G قصة «نرجع إلى العشرة» تُمحى', "const keep = item.story ? { keep: true } : {};", "const keep = {};", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN backTen: القصة في الفقاعة وقت frameTake'),
+  ('G بلا فاصل بعد العدد', "{ append: true, sep: '. ' }", "{ append: true }", ['test/games_run.py', '{F}'], {'ONLY': 'TEN'}, 'FAIL TEN «أبعدي'),
+  ('G السهم بلا رأس', "arrowTip(svg, 152, 123, 20, 30, css('--compass'));", "", ['test/games_run.py', '{F}'], {'ONLY': 'DRAW'}, 'FAIL DRAW «أيّ الجملتين…» (+)'),
+  ('G المكعب الأبيض بحدٍّ أبيض', "edge: color === CUBE.white ? CUBE_EDGE_W : '#ffffff'", "edge: '#ffffff'", ['test/games_run.py', '{F}'], {'ONLY': 'DRAW'}, 'FAIL DRAW المكعبات البيضاء'),
 ]
 if os.environ.get('MUT_COUNT'): print(len(RUNTIME)); sys.exit(0)   # عدد طفرات المتصفح وحده، لتقسيمها شرائح في run_all.sh (الدرس 299)
 def run(args, env, f):

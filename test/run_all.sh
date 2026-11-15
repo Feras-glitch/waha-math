@@ -49,6 +49,7 @@ timeout 2400 python3 test/audit_run.py                         > "$O/audit.txt" 
 timeout 2400 python3 test/adv_run.py                           > "$O/adv.txt" 2>&1           || echo adv >> "$O/FAILED"     # قبول مراجعة الخصم الشاملة (5 نوفمبر 2026)
 timeout 1800 python3 test/fresh_run.py                         > "$O/fresh.txt" 2>&1         || echo fresh >> "$O/FAILED"   # قبول المراجعة بعين جديدة (13 نوفمبر 2026)
 timeout 2400 python3 test/decisions_run.py                     > "$O/decisions.txt" 2>&1     || echo decisions >> "$O/FAILED"   # قبول قرارات فراس (14 نوفمبر 2026، D266)
+timeout 1800 python3 test/games_run.py                         > "$O/games.txt" 2>&1         || echo games >> "$O/FAILED"       # إصلاحات الألعاب بعد تجربة فراس نسخة الويب (15 نوفمبر 2026، D267)
 fi
 if in_part m; then   # الطفرات على جزأين (بوابة S1-U4 بعد E: تجاوزت كلها ساعة ونصفاً): المحتوى والمولّد والكود ونصف طفرات المتصفح، ثم نصفها الثاني، شرائحَ (الدرس 299)
 [ -f "$O/FAILED" ] && sed -i '/^mutants$/d; /^mutcount$/d' "$O/FAILED"

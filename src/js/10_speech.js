@@ -92,7 +92,7 @@ function speakNow(who, id, text, opt = {}) {
   const raw = text; text = G(text);
   const bubble = opt.cover ? opt.cover.querySelector('.coversay') : $('#say');
   if (!opt.cover) { $('#who').innerHTML = CHAR[who](); $('#bubble').classList.toggle('chaos', who === 'chaos'); $('#bubble').classList.toggle('hidetext', !!opt.hideText); }
-  if (bubble && !opt.keep && !opt.num) bubble.textContent = opt.hideText ? '؟' : opt.append && bubble.textContent ? bubble.textContent + ' ' + text : text;   /* append: تتمة السؤال (العدد بعد «حتى يصير:») تُضاف إلى نصّه */
+  if (bubble && !opt.keep && !opt.num) bubble.textContent = opt.hideText ? '؟' : opt.append && bubble.textContent ? bubble.textContent + (opt.sep || ' ') + text : text;   /* append: تتمة السؤال (العدد بعد «حتى يصير:») تُضاف إلى نصّه؛ وsep فاصلها إن بدأت جملة جديدة */
   if (!opt.cover && !opt.keep && !opt.num) { const sy = $('#say'); if (sy) { sy.scrollTop = 0; bubbleMore(); } }
   const talk = $('#talk'); talk.classList.add('speaking');
   const full = (id.startsWith('gen.') ? id : (CUR ? CUR.id : 'm1.u1') + '.' + id) + gSuffix(raw);

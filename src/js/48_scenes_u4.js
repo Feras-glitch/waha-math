@@ -299,7 +299,8 @@ SCENES.completeFrame = async c => { if (c.intro) await S(c.intro);
   for (const [i, rd] of c.rounds.entries()) { const svg = newStage(290, { oasis: false, ground: 0 }); digitCard(svg, 180, 44, rd.need, { size: .9 });
     const Fs = rd.frames.map((m, j) => { const g = el('g', { 'data-k': m }, svg); const f = frameAt(g, 180, 116 + j * 62, { cell: 26 }); f.fill(m, CUBE.lemon); return { g, k: m, label: labelText('frameOne') }; });
     await Promise.all(Fs.map((f, j) => anim(f.g, [{ transform: 'translateX(-360px)' }, { transform: 'translateX(0)' }], { duration: 700 + j * 150, easing: 'ease-out' }).done));
-    say(...lineOf(i === 0 ? c.q : 'gen.cframe.again'), { free: true }); await say(...lineOf(numw(rd.need)), { append: true, free: true });
+    /* التعليمة كاملة بعددها في كل جولة (قرارات فراس في 15 نوفمبر: من الثانية كان يبقى «وهذه البطاقة: خمسة» وحده) */
+    say(...lineOf(c.q), { free: true }); await say(...lineOf(numw(rd.need)), { append: true, free: true });
     const want = 10 - rd.need; let t = 0; while (true) { const k = await tapOne(Fs, { ok: want, pad: 64 }); hush(); t++; logAttempt({ scene: 'game', tag: 'cframe' + i, ok: k === want, firstTry: t === 1, err: k === want ? null : 'friendWrong' }); if (k === want) break; SFX.soft(); await S('gen.err.friendWrong.01'); }
     SFX.good(); const f = Fs.find(x => x.k === want); okRing(svg, f.g, 4); await sleep(500); }
   if (c.after) await S(c.after); };
