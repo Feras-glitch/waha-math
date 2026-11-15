@@ -15,7 +15,7 @@ android {
         versionName "1.1.0"
     }
 
-    /* التوقيع بمفتاح العائلة نفسه الذي في waha-app: يأتي من أسرار GitHub (SIGNING-AR.md في جذر المستودع)،
+    /* التوقيع بمفتاح «واحة الرياضيات» الخاص (D269): يأتي من أسرار GitHub (SIGNING-AR.md في جذر المستودع)،
        ولا يُحفظ في المستودع أبداً. والمفتاح ثابت في كل نسخة، فتُثبَّت كل نسخة فوق السابقة ولا يضيع تقدّم الأطفال. */
     def ks = System.getenv("WAHA_KEYSTORE")
     signingConfigs {
@@ -42,7 +42,7 @@ android {
             minifyEnabled false
             if (ks) signingConfig signingConfigs.release
         }
-        // نسخة الفحص بالمفتاح التجريبي دائماً: لا تُوزَّع، فلا تحتاج مفتاح العائلة
+        // نسخة الفحص بالمفتاح التجريبي دائماً: لا تُوزَّع، فلا تحتاج مفتاح النشر
         debug {
             signingConfig signingConfigs.fixedDebug
         }

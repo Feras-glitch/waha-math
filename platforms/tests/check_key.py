@@ -43,6 +43,6 @@ with zipfile.ZipFile(jar, 'w') as z:
 r = subprocess.run(['jarsigner', '-keystore', ks, '-storepass:env', 'KP', '-keypass:env', 'KK', jar, alias.strip()],
                    env={**os.environ, 'KP': pw.strip(), 'KK': kp.strip()}, capture_output=True, text=True)
 if r.returncode != 0:
-    print('::error title=مفتاح التوقيع::المخزن يُفتح، لكن WAHA_KEY_PASSWORD لا يفتح المفتاح «%s». في مفتاح العائلة هي كلمة سرّ المخزن نفسها (password.txt).' % alias.strip())
+    print('::error title=مفتاح التوقيع::المخزن يُفتح، لكن WAHA_KEY_PASSWORD لا يفتح المفتاح «%s». وهي في مفتاح «واحة الرياضيات» كلمة سرّ المخزن نفسها (password.txt).' % alias.strip())
     sys.exit(1)
 print('::notice title=مفتاح التوقيع::المخزن يُفتح، والمفتاح «%s» فيه ويوقّع%s' % (alias.strip(), ('؛ ' + '؛ '.join(facts)) if facts else ''))
