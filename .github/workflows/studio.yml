@@ -162,6 +162,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           cp dl/dist/packs/*.wahawork rel/
+          if ls rel | LC_ALL=C grep -q '[^ -~]'; then echo "::error::اسم ملفٍ غير لاتيني: GitHub يرفض رفعه"; ls rel; exit 1; fi
           (cd rel && sha256sum *) > SHA256.txt && mv SHA256.txt rel/
           V="$(grep -oP 'versionName "\K[^"]+' platforms/android-studio/app/build.gradle)"; TAG="studio-v$V"
           NOTES="استوديو الواحة $V: تسجيل أصوات «واحة الرياضيات» (المرحلة 1: المعلّق، و«شاهد المشهد»، والإرسال بعد كل جلسة).
@@ -170,7 +171,10 @@ jobs:
           - الاستلام عند المنسّق: python3 tools/studio_import.py الدفعات… (docs/مواصفة_استوديو_الواحة.md، القسم 7).
           الإيداع ${GITHUB_SHA::7}."
           if gh release view "$TAG" > /dev/null 2>&1; then
-            echo "::warning::الإصدار $TAG موجود ولا يُستبدل فيه شيء. شيفرة جديدة تحتاج رفع versionName وversionCode في platforms/android-studio/app/build.gradle"
+            echo "::warning::الإصدار $TAG موجود: لا يُستبدل فيه ملف، ويُضاف الناقص فقط. شيفرة جديدة تحتاج رفع versionName وversionCode في platforms/android-studio/app/build.gradle"
+            have="$(gh release view "$TAG" --json assets -q '.assets[].name')"
+            for f in rel/*; do n="$(basename "$f")"; [ "$n" = SHA256.txt ] && continue
+              grep -qx "$n" <<< "$have" || { echo "يُضاف $n إلى $TAG"; gh release upload "$TAG" "$f"; }; done
           else
             gh release create "$TAG" rel/* --title "استوديو الواحة $TAG" --notes "$NOTES" --target "$GITHUB_SHA" --prerelease --latest=false
           fi

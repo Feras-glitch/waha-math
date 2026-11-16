@@ -6,6 +6,7 @@
 //       --gen                     ومعها الجمل العامة التي تُقال في هذه الدروس (خريطة dist/studio_where.json)
 //       --redo ملف.json           جمل مطلوب إعادتها: {"المعرّف": "ملاحظة المنسّق", …} (من tools/studio_import.py --redo أو يدوياً)
 //       --label "الوحدة 1، الدرس 1"   --who "الاسم"   --out مسار.wahawork
+// أسماء الملفات لاتينية (رفع ملفٍ باسم عربي إلى GitHub Releases يُرفض)، والوصف العربي داخل الحزمة نفسها (scope.label).
 // المحرّك في الحزمة هو نسخة الفحص (--dev): فيها السائق الآلي لـ«شاهد المشهد»، ولا تصل إلى الأطفال (القسم 5).
 import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -79,12 +80,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (process.argv[2] === 'pack') {
     const lessons = arg('--lessons') ? arg('--lessons').split(',').filter(Boolean) : null, redoP = arg('--redo');
     const p = makePack(rows, b.html, { char: arg('--char'), lessons, gen: process.argv.includes('--gen'), redo: redoP ? JSON.parse(read(redoP)) : null, label: arg('--label'), who: arg('--who') });
-    write(arg('--out', join(DIST, 'packs', 'حزمة-' + p.manifest.id + '.wahawork')), p);
+    write(arg('--out', join(DIST, 'packs', 'pack-' + p.manifest.id + '.wahawork')), p);
   } else {
     const html = studioHtml(); writeFileSync(join(DIST, 'studio', 'index.html'), html); console.log('الاستوديو:', 'dist/studio/index.html', Math.round(html.length / 1024), 'KB، النسخة', studioVersion());
     const reached = rows.filter(r => r.at).length; console.log('شاهد المشهد: ' + reached + ' من ' + rows.length + ' جملة' + (existsSync(join(DIST, 'studio_where.json')) ? '' : ' (لا خريطة: شغّل test/studio_where.py)'));
-    write(join(DIST, 'packs', 'تجريبي-فرجار-الوحدة1-الدرس1.wahawork'), makePack(rows, b.html, { char: 'compass', lessons: ['m1.u1.d1'], gen: true, label: 'درس تجريبي: الوحدة 1، الدرس 1' }));
-    write(join(DIST, 'packs', 'فرجار-كل-الجمل.wahawork'), makePack(rows, b.html, { char: 'compass', label: 'فرجار: كل الجمل' }));
-    write(join(DIST, 'packs', 'فوضى-كل-الجمل.wahawork'), makePack(rows, b.html, { char: 'chaos', label: 'فوضى: كل الجمل' }));
+    write(join(DIST, 'packs', 'pilot-compass-u1d1.wahawork'), makePack(rows, b.html, { char: 'compass', lessons: ['m1.u1.d1'], gen: true, label: 'درس تجريبي: الوحدة 1، الدرس 1' }));
+    write(join(DIST, 'packs', 'compass-all.wahawork'), makePack(rows, b.html, { char: 'compass', label: 'فرجار: كل الجمل' }));
+    write(join(DIST, 'packs', 'chaos-all.wahawork'), makePack(rows, b.html, { char: 'chaos', label: 'فوضى: كل الجمل' }));
   }
 }

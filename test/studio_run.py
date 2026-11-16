@@ -6,7 +6,7 @@ import asyncio, http.server, json, math, os, struct, subprocess, sys, tempfile, 
 from playwright.async_api import async_playwright
 HERE = os.path.dirname(os.path.abspath(__file__)); ROOT = os.path.join(HERE, '..'); DIST = os.path.join(ROOT, 'dist')
 OUT = os.path.join(HERE, 'out', 'studio'); os.makedirs(OUT, exist_ok=True)
-PACK = os.path.join(DIST, 'packs', 'تجريبي-فرجار-الوحدة1-الدرس1.wahawork')
+PACK = os.path.join(DIST, 'packs', 'pilot-compass-u1d1.wahawork')
 bugs = []
 def bug(*a): bugs.append(' '.join(map(str, a))); print('  ✗', *a, flush=True)
 
