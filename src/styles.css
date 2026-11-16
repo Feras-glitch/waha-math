@@ -162,6 +162,9 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .choices.icons.big .pick { min-height: 96px; font-size: 21px; }
 .choices.cards { grid-template-columns: 1fr; }
 .choices.cards .card { text-align: center; font-size: 20px; min-height: 64px; }
+.choices.cards .card .cn { display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: 50%; background: var(--sky-bot); color: var(--ink); font-size: 16px; margin-inline-end: 8px; flex: none; }   /* رقم البطاقة (D271) */
+.choices.cards .card.chaos { color: var(--chaos); }
+.choices.cards .card.reading { box-shadow: 0 0 0 5px var(--compass), 0 4px 0 var(--line); transform: scale(1.03); }   /* البطاقة التي تُقرأ الآن، أوضح (D271) */
 .choices.cards .card.hidden-text .q { display: inline-flex; color: var(--ink); opacity: .75; }   /* رمز سماع واحد لكل البطاقات المخفية: لا لون فوضى ولا علامة تميّزها (D236) */
 .choices.cards .sent { font-size: 28px; font-weight: 800; letter-spacing: .04em; unicode-bidi: isolate-override; }
 .choices.nums { grid-template-columns: repeat(3, 1fr); }

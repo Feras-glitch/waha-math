@@ -69,7 +69,7 @@ async function chaosCards(C) {
   let won = false;
   for (let round = 0; round < 3; round++) {
     /* البطاقتان متماثلتان بلا نصّ (D236): لا تُعرف الصحيحة بالنظر، والخاطئة تسبقها النغمة و«فوضى تظنّ…»؛ ويُكشف نصّ الصحيحة بعد اختيارها */
-    const cp = cardPick([{ id: C.right, k: 'r', ok: true, hide: true }, { id: C.wrong, k: 'w', ok: false, hide: true, pre: async () => { SFX.chaos(); await S('gen.chaos.thinks', { free: true }); } }]);
+    const cp = cardPick([{ id: C.right, k: 'r', ok: true, hide: true }, { id: C.wrong, k: 'w', ok: false, hide: true, chaos: true, pre: async () => { SFX.chaos(); await S('gen.chaos.thinks', { free: true, question: true }); } }]);
     const pickd = await cp.p; cp.done(); const ok = pickd.k === 'r'; logAttempt({ scene: 'chaos', tag: 'cards', ok, firstTry: round === 0 });
     cp.btns.find(b => b.dataset.k === pickd.k).classList.add(ok ? 'ok' : 'no'); if (ok) cp.reveal('r');
     await sleep(500); cp.box.remove();

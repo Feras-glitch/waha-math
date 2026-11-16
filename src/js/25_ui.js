@@ -21,7 +21,7 @@ function nextBtn(lbl) { AUTO({ kind: 'go', ok: () => go.click() }); return gate(
 function setSteps(n) { const s = $('#steps'); s.innerHTML = ''; s.style.setProperty('--n', n); for (let i = 0; i < n; i++) s.appendChild(document.createElement('i')); s.hidden = !n; }
 function setStep(i) { [...$('#steps').children].forEach((d, k) => { d.className = k < i ? 'done' : (k === i ? 'now' : ''); }); }
 let STAGE_RO = null, STAGE_MO = null;   /* إن تغيّر حجم المسرح (فقاعة أطول، أو شاشة قصيرة، أو تدوير) أُعيد حساب مناطق اللمس بالبكسل الفعلي */
-function newStage(H = 300, bg = {}, aria) { const st = $('#stage'); st.innerHTML = ''; STAGE_T = performance.now(); if (PEND_INTRO) Promise.resolve().then(flushIntro);   /* المقدّمة بعد رسم المشهد (D270) */ const svg = el('svg', { viewBox: `0 0 360 ${H}`, preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': aria || (CUR ? plain(CUR.title || '') : '') }); st.appendChild(svg);
+function newStage(H = 300, bg = {}, aria) { const st = $('#stage'); st.innerHTML = ''; STAGE_T = performance.now(); HIST = []; BACK_I = null; if (typeof updateSkip === 'function') updateSkip(); if (PEND_INTRO) Promise.resolve().then(flushIntro);   /* المقدّمة بعد رسم المشهد (D270) */ const svg = el('svg', { viewBox: `0 0 360 ${H}`, preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': aria || (CUR ? plain(CUR.title || '') : '') }); st.appendChild(svg);
   try { if (STAGE_RO) STAGE_RO.disconnect(); STAGE_RO = new ResizeObserver(() => refreshPads(svg)); STAGE_RO.observe(svg); } catch (e) {}
   /* وحين تظهر الخيارات تحت المسرح أو تزول يصغر أو يكبر قبل أن يُبلغ ResizeObserver: يُعاد الحساب فوراً، فلا تبقى منطقة لمس دون حدّها لحظةً
      (الفحصان المستقلان C وD: زرّ تحريك الطريق 55 بكسلاً، وقطعة الورشة 61، على iPhone SE) */
@@ -47,8 +47,11 @@ for (const id of ['#muteBtn', '#muteBtn2']) $(id).onclick = () => { SET.muted = 
   renderMute(); };
 $('#replay').innerHTML = ICON.replay; $('#replay').onclick = () => replayLine();
 /* «تخطَّ» (D270): ظاهرٌ ما دام الكلام جارياً أو ينتظر، ويختفي بلا أن يحرّك ما حوله (visibility) */
-$('#skipBtn').innerHTML = ICON.skip; $('#skipBtn').onclick = () => { skipNow(); updateSkip(); };
-function updateSkip() { const b = $('#skipBtn'); if (b) b.classList.toggle('on', speechBusy() && !SKIPPING); }
+/* والزرّ نفسه «السابق» حين يسكت الكلام وفي الشاشة جملتان فأكثر (D271) */
+$('#skipBtn').onclick = () => { if ($('#skipBtn').dataset.m === 'back') backLine(); else skipNow(); updateSkip(); };
+function updateSkip() { const b = $('#skipBtn'); if (!b) return; const busy = speechBusy(), m = busy ? (SKIPPING ? '' : 'skip') : (HIST.length >= 2 && BACK_I !== 0 ? 'back' : '');
+  if (b.dataset.m !== m) { b.dataset.m = m; if (m) { b.innerHTML = m === 'back' ? ICON.back : ICON.skip; b.setAttribute('aria-label', m === 'back' ? 'الجملة السابقة' : 'تخطَّ القراءة'); } }
+  b.classList.toggle('on', !!m); }
 $('#mapBtn').innerHTML = ICON.map;
 help.innerHTML = ICON.lantern;
 
@@ -104,9 +107,13 @@ function cardPick(cards, opt = {}) {   // cards: [{id(line), k, ok, icon, hide, 
   const box = document.createElement('div'); box.className = 'choices cards'; (opt.host || $('#stage')).appendChild(box);
   const list = opt.keepOrder ? cards : shuffle(cards);
   const btns = list.map(c => { const b = document.createElement('button'); b.className = 'pick card' + (c.hide ? ' hidden-text' : ''); b.dataset.k = c.k;
-    b.innerHTML = (c.icon || '') + (c.hide ? `<span class="q">${EAR}</span>` : `<span>${esc(T(c.id))}</span>`); b.setAttribute('aria-label', c.hide ? plain(labelText('listenCard')) : plain(T(c.id)));
+    b.innerHTML = (c.hide && list.length > 1 ? `<b class="cn">${DG(list.indexOf(c) + 1)}</b>` : '') + (c.icon || '') + (c.hide ? `<span class="q">${EAR}</span>` : `<span>${esc(T(c.id))}</span>`);   /* رقم البطاقة المخفية: الأولى تُقرأ أولاً (D271) */ b.setAttribute('aria-label', c.hide ? plain(labelText('listenCard')) : plain(T(c.id)));
     /*T*/if (TESTHOOK) b.dataset.ok = !!c.ok;/*/T*/ box.appendChild(b); return b; });
-  let answered = false, run = 0;
+  let answered = false, run = 0, shown = false;
+  /* بطاقةٌ مخفيّة لم تُسمع (كتمٌ، أو «بلا صوت»، أو «تخطَّ»، أو جهازٌ بلا صوت عربي): تُكتب البطاقتان، وبطاقة فوضى بنغمتها المكتوبة «فوضى تظنّ:»
+     بلونها، كما تُسمع (D271)؛ فلا يبقى سؤالٌ بلا نصّ ولا صوت */
+  const showAll = () => { if (shown) return; shown = true; btns.forEach((b, i) => { const c = list[i]; if (!c.hide || answered) return; b.classList.remove('hidden-text'); b.classList.toggle('chaos', !!c.chaos);
+    b.innerHTML = `<b class="cn">${DG(i + 1)}</b>${c.icon || ''}<span>${c.chaos ? esc(T('gen.chaos.thinks')) + ' ' : ''}${esc(T(c.id))}</span>`; b.setAttribute('aria-label', plain(T(c.id))); }); };
   AUTO({ kind: 'card', ok: () => btns.find(b => list[btns.indexOf(b)].ok).click(), wrong: () => (btns.find(b => !list[btns.indexOf(b)].ok) || btns[0]).click() });
   const p = gate(new Promise(res => btns.forEach((b, i) => b.onclick = () => { if (box.dataset.done) return; answered = true; REPLAY_HOOK = null; AUTO_CLEAR(); hush(); btns.forEach(x => x.classList.remove('reading')); res(list[i]); })));
   const lines = list.map(c => lineOf(c.id)), intro = opt.intro ? lineOf(opt.intro) : null, flow = FLOW;   /* النصوص من درسها وقت الإنشاء، لا من الدرس الجاري وقت اللمس */
@@ -114,7 +121,7 @@ function cardPick(cards, opt = {}) {   // cards: [{id(line), k, ok, icon, hide, 
     if (withIntro && intro) { await say(...intro, { free: true }); if (answered || me !== run) return;
       if (opt.replayPre) { await opt.replayPre(); if (answered || me !== run) return; } }   /* replayPre: ما يُعاد مع السؤال، كحركة الروبوت في «أيّ أمر اتّبع؟» */
     for (const [i, b] of btns.entries()) { if (PAUSED) await PAUSED.p; if (answered || me !== run) break; b.classList.add('reading'); const c = list[i]; if (c.pre) await c.pre(); if (answered || me !== run) break;   /* والدرس موقوف لا تضيء البطاقة التالية ولا تدقّ نغمتها (H2 (4أ)) */
-      await say(...lines[i], { hideText: c.hide && !opt.keepQ, keep: !!opt.keepQ, free: true }); b.classList.remove('reading'); } };   /* keepQ: بطاقات الأعداد المسموعة تُقرأ والسؤال باقٍ في الفقاعة (S1-U3) */
+      await say(...lines[i], { hideText: c.hide && !opt.keepQ, keep: !!opt.keepQ, free: true, question: true, onSilent: c.hide ? showAll : undefined }); b.classList.remove('reading'); } };   /* keepQ: بطاقات الأعداد المسموعة تُقرأ والسؤال باقٍ في الفقاعة (S1-U3) */
   /* الخطّاف حيّ ما دامت البطاقات على الشاشة في المسار نفسه: الخروج إلى الخريطة أو مسرح جديد يُسقطه (الدرس الآخر لا يسمع بطاقات هذا) */
   REPLAY_HOOK = () => readAll(true); REPLAY_HOOK.live = () => !answered && !box.dataset.done && flow === FLOW && box.isConnected;
   readAll(false);

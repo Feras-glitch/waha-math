@@ -34,10 +34,10 @@ async def main():
     on = await page.evaluate("() => $('#skipBtn').classList.contains('on') && getComputedStyle($('#skipBtn')).visibility === 'visible'")
     check(on, '«تخطَّ» ظاهر أثناء الكلام')
     t = await page.evaluate('performance.now()'); await page.click('#skipBtn'); await page.wait_for_timeout(400)
-    r = await page.evaluate("() => ({ done: window.__done, say: $('#say').textContent, on: $('#skipBtn').classList.contains('on'), skips: progOf(CUR ? CUR.id : 'x').skips || 0 })")
+    r = await page.evaluate("() => ({ done: window.__done, say: $('#say').textContent, on: $('#skipBtn').classList.contains('on') && $('#skipBtn').dataset.m === 'skip', back: $('#skipBtn').dataset.m, skips: progOf(CUR ? CUR.id : 'x').skips || 0 })")
     check(r['done'] is not None and r['done'] - t < 400, f'«تخطَّ» يُنهي الجملة وما بعدها فوراً: {r}')
     check('أَسْئِلَةُ الوَاحَةِ' in r['say'] or 'الوَاحَةِ' in r['say'], f'آخر جملة مكتوبة في الفقاعة: {r["say"][:40]}')
-    check(not r['on'], '«تخطَّ» يختفي بعد التخطّي')
+    check(not r['on'] and r['back'] == 'back', f'«تخطَّ» يصير «السابق» بعد التخطّي، فيراجع الطفل ما تخطّاه: {r["back"]}')
     await page.evaluate("() => { AUTO({ kind: 'test' }); window.__d2 = null; S('gen.practice.intro').then(() => window.__d2 = performance.now()); }")
     await page.wait_for_timeout(600)
     r = await page.evaluate("() => ({ d2: window.__d2, on: $('#skipBtn').classList.contains('on') })")
@@ -56,6 +56,39 @@ async def main():
     await page.wait_for_timeout(4000)
     c = await page.evaluate("() => $('#say').querySelectorAll('.w.on').length")
     check(c == 0, f'لا يبقى تلوين بعد انتهاء الجملة: {c}')
+    # 5) «السابق» (D271): بعد جملتين يصير الزرّ «السابق»، ولمسه يعيد الجملة التي قبل الأخيرة، ثم لا رجوع قبل الأولى
+    await page.evaluate(PREP)
+    await page.evaluate("() => { newStage(250, {}); window.__dd = null; S(['gen.practice.intro', 'gen.ms.intro']).then(() => window.__dd = 1); }")
+    for _ in range(40):
+      if await page.evaluate('window.__dd'): break
+      await page.wait_for_timeout(250)
+    await page.wait_for_timeout(300)
+    m = await page.evaluate("() => [$('#skipBtn').dataset.m, $('#skipBtn').classList.contains('on'), $('#skipBtn').getAttribute('aria-label')]")
+    check(m[0] == 'back' and m[1], f'بعد جملتين يظهر «السابق»: {m}')
+    await page.click('#skipBtn'); await page.wait_for_timeout(300)
+    r = await page.evaluate("() => ({ say: $('#say').textContent, want: G(lineOf('gen.practice.intro')[2]) })")
+    check(r['say'] == r['want'], f'«السابق» يعيد الجملة التي قبل الأخيرة: {r["say"][:30]}')
+    for _ in range(40):
+      if not await page.evaluate('speechBusy()'): break
+      await page.wait_for_timeout(250)
+    await page.wait_for_timeout(200)
+    m = await page.evaluate("() => $('#skipBtn').classList.contains('on')")
+    check(not m, f'لا «سابق» قبل أول جملة في الشاشة: {m}')
+    await page.evaluate("() => { newStage(250, {}); }"); await page.wait_for_timeout(100)
+    m = await page.evaluate("() => $('#skipBtn').classList.contains('on')")
+    check(not m, 'شاشة جديدة: سجلّها فارغ')
+    # 6) بطاقات فوضى المخفية بلا صوت (كتم، أو «بلا صوت»، أو «تخطَّ»): تُكتب البطاقتان، وبطاقة فوضى بلونها و«فوضى تظنّ»
+    await page.evaluate(PREP)
+    await page.evaluate("() => { newStage(220, {}); window.__cp = cardPick([{ id: 'gen.practice.intro', k: 'r', ok: true, hide: true }, { id: 'gen.ms.intro', k: 'w', ok: false, hide: true, chaos: true }]); }")
+    await page.wait_for_timeout(400)
+    r = await page.evaluate("() => [...document.querySelectorAll('.choices.cards .card')].map(b => ({ hid: b.classList.contains('hidden-text'), ch: b.classList.contains('chaos'), n: (b.querySelector('.cn') || {}).textContent, t: b.textContent.length }))")
+    check(all(not x['hid'] and x['t'] > 10 for x in r) and sum(x['ch'] for x in r) == 1 and sorted(x['n'] for x in r) == ['١', '٢'], f'البطاقات المخفية تُكتب حين لا تُسمع، مرقّمة، وبطاقة فوضى بلونها: {r}')
+    await page.evaluate("() => { window.__cp.btns[0].click(); hush(); }")
+    # وبالصوت (بلا كتم): تبقى مخفيّة مرقّمة
+    await page.evaluate("() => { SET.muted = false; NO_TTS = false; hush(); FLOW++; newStage(220, {}); window.__cp = cardPick([{ id: 'gen.practice.intro', k: 'r', ok: true, hide: true }, { id: 'gen.ms.intro', k: 'w', ok: false, hide: true }]); }")
+    r = await page.evaluate("() => [...document.querySelectorAll('.choices.cards .card')].map(b => b.classList.contains('hidden-text') && !!b.querySelector('.cn'))")
+    check(all(r) and len(r) == 2, f'بالصوت تبقى البطاقتان مخفيّتين مرقّمتين: {r}')
+    await page.evaluate("() => { hush(); SET.muted = true; }")
     # 4) صفحة الكبار
     await page.evaluate("() => { hush(); openPanel(); }"); await page.wait_for_timeout(300)
     await page.click('#segRead [data-m="questions"]'); await page.wait_for_timeout(200); await page.click('#quickBtn'); await page.wait_for_timeout(200)

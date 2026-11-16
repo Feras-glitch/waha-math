@@ -69,6 +69,10 @@ let PEND_INTRO = null, STAGE_T = -1e9; const STAGE_SETTLE = 320;
 /* «تخطَّ» (D270): يقطع الجملة الجارية، وما بعدها حتى ينتظر الدرسُ فعلَ الطفل يُكتب في الفقاعة بلا صوت ولا انتظار (SKIPPING، يُلغيه AUTO عند كل انتظار
    لفعله، وhush عند الإجابة). ولا يمسّ جملة غطاء. وIN_ITEM: نحن داخل بند (سؤاله وتلميحه وتنبيهه)، فوضع «الأسئلة فقط» يُسمعها ويكتب الشرح */
 let SKIPPING = false, IN_ITEM = 0, SKIP_AT = 0;
+/* «السابق» (D271، قرار فراس): جمل الشاشة الجارية (منذ آخر لوح جديد) بما فيها ما تُخطّي، ولمس «السابق» يعيد الجملة التي قبل المعروضة، ثم التي قبلها،
+   بصوتها ونصّها وتلوين كلماتها. لا تدخلها جملة مخفيّة النص (بطاقات فوضى) ولا الأعداد ولا الخيارات المقروءة. ولا رجوع إلى سؤالٍ أُجيب: الحكم والتقدّم كما هما */
+let HIST = [], BACK_I = null;
+function backLine() { if (speechBusy() || HIST.length < 2) return; BACK_I = BACK_I == null ? HIST.length - 2 : Math.max(0, BACK_I - 1); const [w, id, t] = HIST[BACK_I]; say(w, id, t, { free: true, back: true }); }
 function skipNow() { if (!speechBusy() && !PEND_INTRO) return; SKIPPING = true; SKIP_AT = Date.now(); flushIntro(); cutNow();
   try { if (CUR) { const P = progOf(CUR.id); P.skips = (P.skips || 0) + 1; saveProg(); } } catch (e) {} }
 function flushIntro() { if (!PEND_INTRO) return; const x = PEND_INTRO; PEND_INTRO = null; for (const id of [].concat(x)) if (id) say(...lineOf(id), { free: true, intro: true }); }
@@ -116,6 +120,7 @@ function speakNow(who, id, text, opt = {}) {
   /* keep: خيار يُقرأ بعد السؤال، لا يصير «آخر جملة» ولا يغيّر نصّ الفقاعة (readChoices).
      num: عدد أو ترتيب يُقال وهو يعدّ أو يلمس، وaside: جملة جانبية (عرض المساعدة): لا تصير «آخر جملة»، فـ«أعد» يعيد السؤال (الفحص المستقل B: كان يعيد آخر رقم أو «هل نفكّر معاً؟»)؛
      والعدد لا يمحو السؤال من الفقاعة أيضاً، والجملة الجانبية تظهر فيها */
+  if (!opt.keep && !opt.num && !opt.aside && !opt.hideText && !opt.cover && !opt.back) { HIST.push([who, id, text]); if (HIST.length > 40) HIST.shift(); BACK_I = null; }
   if (!opt.keep && !opt.num && !opt.aside) lastLine = { who, id, text, lesson: CUR ? CUR.id : null, hideText: !!opt.hideText };
   if (opt.onStart) try { opt.onStart(); } catch (e) {}
   const raw = text; text = G(text);
@@ -136,9 +141,9 @@ function speakNow(who, id, text, opt = {}) {
       resolve(); };
     currentFinish = finish;
     let quietRead = false;
-    const readSilently = () => { if (done || quietRead) return; quietRead = true; clearTimeout(safety); clearInterval(poll); silent = setTimeout(finish, readTime(text)); HL.start(readTime(text) * .85); };
-    if (SKIPPING && !opt.cover) { finish(); return; }   /* تُخطّيت: مكتوبةٌ في الفقاعة، ولا تُنتظر */
-    if (SET.muted || READ.mode === 'none' || (READ.mode === 'questions' && !IN_ITEM && !opt.cover)) { readSilently(); return; }
+    const readSilently = () => { if (done || quietRead) return; quietRead = true; if (opt.onSilent && !FAST) try { opt.onSilent(); } catch (e) {} clearTimeout(safety); clearInterval(poll); silent = setTimeout(finish, readTime(text)); HL.start(readTime(text) * .85); };
+    if (SKIPPING && !opt.cover) { if (opt.onSilent) try { opt.onSilent(); } catch (e) {} finish(); return; }   /* تُخطّيت: مكتوبةٌ في الفقاعة، ولا تُنتظر */
+    if (SET.muted || READ.mode === 'none' || (READ.mode === 'questions' && !IN_ITEM && !opt.cover && !opt.question)) { readSilently(); return; }   /* question: سؤالٌ خارج البنود (بطاقات فوضى) يُسمع في «الأسئلة فقط» */
     let synth; try { synth = window.speechSynthesis; } catch (e) {}
     /* بصوت الجهاز؛ وما لا يعمل فيه النطق يُقرأ صامتاً بزمن قراءته */
     const viaDevice = () => {
