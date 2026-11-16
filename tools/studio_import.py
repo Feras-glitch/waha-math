@@ -75,11 +75,13 @@ def process(src, dst):
   y = x[s0:s1]; lead = a * W - s0; trail = s1 - (b + 1) * W
   pre = array('f', [0.0]) * max(0, int(sr * PAD_MIN) - lead); post = array('f', [0.0]) * max(0, int(sr * PAD_MIN) - trail)
   y = pre + y + post
-  peak = max(abs(v) for v in y) or 1e-9; L0 = lufs_of(y)
-  gain = (TARGET_LUFS - L0) if L0 is not None and L0 > -70 else (-20.0 - lvl); gain = min(gain, PEAK - 20 * math.log10(peak))
-  g = 10 ** (gain / 20)
-  y = array('f', (v * g for v in y))
-  ff('-f', 'f32le', '-ar', '48000', '-ac', '1', '-i', '-', '-ac', '1', '-ar', '44100', '-c:a', 'libmp3lame', '-b:a', '64k', dst, inp=y.tobytes())
+  # الكسب إلى −16 LUFS، ثم محدِّد ذروة لطيف (alimiter) يقصّ القمم القصيرة وحدها، بدل أن تمنع قمّةٌ واحدة رفعَ المقطع كله.
+  # (الكلام قممه عالية: سقف الذروة وحده ترك الدفعة الأولى بين −22 و−16 LUFS)
+  L0 = lufs_of(y); gain = (TARGET_LUFS - L0) if L0 is not None and L0 > -70 else (-20.0 - lvl)
+  g = 10 ** (gain / 20); y = array('f', (v * g for v in y))
+  lim = 10 ** (PEAK / 20)
+  ff('-f', 'f32le', '-ar', '48000', '-ac', '1', '-i', '-', '-af', 'alimiter=limit=%.4f:attack=3:release=40:level=false,aresample=44100' % lim,
+     '-ac', '1', '-c:a', 'libmp3lame', '-b:a', '64k', dst, inp=y.tobytes())
   return round(len(y) / sr, 2), round(lvl, 1), round(gain, 1), lufs_of(decode(dst))
 
 def main():
@@ -152,7 +154,7 @@ def main():
   low = [f for f in log['new'] if state['files'][f]['lufs'] is not None and state['files'][f]['lufs'] < TARGET_LUFS - 2]
   if log['lufs']: t.append('- المستوى بعد التوحيد: متوسط %.1f LUFS، من %.1f إلى %.1f.' % (sum(log['lufs']) / len(log['lufs']), min(log['lufs']), max(log['lufs'])))
   sec = lambda h, xs, fmt: t.extend(['', '## ' + h, ''] + [fmt(x) for x in xs] if xs else [])
-  sec('أخفض من −18 LUFS (ذروة عالية منعت رفع المستوى؛ تُسمع في التطبيق)', low, lambda x: '- `%s`: %.1f LUFS' % (x, state['files'][x]['lufs']))
+  sec('أخفض من −18 LUFS بعد التوحيد (يُسمع في التطبيق)', low, lambda x: '- `%s`: %.1f LUFS' % (x, state['files'][x]['lufs']))
   sec('الدفعات', log['batches'], lambda x: '- %s (%s) الدفعة %s: %d تسجيلاً، %s.' % (x[0], x[1], x[2], x[3], x[4]))
   sec('دفعات ناقصة', gaps, lambda x: '- %s: لم تصل الدفعات %s. اطلب إعادة إرسالها من «الإعدادات ← دفعات سابقة».' % (x[0], '، '.join(map(str, x[1]))))
   sec('مطلوب إعادتها', sorted(redo.items()), lambda x: '- `%s`: %s' % x)
