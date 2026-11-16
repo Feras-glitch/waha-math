@@ -28,12 +28,20 @@ concurrency:
 
 env:
   PYTHONUTF8: '1'   # ويندوز: الطباعة والملفات بالعربية بـ UTF-8 لا بصفحة رموز النظام
+  HAS_VOICE: ${{ secrets.VOICE_TOKEN != '' }}   # الأصوات المضمّنة (D274): مستودع الأصوات الخاص يُسحب بهذا السرّ، وبدونه تُبنى النسخ بصوت الجهاز
 
 jobs:
   checks:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - name: Voice recordings (private repo, D274)
+        if: env.HAS_VOICE == 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: waha-math/voice
+          token: ${{ secrets.VOICE_TOKEN }}
+          path: voice-repo
       - uses: actions/setup-node@v5
         with:
           node-version: 20
@@ -61,6 +69,8 @@ jobs:
         run: python3 test/reading_run.py
       - name: Adversarial audit acceptance (A01–A08, R04)
         run: python3 test/audit_run.py
+      - name: Built-in voices (D274)
+        run: python3 test/voice_bundle_run.py
       - name: Platform files
         run: python3 platforms/make_platforms.py out
       - name: Web version works offline
@@ -76,6 +86,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - name: Voice recordings (private repo, D274)
+        if: env.HAS_VOICE == 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: waha-math/voice
+          token: ${{ secrets.VOICE_TOKEN }}
+          path: voice-repo
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -95,6 +112,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - name: Voice recordings (private repo, D274)
+        if: env.HAS_VOICE == 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: waha-math/voice
+          token: ${{ secrets.VOICE_TOKEN }}
+          path: voice-repo
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -102,7 +126,7 @@ jobs:
         run: |
           python3 platforms/make_platforms.py out
           mkdir -p platforms/android/app/src/main/assets/www
-          cp out/android-www/index.html platforms/android/app/src/main/assets/www/
+          cp -r out/android-www/. platforms/android/app/src/main/assets/www/
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -125,6 +149,7 @@ jobs:
           BT="$ANDROID_HOME/build-tools/34.0.0"; A=apk/waha-math-check.apk
           "$BT/aapt2" dump badging "$A" | grep -E "^package|uses-permission|application-label:|sdkVersion|targetSdk"
           unzip -l "$A" | grep -q "assets/www/index.html"
+          if [ "$HAS_VOICE" = true ]; then unzip -l "$A" | grep -q "assets/www/voice/index.js"; echo "الأصوات في APK: $(unzip -l "$A" | grep -c 'assets/www/voice/.*\.mp3') ملفاً"; fi
           ! "$BT/aapt2" dump badging "$A" | grep -q "android.permission.INTERNET"
       - uses: actions/upload-artifact@v4
         with:
@@ -139,6 +164,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - name: Voice recordings (private repo, D274)
+        if: env.HAS_VOICE == 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: waha-math/voice
+          token: ${{ secrets.VOICE_TOKEN }}
+          path: voice-repo
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -146,7 +178,7 @@ jobs:
         run: |
           python3 platforms/make_platforms.py out
           mkdir -p platforms/android/app/src/main/assets/www
-          cp out/android-www/index.html platforms/android/app/src/main/assets/www/
+          cp -r out/android-www/. platforms/android/app/src/main/assets/www/
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
@@ -254,6 +286,13 @@ jobs:
       # git في ويندوز يحوّل نهايات الأسطر عند السحب (autocrlf)، فلا تبقى الصفحة كما فُحصت بايتاً بايتاً
       - run: git config --global core.autocrlf false
       - uses: actions/checkout@v5
+      - name: Voice recordings (private repo, D274)
+        if: env.HAS_VOICE == 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: waha-math/voice
+          token: ${{ secrets.VOICE_TOKEN }}
+          path: voice-repo
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -265,6 +304,7 @@ jobs:
           python platforms/tests/ci_run.py "Windows app page" python platforms/make_platforms.py out
           mkdir -p platforms/desktop/app
           cp out/desktop-app/index.html out/desktop-app/icon.png platforms/desktop/app/
+          if [ -d out/desktop-app/voice ]; then cp -r out/desktop-app/voice platforms/desktop/app/; fi
           cp platforms/icon/icon.ico platforms/desktop/icon.ico
       - name: Installer and portable program
         working-directory: platforms/desktop
@@ -306,6 +346,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+      - name: Voice recordings (private repo, D274)
+        if: env.HAS_VOICE == 'true'
+        uses: actions/checkout@v5
+        with:
+          repository: waha-math/voice
+          token: ${{ secrets.VOICE_TOKEN }}
+          path: voice-repo
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'

@@ -161,6 +161,7 @@ public class MainActivity extends Activity {
         if (p.endsWith(".svg")) return "image/svg+xml";
         if (p.endsWith(".woff2")) return "font/woff2";
         if (p.endsWith(".woff")) return "font/woff";
+        if (p.endsWith(".mp3")) return "audio/mpeg";   // الأصوات المضمّنة (D274)
         return "application/octet-stream";
     }
 

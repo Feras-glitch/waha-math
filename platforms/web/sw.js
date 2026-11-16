@@ -8,8 +8,14 @@ const MARK = 'const CONTENT = ', WAIT = 2500;   // علامة التطبيق ف�
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(async c => { for (const f of FILES) { const res = await fetch(f, { cache: 'reload' }); if (!res.ok) throw new Error(f);
     if (f === './' || f === './index.html') { const t = await res.clone().text(); if (!t.includes(MARK)) throw new Error('not the app: ' + f); } await c.put(f, res); } })
-    .then(() => self.skipWaiting()));
+    .then(() => voice(CACHE)).then(() => self.skipWaiting()));
 });
+/* الأصوات المضمّنة (D274): فهرسها voice/index.js وملفاتها تُحفظ عند التثبيت ليُسمع صوتها بلا إنترنت. وفقدها لا يمنع التثبيت:
+   ما لم يُحفظ يُطلب من الشبكة حين يُشغَّل ويُحفظ، وبلا شبكة يقرؤه صوت الجهاز */
+async function voice(name) { try { const c = await caches.open(name), r = await fetch('./voice/index.js', { cache: 'reload' }); if (!r.ok) return; const t = await r.clone().text();
+  const m = t.match(/=\s*(\{[\s\S]*\})\s*;?\s*$/); if (!m) return; await c.put('./voice/index.js', r);
+  const files = Object.values(JSON.parse(m[1]).files || {}).filter(f => /^[\w.\-]+\.mp3$/.test(f));
+  for (let i = 0; i < files.length; i += 8) await Promise.all(files.slice(i, i + 8).map(f => fetch('./voice/' + f).then(x => x.ok ? c.put('./voice/' + f, x) : null).catch(() => null))); } catch (e) {} }
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith('waha-math-') && k !== CACHE).map(k => caches.delete(k))))
     .then(() => self.clients.claim()));
@@ -35,5 +41,7 @@ self.addEventListener('fetch', e => {
       return Promise.race([net.then(x => x.app ? x.res : hit, () => hit), late]); }));
     return;
   }
+  if (/\/voice\/[\w.\-]+\.mp3$/.test(new URL(r.url).pathname)) {   /* صوتٌ لم يُحفظ عند التثبيت: يُحفظ أول مرة يُشغَّل */
+    e.respondWith(caches.match(r, { ignoreSearch: true }).then(hit => hit || fetch(r).then(async res => { if (res.ok && res.status === 200) { const c = await caches.open(CACHE); await c.put(r, res.clone()); } return res; }))); return; }
   e.respondWith(caches.match(r).then(hit => hit || fetch(r)));
 });

@@ -168,5 +168,5 @@ function openPanel() {
       if (r.ok || r.why === 'partial') setTimeout(() => location.reload(), r.ok ? (left ? 2500 : 700) : 2500); };
     $('#bkNo').onclick = () => { box.textContent = ''; }; };
 }
-const vpStatText = () => VPACK.n ? `حزمة الصوت: ${DG(VPACK.n)} من ${DG(voiceIds().size)} تسجيلاً` : 'صوت الجهاز (لا حزمة مستوردة)';
+const vpStatText = () => [VBUNDLE.n ? `في التطبيق: ${DG(VBUNDLE.n)} من ${DG(voiceIds().size)} تسجيلاً` : '', VPACK.n ? `حزمة الصوت: ${DG(VPACK.n)} من ${DG(voiceIds().size)} تسجيلاً` : ''].filter(Boolean).join('، ') || 'صوت الجهاز (لا حزمة مستوردة)';   /* D274: المضمّنة والمستوردة */
 $('#adultBtn').onclick = () => { stopVoice(); adultGate(openPanel, () => {}); };            // الزرّ في الخريطة وحدها، فلا يقطع درساً

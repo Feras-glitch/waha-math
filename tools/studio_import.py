@@ -4,6 +4,10 @@
 #
 #   node build/build.mjs                                  (أولاً: الجدول الحالي dist/script_m1.json)
 #   python3 tools/studio_import.py دفعة1.wahareturn دفعة2.wahareturn … [--out out/studio] [--flag المعرّف=ملاحظة …]
+#                                  [--approve all|ملف,ملف…] [--unapprove ملف,ملف…]
+#   ومع مستودع الأصوات الخاص (D274): --out مسار_نسخته المحلية، ثم يُودَع ما تغيّر فيه.
+#   --approve: يعتمد المنسّق ما سمعه، فيدخل التطبيقَ عند البناء (tools/voice_bundle.py). all = كل ما يطابق نصه الحالي الآن؛
+#   والاعتماد للتسجيل بعينه: تسجيلٌ أحدث للملف نفسه، أو تغيّرُ نصّه، يُخرجه من التطبيق حتى يُعتمد من جديد.
 #
 # الإخراج في --out (يتراكم بين التشغيلات):
 #   voice/<الملف>.mp3       آخر تسجيل مقبول لكل ملف (الدفعة الأحدث تغلب)
@@ -12,6 +16,8 @@
 #                           (يُعطى لـ: node build/studio.mjs pack … --redo out/studio/redo.json)
 #   تقرير.md                ما وصل، والدفعات الناقصة، وما ينقص لكل درس
 #   state.json              الدفعات المستلمة لكل مرسل، والبصمة التي سُجّل عليها كل ملف
+#   approved.json           ما اعتمده المنسّق: الملف ← بصمته وزمن تسجيله
+#   returns/                الدفعات كما وصلت (أرشيف لا يُعدَّل)
 import hashlib, json, os, re, shutil, struct, subprocess, sys, tempfile, zipfile, math, datetime
 from array import array
 
@@ -21,13 +27,15 @@ PEAK = -1.5            # سقف ذروة العيّنات dBFS: هامش نصف 
 PAD_MIN, PAD_MAX = 0.10, 0.20
 
 def args():
-  a = sys.argv[1:]; out = os.path.join(ROOT, 'out', 'studio'); flags = {}; files = []
+  a = sys.argv[1:]; out = os.path.join(ROOT, 'out', 'studio'); flags = {}; files = []; appr = []; unappr = []
   i = 0
   while i < len(a):
     if a[i] == '--out': out = a[i + 1]; i += 2
+    elif a[i] == '--approve': appr += [x for x in a[i + 1].split(',') if x]; i += 2
+    elif a[i] == '--unapprove': unappr += [x for x in a[i + 1].split(',') if x]; i += 2
     elif a[i] == '--flag': k, _, v = a[i + 1].partition('='); flags[k.strip()] = v.strip() or 'علّمها المنسّق للإعادة'; i += 2
     else: files.append(a[i]); i += 1
-  return files, out, flags
+  return files, out, flags, appr, unappr
 
 def text_hash(m, f): return hashlib.sha1((m + '\n' + (f or '')).encode('utf-8')).hexdigest()[:12]
 MAX_SEC = {'m1': 8, 'm2': 10, 'm3': 12, 'm4': 15}
@@ -85,14 +93,17 @@ def process(src, dst):
   return round(len(y) / sr, 2), round(lvl, 1), round(gain, 1), lufs_of(decode(dst))
 
 def main():
-  files, out, flags = args()
-  if not files and not flags: sys.exit(__doc__ or 'الاستعمال: python3 tools/studio_import.py دفعة.wahareturn …')
+  files, out, flags, appr, unappr = args()
+  if not files and not flags and not appr and not unappr: sys.exit(__doc__ or 'الاستعمال: python3 tools/studio_import.py دفعة.wahareturn …')
   rows = current(); byfile = {f: rid for rid, r in rows.items() for f in r['files']}
   os.makedirs(os.path.join(out, 'voice'), exist_ok=True)
   stp = os.path.join(out, 'state.json')
   state = json.load(open(stp, encoding='utf-8')) if os.path.exists(stp) else {'senders': {}, 'files': {}}
   log = {'batches': [], 'new': [], 'stale': [], 'unknown': [], 'long': [], 'checks': [], 'errors': [], 'lufs': []}
+  os.makedirs(os.path.join(out, 'returns'), exist_ok=True)
   for path in files:
+    arc = os.path.join(out, 'returns', os.path.basename(path))
+    if os.path.abspath(path) != os.path.abspath(arc) and not os.path.exists(arc): shutil.copy2(path, arc)
     try: z = zipfile.ZipFile(path)
     except Exception as e: log['errors'].append([os.path.basename(path), 'ليس zip: %s' % e]); continue
     try: ret = json.loads(z.read('returns.json').decode('utf-8'))
@@ -123,7 +134,18 @@ def main():
   for fid, v in state['files'].items():
     rid = byfile.get(fid)
     if rid and v['hash'] != rows[rid]['hash'] and [fid, 'تغيّر النص بعد التسجيل'] not in log['stale']: log['stale'].append([fid, 'تغيّر النص بعد التسجيل'])
-  json.dump(state, open(stp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1)
+  json.dump(state, open(stp, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+  # الاعتماد (D274)
+  app = os.path.join(out, 'approved.json'); A = json.load(open(app, encoding='utf-8')) if os.path.exists(app) else {}
+  okf = lambda f: f in byfile and f in state['files'] and state['files'][f]['hash'] == rows[byfile[f]]['hash']
+  want = [f for f in state['files'] if okf(f)] if 'all' in appr else [g for x in appr for g in ([x] if x in byfile else rows[x]['files'] if x in rows else [])]
+  for f in want:
+    if okf(f): A[f] = {'hash': state['files'][f]['hash'], 'at': state['files'][f]['at'], 'approvedAt': datetime.datetime.now().isoformat(timespec='seconds')}
+    else: log['errors'].append([f, '--approve لملف لا تسجيل له يطابق نصه الحالي'])
+  for x in unappr:
+    for f in ([x] if x in byfile else rows[x]['files'] if x in rows else []): A.pop(f, None)
+  json.dump(A, open(app, 'w', encoding='utf-8'), ensure_ascii=False, indent=1, sort_keys=True)
+  live = lambda f: f in A and okf(f) and A[f]['at'] == state['files'][f]['at']
   # حزمة الصوت: ما يطابق نصه الحالي فقط
   valid = sorted(f for f, v in state['files'].items() if f in byfile and v['hash'] == rows[byfile[f]]['hash'] and os.path.exists(os.path.join(out, 'voice', f + '.mp3')))
   pk = os.path.join(out, 'حزمة_الصوت.zip')
@@ -150,7 +172,8 @@ def main():
     L = rows[rid]['label']; d = per.setdefault(L, [0, 0]); d[1] += 1; d[0] += f in valid
   t = ['# تقرير استلام الاستوديو (%s)' % datetime.date.today().isoformat(), '',
        '- الدفعات في هذا التشغيل: %d، والملفات الجديدة: %d.' % (len(log['batches']), len(log['new'])),
-       '- في حزمة الصوت الآن: **%d من %d** ملفاً.' % (len(valid), len(allfiles))]
+       '- في حزمة الصوت الآن: **%d من %d** ملفاً.' % (len(valid), len(allfiles)),
+       '- المعتمد للتطبيق (يدخل الإصدار التالي): **%d**، وينتظر سماعك واعتمادك: %d.' % (sum(1 for f in valid if live(f)), sum(1 for f in valid if not live(f)))]
   low = [f for f in log['new'] if state['files'][f]['lufs'] is not None and state['files'][f]['lufs'] < TARGET_LUFS - 2]
   if log['lufs']: t.append('- المستوى بعد التوحيد: متوسط %.1f LUFS، من %.1f إلى %.1f.' % (sum(log['lufs']) / len(log['lufs']), min(log['lufs']), max(log['lufs'])))
   sec = lambda h, xs, fmt: t.extend(['', '## ' + h, ''] + [fmt(x) for x in xs] if xs else [])

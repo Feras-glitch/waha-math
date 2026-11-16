@@ -7,7 +7,10 @@ from playwright.async_api import async_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 OUT = os.path.abspath(sys.argv[1] if len(sys.argv) > 1 else os.path.join(ROOT, 'out'))
-PAGE = 'file://' + os.path.join(OUT, 'android-www', 'index.html')
+# الجسر يُفحص بصوت الجهاز: نسخةٌ من الصفحة بلا مجلد الأصوات المضمّنة (D274)، وإلا قالت جمل الدرس المسجّلة بملفاتها لا بالجسر
+import shutil, tempfile
+_W = tempfile.mkdtemp(); shutil.copy2(os.path.join(OUT, 'android-www', 'index.html'), os.path.join(_W, 'index.html'))
+PAGE = 'file://' + os.path.join(_W, 'index.html')
 
 # جسرٌ مُحاكى بسلوك محرك النطق في أندرويد: QUEUE_ADD (جملة بعد جملة)، وstop يوقف الحالية بحدث onStop (خطأ) ويُسقط الباقي
 FAKE = """(mode) => {

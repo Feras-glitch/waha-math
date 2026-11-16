@@ -78,4 +78,15 @@ shutil.rmtree(desk, ignore_errors=True)
 write(os.path.join(desk, 'index.html'), html)
 shutil.copy2(os.path.join(P, 'icon', 'icon-512.png'), os.path.join(desk, 'icon.png'))
 
+# ---------- الأصوات المضمّنة (D274) ----------
+# من مستودع الأصوات الخاص إن وُجد (CI يسحبه بالسرّ VOICE_TOKEN إلى voice-repo/)؛ وبدونه تبقى النسخ بصوت الجهاز كما كانت
+VREPO = os.environ.get('WAHA_VOICE_REPO') or os.path.join(ROOT, 'voice-repo')
+if os.path.isdir(VREPO):
+    sys.path.insert(0, os.path.join(ROOT, 'tools')); import voice_bundle
+    voice_bundle.bundle(VREPO, [site, www, desk])
+else:   # فهرسٌ فارغ: الصفحة تطلبه دائماً، وخادمٌ يجيب عن الملف المفقود بصفحة HTML كان يكسر السكربت
+    for d in (site, www, desk):
+        os.makedirs(os.path.join(d, 'voice'), exist_ok=True); write(os.path.join(d, 'voice', 'index.js'), 'window.WAHA_VOICE = {"v":1,"files":{}};\n')
+    print('الأصوات المضمّنة: لا مستودع أصوات (%s)، فالنسخ بصوت الجهاز' % VREPO)
+
 print('النسخة', V, '· الصفحة', H, '·', OUT)

@@ -13,7 +13,18 @@ function voiceIds() { const ids = new Set(), twin = t => { GEN_RX.lastIndex = 0;
   for (const e of Object.values(CONTENT.errors || {})) for (const [id, t] of Object.entries(e.q || {})) add(id, t);
   for (const U of CONTENT.units) for (const L of U.lessons) for (const [id, v] of Object.entries(L.lines || {})) add(L.id + '.' + id, txt(v));
   return ids; }
-const VPACK = { db: null, failed: false, n: 0,
+/* الأصوات المضمّنة في التطبيق (D274): مجلد voice/ بجانب الصفحة في نسخ أندرويد والويب والحاسوب، يكتبه tools/voice_bundle.py
+   من مستودع الأصوات بما اعتمده المنسّق ويطابق نصّه الحالي. فهرسه voice/index.js (سكربت لا fetch: يعمل من file:// في نسخة الحاسوب).
+   وما استُورد يدوياً من لوحة الكبار يتقدّم عليه، فتُجرَّب الدفعة الجديدة قبل الإصدار؛ والملف المفرد بلا مجلد يبقى بصوت الجهاز */
+const VBUNDLE = { n: 0, files: null,
+  load() { if (this.files) return Promise.resolve(this.n);
+    return new Promise(res => { try { const s = document.createElement('script'); s.src = 'voice/index.js';
+      s.onload = () => { const W = window.WAHA_VOICE; this.files = (W && W.files) || {}; this.apply(); res(this.n); }; s.onerror = () => { this.files = {}; res(0); };
+      document.head.appendChild(s); } catch (e) { this.files = {}; res(0); } }); },
+  /* يملأ CLIPS بما لم يُستورد (المستورد في VPACK.mine) */
+  apply() { if (!this.files) return; const want = voiceIds(); this.n = 0;
+    for (const [id, f] of Object.entries(this.files)) if (want.has(id) && /^[\w.\-]+\.mp3$/.test(f)) { this.n++; if (!VPACK.mine.has(id)) CLIPS[id] = 'voice/' + f; } } };
+const VPACK = { db: null, failed: false, n: 0, mine: new Set(),
   open() { if (this.db || this.failed) return Promise.resolve(this.db);
     return new Promise(res => { try { const r = indexedDB.open('hp_voice', 1);
       r.onupgradeneeded = () => r.result.createObjectStore('clips', { keyPath: 'id' });
@@ -22,7 +33,7 @@ const VPACK = { db: null, failed: false, n: 0,
   async load() { const db = await this.open(); if (!db) return 0;
     const all = await new Promise(res => { try { const r = db.transaction('clips').objectStore('clips').getAll(); r.onsuccess = () => res(r.result || []); r.onerror = () => res([]); } catch (e) { res([]); } });
     const want = voiceIds(); this.n = 0;
-    for (const c of all) if (c && want.has(c.id) && c.blob) { if (CLIPS[c.id]) URL.revokeObjectURL(CLIPS[c.id]); CLIPS[c.id] = URL.createObjectURL(c.blob); this.n++; }
+    for (const c of all) if (c && want.has(c.id) && c.blob) { if (CLIPS[c.id] && CLIPS[c.id].startsWith('blob:')) URL.revokeObjectURL(CLIPS[c.id]); CLIPS[c.id] = URL.createObjectURL(c.blob); this.mine.add(c.id); this.n++; }
     return this.n; },
   /* يستورد ملفات (zip أو صوت): ما يطابق اسمه معرّفاً يُحفظ، وما لا يطابق يُعدّ ولا يُحفظ */
   async importFiles(files, progress = () => {}) { const want = voiceIds(), got = [], unknown = [];
@@ -43,7 +54,7 @@ const VPACK = { db: null, failed: false, n: 0,
      وفي الحالين الأخيرين تبقى الحزمة كما هي في القاعدة والذاكرة؛ فالتسجيلات في الذاكرة تُمحى بعد التزام الحذف وحده (WM102-R3-01).
      وبلا قاعدة (لا indexedDB أو لم تُفتح) لم يُحمَّل منها شيء ولم يُستورد إليها شيء، فلا شيء محفوظ يبقى */
   async clear() { if (!store.mine(null)) return 'tab'; const db = await this.open(); if (!store.mine(null)) return 'tab';
-    const drop = () => { for (const k of Object.keys(CLIPS)) { URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; return 'ok'; };
+    const drop = () => { for (const k of Object.keys(CLIPS)) { if (String(CLIPS[k]).startsWith('blob:')) URL.revokeObjectURL(CLIPS[k]); delete CLIPS[k]; } this.n = 0; this.mine.clear(); VBUNDLE.apply(); return 'ok'; };   /* بعد حذف المستورد تعود المضمّنة */
     if (!db) return drop();
     const r = await ownTx(db, 'clips', (os, last) => last(os.clear())); return r === 'ok' ? drop() : r; },
 };

@@ -22,3 +22,4 @@ platforms/android-studio/.gradle/
 platforms/android-studio/build/
 platforms/android-studio/app/build/
 platforms/android-studio/local.properties
+voice-repo/
