@@ -58,6 +58,7 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .round { width: var(--tap); height: var(--tap); border-radius: 50%; border: 0; background: var(--paper); box-shadow: 0 4px 0 var(--line); display: grid; place-items: center; cursor: pointer; padding: 0; flex: none; overflow: hidden; }
 .round svg, .round img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .round.ico svg { width: 26px; height: 26px; }
+.round.skip { visibility: hidden; color: var(--compass); } .round.skip.on { visibility: visible; }   /* «تخطَّ» أثناء الكلام وحده (D270) */
 .round.digits { font-size: 16px; font-weight: 800; color: var(--compass); width: auto; min-width: var(--tap); padding: 0 10px; border-radius: 28px; }
 
 /* ===== الخريطة ===== */
@@ -120,6 +121,9 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .bubble.hidetext::after { content: "؟"; position: absolute; right: 18px; font-size: 30px; font-weight: 800; color: var(--chaos); }
 .replay { position: absolute; left: 4px; top: 50%; transform: translateY(-50%); width: var(--tap); height: var(--tap); border-radius: 50%; border: 0; background: var(--sky-bot); cursor: pointer; display: grid; place-items: center; }
 .replay svg { width: 22px; height: 22px; }
+#say .w { border-radius: 4px; transition: background-color .12s; } #say .w.on { background: rgba(244, 196, 48, .45); box-shadow: 0 0 0 2px rgba(244, 196, 48, .45); }   /* الكلمة المقروءة (D270) */
+#stage .named { filter: drop-shadow(0 0 5px #f4c430) drop-shadow(0 0 2px #f4c430); }   /* الشيء الذي تسمّيه الجملة الآن */
+.replay.glow { box-shadow: 0 0 0 4px var(--good); animation: bob .5s ease-in-out 6 alternate; }
 .stage { position: relative; border-radius: 30px; box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; min-height: 0; background: var(--paper); }
 /* إن ضاق الطول صغُر الرسم (meet) ليبقى صفّ الأزرار تحته لا فوقه */
 .stage > svg { flex: 1 1 auto; min-height: 0; width: 100%; height: auto; max-height: 58vh; display: block; touch-action: none; user-select: none; -webkit-user-select: none; }

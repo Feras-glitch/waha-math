@@ -164,6 +164,11 @@ const SET = Object.assign({ sessionMax: 2, slow: false, digits: store.read('hp_d
   /*T*/store.read('hp_settings', {}, isObj),/*/T*/ store.fix(kk('hp_settings'), {}, V_SETTINGS));
 if (SET.digits !== 'west') SET.digits = 'east'; if (!isObj(SET.seen)) SET.seen = {};
 const saveSet = () => store.set(kk('hp_settings'), SET);
+/* القراءة الآلية للجهاز كله، من صفحة الكبار (D270، قرار فراس: إعداد واحد للجميع): mode 'all' كل الجمل مسموعة، و'questions' أسئلة البنود وتنبيهاتها مسموعة
+   والشرح مكتوبٌ يُقرأ صامتاً، و'none' كلّها مكتوبة؛ وfast قراءة أسرع (و«القراءة الأبطأ» لكل طفل تغلبها) */
+const READ = store.read('hp_reading', {}, isObj); if (!['all', 'questions', 'none'].includes(READ.mode)) READ.mode = 'all'; READ.fast = READ.fast === true;
+const saveRead = () => store.set('hp_reading', READ);
+const SPD = () => SET.slow ? 'slow' : READ.fast ? 'fast' : 'normal';
 /* الأرقام: شرقية (١٢٣) أو غربية (123) باختيار الطالب، والكلام كلمات دائماً */
 const DG = n => SET.digits === 'east' ? String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]) : String(n);
 const fmt = {

@@ -17,8 +17,8 @@ function voiceState() { try { if (VPACK.n && VPACK.n >= voiceIds().size * .95) r
   if (VOICE) return 'ok'; if (NO_TTS) return 'none'; return 'wait'; }
 try { pickVoice(); speechSynthesis.addEventListener('voiceschanged', () => { pickVoice(); if (typeof voiceNote === 'function') voiceNote(); }); } catch (e) {}
 /* زمن القراءة الصامتة (صوت مكتوم أو لا صوت عربي): مريح لطفل يتابع النص */
-const readTime = t => FAST ? 40 : Math.max(1800, plain(t).length * 95) * (SET.slow ? 1.35 : 1);
-const GAP = () => FAST ? 0 : (SET.slow ? 750 : 350);       // وقفة قصيرة بين جملة وأخرى (أطول في القراءة الأبطأ، D205)
+const readTime = t => FAST ? 40 : Math.max(1500, plain(t).length * 95) * ({ slow: 1.35, normal: 1, fast: .75 })[SPD()];
+const GAP = () => FAST ? 0 : ({ slow: 750, normal: 350, fast: 180 })[SPD()];       // وقفة قصيرة بين جملة وأخرى (أطول في القراءة الأبطأ، D205)
 
 /* طابور الكلام: جملة واحدة في كل لحظة، ولا تبدأ جملة قبل أن تنتهي سابقتها فعلاً.
    ينتهي الكلام بحدث النهاية الحقيقي، ومعه مراقبة لحالة القارئ ومهلة أمان طويلة لا تُستعمل إلا إذا تعطّل الجهاز.
@@ -27,7 +27,7 @@ let speechChain = Promise.resolve(), speechGen = 0, speaking = false, queued = 0
 const inLine = new Map();                                 // جمل تُقال الآن أو تنتظر: لا تتكرر الجملة نفسها إن كرّر الطفل اللمس (المفتاح ← صاحبه)
 function speechBusy() { return speaking || queued > 0; }
 function cutNow() { try { speechSynthesis.cancel(); } catch (e) {} if (currentAudio) { currentAudio.pause(); currentAudio = null; } if (currentFinish) currentFinish(); }   /* يقطع الجملة الجارية وحدها */
-function hush() { speechGen++; inLine.clear(); cutNow(); }   /* ما قُطع لا يحجز مفتاحه: «أعد الجملة» بعده مباشرة يبدؤها من أولها */
+function hush() { speechGen++; inLine.clear(); PEND_INTRO = null; SKIPPING = false; cutNow(); }   /* ما قُطع لا يحجز مفتاحه: «أعد الجملة» بعده مباشرة يبدؤها من أولها */
 /* غطاء الخروج يوقف الدرس ولا يُنهي جملته (الفحص المستقل F2 (1)(ب) و(3): كان hush() فيمضي الدرس تحت الغطاء، ويضيع سؤال الحلّ المشترك في التعدّي):
    الجملة الجارية تُقطع وتبقى في مكانها من الطابور ومعها ما بعدها، وكل انتظار بالبوابة (gate) ينتظر؛ و«نبقى» (resumeLesson) تعيدها من أولها ثم يمضي الطابور،
    و«الخريطة» مسارٌ جديد (show) يُسقطها. وجملة الغطاء نفسه تُقال خارج الطابور الموقوف */
@@ -63,26 +63,55 @@ document.addEventListener('visibilitychange', () => { const cov = openCover(), l
   if (document.hidden) { if (live && !PAUSED && !cov) { pauseLesson(); VIS_PAUSE = true; } else if (PAUSED) { cutNow(); if (cov) VIS_COVER = cov; } else { if (NOW_ITEM && speaking) NOW_ITEM.cut = true; cutNow(); if (cov) VIS_COVER = cov; } }
   else { if (VIS_PAUSE) { VIS_PAUSE = false; if (PAUSED && !openCover()) resumeBack(); }
     if (VIS_COVER) { const c = VIS_COVER; VIS_COVER = null; if (!c.hidden && c.dataset.ask && (PAUSED || !HELD)) coverSay(c, c.dataset.ask); } } });   /* وسؤال الغطاء يُعاد إن لم تنتظر جملةٌ ظهورَ الصفحة (تُعاد المقطوعة ويمضي تسلسل الغطاء من موضعه) */
+/* الصورة قبل الصوت (D270، قرار فراس، 16 نوفمبر 2026): مقدّمةُ مشهدٍ لم يُرسم بعد لا تُقرأ فوق ما قبله. introOnStage يؤجّلها حتى يُرسم المشهد (newStage)،
+   أو حتى أول جملةٍ بعدها إن لم يرسم المشهد لوحاً جديداً؛ وبعد كل لوح جديد وقفةٌ قصيرة (STAGE_SETTLE) تستقرّ فيها العين على الصورة قبل أول جملة */
+let PEND_INTRO = null, STAGE_T = -1e9; const STAGE_SETTLE = 320;
+/* «تخطَّ» (D270): يقطع الجملة الجارية، وما بعدها حتى ينتظر الدرسُ فعلَ الطفل يُكتب في الفقاعة بلا صوت ولا انتظار (SKIPPING، يُلغيه AUTO عند كل انتظار
+   لفعله، وhush عند الإجابة). ولا يمسّ جملة غطاء. وIN_ITEM: نحن داخل بند (سؤاله وتلميحه وتنبيهه)، فوضع «الأسئلة فقط» يُسمعها ويكتب الشرح */
+let SKIPPING = false, IN_ITEM = 0, SKIP_AT = 0;
+function skipNow() { if (!speechBusy() && !PEND_INTRO) return; SKIPPING = true; SKIP_AT = Date.now(); flushIntro(); cutNow();
+  try { if (CUR) { const P = progOf(CUR.id); P.skips = (P.skips || 0) + 1; saveProg(); } } catch (e) {} }
+function flushIntro() { if (!PEND_INTRO) return; const x = PEND_INTRO; PEND_INTRO = null; for (const id of [].concat(x)) if (id) say(...lineOf(id), { free: true, intro: true }); }
+function introOnStage(x) { if (x) PEND_INTRO = x; }
 function say(who, id, text, opt = {}) {
+  if (PEND_INTRO && !opt.intro && !opt.cover) flushIntro();
   const key = (id.startsWith('gen.') ? '' : (CUR ? CUR.id + '.' : '')) + id;
   if (opt.ifIdle && speechBusy()) return Promise.resolve();
   if (opt.cover && PAUSED) { if (document.hidden) { VIS_COVER = opt.cover; return Promise.resolve(); } return speakNow(who, id, text, opt); }   /* سؤال غطاء الخروج والدرس موقوف: لا ينتظر الطابور ولا البوابة؛ والصفحة مخفية: يُسأل عند ظهورها */
   if (inLine.has(key)) return opt.free ? Promise.resolve() : gate(Promise.resolve());
   const gen = speechGen, item = { skip: false }; inLine.set(key, item); if (!opt.keep && !opt.num && !opt.aside) LASTQ = [who, id, text];   /* آخر جملة دخلت الطابور (سؤال الخيارات المقروءة) */
   if (opt.num) { if (pendingNum) pendingNum.skip = true; pendingNum = item; }     // العدّ: يكفي آخر رقم ينتظر
-  queued++;
+  queued++; if (typeof updateSkip === 'function') updateSkip();
   const p = speechChain.then(async () => {
     queued--; if (pendingNum === item) pendingNum = null;
     try { for (;;) { for (;;) { if (PAUSED && !opt.cover) { PAUSED.held = true; await PAUSED.p; } else if (document.hidden) { HELD++; try { await shownP(); } finally { HELD--; } } else break; }   /* ولا تبدأ جملةٌ والصفحة مخفية (غطاءٌ خارج الدرس أو الخريطة) */
         if (gen !== speechGen || item.skip) return;
+        if (!FAST && !opt.cover && !SKIPPING) { const w = STAGE_T + STAGE_SETTLE - performance.now(); if (w > 0) await psleep(w); if (gen !== speechGen || item.skip) return; }   /* الصورة قبل الصوت */
         item.cut = false; NOW_ITEM = item; await speakNow(who, id, text, opt); if (NOW_ITEM === item) NOW_ITEM = null;
         if (!item.cut) break; }   /* قطعها غطاء الخروج: تُعاد من أولها بعد «نبقى» */
-      if (gen === speechGen && !opt.noGap) await psleep(GAP());   /* والفاصل يقف مع الدرس: انتهى تحت الغطاء فمضت قراءة البطاقات إلى التالية ونغمتها (الفحص المستقل H2 (4أ)) */
+      if (gen === speechGen && !opt.noGap && !SKIPPING) await psleep(GAP());   /* والفاصل يقف مع الدرس: انتهى تحت الغطاء فمضت قراءة البطاقات إلى التالية ونغمتها (الفحص المستقل H2 (4أ)) */
     } finally { if (NOW_ITEM === item) NOW_ITEM = null; if (inLine.get(key) === item) inLine.delete(key); }   /* لا يمحو مفتاح جملة جديدة بالمعرّف نفسه بعد hush */
   });
   speechChain = p.catch(() => {});
   return opt.free ? p : gate(p);
 }
+/* تلوين الكلمة المقروءة (D270): الجملة كلماتٌ في الفقاعة (span.w)، ونصّها كما هو (textContent لا يتغيّر). والتوقيت تقديرٌ بطول الكلمة ووقفات الترقيم
+   على زمن الجملة: مدّة التسجيل، أو تقدير سرعة صوت الجهاز وتصحّحه أحداث الحدود (onboundary) حيث يُطلقها، أو زمن القراءة الصامتة. وكلمةٌ تسمّي شيئاً
+   في المشهد (aria-label يبدأ بها) يتوهّج الشيء معها (التمييز) */
+function fillBubble(b, text, sep) { if (sep == null) b.textContent = ''; else b.appendChild(document.createTextNode(sep)); const out = [];
+  for (const part of String(text).split(/(\s+)/)) { if (!part) continue; if (/^\s+$/.test(part)) { b.appendChild(document.createTextNode(part)); continue; } const s = document.createElement('span'); s.className = 'w'; s.textContent = part; b.appendChild(s); out.push(s); }
+  return out; }
+const NAMED_SKIP = new Set(['الذي', 'التي', 'هذا', 'هذه', 'هناك', 'الآن', 'كل', 'على', 'إلى', 'مثل']);
+function hiliter(words) { const W = words.map(w => plain(w.textContent).length + 1 + (/[.!؟?:،…]$/.test(w.textContent) ? 5 : 0)); const tot = W.reduce((a, b) => a + b, 0) || 1;
+  const at = []; let c = 0; for (const w of W) { at.push(c / tot); c += w; }   /* بداية كل كلمة كنسبة من الزمن */
+  let t0 = 0, dur = 0, raf = 0, cur = -1, off = 0; const chars = []; { let k = 0; for (const w of words) { chars.push(k); k += w.textContent.length + 1; } }
+  const named = w => { const k = plain(w.textContent).replace(/[.!؟?:،…«»]/g, '').replace(/^(و|ف|ب|ل|ك)?(ال)?/, ''); if (k.length < 3 || NAMED_SKIP.has(plain(w.textContent))) return;
+    const st = $('#stage'); if (!st) return; for (const e of st.querySelectorAll('[aria-label]')) { const l = plain(e.getAttribute('aria-label')).replace(/^(ال)/, ''); if (l.startsWith(k)) { e.classList.add('named'); setTimeout(() => e.classList.remove('named'), 1100); break; } } };
+  const set = i => { if (i === cur || i >= words.length) return; if (cur >= 0 && words[cur]) words[cur].classList.remove('on'); cur = i; if (i >= 0) { words[i].classList.add('on'); try { named(words[i]); const sy = words[i].closest('#say'); if (sy && sy.scrollHeight > sy.clientHeight + 4) { const r = words[i].getBoundingClientRect(), q = sy.getBoundingClientRect(); if (r.bottom > q.bottom || r.top < q.top) sy.scrollTop += r.top - q.top - 2; } } catch (e) {} } };   /* الجملة الطويلة: نافذة الفقاعة تتبع القراءة سطراً سطراً */
+  const tick = () => { if (!dur) return; const f = (performance.now() - t0) / dur + off; let i = 0; while (i + 1 < at.length && at[i + 1] <= f) i++; set(i); if (f < 1) raf = requestAnimationFrame(tick); };
+  return { start(ms) { if (!words.length) return; dur = Math.max(300, ms); t0 = performance.now(); off = 0; cancelAnimationFrame(raf); raf = requestAnimationFrame(tick); },
+    sync(ci) { if (!dur) return; let i = 0; while (i + 1 < chars.length && chars[i + 1] <= ci) i++; off = at[i] - (performance.now() - t0) / dur; set(i); },
+    stop() { cancelAnimationFrame(raf); dur = 0; if (cur >= 0 && words[cur]) words[cur].classList.remove('on'); cur = -1; } }; }
 function speakNow(who, id, text, opt = {}) {
   /* keep: خيار يُقرأ بعد السؤال، لا يصير «آخر جملة» ولا يغيّر نصّ الفقاعة (readChoices).
      num: عدد أو ترتيب يُقال وهو يعدّ أو يلمس، وaside: جملة جانبية (عرض المساعدة): لا تصير «آخر جملة»، فـ«أعد» يعيد السؤال (الفحص المستقل B: كان يعيد آخر رقم أو «هل نفكّر معاً؟»)؛
@@ -92,22 +121,24 @@ function speakNow(who, id, text, opt = {}) {
   const raw = text; text = G(text);
   const bubble = opt.cover ? opt.cover.querySelector('.coversay') : $('#say');
   if (!opt.cover) { $('#who').innerHTML = CHAR[who](); $('#bubble').classList.toggle('chaos', who === 'chaos'); $('#bubble').classList.toggle('hidetext', !!opt.hideText); }
-  if (bubble && !opt.keep && !opt.num) bubble.textContent = opt.hideText ? '؟' : opt.append && bubble.textContent ? bubble.textContent + (opt.sep || ' ') + text : text;   /* append: تتمة السؤال (العدد بعد «حتى يصير:») تُضاف إلى نصّه؛ وsep فاصلها إن بدأت جملة جديدة */
+  let words = [];   /* كلمات الجملة في الفقاعة، يتلوّن منها ما يُقرأ الآن (D270) */
+  if (bubble && !opt.keep && !opt.num) { if (opt.hideText) bubble.textContent = '؟'; else words = fillBubble(bubble, text, opt.append && bubble.textContent ? (opt.sep || ' ') : null); }   /* append: تتمة السؤال (العدد بعد «حتى يصير:») تُضاف إلى نصّه؛ وsep فاصلها إن بدأت جملة جديدة */
   if (!opt.cover && !opt.keep && !opt.num) { const sy = $('#say'); if (sy) { sy.scrollTop = 0; bubbleMore(); } }
   const talk = $('#talk'); talk.classList.add('speaking');
   const full = (id.startsWith('gen.') ? id : (CUR ? CUR.id : 'm1.u1') + '.' + id) + gSuffix(raw);
   /*T*/if (TESTHOOK) { const cv = openCover(); if (document.hidden) testBug('جملةٌ تبدأ والصفحة مخفية: ' + full); if (cv && !opt.cover) testBug('جملةٌ لغير الغطاء الظاهر (' + cv.id + '): ' + full); if (STALE) testBug('جملةٌ بعد مهلةٍ من شاشةٍ تُركت: ' + full); }/*/T*/   /* حارس التشغيل (الفحص المستقل J2 (8)) */
   /*T*/if (TESTHOOK) { (window.__clips = window.__clips || []).push(full); (window.__voiceSrc = window.__voiceSrc || []).push([full, CLIPS[full] ? 'human' : 'device']); (window.__clipT = window.__clipT || []).push([full, 's', performance.now(), !$('#exitCover').hidden]); }/*/T*/   // للفحص: مطابقة الجمل المنطوقة مع جدول التسجيل، ومصدر كل جملة (حزمة الصوت أو صوت الجهاز)
   return new Promise(resolve => {
-    speaking = true; let done = false, poll = null, safety = null, silent = null;
-    const finish = () => { if (done) return; done = true; clearInterval(poll); clearTimeout(safety); clearTimeout(silent); speaking = false; currentFinish = null; talk.classList.remove('speaking');
+    speaking = true; updateSkip(); let done = false, poll = null, safety = null, silent = null; const HL = hiliter(words);
+    const finish = () => { if (done) return; done = true; HL.stop(); clearInterval(poll); clearTimeout(safety); clearTimeout(silent); speaking = false; currentFinish = null; talk.classList.remove('speaking'); updateSkip();
       /*T*/if (TESTHOOK) (window.__clipT = window.__clipT || []).push([full, 'e', performance.now(), !$('#exitCover').hidden]);/*/T*/
       if (!opt.cover && !opt.keep && !opt.num) { const sy = $('#say'); if (sy && sy.scrollHeight > sy.clientHeight + 8) try { sy.scrollTo({ top: sy.scrollHeight, behavior: RM ? 'auto' : 'smooth' }); } catch (e) { sy.scrollTop = sy.scrollHeight; } }   /* آخر الجملة (المطلوب غالباً) يبقى ظاهراً */
       resolve(); };
     currentFinish = finish;
     let quietRead = false;
-    const readSilently = () => { if (done || quietRead) return; quietRead = true; clearTimeout(safety); clearInterval(poll); silent = setTimeout(finish, readTime(text)); };
-    if (SET.muted) { readSilently(); return; }
+    const readSilently = () => { if (done || quietRead) return; quietRead = true; clearTimeout(safety); clearInterval(poll); silent = setTimeout(finish, readTime(text)); HL.start(readTime(text) * .85); };
+    if (SKIPPING && !opt.cover) { finish(); return; }   /* تُخطّيت: مكتوبةٌ في الفقاعة، ولا تُنتظر */
+    if (SET.muted || READ.mode === 'none' || (READ.mode === 'questions' && !IN_ITEM && !opt.cover)) { readSilently(); return; }
     let synth; try { synth = window.speechSynthesis; } catch (e) {}
     /* بصوت الجهاز؛ وما لا يعمل فيه النطق يُقرأ صامتاً بزمن قراءته */
     const viaDevice = () => {
@@ -118,9 +149,9 @@ function speakNow(who, id, text, opt = {}) {
       if (!VOICE) pickVoice(); if (NO_TTS) { readSilently(); return; }
       const v = VOICE; let started = false, ended = 0;
       /* بعد أن تبدأ: سقفٌ بطول النص لمحرّك لا يُطلق حدث النهاية ويبقى «يتكلّم» (X-05)، بدل 260 م.ث للحرف */
-      const begin = () => { if (started) return; started = true; TTS_MISS = 0; clearTimeout(safety); safety = setTimeout(() => { try { synth.cancel(); } catch (e) {} finish(); }, plain(text).length * (SET.slow ? 165 : 130) + 2000); };
-      parts.forEach(t => { const u = new SpeechSynthesisUtterance(t); u.lang = v ? v.lang : 'ar-SA'; if (v) u.voice = v; u.rate = SET.slow ? 0.72 : 0.9; u.pitch = who === 'chaos' ? 1.3 : 1;
-        u.onstart = begin; u.onend = () => { if (++ended === parts.length) finish(); };
+      const begin = () => { if (started) return; started = true; HL.start(plain(text).length * ({ slow: 105, normal: 82, fast: 66 })[SPD()]); TTS_MISS = 0; clearTimeout(safety); safety = setTimeout(() => { try { synth.cancel(); } catch (e) {} finish(); }, plain(text).length * (SET.slow ? 165 : 130) + 2000); };
+      parts.forEach(t => { const u = new SpeechSynthesisUtterance(t); u.lang = v ? v.lang : 'ar-SA'; if (v) u.voice = v; u.rate = ({ slow: .72, normal: .9, fast: 1.12 })[SPD()]; u.pitch = who === 'chaos' ? 1.3 : 1;
+        const base = text.indexOf(t); u.onstart = begin; u.onend = () => { if (++ended === parts.length) finish(); }; u.onboundary = e => { if (e && e.name !== 'sentence' && base >= 0) HL.sync(base + (e.charIndex || 0)); };
         /* إخفاقٌ قبل أن تبدأ (لا صوت يعمل): الجملة تُقرأ صامتةً بزمن قراءتها، وكذلك ما بعدها في الجلسة (X-02: كان الإخفاق يُعدّ نهايةً فتومض الجمل) */
         u.onerror = e => { const er = e && e.error; if (!started && !done && er !== 'interrupted' && er !== 'canceled') { NO_TTS = 'fail'; try { synth.cancel(); } catch (x) {} readSilently(); return; }
           if (++ended === parts.length) finish(); };
@@ -130,9 +161,9 @@ function speakNow(who, id, text, opt = {}) {
       setTimeout(() => { if (!started && !done && !quietRead) { try { synth.cancel(); } catch (e) {} if (++TTS_MISS >= 2) NO_TTS = 'fail'; readSilently(); } }, 3000);   // لم تبدأ: زمن القراءة، ومرتان متتاليتان: صامتاً بعدها
       safety = setTimeout(finish, Math.max(12000, plain(text).length * 260)); };
     if (CLIPS[full]) {                                     // تسجيل بشري: ننتظر نهايته الفعلية
-      const a = currentAudio = new Audio(CLIPS[full]); if (SET.slow) { a.playbackRate = .85; a.preservesPitch = true; }
+      const a = currentAudio = new Audio(CLIPS[full]); if (SPD() !== 'normal') { a.playbackRate = SPD() === 'slow' ? .85 : 1.18; a.preservesPitch = true; }
       let fell = false; const fall = () => { if (fell || done) return; fell = true; try { a.pause(); } catch (e) {} viaDevice(); };   // تسجيل تالف: صوت الجهاز لا الصمت (C-17)
-      a.onended = finish; a.onerror = fall;
+      a.onended = finish; a.onerror = fall; a.onplaying = () => { if (isFinite(a.duration)) HL.start(a.duration * 1000 / a.playbackRate); };
       a.onloadedmetadata = () => { clearTimeout(safety); if (isFinite(a.duration)) safety = setTimeout(finish, a.duration * 1000 / a.playbackRate + 2500); };
       safety = setTimeout(finish, 30000);
       a.play().catch(fall); return;

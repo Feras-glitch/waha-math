@@ -55,6 +55,8 @@ jobs:
         run: python3 test/smoke_prod.py
       - name: Digit tracing (direction, continuous ink)
         run: python3 test/trace_run.py
+      - name: Reading (picture before voice, skip, word highlight)
+        run: python3 test/reading_run.py
       - name: Adversarial audit acceptance (A01–A08, R04)
         run: python3 test/audit_run.py
       - name: Platform files

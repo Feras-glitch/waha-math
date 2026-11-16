@@ -2,6 +2,8 @@
    الأدوات التفاعلية: كل انتظار لفعل الطفل يمرّ هنا، وكل أداة تسجّل حلّها للفحص الآلي (AUTO)
    ===================================================================== */
 /* لمس واحد من عدّة: targets = [{g, k}] → المفتاح. يضيف منطقة لمس (D255) واسماً لقارئ الشاشة، ويزيل عند الجواب ما أضافه من مناطق (فالسؤال التالي على الأشياء نفسها لا يكدّسها) */
+/* الإجابة متاحة أثناء القراءة (D270): الأهداف تُفعَّل مع بدء السؤال لا بعد انتهائه، ومن أجاب قُطع الكلام */
+function answerWhile(line, arm) { S(line, { free: true }); return Promise.resolve(arm()).then(v => { hush(); return v; }); }   /* السؤال أولاً في الطابور ثم الأهداف (وقراءة الخيارات بعده) */
 function tapOne(targets, opt = {}) { const mine = [];
   targets.forEach(t => { t.g.style.cursor = 'pointer'; t.g.setAttribute('role', 'button'); t.g.setAttribute('tabindex', 0); if (t.label) t.g.setAttribute('aria-label', plain(G(t.label)));
     if (opt.pad !== false) { const had = t.g.querySelector(':scope > rect.hit'); const r = hitPad(t.g, opt.pad || 76); if (r && !had) mine.push(r); }

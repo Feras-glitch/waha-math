@@ -42,7 +42,7 @@ SCENES.alignExplore = async c => { const svg = newStage(270, { oasis: false, gro
   const k = await choosePick([['same', labelText('lenSame'), PICKICON.same, 'gen.opt.lenSame'], ['changed', labelText('lenChanged'), PICKICON.changed, 'gen.opt.lenChanged']], 'same'); logAttempt({ scene: 'explore', tag: 'conserve', ok: k === 'same' });
   await alignTo(B, MS_X, 700); await S(k === 'same' ? c.lines[6] : c.lines[7]); };
 /* لعبة «سباق الديدان»: في كل جولة ديدان تزحف إلى أماكن مختلفة؛ يحاذي الطفل أذيالها عند خط البداية ثم يلمس الأطول أو الأقصر */
-SCENES.wormRace = async c => { if (c.intro) await S(c.intro);
+SCENES.wormRace = async c => { introOnStage(c.intro);
   for (const [i, rd] of c.rounds.entries()) { const svg = newStage(270, { oasis: false, ground: 0 }); el('rect', { x: -360, y: 0, width: 1080, height: 270, fill: '#c9b48a', opacity: .25 }, svg); startLineAt(svg, 24, 250);
     const ys = LEN_ROWS(rd.lens.length); const cols = ['#e98aa0', '#d9a441', '#9cb86a', '#8ab6d6'];
     const T = rd.lens.map((len, j) => ({ o: lenAt(svg, { kind: 'worm', len, color: cols[j] }, 380 + j * 30, ys[j]), k: j, label: labelText('wormOne') }));
@@ -98,7 +98,7 @@ SCENES.balanceLab = async c => { for (const [i, pr] of c.pairs.entries()) { cons
     await S(c.lines[i * 3 + 2]); }
   if (c.after) await S(c.after); };
 /* لعبة «ميزان الحديقة»: يتوقّع الطفل الأثقل، ثم يضعهما الميزان ويُرى */
-SCENES.gardenBalance = async c => { if (c.intro) await S(c.intro); let hits = 0;
+SCENES.gardenBalance = async c => { introOnStage(c.intro); let hits = 0;
   for (const [i, pr] of c.rounds.entries()) { const svg = newStage(290, { oasis: false, ground: 14 }); el('rect', { x: -360, y: 0, width: 1080, height: 276, fill: '#cfe0c3', opacity: .35 }, svg); const B = balanceAt(svg, 180, 276);
     const P = weighShelf(svg, pr);
     const k = await predictTap(P.map(p => ({ g: p.g, k: p.k, label: labelText('w.' + p.k) })), i === 0 ? c.q : 'gen.garden.again' + WEIGH_G(pr[0], pr[1]));   /* «وَهَاتَانِ» لشيئين مؤنثين (الفحص المستقل E1 (6)) */
@@ -256,7 +256,7 @@ SCENES.teenWrite = async c => { const svg = newStage(290, { oasis: false, ground
   say(...lineOf(c.lines[3]), { free: true }); await tapUntil([{ g: tD, k: 't', label: labelText('tensDigit') }, { g: oD, k: 'o', label: labelText('onesDigit') }], 't', 'gen.err.tensMeaning.01', 'tensLeft', { pad: 64 }); hush();
   await S(c.lines.slice(4)); };
 /* لعبة «مصنع الأعمدة»: تنزل المكعبات على الحزام إلى العمود، وكلما اكتمل عمود من عشرة أُغلق وأُرسل؛ وعند كل محطة «كم الآن؟» */
-SCENES.rodFactory = async c => { if (c.intro) await S(c.intro); const svg = newStage(270, { oasis: false, ground: 0 }); el('rect', { x: 150, y: 236, width: 220, height: 12, rx: 6, fill: '#8d7a62' }, svg);
+SCENES.rodFactory = async c => { introOnStage(c.intro); const svg = newStage(270, { oasis: false, ground: 0 }); el('rect', { x: 150, y: 236, width: 220, height: 12, rx: 6, fill: '#8d7a62' }, svg);
   const shipped = el('g', {}, svg); let rods = 0, cur = 0, total = 0; const curG = el('g', {}, svg); const loose = el('g', {}, svg);
   const drawCur = () => { curG.innerHTML = ''; for (let i = 0; i < cur; i++) el('rect', { x: 200 - TEN_C / 2 - 2, y: 230 - (i + 1) * TEN_C, width: TEN_C + 4, height: TEN_C, fill: CUBE.lemon, stroke: '#fff', 'stroke-width': 1.4 }, curG); };
   for (const [i, stop] of c.stops.entries()) {
@@ -295,7 +295,7 @@ SCENES.frameFriends = async c => { const svg = newStage(270, { oasis: false, gro
   const s2 = newStage(270, { oasis: false, ground: 0 }); for (let a = 1; a <= 5; a++) { const f = frameAt(s2, 180, 60, { cell: 30 }); f.fill(a, CUBE.lemon); f.fill(10 - a, COUNTER2, a); await readSentence(a, '+', 10 - a, 10); f.g.remove(); }
   await S(c.lines[3]); handAtN(s2, 250, 150, 5, 1.4); handAtN(s2, 110, 150, 5, 1.4); await S(c.lines.slice(4)); };
 /* لعبة «أكمل الإطار»: ثلاثة إطارات تمرّ، والبطاقة تُظهر عدداً؛ يلمس الطفل الإطار الذي يكتمل بهذا العدد */
-SCENES.completeFrame = async c => { if (c.intro) await S(c.intro);
+SCENES.completeFrame = async c => { introOnStage(c.intro);
   for (const [i, rd] of c.rounds.entries()) { const svg = newStage(290, { oasis: false, ground: 0 }); digitCard(svg, 180, 44, rd.need, { size: .9 });
     const Fs = rd.frames.map((m, j) => { const g = el('g', { 'data-k': m }, svg); const f = frameAt(g, 180, 116 + j * 62, { cell: 26 }); f.fill(m, CUBE.lemon); return { g, k: m, label: labelText('frameOne') }; });
     await Promise.all(Fs.map((f, j) => anim(f.g, [{ transform: 'translateX(-360px)' }, { transform: 'translateX(0)' }], { duration: 700 + j * 150, easing: 'ease-out' }).done));
@@ -325,7 +325,7 @@ SCENES.makeTenLab = async c => { await runItem({ t: 'makeTen', a: c.a, b: c.b, a
 /* لعبة «حافلة الواحة»: حافلة بعشرة مقاعد (صفّان من خمسة)، فيها ركّاب، وعند المحطة آخرون؛ يُركبهم الطفل حتى تمتلئ، ثم «كم راكباً كلهم؟» */
 function busAt(svg, cx, cy) { const g = el('g', {}, svg); el('rect', { x: cx - 150, y: cy - 66, width: 300, height: 132, rx: 22, fill: '#f2b33d', stroke: '#fff', 'stroke-width': 4, filter: 'url(#pp)' }, g);
   el('rect', { x: cx + 118, y: cy - 50, width: 24, height: 60, rx: 6, fill: '#d9f0f7' }, g); for (const x of [cx - 100, cx + 100]) { el('circle', { cx: x, cy: cy + 66, r: 18, fill: '#33454c', stroke: '#fff', 'stroke-width': 3 }, g); el('circle', { cx: x, cy: cy + 66, r: 6, fill: '#b8c2c8' }, g); } return g; }
-SCENES.tenBus = async c => { if (c.intro) await S(c.intro);
+SCENES.tenBus = async c => { introOnStage(c.intro);
   for (const [i, rd] of c.rounds.entries()) { const svg = newStage(270, { oasis: false, ground: 0 }); busAt(svg, 170, 96); const F = frameAt(svg, 160, 90, { cell: 40 }); F.fill(rd.a, CUBE.lemon);
     const need = 10 - rd.a; const out = Array.from({ length: rd.b }, (_, j) => ({ x: 330 - j * 30, y: 222 })); out.forEach(o => { o.g = counterAt(svg, o.x, o.y, 13, COUNTER2); });
     say(...lineOf(i === 0 ? c.q : 'gen.bus.again'), { free: true }); let moved = 0;

@@ -21,7 +21,7 @@ function nextBtn(lbl) { AUTO({ kind: 'go', ok: () => go.click() }); return gate(
 function setSteps(n) { const s = $('#steps'); s.innerHTML = ''; s.style.setProperty('--n', n); for (let i = 0; i < n; i++) s.appendChild(document.createElement('i')); s.hidden = !n; }
 function setStep(i) { [...$('#steps').children].forEach((d, k) => { d.className = k < i ? 'done' : (k === i ? 'now' : ''); }); }
 let STAGE_RO = null, STAGE_MO = null;   /* إن تغيّر حجم المسرح (فقاعة أطول، أو شاشة قصيرة، أو تدوير) أُعيد حساب مناطق اللمس بالبكسل الفعلي */
-function newStage(H = 300, bg = {}, aria) { const st = $('#stage'); st.innerHTML = ''; const svg = el('svg', { viewBox: `0 0 360 ${H}`, preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': aria || (CUR ? plain(CUR.title || '') : '') }); st.appendChild(svg);
+function newStage(H = 300, bg = {}, aria) { const st = $('#stage'); st.innerHTML = ''; STAGE_T = performance.now(); if (PEND_INTRO) Promise.resolve().then(flushIntro);   /* المقدّمة بعد رسم المشهد (D270) */ const svg = el('svg', { viewBox: `0 0 360 ${H}`, preserveAspectRatio: 'xMidYMid meet', role: 'img', 'aria-label': aria || (CUR ? plain(CUR.title || '') : '') }); st.appendChild(svg);
   try { if (STAGE_RO) STAGE_RO.disconnect(); STAGE_RO = new ResizeObserver(() => refreshPads(svg)); STAGE_RO.observe(svg); } catch (e) {}
   /* وحين تظهر الخيارات تحت المسرح أو تزول يصغر أو يكبر قبل أن يُبلغ ResizeObserver: يُعاد الحساب فوراً، فلا تبقى منطقة لمس دون حدّها لحظةً
      (الفحصان المستقلان C وD: زرّ تحريك الطريق 55 بكسلاً، وقطعة الورشة 61، على iPhone SE) */
@@ -46,11 +46,14 @@ for (const id of ['#muteBtn', '#muteBtn2']) $(id).onclick = () => { SET.muted = 
   if (SET.muted) { try { speechSynthesis.cancel(); } catch (e) {} if (currentAudio) { currentAudio.pause(); currentAudio = null; } if (currentFinish) currentFinish(); }   // الكتم لا يُسقط الجمل التالية: تُعرض مكتوبةً بزمن القراءة
   renderMute(); };
 $('#replay').innerHTML = ICON.replay; $('#replay').onclick = () => replayLine();
+/* «تخطَّ» (D270): ظاهرٌ ما دام الكلام جارياً أو ينتظر، ويختفي بلا أن يحرّك ما حوله (visibility) */
+$('#skipBtn').innerHTML = ICON.skip; $('#skipBtn').onclick = () => { skipNow(); updateSkip(); };
+function updateSkip() { const b = $('#skipBtn'); if (b) b.classList.toggle('on', speechBusy() && !SKIPPING); }
 $('#mapBtn').innerHTML = ICON.map;
 help.innerHTML = ICON.lantern;
 
 /* ---------- خطافات الفحص الآلي: كل انتظار لفعل الطفل يسجّل حلّه الصحيح وخطأً مقصوداً (تُحذف من نسخة الأطفال) ---------- */
-function AUTO(d) { /*T*/if (TESTHOOK) { window.__autoN = (window.__autoN || 0) + 1; window.__auto = { ...d, n: window.__autoN, scene: SCENE_NOW }; }/*/T*/ }
+function AUTO(d) { SKIPPING = false; /*T*/if (TESTHOOK) { window.__autoN = (window.__autoN || 0) + 1; window.__auto = { ...d, n: window.__autoN, scene: SCENE_NOW }; }/*/T*/ }
 function AUTO_CLEAR() { STAGE_FOC = null; /*T*/if (TESTHOOK) window.__auto = null;/*/T*/ }   /* وانتهاء الانتظار ينهي إعادة التركيز (الفحص المستقل E2: قفز التركيز بوهجه إلى كفّة الميزان بعد التوقّع، وEnter ثانية تجيب بالتوقّع) */
 
 /* ---------- الفانوس (M3، M4): ظاهر في كل لحظة تفاعل، ويتوهّج بعد الخمول، ولمسه يعطي المساعدة فوراً ---------- */

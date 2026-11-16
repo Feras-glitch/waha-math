@@ -24,7 +24,7 @@ async function praiseFor(item, tries) {
 /* mode: practice | explore | remedial (بمساعدة) · mastery | review | test (بلا مساعدة، من المحاولة الأولى) */
 async function runItem(spec, mode = 'practice', ctx = {}) {
   /*T*/const outer = { item: window.__item, mode: window.__itemMode, twin: window.__itemTwin };/*/T*/
-  try { return await runItem0(spec, mode, ctx); } finally { /*T*/window.__item = outer.item; window.__itemMode = outer.mode || ''; window.__itemTwin = !!outer.twin;/*/T*/ }   /* وضع الفحص: نمط البند الجاري لا يبقى بعد انتهائه */
+  IN_ITEM++; try { return await runItem0(spec, mode, ctx); } finally { IN_ITEM = Math.max(0, IN_ITEM - 1); /*T*/window.__item = outer.item; window.__itemMode = outer.mode || ''; window.__itemTwin = !!outer.twin;/*/T*/ }   /* وضع الفحص: نمط البند الجاري لا يبقى بعد انتهائه */
 }
 /* مواصفة البند في السجلّ (مراجعة الخصم A-07): بلا توأمه، وحتى 200 حرف (فوقها يُقصّ وينتهي بـ«…»)؛ تكفي ليُعرف أيّ بندٍ أُجيب */
 function specText(spec) { let t = ''; try { const o = {}; for (const k of Object.keys(spec || {})) if (k !== 'twin') o[k] = spec[k]; t = JSON.stringify(o); } catch (e) { return ''; } return t.length <= 200 ? t : t.slice(0, 199) + '…'; }
@@ -48,6 +48,7 @@ async function runItem0(spec, mode, ctx) {
       if (together && help && mode !== 'explore' && T.twin && !ctx.isTwin) { const tw = T.twin(item); if (tw) { await S('gen.twin.01'); await runItem(tw, mode, { scene: scene + '-twin', isTwin: true }); } }
       return { firstTry: tries === 1, ok: true, item };
     }
+    if (SKIP_AT && Date.now() - SKIP_AT < 90000) { SKIP_AT = 0; const rb = $('#replay'); if (rb) { rb.classList.add('glow'); setTimeout(() => rb.classList.remove('glow'), 6000); } }   /* تخطّى القراءة ثم أخطأ: «أعد الجملة» يتوهّج يدعوه إلى الاستماع (D270) */
     if (T.onWrong && mode !== 'mastery' && mode !== 'test') await T.onWrong(item, r, j);   /* ولا نغمة خطأ في الاختبار: في «نعم/لا» وبين خيارين تكشف الجواب، والإعادة بالبنود نفسها (الفحص المستقل للقرارات، 2) */
     if (mode === 'test') return { firstTry: false, ok: false, item };   // لا يُرسم الجواب الصحيح في الاختبار (القرار A-03، D266): الإعادة بالبنود نفسها
     if (mode === 'mastery') { await S('gen.ms.noted'); return { firstTry: false, ok: false, item }; }

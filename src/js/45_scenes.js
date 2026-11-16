@@ -5,7 +5,7 @@
 const SCENES = {};
 /* ---------- عامّة ---------- */
 /* بنود داخل الاكتشاف أو اللعبة: {items:[...], mode:'explore'|'practice', intro} */
-SCENES.items = async c => { if (c.intro) await S(c.intro); for (const it of c.items) await runItem(it, c.mode || 'explore', { scene: c.stage || 'explore' }); if (c.after) await S(c.after); };
+SCENES.items = async c => { introOnStage(c.intro); for (const it of c.items) await runItem(it, c.mode || 'explore', { scene: c.stage || 'explore' }); if (c.after) await S(c.after); };
 /* مسار المواد (D238): يظهر في مسار «معي» وحده؛ صورة الأشياء وتعليمة وزرّ «تمّ» */
 SCENES.material = async c => {
   if (!PATH_MAT()) return; MAT_AVOID = new Set(c.avoid || []); const svg = newStage(260, { oasis: false, ground: 0 });   /* أعداد مسائلها لا تكون مشتّتاً في الشاشة التي تخدمها (H1 (10أ)) */
@@ -112,10 +112,8 @@ SCENES.roofFit = async c => {
   const tri = shapeAt(svg, { type: 'triangle', w: 136, h: 68, color: css('--triangle') }, 72, 52); const sq = shapeAt(svg, { type: 'square', size: 64, color: css('--square') }, 292, 52);
   const fz = chaosAt(svg, 300, 150, .4);
   await anim(sq, [{ transform: 'translate(292px,52px)' }, { transform: 'translate(180px,118px)' }, { transform: 'translate(180px,118px) rotate(8deg)' }, { transform: 'translate(292px,52px)' }], { duration: 1800 }).done; SFX.soft(); await chaosGiggle(fz);
-  await S(c.lines[0]);
-  const choice = await tapOne([{ g: tri, k: 'triangle', label: labelText('pieceTri') }, { g: sq, k: 'square', label: labelText('pieceSq') }], { ok: 'triangle' }); logAttempt({ scene: 'hook', tag: 'predict', ok: choice === 'triangle' });
-  if (choice === 'square') { await anim(sq, [{ transform: 'translate(292px,52px)' }, { transform: 'translate(180px,118px)' }, { transform: 'translate(292px,52px)' }], { duration: 1400 }).done; SFX.soft(); await S(c.lines[1]);
-    await tapOne([{ g: tri, k: 'triangle', label: labelText('pieceTri') }], { ok: 'triangle' }); }
+  const choice = await answerWhile(c.lines[0], () => tapOne([{ g: tri, k: 'triangle', label: labelText('pieceTri') }, { g: sq, k: 'square', label: labelText('pieceSq') }], { ok: 'triangle' })); logAttempt({ scene: 'hook', tag: 'predict', ok: choice === 'triangle' });
+  if (choice === 'square') { await anim(sq, [{ transform: 'translate(292px,52px)' }, { transform: 'translate(180px,118px)' }, { transform: 'translate(292px,52px)' }], { duration: 1400 }).done; SFX.soft(); await answerWhile(c.lines[1], () => tapOne([{ g: tri, k: 'triangle', label: labelText('pieceTri') }], { ok: 'triangle' })); }
   SFX.good(); fz.remove(); await anim(tri, [{ transform: 'translate(72px,52px)' }, { transform: 'translate(180px,116px)' }], { duration: 900, fill: 'forwards', easing: 'cubic-bezier(.3,1.4,.6,1)' }).done;
   await S(c.lines.slice(2));
 };
@@ -263,7 +261,7 @@ SCENES.digitCards = async c => { const svg = newStage(270, { oasis: false, groun
   cards.forEach(cd => { cd.g.style.cursor = 'pointer'; hitPad(cd.g, 58); cd.g.setAttribute('role', 'button'); cd.g.setAttribute('aria-label', plain(cd.label)); cd.g.onclick = () => { SFX.tick(); say(...lineOf(numw(cd.k)), { free: true }); }; });
   await S(c.lines[1]); };
 /* أول تتبّع لرقم مع عرض اليد الشبح (N003) */
-SCENES.traceIntro = async c => { await S(c.lines[0]); for (const n of c.digits) await runItem({ t: 'trace', n }, 'explore'); await S(c.lines[1]); };
+SCENES.traceIntro = async c => { introOnStage(c.lines[0]); for (const n of c.digits) await runItem({ t: 'trace', n }, 'explore'); await S(c.lines[1]); };
 /* روبوت الأشكال (مدخل C163، الدرس 6): يركّب بحرّية من الأشكال الأربعة، ثم يعدّ ما استعمل */
 SCENES.robot = async c => {
   const svg = newStage(330, { oasis: false, ground: 0 }); el('rect', { x: -360, y: 256, width: 1080, height: 74, fill: css('--paper'), opacity: .95 }, svg);
@@ -315,8 +313,7 @@ SCENES.bagFeel = async c => {
     const left = ['a', 'b'].filter(k => !done.has(k)); const which = await tapOne(left.map(k => ({ g: bags[k], k, label: labelText('bag') })), { ok: left });
     const solid = content[which]; const [bx, by] = POS[which]; SFX.tick();
     anim(bags[which], [{ transform: `translate(${bx}px,${by}px) scale(1)` }, { transform: `translate(${bx}px,${by}px) scale(1.06,.94)` }], { duration: 300, iterations: 4, direction: 'alternate' });
-    await S(c.feel[solid]); await S(c.ask);
-    const k = await choosePick([['cube', BIN_NAMES.cube, solidIcon('cube'), 'gen.opt.cube'], ['sphere', BIN_NAMES.sphere, solidIcon('sphere'), 'gen.opt.sphere']], solid);
+    await S(c.feel[solid]); const k = await answerWhile(c.ask, () => choosePick([['cube', BIN_NAMES.cube, solidIcon('cube'), 'gen.opt.cube'], ['sphere', BIN_NAMES.sphere, solidIcon('sphere'), 'gen.opt.sphere']], solid));
     logAttempt({ scene: 'hook', tag: 'feel-' + solid, ok: k === solid });
     const o = thingAt(svg, { solid, size: 92 }, bx, by - 30); anim(o, [{ transform: `translate(${bx}px,${by + 10}px) scale(.3)`, opacity: 0 }, { transform: `translate(${bx}px,${by - 96}px) scale(1)`, opacity: 1 }], { duration: 700, fill: 'forwards', easing: 'cubic-bezier(.3,1.4,.6,1)' });
     SFX.good(); await S(c.is[solid]); done.add(which); bags[which].style.opacity = .55; }
@@ -348,7 +345,7 @@ SCENES.coneRoll = async c => {
   const fz = chaosAt(svg, 60, 160, .42); await chaosGiggle(fz); await anim(fz, [{ transform: fz.getAttribute('transform') }, { transform: 'translate(96px,160px) scale(.42)' }], 500).done;
   say(...lineOf(c.lines[0]), { free: true });
   const k = await choosePick([['straight', labelText('straight'), PICKICON.straight], ['around', labelText('around'), PICKICON.around]], 'around'); logAttempt({ scene: 'hook', tag: 'predict', ok: k === 'around' });
-  await S(c.lines[1]); const top = newStage(300, null); topView(top); await rollTop(top, 'cone'); await S(c.lines.slice(2)); };
+  const top = newStage(300, null); topView(top); await S(c.lines[1]); await rollTop(top, 'cone'); await S(c.lines.slice(2)); };
 /* الأسطوانة النائمة تتدحرج مستقيمة (من الأعلى): يلمسها الطفل فتتدحرج */
 SCENES.cylRoll = async c => { const top = newStage(300, null); topView(top); const g = cylTop(top, 180, 70, SOLIDC.cylinder);
   say(...lineOf(c.lines[0]), { free: true }); await tapOne([{ g, k: 'c', label: plain(BIN_NAMES.cylinder) }], { ok: 'c' }); hush(); g.remove(); await rollTop(top, 'cylinder'); await S(c.lines[1]); };

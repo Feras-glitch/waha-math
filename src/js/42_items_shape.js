@@ -43,7 +43,7 @@ ITEM.completeRect = {
     const C = item.corners; const path = C.map(([i, j]) => `${gx(i)},${gy(j)}`).join(' ');
     el('polyline', { points: path, fill: 'none', stroke: css('--rect'), 'stroke-width': 8, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, svg);
     const cand = (item.cand || []).map(([i, j]) => { const g = el('g', { transform: `translate(${gx(i)} ${gy(j)})` }, svg); el('circle', { r: 11, fill: css('--paper'), stroke: css('--compass'), 'stroke-width': 3 }, g); return { g, k: i + ',' + j, label: labelText('dot') }; });
-    await S(tries >= 3 ? 'gen.rect.together' : 'gen.rect.ask'); const k = await tapOne(cand, { ok: item.want, pad: 70 });
+    const k = await answerWhile(tries >= 3 ? 'gen.rect.together' : 'gen.rect.ask', () => tapOne(cand, { ok: item.want, pad: 70 }));
     const [i, j] = k.split(',').map(Number); el('polyline', { points: `${gx(C[2][0])},${gy(C[2][1])} ${gx(i)},${gy(j)} ${gx(C[0][0])},${gy(C[0][1])}`, fill: 'none', stroke: css('--rect'), 'stroke-width': 8, 'stroke-linecap': 'round', 'stroke-dasharray': k === item.want ? null : '8 6' }, svg);
     return { ans: k, ctx: { svg, quad: [...C, [i, j]].map(([a, b]) => [gx(a), gy(b)]) } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'notRight' }; },
@@ -58,8 +58,7 @@ ITEM.completeRect = {
 /* نعم أم لا على صورة (مثال مضاد: «هل للكرة وجه مسطّح؟») */
 ITEM.yesno = {
   make(spec) { return { ...spec, tag: spec.tag || 'yesno', it: make(spec.show), want: spec.ans ? 'yes' : 'no' }; },
-  async ask(item) { const svg = newStage(230, { oasis: false, ground: 0 }); const g = fitThing(svg, item.it, 180, 112, 150); await S(item.q);
-    const k = await choosePick([['yes', labelText('yes'), PICKICON.yes, 'gen.opt.yes'], ['no', labelText('no'), PICKICON.no, 'gen.opt.no']], item.want); return { ans: k, ctx: { svg, g } }; },
+  async ask(item) { const svg = newStage(230, { oasis: false, ground: 0 }); const g = fitThing(svg, item.it, 180, 112, 150); const k = await answerWhile(item.q, () => choosePick([['yes', labelText('yes'), PICKICON.yes, 'gen.opt.yes'], ['no', labelText('no'), PICKICON.no, 'gen.opt.no']], item.want)); return { ans: k, ctx: { svg, g } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.err || 'generic' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { await (VIS[item.vis] || VIS.edges)(item.it, r.ctx); }, async together(item) { if (item.solve) await S(item.solve); }, async reveal(item) { if (item.why) await S(item.why); },
@@ -76,8 +75,7 @@ ITEM.property = {
     if (tries >= 3) await S('gen.prop.together');
     if (tries >= 2) await pushTest(svg, { ...item.it, size: Math.min(item.it.size || 110, 100), label: null }, item.want === 'roll' ? 'roll' : (item.it.solid === 'cube' || item.it.solid === 'box' ? 'tip' : 'stay'));
     const nm = objClip(item.it); if (nm) await S(nm);   /* اسم الشيء المكتوب تحته يُقال (المبدأ 8) */
-    await S('gen.prop.ask');
-    const k = await choosePick([['roll', labelText('rolls'), PICKICON.roll, 'gen.opt.rolls'], ['stay', labelText('stays'), PICKICON.stay, 'gen.opt.stays']], item.want); return { ans: k, ctx: { svg, g } }; },
+    const k = await answerWhile('gen.prop.ask', () => choosePick([['roll', labelText('rolls'), PICKICON.roll, 'gen.opt.rolls'], ['stay', labelText('stays'), PICKICON.stay, 'gen.opt.stays']], item.want)); return { ans: k, ctx: { svg, g } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.want === 'roll' ? 'rollMissed' : 'cubeNotRoll' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2() {}, async together() {},
   async reveal(item) { await S(item.want === 'roll' ? 'gen.prop.rolls' : 'gen.prop.stays'); }, praise: () => 'praiseThink', reason(item) { return item.why || null; }, twin(item) { return item.twin || null; },

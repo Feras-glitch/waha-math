@@ -62,8 +62,7 @@ ITEM.same = {
       await anim(extra, [{ transform: `translate(${p.x}px,${p.y}px)` }, { transform: `translate(${q.x}px,${q.y}px)` }], { duration: 900, fill: 'forwards' }).done; item._extra = q; }
     /* الحلّ المشترك (المستوى 3): «نعدّها معاً الآن» بعد البعثرة، والأعداد باقية حين يختار الطفل (D257(5)(و)) */
     if (tries >= 3) (await badgeCount(svg, [...to, ...(item._extra && item.add ? [item._extra] : [])].map(p => ({ x: p.x, y: p.y - 26 })), css('--square'))).dataset.help = 1;
-    item._to = to; await S('gen.same.ask');
-    const k = await choosePick([['same', labelText('same'), PICKICON.same], ['changed', labelText('changed'), PICKICON.changed]], item.want); return { ans: k, ctx: { svg, to } }; },
+    item._to = to; const k = await answerWhile('gen.same.ask', () => choosePick([['same', labelText('same'), PICKICON.same], ['changed', labelText('changed'), PICKICON.changed]], item.want)); return { ans: k, ctx: { svg, to } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.add ? 'missedAdd' : 'spreadMore' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { const pts = [...r.ctx.to, ...(item._extra ? [item._extra] : [])]; await badgeCount(r.ctx.svg, pts.map(p => ({ x: p.x, y: p.y - 26 })), css('--square')); await sleep(400); },
@@ -148,8 +147,7 @@ ITEM.digitMatch = {
     let n = 0; const marks = el('g', { 'pointer-events': 'none' }, svg);
     tg.forEach(t => { t.g.style.cursor = 'pointer'; t.g.onclick = () => { if (t.done) return; t.done = true; n++; el('circle', { cx: t.p.x, cy: t.p.y, r: 9, fill: css('--rect'), opacity: .5 }, marks); if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); }; });
     if (tries >= 3 && item.n) { await S('gen.count.together'); await badgeCount(svg, tg.map(t => ({ x: t.p.x, y: t.p.y - 14 }))); }
-    const cards = cardRow(svg, item.opts, 236); await S(item.n === 0 ? 'gen.match.empty' : 'gen.match.ask');
-    const k = await tapOne(cards, { ok: item.n, pad: 84 }); return { ans: k, ctx: { svg, cards, tg } }; },
+    const cards = cardRow(svg, item.opts, 236); const k = await answerWhile(item.n === 0 ? 'gen.match.empty' : 'gen.match.ask', () => tapOne(cards, { ok: item.n, pad: 84 })); return { ans: k, ctx: { svg, cards, tg } }; },
   judge(item, k) { return k === item.n ? { ok: true } : { ok: false, err: item.n === 0 ? 'zeroNotNumber' : (Math.abs(k - item.n) === 1 ? 'miscount' : digitErr(item.n, k)) }; },
   onOk(item, r) { SFX.good(); const c = r.ctx.cards.find(c => c.k === r.ans); el('circle', { cx: c.x, cy: 236, r: 44, fill: 'none', stroke: css('--good'), 'stroke-width': 5 }, r.ctx.svg); },
   onWrong() { SFX.soft(); }, mark(item, r) { const c = r.ctx.cards.find(c => c.k === item.n); el('circle', { cx: c.x, cy: 236, r: 44, fill: 'none', stroke: css('--good'), 'stroke-width': 5 }, r.ctx.svg); },
@@ -198,8 +196,7 @@ ITEM.compare = {
     it.want = spec.a === spec.b ? 'eq' : ((spec.a > spec.b) === more ? 'a' : 'b'); return it; },
   async ask(item, mode, tries) { const svg = newStage(270, { oasis: false, ground: 14 }); const { A, B } = towerPair(svg, item.a, item.b, item.sa || 26, item.sb || 26, 240);
     const eq = eqButton(svg, 180, 60); if (tries >= 3) { await S('gen.cmp.together'); await pairLines(svg, A, B, 600); }
-    await S(item.ask === 'less' ? 'gen.cmp.less' : 'gen.cmp.more');
-    const k = await tapOne([{ g: A.g, k: 'a', label: labelText('towerR') }, { g: B.g, k: 'b', label: labelText('towerL') }, { g: eq, k: 'eq', label: labelText('equal') }], { ok: item.want, pad: 76 });
+    const k = await answerWhile(item.ask === 'less' ? 'gen.cmp.less' : 'gen.cmp.more', () => tapOne([{ g: A.g, k: 'a', label: labelText('towerR') }, { g: B.g, k: 'b', label: labelText('towerL') }, { g: eq, k: 'eq', label: labelText('equal') }], { ok: item.want, pad: 76 }));
     return { ans: k, ctx: { svg, A, B } }; },
   judge(item, k) { if (k === item.want) return { ok: true }; const taller = (item.a * (item.sa || 26)) > (item.b * (item.sb || 26)) ? 'a' : 'b';
     return { ok: false, err: item.want === 'eq' ? 'notEqual' : (item.sa !== item.sb && k === taller ? 'taller' : 'compare') }; },
@@ -212,7 +209,7 @@ ITEM.cmpDigits = {
   make(spec) { return { ...spec, tag: 'cmpDigits', want: Math.max(spec.a, spec.b) }; },
   async ask(item, mode, tries) { const svg = newStage(270, { oasis: false, ground: 0 }); const cards = [{ g: digitCard(svg, 250, 90, item.a, { size: 1.4 }), k: item.a, x: 250 }, { g: digitCard(svg, 110, 90, item.b, { size: 1.4 }), k: item.b, x: 110 }];
     if (tries >= 2) { towerAt(svg, 250, 262, item.a, { size: 14 }); towerAt(svg, 110, 262, item.b, { size: 14 }); }
-    await S(tries >= 3 ? 'gen.cmpd.together' : 'gen.cmpd.ask'); const k = await tapOne(cards, { ok: item.want, pad: 96 }); return { ans: k, ctx: { svg, cards } }; },
+    const k = await answerWhile(tries >= 3 ? 'gen.cmpd.together' : 'gen.cmpd.ask', () => tapOne(cards, { ok: item.want, pad: 96 })); return { ans: k, ctx: { svg, cards } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'smallerDigit' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2() { await S('gen.cmpd.towers'); }, async together() {}, async reveal(item) { await S(numw(item.want)); }, praise: () => 'praiseCompare', twin(item) { return { ...item.spec, a: item.spec.b, b: item.spec.a }; },
@@ -290,7 +287,7 @@ ITEM.join = { ...numItem,
   make(spec) { return { ...spec, tag: 'join', want: spec.a + spec.b }; },
   async ask(item, mode, tries) { const svg = newStage(260, { oasis: false, ground: 14 }); const A = towerAt(svg, 180, 240, item.a, { size: 24, color: CUBE.lemon }); const Bx = 60;
     const B = towerAt(svg, Bx, 240, item.b, { size: 24, color: CUBE.white });
-    await S('gen.join.tap'); await tapOne([{ g: B.g, k: 'b', label: labelText('addCube') }], { ok: 'b', pad: 76 });
+    await answerWhile('gen.join.tap', () => tapOne([{ g: B.g, k: 'b', label: labelText('addCube') }], { ok: 'b', pad: 76 }));
     await anim(B.g, [{ transform: 'translate(0px,0px)' }, { transform: `translate(${180 - Bx}px,${-(item.a) * A.step}px)` }], { duration: 800, fill: 'forwards', easing: 'cubic-bezier(.3,1.2,.6,1)' }).done;
     if (tries >= 3) { await S('gen.join.together'); await badgeCount(svg, zig(Array.from({ length: item.b }, (_, i) => ({ x: 214, y: A.baseY - A.size * .62 - (item.a + i) * A.step }))), css('--square'), item.a + 1); }
     await S('gen.join.ask'); const np = numberPick(nearNums(item.a + item.b), item.a + item.b); return { ans: await np.p, ctx: { svg, A, np } }; },
@@ -347,7 +344,7 @@ ITEM.eqPair = {
     el('text', { x: 90, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f') }, svg).textContent = DG(item.n);
     el('text', { x: 270, y: 34, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: css('--ink'), 'font-family': css('--f'), direction: 'ltr', 'unicode-bidi': 'bidi-override', 'data-sent': 1 }, svg).textContent = visualLine([DG(item.parts[0]), '+', DG(item.parts[1])]);
     if (tries >= 3) { await S('gen.eq.together'); await pairLines(svg, Rt, L, 500); }
-    await S('gen.eq.ask'); const k = await choosePick([['yes', labelText('yes'), PICKICON.yes, 'gen.opt.yes'], ['no', labelText('no'), PICKICON.no, 'gen.opt.no']], item.want); return { ans: k, ctx: { svg, L, Rt } }; },
+    const k = await answerWhile('gen.eq.ask', () => choosePick([['yes', labelText('yes'), PICKICON.yes, 'gen.opt.yes'], ['no', labelText('no'), PICKICON.no, 'gen.opt.no']], item.want)); return { ans: k, ctx: { svg, L, Rt } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'eqMeaning' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { await pairLines(r.ctx.svg, r.ctx.Rt, r.ctx.L); }, async together() {}, async reveal(item) { await S(item.want === 'yes' ? 'gen.eq.yes' : 'gen.eq.no'); },
@@ -448,7 +445,7 @@ ITEM.groups = {
     const gA = el('g', {}, svg), gB = el('g', {}, svg); rowA.forEach(p => thingAt(gA, { ...proto, size: 34, label: null }, p.x, p.y)); rowB.forEach(p => thingAt(gB, { ...proto, size: 34, label: null }, p.x, p.y));
     hitPad(gA, 80); hitPad(gB, 80); const eq = eqButton(svg, 180, 236);
     if (tries >= 3) { await S('gen.cmp.together'); await badgeCount(svg, rowA.map(p => ({ x: p.x, y: p.y - 26 }))); await badgeCount(svg, rowB.map(p => ({ x: p.x, y: p.y - 26 })), css('--square')); }
-    await S('gen.groups.ask'); const k = await tapOne([{ g: gA, k: 'a', label: labelText('groupTop') }, { g: gB, k: 'b', label: labelText('groupBottom') }, { g: eq, k: 'eq', label: labelText('equal') }], { ok: item.want, pad: 76 });
+    const k = await answerWhile('gen.groups.ask', () => tapOne([{ g: gA, k: 'a', label: labelText('groupTop') }, { g: gB, k: 'b', label: labelText('groupBottom') }, { g: eq, k: 'eq', label: labelText('equal') }], { ok: item.want, pad: 76 }));
     return { ans: k, ctx: { svg, rowA, rowB } }; },
   judge(item, k) { if (k === item.want) return { ok: true }; const spreadK = item.spread === 'b' ? 'b' : 'a'; return { ok: false, err: k === spreadK ? 'spreadMore' : 'compare' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },

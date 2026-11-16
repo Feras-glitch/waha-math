@@ -108,7 +108,7 @@ async function practiceStage(L, st) {
   if (P.challenge && P.challenge.length) { say(...lineOf('gen.choice.ask'), { free: true });
     k = await choosePick([['normal', labelText('normal'), PICKICON.normal], ['challenge', labelText('challenge'), PICKICON.challenge]], null); hush(); logAttempt({ scene: 'choice', tag: k, ok: true }); }
   progOf(L.id).chose = k;   /* يعرفه الختام: «تستطيع أن تختار التحدّي» لا تُقال لمن اختاره (الفحص المستقل C1 لبوابة S1-U4) */
-  await S(P.intro || 'gen.practice.intro');
+  introOnStage(P.intro || 'gen.practice.intro');   /* مع أول بند لا قبله (D270) */
   for (const it of P[k]) await runItem(it, 'practice', { scene: 'practice' });
 }
 
@@ -118,7 +118,7 @@ async function practiceStage(L, st) {
 const msNeed = n => n >= 5 ? n - 1 : n;
 async function masteryStage(L) {
   const M = L.mastery; const P = progOf(L.id); P.cs = isObj(P.cs) ? P.cs : {};
-  newStage(250, { oasisOpacity: .2 }); await S(M.intro || 'gen.ms.intro');
+  newStage(250, { oasisOpacity: .2 }); introOnStage(M.intro || 'gen.ms.intro');
   for (const [C, items] of Object.entries(M.concepts)) {
     const cs = P.cs[C] = isObj(P.cs[C]) ? P.cs[C] : {}; const entry = (M.entryOnly || []).includes(C);
     let passed = false, ok = 0, round = 0;
@@ -156,7 +156,7 @@ const weakDone = P => !P.weak || !LDATA[P.weak] || ((PROG[P.weak] || {}).at || 0
 const retakeOpen = P => !P.failAt || P.mastered || (weakDone(P) && Date.now() >= dueAfter(P.failAt, 1));
 async function testStage(L) {
   const T = L.test; const P = progOf(L.id); newStage(250, { oasisOpacity: .3 });
-  await S(T.intro || 'gen.test.intro');
+  introOnStage(T.intro || 'gen.test.intro');
   /* ما أُجيب من بنوده محفوظٌ بعد كل بند (P.trun): من خرج قبل آخره يُكمل من حيث ترك بأجوبته، ولو اختار «من البداية»؛ فلا يُعاد الاختبار
      في اليوم نفسه بالخروج قبل آخره (الفحص المستقل للقرارات، 2: كان الخارج قبل آخره يعيده كاملاً فوراً) */
   const known = new Set(T.items.map(q => q.id)), run = isObj(P.trun) ? P.trun : { a: [], w: [] };

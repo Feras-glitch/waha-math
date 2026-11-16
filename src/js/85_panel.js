@@ -88,6 +88,10 @@ function openPanel() {
       <div class="seg" id="segMax">${[1, 2, 3, 0].map(n => `<button class="pick" data-n="${n}" aria-pressed="${SET.sessionMax === n}">${n ? nw(n, 'درس واحد', 'درسان', 'دروس', 'درساً') : 'بلا حدّ'}</button>`).join('')}</div>
       <p class="muted">في هذه الجلسة: ${nw(sessionNow().n, 'درس واحد', 'درسان', 'دروس', 'درساً')}.</p>
       <div class="seg"><button class="pick" id="slowBtn" aria-pressed="${!!SET.slow}">قراءة أبطأ: ${SET.slow ? 'تعمل' : 'متوقفة'}</button></div></div>
+    <div class="card"><b>القراءة الآلية</b> (لكل الأطفال على هذا الجهاز): من يقرأ بنفسه لا ينتظر القراءة كلها. وفي كل وضع زرّ «تخطَّ» أعلى الدرس أثناء الكلام، و«أعد الجملة» يُسمعها متى شاء.
+      <div class="seg" id="segRead">${[['all', 'كل الجمل مسموعة'], ['questions', 'الأسئلة فقط مسموعة'], ['none', 'مكتوبة بلا صوت']].map(([k, t]) => `<button class="pick" data-m="${k}" aria-pressed="${READ.mode === k}">${t}</button>`).join('')}</div>
+      <div class="seg"><button class="pick" id="quickBtn" aria-pressed="${READ.fast}">قراءة أسرع: ${READ.fast ? 'تعمل' : 'متوقفة'}</button></div>
+      <p class="muted">«القراءة الأبطأ» لطفلٍ بعينه تغلب «الأسرع». ${(() => { const n = Object.keys(LDATA).reduce((s, id) => s + ((isObj(PROG[id]) && PROG[id].skips) || 0), 0); return n ? `تخطّى ${esc(PROFILE && PROFILE.name || 'الطفل')} القراءة ${DG(n)} مرة.` : ''; })()}</p></div>
     <div class="card"><b>أطفال هذا الجهاز</b> (لكل طفل تقدّمه ومعرضه وإعداداته، ويختار صورته عند الدخول):
       <div class="seg">${KIDS.map(k => `<span class="pill${k.id === KID ? ' good' : ''}">${esc(k.name || 'بلا اسم')} (${k.gender === 'f' ? 'بنت' : 'ولد'})</span>${k.id === KID || kidDelBusy() ? '' : `<button class="pick" data-del="${esc(k.id)}">حذف ${esc(k.name || 'الطفل')}</button>`}`).join(' ')}<button class="pick" id="addKid">إضافة طفل</button><button class="pick" id="editProfile">تعديل الاسم والصورة وصيغة الخطاب</button></div>${kidDelNote()}</div>
     <div class="card"><b>الصوت:</b> <span id="vpStat">${vpStatText()}</span>
@@ -114,6 +118,8 @@ function openPanel() {
     if (saveProg()) openPanel(); });
   $('#repBtn').onclick = () => weeklyReport();
   $('#slowBtn').onclick = () => { SET.slow = !SET.slow; saveSet(); openPanel(); };
+  $('#quickBtn').onclick = () => { READ.fast = !READ.fast; saveRead(); openPanel(); };
+  $('#segRead').querySelectorAll('.pick').forEach(b => b.onclick = () => { READ.mode = b.dataset.m; saveRead(); openPanel(); });
   $('#segMax').querySelectorAll('.pick').forEach(b => b.onclick = () => { SET.sessionMax = +b.dataset.n; saveSet(); openPanel(); });
   $('#unlockAll').onclick = () => { if (PROG.unlockAll) delete PROG.unlockAll; else PROG.unlockAll = true; saveProg(); $('#panel').hidden = true; showHome(); };
   /* الصور أولاً، وما لم تُحذف لا يُمحى شيء (مراجعة الخصم C-01: أزال إصلاح WM101-R1 الدالة IDB.clear وبقي استدعاؤها هنا،
