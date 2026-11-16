@@ -32,6 +32,7 @@ async def main():
         t = time.time(); r = await pg.evaluate("([l, p]) => __studioDriver.run(l, p, null)", [L, pol])
         if not r.get('ended') or r.get('crash'): bad.append([L, pol, seed, {k: v for k, v in r.items() if k != 'clips'}])
         for c in r['clips']:
+          if c not in ids and c[-2:] in ('_m', '_f') and c[:-2] in ids: c = c[:-2]   # الجملة ذات الصيغتين تُنطق باسم ملفها (…_m)، ومعرّفها في الجدول بلا لاحقة: كانت تسقط من الخريطة ومن حزم الدروس
           if c not in ids: continue
           first.setdefault(c, [L, pol, seed]); where.setdefault(c, [])
           if L not in where[c]: where[c].append(L)

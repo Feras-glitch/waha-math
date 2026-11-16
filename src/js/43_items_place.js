@@ -69,16 +69,17 @@ function spotPick(svg, thing, home, spots, okKeys, opt = {}) {
     cleanup = () => { done = true; off(); rings.forEach(q => q.g.remove()); thing.style.cursor = ''; thing.removeAttribute('role'); delete thing.__route; thing.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); };
     const finish = r => { if (done) return; cleanup(); AUTO_CLEAR(); hush(); SFX.tick(); res(r.k); };
     rings.forEach(r => { r.g.onclick = () => finish(r); r.g.onkeydown = e => { if (actKey(e)) finish(r); }; }); routeClicks(rings.map(r => r.g));
-    let d = null; const base = thing.getAttribute('transform') || '';
-    thing.addEventListener('pointerdown', e => { if (done) return; d = { sx: e.clientX, sy: e.clientY }; try { thing.setPointerCapture(e.pointerId); } catch (x) {} });
-    thing.addEventListener('pointermove', e => { if (!d) return; const m = svg.getScreenCTM(); thing.setAttribute('transform', `translate(${(e.clientX - d.sx) / m.a} ${(e.clientY - d.sy) / m.d}) ` + base); });
+    const base = thing.getAttribute('transform') || '';   /* السحب بالإصبع الموحّد (D273) */
     /* لمسةٌ على الشيء بلا سحب لا تُجيب (قد يبدأ الشيء قرب حلقة: النجمة داخل الدائرة، الفحص المستقل E) */
     /* لمسةٌ بلا سحب على حافّة حلقةٍ تغطّيها منطقة الشيء: للحلقة المرسومة تحت الإصبع (D255؛ فحص الحوافّ بعد الفحص المستقل B لبوابة S1-U4) */
     const ringAt = (x, y) => { const els = document.elementsFromPoint(x, y); return rings.find(r => els.some(el => r.g.contains(el) && !el.matches('rect.hit'))); };
     thing.__route = (x, y) => { const r = ringAt(x, y); return r ? r.g : thing; };
-    const up = e => { if (!d || done) { d = null; return; } if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) < 10) { d = null; thing.setAttribute('transform', base); const r = ringAt(e.clientX, e.clientY); if (r) finish(r); return; } const p = svgPoint(svg, e); d = null; const near = rings.map(r => ({ r, dd: Math.hypot(r.x - p.x, r.y - p.y) })).sort((a, b) => a.dd - b.dd)[0];
-      thing.setAttribute('transform', base); if (near && near.dd < 58) finish(near.r); };
-    thing.addEventListener('pointerup', up); thing.addEventListener('pointercancel', () => { d = null; thing.setAttribute('transform', base); }); }));
+    dragInput(svg, thing, { threshold: 10, start: () => !done,
+      move: (dx, dy) => thing.setAttribute('transform', `translate(${dx} ${dy}) ` + base),
+      end: (moved, p, e) => { if (done) return; thing.setAttribute('transform', base);
+        if (!moved) { const r = ringAt(e.clientX, e.clientY); if (r) finish(r); return; }
+        const near = rings.map(r => ({ r, dd: Math.hypot(r.x - p.x, r.y - p.y) })).sort((a, b) => a.dd - b.dd)[0]; if (near && near.dd < 58) finish(near.r); },
+      cancel: () => thing.setAttribute('transform', base) }); }));
   p.cancel = () => { if (!done) cleanup(); }; return p; }   /* إلغاء الانتظار (زرّ آخر أجاب): لا تبقى الحلقات ولا سحب الشيء */
 /* رفّ صغير في أعلى المسرح يقف عليه ما سيوضع */
 function trayAt(svg, x = 300, y = 86) { el('rect', { x: x - 40, y, width: 80, height: 10, rx: 4, fill: MAT.wood, stroke: PL_EDGE, 'stroke-width': 2.5 }, svg); return { x, y }; }

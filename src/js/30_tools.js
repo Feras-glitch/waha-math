@@ -78,36 +78,37 @@ function tapAll(targets, onTouch, opt = {}) {
 }
 
 /* ① تتبّع الحافة: يجد الطفل الرؤوس بإصبعه (العدّ من الأعلى على اليمين، D232)، ثم يلمس الأضلاع ليعدّها */
-async function traceTool(svg, shapes, opt = {}) {
-  const trail = el('g', {}, svg), marks = el('g', {}, svg);
-  const state = shapes.map(s => ({ s, found: new Set(), buckets: new Set(), done: false }));
+async function traceTool(svg, shapes, opt = {}) {   /* تتبّع الحافة بالإصبع الموحّد (29_finger.js، D273) */
+  const trail = el('g', { 'pointer-events': 'none' }, svg), marks = el('g', { 'pointer-events': 'none' }, svg);
   shapes.forEach(s => { s.g = shapeAt(svg, s, s.x, s.y); if (s.caption) s.cap = label(svg, s.x, s.capY || 280, ''); });
   svg.appendChild(trail); svg.appendChild(marks);
-  function distSeg(p, a, b) { const vx = b[0] - a[0], vy = b[1] - a[1]; const t = Math.max(0, Math.min(1, ((p.x - a[0]) * vx + (p.y - a[1]) * vy) / (vx * vx + vy * vy))); return Math.hypot(p.x - a[0] - t * vx, p.y - a[1] - t * vy); }
   let resolveAll; const allDone = gate(new Promise(r => resolveAll = r));
-  const check = () => { if (state.every(st => st.done)) resolveAll(); };
-  function touch(p) {
-    state.forEach(st => { const s = st.s; if (st.done) return;
-      if (s.type === 'circle') { const r = shapeGeom(s).r; if (Math.abs(Math.hypot(p.x - s.x, p.y - s.y) - r) < 24) { el('circle', { cx: p.x, cy: p.y, r: 4.5, fill: '#fff', stroke: css('--ink'), 'stroke-opacity': .25 }, trail);
-          st.buckets.add(Math.floor(((Math.atan2(p.y - s.y, p.x - s.x) * 180 / Math.PI) + 360) % 360 / 10)); if (s.cap) s.cap.textContent = G(labelText('noVertices'));
-          if (st.buckets.size >= 27) { st.done = true; SFX.good(); check(); } } return; }
-      const P = worldPoly(s); let onEdge = false; for (let k = 0; k < P.length; k++) if (distSeg(p, P[k], P[(k + 1) % P.length]) < 20) onEdge = true;
-      if (!onEdge) return; el('circle', { cx: p.x, cy: p.y, r: 4.5, fill: '#fff', stroke: css('--ink'), 'stroke-opacity': .25 }, trail);
-      P.forEach((c, k) => { if (!st.found.has(k) && Math.hypot(p.x - c[0], p.y - c[1]) < 22) { st.found.add(k); SFX.tick(); buzz(30); badge(marks, c[0], c[1], st.found.size);
-        if (s.cap) s.cap.textContent = G(labelText('vertices')) + ' ' + (digitsShown() ? DG(st.found.size) : tallyText(st.found.size)); if (!SET.muted && !FAST) say(...lineOf(numw(st.found.size)), { num: true, noGap: true, free: true });
-        if (st.found.size === P.length) { st.done = true; check(); } } }); });
-  }
-  let down = false; const ac = new AbortController(), on = { signal: ac.signal };   /* تُزال المستمعات بعد التتبّع: التقاط المؤشّر كان يأخذ نقرة الفأرة من الأضلاع بعده */
-  svg.addEventListener('pointerdown', e => { down = true; try { svg.setPointerCapture(e.pointerId); } catch (x) {} touch(svgPoint(svg, e)); }, on);
-  svg.addEventListener('pointermove', e => { if (down) touch(svgPoint(svg, e)); }, on);
-  const up = e => { down = false; try { svg.releasePointerCapture(e.pointerId); } catch (x) {} }; svg.addEventListener('pointerup', up, on); svg.addEventListener('pointercancel', up, on);
-  async function demo(speed = 1) { for (const st of state) { const s = st.s; if (st.done) continue; if (s.type === 'circle') { const r = shapeGeom(s).r; for (let a = 0; a <= 360; a += 8) { const q = a * Math.PI / 180; touch({ x: s.x + r * Math.cos(q), y: s.y + r * Math.sin(q) }); await sleep(18 * speed); } }
-      else { const P = worldPoly(s); const path = [...P, P[0]]; for (let k = 0; k < P.length; k++) for (let t = 0; t <= 1; t += .1) { touch({ x: path[k][0] + (path[k + 1][0] - path[k][0]) * t, y: path[k][1] + (path[k + 1][1] - path[k][1]) * t }); await sleep(25 * speed); } } } }
+  const state = shapes.map(s => { const st = { s, done: false };
+    const geo = s.type === 'circle' ? circleSamples(s.x, s.y, shapeGeom(s).r) : polySamples(worldPoly(s), true), P = s.type === 'circle' ? [] : worldPoly(s);
+    st.f = edgeFollower(geo.smp, geo.vtx, { inkParent: trail, R: 28, cover: s.type === 'circle' ? .8 : .7,
+      onVertex: (k, n) => { const c = P[k]; SFX.tick(); buzz(30); badge(marks, c[0], c[1], n);
+        if (s.cap) s.cap.textContent = G(labelText('vertices')) + ' ' + (digitsShown() ? DG(n) : tallyText(n));
+        if (!SET.muted && !FAST) say(...lineOf(numw(n)), { num: true, noGap: true, free: true }); } });
+    return st; });
+  const check = () => { for (const st of state) if (!st.done && st.f.done()) { st.done = true; if (st.s.type === 'circle') SFX.good(); }
+    if (state.every(st => st.done)) resolveAll(); };
+  let act = null;   /* الشكل الذي بدأت لمستُه على حافّته */
+  const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; },
+    down: q => { act = state.find(st => !st.done && st.f.down(q)) || null; return !!act; },
+    move: q => { if (!act) return false; const goOn = act.f.move(q);
+      if (act.s.type === 'circle' && act.s.cap) act.s.cap.textContent = G(labelText('noVertices'));
+      check(); return goOn && !act.done; },
+    up: () => { if (act) act.f.up(); act = null; } });
+  /* العرض والفحص: الإصبع المصنوع يمرّ بالطريق نفسه */
+  async function demo(speed = 1) { for (const st of state) { const s = st.s; if (st.done) continue;
+      const pts = s.type === 'circle' ? Array.from({ length: 46 }, (_, i) => { const a = i / 44 * 2 * Math.PI - Math.PI / 2, r = shapeGeom(s).r; return [s.x + r * Math.cos(a), s.y + r * Math.sin(a)]; })
+        : (() => { const P = worldPoly(s); const out = []; for (let k = 0; k <= P.length; k++) { const a = P[k % P.length], b = P[(k + 1) % P.length]; for (let t = 0; t < 1; t += .1) out.push([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]); } return out; })();
+      if (speed > .2) { for (let i = 0; i < pts.length; i += 3) { input.sim(pts.slice(Math.max(0, i - 1), i + 3)); await sleep(60 * speed); } } else input.sim(pts); } }
   AUTO({ kind: 'trace', ok: () => demo(.05) });
   if (firstTime('trace')) { const s = shapes.find(x => x.type !== 'circle') || shapes[0]; const P = s.type === 'circle' ? [[s.x + 60, s.y], [s.x, s.y + 60]] : worldPoly(s).slice(0, 2);
     await ghostHand(svg, P.map(([x, y]) => [x, y]), 1100); }
   armIdle(async () => { await S('gen.demo.01'); await demo(); }, { first: !SET.seen.traceIdle });
-  await allDone; ac.abort(); down = false; disarmIdle(); AUTO_CLEAR(); SET.seen.traceIdle = 1;
+  await allDone; input.off(); disarmIdle(); AUTO_CLEAR(); SET.seen.traceIdle = 1;
   // عدّ الأضلاع باللمس (من الدرس الثاني، حين يدخل مصطلح «ضلع»): الأضلاع ظاهرة بخطّ منقّط خافت (M4)
   if (opt.sides) {
     const s = shapes.find(x => x.type !== 'circle'); const P = worldPoly(s); const counted = new Set();
@@ -167,14 +168,13 @@ function askSort(item, bins, opt = {}) {
     const okBins = [item.kind, ...((item.accept) || [])];
     AUTO({ kind: 'sort', ok: () => box.querySelector(`.bin[data-k="${okBins.find(k => bins.includes(k)) || bins[0]}"]`).click(), wrong: () => box.querySelector(`.bin:not([data-k="${item.kind}"])${(item.accept || []).map(k => `:not([data-k="${k}"])`).join('')}`).click() });
     if (item.riddle) return;   /* لغز المتجر لا شيء فيه يُسحب: الجواب لمس الرفّ (كانت منطقة سحب فارغة في زاوية المسرح) */
-    let drag = null; g.style.cursor = 'grab'; hitPad(g, 64, 64);   /* ما يُسحب: 64 بكسلاً على الأقل (D250) */
-    g.addEventListener('pointerdown', e => { drag = { sx: e.clientX, sy: e.clientY }; try { g.setPointerCapture(e.pointerId); } catch (x) {} });
-    g.addEventListener('pointermove', e => { if (!drag) return; const ctm = svg.getScreenCTM();
-      g.setAttribute('transform', `translate(${180 + (e.clientX - drag.sx) / ctm.a} ${104 + (e.clientY - drag.sy) / ctm.d}) rotate(${item.rot || 0})`);
-      box.querySelectorAll('.bin').forEach(b => { const r = b.getBoundingClientRect(); b.classList.toggle('hot', e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom); }); });
-    const drop = () => { if (!drag) return; drag = null; const hot = box.querySelector('.bin.hot'); box.querySelectorAll('.bin').forEach(b => b.classList.remove('hot'));
-      if (hot) pick(hot.dataset.k); else g.setAttribute('transform', `translate(180 104) rotate(${item.rot || 0})`); };
-    g.addEventListener('pointerup', drop); g.addEventListener('pointercancel', () => { drag = null; g.setAttribute('transform', `translate(180 104) rotate(${item.rot || 0})`); });
+    g.style.cursor = 'grab'; hitPad(g, 64, 64);   /* ما يُسحب: 64 بكسلاً على الأقل (D250) */
+    const home = () => g.setAttribute('transform', `translate(180 104) rotate(${item.rot || 0})`);   /* السحب بالإصبع الموحّد (D273) */
+    dragInput(svg, g, { threshold: 0,
+      move: (dx, dy, p, e) => { g.setAttribute('transform', `translate(${180 + dx} ${104 + dy}) rotate(${item.rot || 0})`);
+        box.querySelectorAll('.bin').forEach(b => { const r = b.getBoundingClientRect(); b.classList.toggle('hot', e.clientX > r.left && e.clientX < r.right && e.clientY > r.top && e.clientY < r.bottom); }); },
+      end: () => { const hot = box.querySelector('.bin.hot'); box.querySelectorAll('.bin').forEach(b => b.classList.remove('hot')); if (hot) pick(hot.dataset.k); else home(); },
+      cancel: () => { box.querySelectorAll('.bin').forEach(b => b.classList.remove('hot')); home(); } });
   });
 }
 

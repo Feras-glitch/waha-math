@@ -311,21 +311,23 @@ async function unitBadges(svg, units, opt = {}) { const pts = units.map((u, i) =
 function dragAlign(svg, things, opt = {}) { const snap = opt.snap ?? 16, X = opt.x ?? MS_X; const offs = [];
   things.forEach(t => { const o = t.o; const g = o.g; g.style.cursor = 'grab'; g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.dataset.align = Math.abs(o.x0 - X) < .5 ? 'yes' : 'no'; g.dataset.alignX = X;   /* خط المحاذاة للمس الحقيقي (realtap_run) */
     if (t.label) g.setAttribute('aria-label', plain(G(t.label))); hitPad(g, 64, 64);
-    let d = null;
+    let x0 = 0;
     const settle = () => { if (Math.abs(o.x0 - X) < snap) { o.setX(X); g.dataset.align = 'yes'; SFX.pop(); if (opt.onAlign) opt.onAlign(o); } else g.dataset.align = 'no'; };
     /* السحب يبدأ بالشيء المرسوم تحت الإصبع، لا بصاحب منطقة اللمس العليا (D255؛ الفحص المستقل B لبوابة S1-U4: سحبٌ على جسم الشريط الثاني حرّك الثالث) */
-    const down = e => { if (opt.locked && opt.locked()) return;
-      if (!e.__routed && things.length > 1 && e.clientX != null) { const r = tapRoute(things.map(x => ({ g: x.o.g, x })), e.clientX, e.clientY, { g, x: t }).x; if (r !== t && r.__down) { e.__routed = true; return r.__down(e); } }
-      d = { sx: e.clientX, x0: o.x0, moved: false }; try { g.setPointerCapture(e.pointerId); } catch (x) {} }; t.__down = down;
-    const move = e => { if (!d) return; const m = svg.getScreenCTM(); const dx = (e.clientX - d.sx) / m.a; if (Math.abs(dx) > 4) d.moved = true; if (d.moved) o.setX(Math.max(o.w + 12, Math.min(X + 30, d.x0 + dx))); };
+    /* السحب بالإصبع الموحّد (D273): إصبعٌ واحد، وعتبة حركة تفرّقه عن اللمس */
+    const drag = dragInput(svg, g, { threshold: 10,
+      start: e => { if (opt.locked && opt.locked()) return false;
+        if (!e.__routed && things.length > 1 && e.clientX != null) { const r = tapRoute(things.map(x => ({ g: x.o.g, x })), e.clientX, e.clientY, { g, x: t }).x; if (r !== t && r.__down) { e.__routed = true; r.__down(e); return false; } }
+        x0 = o.x0; return true; },
+      move: dx => o.setX(Math.max(o.w + 12, Math.min(X + 30, x0 + dx))),
     /* opt.tap: لمسة بلا سحب تحاذيه (بديل السحب، D246) حيث لمس الشيء ليس جواباً (الشبر)؛ وفي «أيّهما أطول؟» اللمس جواب فالبديل زرّ «حاذِ البدايات» */
-    const up = () => { if (!d) return; const moved = d.moved; d = null; if (moved) { settle(); t.dragged = true; t.dragAt = Date.now(); } else if (opt.tap) { t.align(); SFX.tick(); logAttempt({ scene: 'explore', tag: 'alignTap', ok: true }); } };
+      end: moved => { if (moved) { settle(); t.dragged = true; t.dragAt = Date.now(); } else if (opt.tap) { t.align(); SFX.tick(); logAttempt({ scene: 'explore', tag: 'alignTap', ok: true }); } },
+      cancel: () => {} }); t.__down = drag.down;
     /* النقرة التي يطلقها المتصفح بعد سحبٍ بالفأرة ليست جواباً: تُكبت قبل أن تبلغ لمس الجواب */
     g.addEventListener('click', e => { if (things.some(x => x.dragAt && Date.now() - x.dragAt < 400)) { e.stopImmediatePropagation(); e.preventDefault(); } }, true);
-    g.addEventListener('pointerdown', down); g.addEventListener('pointermove', move); g.addEventListener('pointerup', up); g.addEventListener('pointercancel', () => { d = null; });
     const key = e => { if (opt.tap && actKey(e)) t.align(); }; g.addEventListener('keydown', key); if (opt.tap) g.dataset.keys = 1;   /* مفتاحه الخاص (فلا يلمسه المفتاح العامّ أيضاً، kbdStage) */
     /* بعد off لا يُسحب: يُزال وسم المحاذاة فلا يحسبه الفحص شيئاً يُسحب بلا بديل (كان يبقى «no» تحت جملة المدح بعد بند الطول) */
-    offs.push(() => { g.removeEventListener('pointerdown', down); g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', up); g.removeEventListener('keydown', key); g.style.cursor = ''; delete g.dataset.align; delete g.dataset.alignX; if (opt.tap) delete g.dataset.keys; });
+    offs.push(() => { drag.off(); g.removeEventListener('keydown', key); g.style.cursor = ''; delete g.dataset.align; delete g.dataset.alignX; if (opt.tap) delete g.dataset.keys; });
     t.align = async () => { await alignTo(o, X, 500); g.dataset.align = 'yes'; if (opt.onAlign) opt.onAlign(o); }; });
   const all = async () => { await Promise.all(things.map(t => t.align())); };
   return { off: () => offs.forEach(f => f()), all }; }

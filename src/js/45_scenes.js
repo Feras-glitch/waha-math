@@ -19,7 +19,8 @@ SCENES.lines = async c => { if (c.stage !== false) newStage(c.h || 260, c.bg || 
 /* ---------- لغة الخطوات للأمثلة المحلولة والتذكّر (M5: لمسات مُنتِجة بدل «التالي» كلما أمكن) ---------- */
 SCENES.steps = async c => {
   const svg = c.svg || newStage(c.h || 300, c.bg || {}); const st = { svg, objs: {} };
-  for (const [i, step] of c.steps.entries()) { for (const op of [].concat(step)) await stepOp(st, op); if (i < c.steps.length - 1 && !c.auto) await nextBtn(); }
+  for (const [i, step] of c.steps.entries()) { if (st.later) { const g = st.later; st.later = null; await Promise.all(g.map(m => anim(m, [{ opacity: 1 }, { opacity: 0 }], 350).done.then(() => m.remove(), () => m.remove()))); }
+    for (const op of [].concat(step)) await stepOp(st, op); if (i < c.steps.length - 1 && !c.auto) await nextBtn(); }
   return st;
 };
 function objOf(st, id) { return st.objs[id]; }
@@ -40,9 +41,11 @@ async function stepOp(st, op) {
   if (op.badges) { const g = objOf(st, op.badges); const s = g.__s; const P = worldPoly(s); const m = el('g', { 'pointer-events': 'none' }, svg); st.marks = m;
     const pts = op.what === 'sides' ? P.map((a, i) => { const b = P[(i + 1) % P.length]; return [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2]; }) : P;
     for (const [i, [x, y]] of pts.entries()) { badge(m, x, y, i + 1, op.color ? css(op.color) : undefined); SFX.tick(); await S(numw(i + 1), { noGap: true, num: true }); await sleep(220); } }
-  if (op.unmark && st.marks) { st.marks.remove(); st.marks = null; }
+  if (op.unmark && st.marks) { const m = st.marks; st.marks = null; await anim(m, [{ opacity: 1 }, { opacity: 0 }], 300).done.catch(() => {}); m.remove(); }
   if (op.count) { const g = objOf(st, op.count); const P = worldPoly(g.__s); const pts = op.what === 'sides' ? P.map((a, i) => { const b = P[(i + 1) % P.length]; return { x: (a[0] + b[0]) / 2, y: (a[1] + b[1]) / 2 }; }) : P.map(([x, y]) => ({ x, y }));
-    if (op.prompt) say(...lineOf(op.prompt), { free: true }); await countTouch(svg, pts, { halo: 20, by: -26, pad: 56 }); hush(); svg.querySelectorAll('g[pointer-events=none]').forEach(m => { if (m !== st.marks) m.remove(); }); }
+    if (op.prompt) say(...lineOf(op.prompt), { free: true }); await countTouch(svg, pts, { halo: 20, by: -26, pad: 56 }); hush();
+    /* الأرقام تبقى مع جملة الخلاصة بعدها («رؤوسه الأربعة هي هي»)، ثم تتلاشى عند الخطوة التالية: كانت تُمحى لحظة آخر لمسة (ملاحظة فراس 2026-11-16) */
+    st.later = (st.later || []).concat([...svg.querySelectorAll('g[pointer-events=none]')].filter(m => m !== st.marks)); }
   if (op.sayAlong) st.along = S(op.sayAlong);
   if (op.tap) { await tapPart(st, op); }
   if (op.orbit) { const g = objOf(st, op.orbit); const r = (g.__s.size || 140) / 2; const dot = el('circle', { r: 9, fill: css('--compass'), stroke: '#fff', 'stroke-width': 3 }, svg);
@@ -195,9 +198,9 @@ SCENES.compareAlign = async c => {
   await S(c.lines[0]); if (firstTime('align')) await ghostHand(svg, [[160, 180], [200, 180]], 900);
   await gate(new Promise(res => { let d = null, x = 260, x0 = 260; const snap = () => { if (d === 'done') return; d = 'done'; B.setAttribute('transform', 'translate(300 180)'); B.dataset.align = 'yes'; SFX.good(); AUTO_CLEAR(); res(); };
     AUTO({ kind: 'align', ok: snap });
-    B.addEventListener('pointerdown', e => { if (d === 'done') return; d = e.clientX; x0 = x; try { B.setPointerCapture(e.pointerId); } catch (x) {} });
-    B.addEventListener('pointermove', e => { if (d == null || d === 'done') return; const ctm = svg.getScreenCTM(); x = Math.max(200, Math.min(320, x0 + (e.clientX - d) / ctm.a)); B.setAttribute('transform', `translate(${x} 180)`); });
-    const up = () => { if (d === 'done') return; d = null; if (Math.abs(x - 300) < 18) snap(); }; B.addEventListener('pointerup', up); B.addEventListener('pointercancel', () => { d = null; });
+    dragInput(svg, B, { threshold: 0, start: () => { if (d === 'done') return false; x0 = x; return true; },   /* السحب بالإصبع الموحّد (D273) */
+      move: dx => { if (d === 'done') return; x = Math.max(200, Math.min(320, x0 + dx)); B.setAttribute('transform', `translate(${x} 180)`); },
+      end: () => { if (d !== 'done' && Math.abs(x - 300) < 18) snap(); }, cancel: () => {} });
     B.addEventListener('click', () => { if (d !== 'done' && Math.abs(x - 300) >= 18) { anim(B, [{ transform: `translate(${x}px,180px)` }, { transform: 'translate(300px,180px)' }], 500).done.then(snap); } });   // بديل النقر (D246)
     B.addEventListener('keydown', e => { if (actKey(e)) snap(); }); B.dataset.keys = 1;
     armIdle(async () => { await S(c.lines[1]); await anim(B, [{ transform: 'translate(260px,180px)' }, { transform: 'translate(300px,180px)' }], 700).done; snap(); }); }));
@@ -283,10 +286,9 @@ SCENES.robot = async c => {
     let tries = 0; while (true) { const np = numberPick(nearNums(n), n); const a = await np.p; tries++; logAttempt({ scene: 'explore', tag: 'robotCount', ok: a === n, firstTry: tries === 1 }); np.box.remove(); if (a === n) { SFX.good(); break; } SFX.soft(); await S('gen.count.again'); }
     svg.querySelectorAll('g[pointer-events=none]').forEach(m => m.remove()); }
   await S(c.lines[2]); };
-function makeDraggable(svg, g, p) { let d = null; g.style.cursor = 'grab';
-  g.addEventListener('pointerdown', e => { if (p.locked) return; d = { sx: e.clientX, sy: e.clientY, x0: p.x, y0: p.y }; try { g.setPointerCapture(e.pointerId); } catch (x) {} });
-  g.addEventListener('pointermove', e => { if (!d) return; const ctm = svg.getScreenCTM(); p.x = Math.max(20, Math.min(340, d.x0 + (e.clientX - d.sx) / ctm.a)); p.y = Math.max(20, Math.min(240, d.y0 + (e.clientY - d.sy) / ctm.d)); g.setAttribute('transform', `translate(${p.x} ${p.y})`); });
-  const up = () => { d = null; }; g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up); }
+function makeDraggable(svg, g, p) { let x0 = 0, y0 = 0; g.style.cursor = 'grab';   /* السحب بالإصبع الموحّد (D273) */
+  dragInput(svg, g, { threshold: 0, start: () => { if (p.locked) return false; x0 = p.x; y0 = p.y; return true; },
+    move: (dx, dy) => { p.x = Math.max(20, Math.min(340, x0 + dx)); p.y = Math.max(20, Math.min(240, y0 + dy)); g.setAttribute('transform', `translate(${p.x} ${p.y})`); } }); }
 /* بطاقات التذكّر في درس المراجعة: {cards:[[شكل أو مجسّم، معرّف الجملة]]} */
 SCENES.reviewCards = async c => { const svg = newStage(300, { oasisOpacity: .15 });
   for (const [i, [k, id]] of c.cards.entries()) { const x = 315 - i * 90; const s = SOLIDC[k] ? { solid: k, size: 76 } : { type: k, size: 64, w: k === 'rect' ? 78 : k === 'triangle' ? 70 : undefined, h: k === 'rect' ? 44 : k === 'triangle' ? 64 : undefined, color: css(IDC[k]) };

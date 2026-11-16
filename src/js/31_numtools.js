@@ -148,12 +148,10 @@ function digitTrace(svg, n, x, y, k = 1.6, opt = {}) {   /* opt.sk: نماذج �
     if (hit >= 0) { pi = Math.max(pi, hit + 1); back = 0; }   /* الإسقاط على الخط يشمل العيّنة التي وقف عندها، فلا يسبق التقدّمُ الإصبع */
     else if ((pi > 3 && smp.slice(0, Math.max(0, pi - 6)).some(s => D2(s, q) < R * .8)) || smp.slice(pi + AHEAD + 6).some(s => D2(s, q) < R * .8)) back++;   /* رجوعٌ إلى ما خلفه، أو قفزٌ إلى آخر الخط: عكسُ الدائرة (٥) */
     if (pi >= smp.length - 1) { si++; pi = 0; if (si >= strokes.length) finish({ ok: true, err: null }); else { down = false; } } };
-  const step = q => {   /* نقطة واحدة من الإصبع، والفجوة بينها وبين السابقة تُملأ بنقاط كل 3 وحدات */
-    const from = last || q; const L = D2(from, q), m = Math.max(1, Math.ceil(L / 3));
-    for (let i = 1; i <= m; i++) { const r = [from[0] + (q[0] - from[0]) * i / m, from[1] + (q[1] - from[1]) * i / m]; addInk(r);
-      if (bad) { badRun += L / m; if (badRun > 14) return finish({ ok: false, err: bad }); }
-      else { advance(r); if (done || !down) break; if (back * 3 > BACK) return finish({ ok: false, err: 'traceDir' }); } }
-    last = q; };
+  const step = r => {   /* نقطة واحدة من الإصبع (الفجوات بين نقاطه يملؤها fingerInput بنقاط كل 3 وحدات، D273) */
+    const L = last ? D2(last, r) : 0; addInk(r); last = r;
+    if (bad) { badRun += L; if (badRun > 14) { finish({ ok: false, err: bad }); return false; } return true; }
+    advance(r); if (done || !down) return false; if (back * 3 > BACK) { finish({ ok: false, err: 'traceDir' }); return false; } return true; };
   const begin = q => {   /* لمسة جديدة: من البداية، أو من حيث وقف بعد رفع الإصبع */
     const S0 = strokes[si], smp = S0.smp; startLine(q); last = q; bad = null; badRun = 0; back = 0;
     if (smp.length === 1) { if (D2(smp[0], q) < R + 4) { si++; if (si >= strokes.length) finish({ ok: true, err: null }); } else bad = 'startDot'; return; }
@@ -162,16 +160,16 @@ function digitTrace(svg, n, x, y, k = 1.6, opt = {}) {   /* opt.sk: نماذج �
     if (resume) return;
     const end = smp[smp.length - 1]; bad = pi === 0 && D2(end, q) < 24 && D2(smp[0], end) > 30 ? 'traceDir' : 'startDot'; };
   const inBox = ev => { const q = local(ev); return q[0] > -12 && q[0] < 112 && q[1] > -10 && q[1] < 150; };
-  const onDown = ev => { if (done || (opt.sk && !inBox(ev))) return; if (opt.onFirst && !first) opt.onFirst(); down = true; try { svg.setPointerCapture(ev.pointerId); } catch (e) {} const q = local(ev); if (!first) first = q; begin(q); };
-  const onMove = ev => { if (!down || done) return; const evs = ev.getCoalescedEvents ? ev.getCoalescedEvents() : []; for (const e of (evs.length ? evs : [ev])) { if (!down || done) break; step(local(e)); } };
-  const onUp = () => { if (!down) return; down = false; if (done) return;
-    if (bad) { if (badRun <= 14) { ink.lastChild && ink.lastChild.remove(); bad = null; } return; }   /* لمسةٌ عابرة خارج البداية تُمحى ولا تُحسب */
-    if (si < strokes.length && opt.onShort) opt.onShort(); };
-  svg.addEventListener('pointerdown', onDown); svg.addEventListener('pointermove', onMove); svg.addEventListener('pointerup', onUp); svg.addEventListener('pointercancel', onUp);
+  const input = fingerInput(svg, { map: local,
+    down: (q, ev) => { if (done || (opt.sk && ev && !inBox(ev))) return false; if (opt.onFirst && !first) opt.onFirst(); down = true; if (!first) first = q; begin(q); return true; },
+    move: q => (!down || done) ? false : step(q),
+    up: () => { if (!down && !bad) return; down = false; if (done) return;
+      if (bad) { if (badRun <= 14) { ink.lastChild && ink.lastChild.remove(); bad = null; } return; }   /* لمسةٌ عابرة خارج البداية تُمحى ولا تُحسب */
+      if (si < strokes.length && opt.onShort) opt.onShort(); } });
   const toBox = q => [x - 50 * k + q[0] * k, y - 70 * k + q[1] * k];
-  const demo = async (fromWrong) => {   /* خطّاف الفحص: الخطأ بدءٌ من وسط الضربة الأولى؛ والصواب السير على الضربات بترتيبها */
-    if (fromWrong) { const S0 = strokes[0]; const m = S0.smp.length > 1 ? S0.smp[Math.floor(S0.smp.length / 2)] : [50, 140]; first = first || m; down = true; begin(m); for (let i = 1; i <= 8 && !done; i++) step([m[0] + i * 2, m[1] + i * 2]); down = false; if (!done) finish({ ok: false, err: 'startDot' }); return; }
-    for (const S0 of strokes) { if (done) break; if (!first) first = S0.smp[0]; down = true; begin(S0.smp[0]); for (const q of S0.smp) { if (done || !down) break; step(q); } down = false; } };
+  const demo = async (fromWrong) => {   /* خطّاف الفحص بالإصبع المصنوع نفسه: الخطأ بدءٌ من وسط الضربة الأولى؛ والصواب السير على الضربات بترتيبها */
+    if (fromWrong) { const S0 = strokes[0]; const m = S0.smp.length > 1 ? S0.smp[Math.floor(S0.smp.length / 2)] : [50, 140]; input.sim(Array.from({ length: 9 }, (_, i) => [m[0] + i * 2, m[1] + i * 2])); if (!done) finish({ ok: false, err: 'startDot' }); return; }
+    for (const S0 of strokes) { if (done) break; input.sim(S0.smp.length > 1 ? S0.smp : [S0.smp[0], S0.smp[0]]); } };
   if (!opt.noAuto) AUTO({ kind: 'trace', ok: () => demo(false), wrong: () => demo(true) });
   return { g, p, demo,
     ghost: async () => { for (const S0 of strokes) { const pts = S0.path ? Array.from({ length: 16 }, (_, i) => { const q = S0.path.getPointAtLength(S0.path.getTotalLength() * i / 15); return toBox([q.x, q.y]); }) : [toBox(S0.P[0]), toBox(S0.P[0])]; await ghostHand(svg, pts, S0.path ? 1600 : 600); } },

@@ -86,14 +86,14 @@ function wsPuzzle(U, P, ix) {
     return false; };
   /* واللمسة على الرفّ للقطعة المرسومة تحت الإصبع (tapRoute)، لا لمنطقة لمس جارتها فوقها (السائق بنقاط الحواف: حافة المستطيل في لغز القطار ذهبت إلى الدائرة) */
   const liveP = () => pieces.filter(q => !q.placed).map(q => ({ g: q.g, pc: q }));
-  pieces.forEach(pc => { let drag = null; const me = { g: pc.g, pc };
-    const down = e => { if (pc.placed) return; drag = { sx: e.clientX, sy: e.clientY, moved: false }; try { pc.g.setPointerCapture(e.pointerId); } catch (x) {} resetIdle(); };
-    pc.g.__down = down; pc.g.__route = (x, y) => tapRoute(liveP(), x, y, me).g;
-    pc.g.addEventListener('pointerdown', e => { if (!e.__routed && e.clientX != null) { const r = tapRoute(liveP(), e.clientX, e.clientY, me).pc; if (r !== pc && !r.placed) { e.__routed = true; return r.g.__down(e); } } down(e); });
-    pc.g.addEventListener('pointermove', e => { if (!drag) return; const ctm = svg.getScreenCTM(); const dx = (e.clientX - drag.sx) / ctm.a, dy = (e.clientY - drag.sy) / ctm.d;
-      if (Math.hypot(dx, dy) > 6) drag.moved = true; if (drag.moved) setPos(pc, pc.home.x + dx, pc.home.y + dy, 1); });
-    const up = () => { if (!drag) return; const moved = drag.moved; drag = null; if (!moved) { toShelf(pc); select(pc); SFX.tick(); return; } tryDrop(pc, pc.x, pc.y); };
-    pc.g.addEventListener('pointerup', up); pc.g.addEventListener('pointercancel', () => { drag = null; toShelf(pc); });
+  pieces.forEach(pc => { const me = { g: pc.g, pc };   /* السحب بالإصبع الموحّد (D273)؛ واللمسة تُوجَّه أولاً إلى القطعة المرسومة تحت الإصبع */
+    const drag = dragInput(svg, pc.g, { threshold: 14,
+      start: e => { if (!e.__routed && e.clientX != null) { const r = tapRoute(liveP(), e.clientX, e.clientY, me).pc; if (r !== pc && !r.placed) { e.__routed = true; r.g.__down(e); return false; } }
+        if (pc.placed) return false; resetIdle(); return true; },
+      move: (dx, dy) => setPos(pc, pc.home.x + dx, pc.home.y + dy, 1),
+      end: moved => { if (!moved) { toShelf(pc); select(pc); SFX.tick(); return; } tryDrop(pc, pc.x, pc.y); },
+      cancel: () => toShelf(pc) });
+    pc.g.__down = drag.down; pc.g.__route = (x, y) => tapRoute(liveP(), x, y, me).g;
     pc.g.addEventListener('keydown', e => { if (actKey(e) && !pc.placed) { select(pc); SFX.tick(); } }); pc.g.dataset.keys = 1; });
   /* بديل النقر: المس القطعة ثم المس ظلّها؛ واللمسة للظلّ المرسوم تحت الإصبع بين الظلال الباقية (D255؛ الفحص المستقل B لبوابة S1-U4: لمسة الظلّ الأعلى في الطوف ملأت الأوسط) */
   const liveS = () => slots.filter(q => !q.filled).map(q => ({ g: q.g, s: q }));
@@ -125,11 +125,9 @@ async function wsFree(U) {
   const layer = el('g', {}, svg); const placed = []; let sel = null;
   const select = pc => { placed.forEach(q => q.g.classList.remove('wssel')); sel = pc; if (pc) pc.g.classList.add('wssel'); };
   const spawn = p => { const pc = { p: { ...p, rot: 0 }, x: 180 + R(-30, 30), y: 130 + R(-20, 20) }; pc.g = wsDraw(layer, pc.p, pc.x, pc.y, 1); pc.g.style.cursor = 'grab'; hitPad(pc.g, 64, 64); /* هدف السحب 64 (D246) */ placed.push(pc); select(pc); SFX.pop();
-    let drag = null;
-    pc.g.addEventListener('pointerdown', e => { drag = { sx: e.clientX, sy: e.clientY, x0: pc.x, y0: pc.y }; try { pc.g.setPointerCapture(e.pointerId); } catch (x) {} select(pc); });
-    pc.g.addEventListener('pointermove', e => { if (!drag) return; const ctm = svg.getScreenCTM(); const dx = (e.clientX - drag.sx) / ctm.a, dy = (e.clientY - drag.sy) / ctm.d;
-      pc.x = Math.max(20, Math.min(340, drag.x0 + dx)); pc.y = Math.max(20, Math.min(232, drag.y0 + dy)); pc.g.setAttribute('transform', `translate(${pc.x} ${pc.y}) scale(1)`); });
-    const up = () => { drag = null; }; pc.g.addEventListener('pointerup', up); pc.g.addEventListener('pointercancel', up); return pc; };
+    let x0 = 0, y0 = 0;   /* السحب بالإصبع الموحّد (D273) */
+    dragInput(svg, pc.g, { threshold: 0, start: () => { x0 = pc.x; y0 = pc.y; select(pc); return true; },
+      move: (dx, dy) => { pc.x = Math.max(20, Math.min(340, x0 + dx)); pc.y = Math.max(20, Math.min(232, y0 + dy)); pc.g.setAttribute('transform', `translate(${pc.x} ${pc.y}) scale(1)`); } }); return pc; };
   W.pieces.forEach((p, i) => { const x = 315 - i * 90; const g = wsDraw(svg, p, x, 289, .62); g.style.cursor = 'pointer'; g.setAttribute('role', 'button'); g.setAttribute('aria-label', plain(BIN_NAMES[p.k] || (p.k === 'plank' ? labelText('plank') : ''))); hitPad(g, 84); g.dataset.wsSpawn = p.k; g.onclick = () => spawn(p); });
   wsButtons([...(W.pieces.some(q => !SOLIDC[q.k]) ? [['wsRot', 'turnIt', ICON.rotate, () => { if (!sel || SOLIDC[sel.p.k]) return; sel.p.rot = (sel.p.rot + 45) % 360; sel.g.inner.setAttribute('transform', `rotate(${sel.p.rot})`); SFX.tick(); }]] : []),
     ['wsDel', 'remove', ICON.trash, () => { if (!sel) return; sel.g.remove(); placed.splice(placed.indexOf(sel), 1); select(null); SFX.soft(); }],

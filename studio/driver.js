@@ -24,12 +24,14 @@
     const types = new Set(), deep = new Map();
     PROG.unlockAll = true; saveProg(); showHome(); await sleep(150);
     startLesson(lesson); await sleep(150);
+    /* الجملة ذات الصيغتين تُنطق باسم ملفها (…_m أو …_f) */
+    const isT = x => x === target || x === target + '_m' || x === target + '_f';
     /* الجملة المطلوبة تُلتقط لحظة نطقها (onTarget)، قبل أن يمضي الوضع السريع إلى ما بعدها */
-    const arr = []; let hit = false; arr.push = function (...v) { const r = Array.prototype.push.apply(this, v); if (target && !hit && v.indexOf(target) >= 0) { hit = true; if (opt.onTarget) try { opt.onTarget(); } catch (e) {} } return r; };
+    const arr = []; let hit = false; arr.push = function (...v) { const r = Array.prototype.push.apply(this, v); if (target && !hit && v.some(isT)) { hit = true; if (opt.onTarget) try { opt.onTarget(); } catch (e) {} } return r; };
     window.__clips = arr; const clips = () => window.__clips || [];
     for (;;) {
       const c = clips();
-      for (; seen < c.length; seen++) { if (opt.onClip) opt.onClip(c[seen]); if (target && c[seen] === target) return { found: true, clips: c.slice(), ended: false, steps }; }
+      for (; seen < c.length; seen++) { if (opt.onClip) opt.onClip(c[seen]); if (target && isT(c[seen])) return { found: true, clips: c.slice(), ended: false, steps }; }
       if (Date.now() - t0 > maxMs) return { found: false, clips: c.slice(), ended: false, steps, timeout: true };
       if (vis('#home') && ![...document.querySelectorAll('.cover')].some(x => !x.hidden)) return { found: false, clips: c.slice(), ended: true, steps };
       if (vis('#crashCover')) return { found: false, clips: c.slice(), ended: true, steps, crash: true };
