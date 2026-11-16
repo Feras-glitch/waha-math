@@ -1,0 +1,51 @@
+plugins {
+    id 'com.android.application'
+}
+
+/* «استوديو الواحة»: تطبيق التسجيل والمراجعة (docs/مواصفة_استوديو_الواحة.md). مستقل عن تطبيق الأطفال بمعرّفه وإصداراته
+   (وسوم studio-v…)، وموقَّع بمفتاح «واحة الرياضيات» نفسه (D269) من الأسرار نفسها. */
+android {
+    namespace 'com.waha.studio'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.waha.studio"
+        minSdk 26
+        targetSdk 34
+        versionCode 1
+        versionName "0.1.0"
+    }
+
+    def ks = System.getenv("WAHA_KEYSTORE")
+    signingConfigs {
+        fixedDebug {
+            storeFile file("debug.keystore")
+            storePassword "android"
+            keyAlias "androiddebugkey"
+            keyPassword "android"
+        }
+        if (ks) {
+            release {
+                storeFile file(ks)
+                storePassword System.getenv("WAHA_KEYSTORE_PASSWORD")?.trim()
+                keyAlias System.getenv("WAHA_KEY_ALIAS")?.trim()
+                keyPassword System.getenv("WAHA_KEY_PASSWORD")?.trim()
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (ks) signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.fixedDebug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}

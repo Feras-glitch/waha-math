@@ -13,3 +13,12 @@ platforms/desktop/app/
 platforms/desktop/icon.ico
 node_modules/
 platforms/desktop/desktop_smoke.js
+# استوديو الواحة: نواتج البناء (build/studio.mjs وtest/studio_where.py) تُرفق بصفحة التشغيل وبإصدار studio-v… ولا تُودَع
+dist/studio/
+dist/packs/
+dist/studio_where.json
+platforms/android-studio/app/src/main/assets/www/
+platforms/android-studio/.gradle/
+platforms/android-studio/build/
+platforms/android-studio/app/build/
+platforms/android-studio/local.properties

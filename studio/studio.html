@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>استوديو الواحة</title>
+<!-- استوديو الواحة: تسجيل أصوات «واحة الرياضيات» ومراجعتها (docs/مواصفة_استوديو_الواحة.md). الخطّان مضمّنان كتطبيق الأطفال، ولا شيء من الشبكة -->
+<style>
+:root { --bg: #eef8f5; --paper: #fffdf8; --ink: #1b3440; --muted: #4c6570; --line: #cfe0e0; --compass: #1f5f99; --chaos: #c8392d; --good: #2e8a4e; --warn: #9a5f08; --bad: #b3261e;
+  --f: "Waha Naskh", serif; --fd: "Baloo Bhaijaan 2", var(--f); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--ink); font-family: var(--f); font-size: 19px; line-height: 1.6; -webkit-tap-highlight-color: transparent; }
+h1, h2, h3, button, .tab, .chip { font-family: var(--fd); }
+h1 { font-size: 26px; margin: 0 0 6px; } h2 { font-size: 21px; margin: 18px 0 8px; } h3 { font-size: 18px; margin: 12px 0 6px; }
+.scr { max-width: 640px; margin: 0 auto; padding: 14px 16px 120px; }
+.scr[hidden], [hidden] { display: none !important; }
+.card { background: var(--paper); border: 2px solid var(--line); border-radius: 18px; padding: 14px 16px; margin: 10px 0; }
+button { border: 0; border-radius: 16px; min-height: 52px; padding: 8px 18px; font-size: 18px; font-weight: 800; cursor: pointer; background: var(--compass); color: #fff; }
+button.ghost { background: transparent; color: var(--compass); border: 2px solid var(--compass); }
+button.quiet { background: #e3eef0; color: var(--ink); }
+button:disabled { opacity: .45; cursor: default; }
+button.wide { width: 100%; margin: 6px 0; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row > button { flex: 1 1 auto; }
+input[type=text] { width: 100%; font: inherit; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--line); background: #fff; min-height: 52px; }
+label.chk { display: flex; gap: 10px; align-items: flex-start; margin: 10px 0; }
+label.chk input { width: 26px; height: 26px; margin-top: 4px; flex: none; }
+.muted { color: var(--muted); font-size: 16px; }
+.agree { font-size: 16.5px; } .agree ol { padding-inline-start: 22px; margin: 6px 0; } .agree li { margin: 6px 0; }
+.roles button { display: block; width: 100%; text-align: start; margin: 8px 0; background: var(--paper); color: var(--ink); border: 2px solid var(--line); }
+.roles button small { display: block; font-family: var(--f); font-weight: 400; color: var(--muted); font-size: 15px; }
+.roles button.on { border-color: var(--compass); }
+.bar { height: 12px; background: #dbe8ea; border-radius: 8px; overflow: hidden; } .bar i { display: block; height: 100%; background: var(--good); }
+.banner { background: #fff4dd; border: 2px solid #f0c46a; border-radius: 16px; padding: 10px 14px; margin: 10px 0; display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.tabs { display: flex; gap: 6px; margin: 12px 0 6px; position: sticky; top: 0; background: var(--bg); padding: 6px 0; z-index: 2; }
+.tab { flex: 1; background: #e3eef0; color: var(--ink); border-radius: 14px; min-height: 48px; font-size: 16px; padding: 4px 6px; }
+.tab.on { background: var(--compass); color: #fff; }
+.lesson { margin: 14px 0 4px; font-family: var(--fd); font-weight: 800; display: flex; justify-content: space-between; color: var(--muted); font-size: 16px; }
+.item { display: flex; gap: 10px; align-items: center; width: 100%; text-align: start; background: var(--paper); color: var(--ink); border: 2px solid var(--line); border-radius: 14px; padding: 8px 12px; margin: 5px 0; font-family: var(--f); font-weight: 400; font-size: 17px; min-height: 56px; }
+.dot { width: 14px; height: 14px; border-radius: 50%; flex: none; background: #c8d6d9; }
+.dot.done { background: var(--good); } .dot.redo { background: var(--warn); } .dot.half { background: linear-gradient(90deg, var(--good) 50%, #c8d6d9 50%); }
+.item .t { flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.who { font-family: var(--fd); font-weight: 800; font-size: 14px; padding: 2px 10px; border-radius: 10px; color: #fff; background: var(--compass); } .who.chaos { background: var(--chaos); }
+.head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.line { font-size: 31px; line-height: 1.9; margin: 8px 0; }
+.line .d { background: #ffe39a; border-radius: 8px; padding: 0 4px; }
+.form { font-family: var(--fd); font-weight: 800; color: var(--compass); font-size: 16px; }
+.note { background: #e9f3f6; border-radius: 12px; padding: 6px 12px; font-size: 16px; }
+.redoNote { background: #fff4dd; border-radius: 12px; padding: 6px 12px; font-size: 16px; }
+.rec { display: grid; place-items: center; margin: 18px 0 8px; }
+.recBtn { width: 112px; height: 112px; border-radius: 50%; background: var(--chaos); font-size: 20px; box-shadow: 0 6px 0 #8f2219; }
+.recBtn.on { background: #e2483a; outline: 6px solid #f6b3ab; outline-offset: 4px; }
+.meter { height: 16px; width: 100%; background: #dbe8ea; border-radius: 8px; overflow: hidden; margin-top: 12px; } .meter i { display: block; height: 100%; width: 0; background: var(--good); transition: width .06s; }
+canvas.wave { width: 100%; height: 70px; background: #fff; border-radius: 12px; border: 2px solid var(--line); }
+.checks { list-style: none; padding: 0; margin: 8px 0; } .checks li { padding: 6px 10px; border-radius: 10px; margin: 4px 0; background: #fdecea; color: var(--bad); font-size: 16px; }
+.checks li.ok { background: #e6f4ea; color: var(--good); }
+.ov { position: fixed; inset: 0; background: rgba(20, 40, 50, .55); z-index: 10; display: flex; flex-direction: column; }
+.ov .box { background: var(--bg); margin: auto; width: min(640px, 100%); height: 100%; display: flex; flex-direction: column; }
+.ov .bhead { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; gap: 8px; }
+.ov iframe { flex: 1; border: 0; width: 100%; background: #fff; }
+.ov .msg { padding: 14px; }
+.ov .say { padding: 8px 14px; border-top: 2px solid var(--line); background: var(--paper); font-size: 17px; }
+.hidden-run { position: fixed; left: -9999px; top: 0; width: 400px; height: 800px; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: 14px; z-index: 20; font-size: 16px; max-width: 90%; }
+.sticky { position: fixed; bottom: 0; left: 0; right: 0; background: var(--bg); border-top: 2px solid var(--line); padding: 10px 16px; z-index: 3; }
+.sticky .row { max-width: 640px; margin: 0 auto; }
+</style>
+</head>
+<body>
+
+<!-- 1) الاتفاق (مواصفة الاستوديو، القسم 11) -->
+<section class="scr" id="sAgree" hidden>
+  <h1>استوديو الواحة</h1>
+  <p class="muted">لتسجيل أصوات «واحة الرياضيات» ومراجعة نصوصها.</p>
+  <div class="card agree">
+    <h3>اتفاق المشاركة في «واحة الرياضيات»</h3>
+    <p>أشارك بصوتي أو بمراجعتي في إعداد «واحة الرياضيات»، وهو تطبيق تعليمي للأطفال يملكه فراس ومن يمثّله («صاحب المشروع»).</p>
+    <ol>
+      <li><b>الإذن:</b> آذن لصاحب المشروع باستعمال ما أسجّله أو أكتبه في هذا التطبيق (التسجيلات الصوتية، والتعديلات المقترحة، والملاحظات) في «واحة الرياضيات» وفي كل نسخها وتحديثاتها ومنصّاتها وترجماتها، ونسخه وتوزيعه وتعديله تقنياً (القص، وضبط المستوى، والتحويل)، إذناً دائماً غير محدود بمكان، دون مقابل إضافي على ما قد يُتّفق عليه كتابةً.</li>
+      <li><b>حدود الاستعمال:</b> لا يُستعمل صوتي خارج هذا المشروع وما يتبعه من مواد تعليمية له، ولا يُستعمل لتدريب نموذج يقلّد صوتي أو لتوليد كلام لم أقله، إلا بموافقتي المكتوبة.</li>
+      <li><b>الاسم:</b> يُذكر اسمي في شاشة «فريق العمل» إن رغبت، وأستطيع تغيير هذا الاختيار متى شئت.</li>
+      <li><b>الأصالة:</b> ما أسجّله صوتي أنا، وما أقترحه من نصوص من عملي أو مما يحق لي استعماله.</li>
+      <li><b>الانسحاب:</b> أستطيع التوقف متى شئت. ويبقى ما أرسلته قبل التوقف داخلاً في هذا الإذن.</li>
+      <li><b>البيانات:</b> يُحفظ مع عملي اسمي ودوري وتاريخ موافقتي فقط، ولا يُجمع غير ذلك، ولا يُرسَل إلا بالملفات التي أرسلها أنا بنفسي.</li>
+    </ol>
+  </div>
+  <label for="aName"><b>اسمك</b></label>
+  <input type="text" id="aName" maxlength="40" autocomplete="name">
+  <label class="chk"><input type="checkbox" id="aCredit" checked><span>أريد أن يُذكر اسمي في «فريق العمل».</span></label>
+  <label class="chk"><input type="checkbox" id="aMinor"><span>المشارك دون 18 سنة، ويوافق عنه وليّ أمره.</span></label>
+  <div id="aGuardWrap" hidden><label for="aGuard"><b>اسم وليّ الأمر</b></label><input type="text" id="aGuard" maxlength="40"></div>
+  <label class="chk"><input type="checkbox" id="aOk"><span>قرأت الاتفاق وأوافق عليه.</span></label>
+  <button class="wide" id="aGo" disabled>متابعة</button>
+</section>
+
+<!-- 2) الدور -->
+<section class="scr" id="sRole" hidden>
+  <h1>ما دورك؟</h1>
+  <div class="roles" id="roles"></div>
+  <p class="muted">أدوار المراجعة تأتي في المرحلة الثانية من الاستوديو.</p>
+</section>
+
+<!-- 3) فحص الميكروفون والغرفة -->
+<section class="scr" id="sMic" hidden>
+  <h1>فحص الغرفة والميكروفون</h1>
+  <div class="card">
+    <p id="micStep">أولاً نسمع الغرفة وهي هادئة. المس «ابدأ» واصمت خمس ثوانٍ.</p>
+    <p class="line" id="micLine" hidden>هَيَّا نَعُدُّ مَعًا: وَاحِدٌ، اثْنَانِ، ثَلَاثَةٌ.</p>
+    <div class="meter"><i id="micMeter"></i></div>
+    <p id="micVerdict"></p>
+    <div class="row"><button id="micGo">ابدأ</button><button class="quiet" id="micSkip">تخطَّ الآن</button></div>
+  </div>
+  <p class="muted">ضع الهاتف على بعد شبر تقريباً من فمك، بزاوية قليلة لا أمامه مباشرة. والغرفة الصغيرة بستائر وأثاث أفضل من الغرفة الفارغة.</p>
+</section>
+
+<!-- 4) الرئيسية -->
+<section class="scr" id="sHome" hidden>
+  <div class="head"><div><h1 id="hTitle">استوديو الواحة</h1><div class="muted" id="hWho"></div></div><button class="quiet" id="hMore" aria-label="الإعدادات">⋯</button></div>
+  <div id="hNoPack" class="card" hidden>
+    <h2>استورد حزمة العمل</h2>
+    <p>يرسل لك المنسّق ملفاً ينتهي بـ <b>.wahawork</b> عبر واتساب أو Drive أو البريد. احفظه في الهاتف ثم استورده من هنا.</p>
+    <button class="wide" id="hImport">استورد حزمة عمل</button>
+  </div>
+  <div id="hPack" hidden>
+    <div class="card">
+      <div class="head"><b id="pLabel"></b><span class="muted" id="pCount"></span></div>
+      <div class="bar"><i id="pBar"></i></div>
+      <p class="muted" id="pGoal"></p>
+    </div>
+    <div class="banner" id="unsent" hidden><span id="unsentT"></span><button id="sendBtn">أرسل</button></div>
+    <div class="tabs" role="tablist"><button class="tab on" data-t="all">الدروس</button><button class="tab" data-t="short">كلمات قصيرة</button><button class="tab" data-t="redo">مطلوب إعادتها</button></div>
+    <div id="list"></div>
+  </div>
+</section>
+
+<!-- 5) الجملة -->
+<section class="scr" id="sLine" hidden>
+  <div class="head"><button class="quiet" id="lBack">رجوع</button><span class="muted" id="lPos"></span></div>
+  <div class="muted" id="lWhere"></div>
+  <div class="card">
+    <div class="head"><span class="form" id="lForm"></span><span class="who" id="lWho"></span></div>
+    <div class="line" id="lText"></div>
+    <div class="note" id="lNote"></div>
+    <div class="redoNote" id="lRedo" hidden></div>
+    <div class="row" style="margin-top:10px"><button class="ghost" id="lPrev">اسمع ما قبلها</button><button class="ghost" id="lCtx">شاهد المشهد</button></div>
+  </div>
+  <div class="rec">
+    <button class="recBtn" id="recBtn">سجّل</button>
+    <div class="muted" id="recTime">المس «سجّل»، وانتظر لحظة، ثم اقرأ. والمس مرة أخرى حين تنتهي.</div>
+    <div class="meter"><i id="recMeter"></i></div>
+  </div>
+  <div id="review" hidden>
+    <canvas class="wave" id="wave" width="600" height="70"></canvas>
+    <ul class="checks" id="checks"></ul>
+    <div class="row"><button class="quiet" id="playBtn">اسمع</button><button class="ghost" id="againBtn">أعِد</button><button id="okBtn">اقبل وانتقل</button></div>
+  </div>
+</section>
+
+<!-- السياق الحي (القسم 5) -->
+<div class="ov" id="ctx" hidden><div class="box">
+  <div class="bhead"><b>المشهد</b><button class="quiet" id="ctxClose">إغلاق</button></div>
+  <div class="msg" id="ctxMsg"></div>
+  <iframe id="ctxShow" sandbox="" title="المشهد" hidden></iframe>
+  <div class="say" id="ctxSay" hidden></div>
+</div></div>
+
+<!-- الإعدادات -->
+<div class="ov" id="more" hidden><div class="box" style="overflow:auto">
+  <div class="bhead"><b>الإعدادات</b><button class="quiet" id="moreClose">إغلاق</button></div>
+  <div class="scr" style="padding-bottom:30px">
+    <button class="wide quiet" id="mImport">استورد حزمة عمل جديدة</button>
+    <button class="wide quiet" id="mMic">أعد فحص الغرفة والميكروفون</button>
+    <button class="wide quiet" id="mAll">أرسل كل ما سجّلت (للطوارئ)</button>
+    <h3>دفعات سابقة</h3><div id="mBatches" class="muted"></div>
+    <h3>الأصل للأرشيف (WAV)</h3><p class="muted">ملفات كبيرة، فتُحفظ درساً درساً، وتُرفع إلى Drive لا واتساب.</p><div id="mWav"></div>
+    <h3>عن الاستوديو</h3><p class="muted" id="mAbout"></p>
+  </div>
+</div></div>
+
+<input type="file" id="fileIn" accept=".wahawork,.zip,application/zip,application/octet-stream,*/*" hidden>
+<script>
+@@LIB@@
+</script>
+<script>
+@@DRIVER_JSON@@
+@@APP@@
+</script>
+</body>
+</html>

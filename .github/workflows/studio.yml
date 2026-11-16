@@ -1,0 +1,176 @@
+# «استوديو الواحة»: تطبيق التسجيل والمراجعة (docs/مواصفة_استوديو_الواحة.md). مستقل عن «Build all» وعن إصدارات تطبيق الأطفال.
+#   1) الفحوص: خريطة «شاهد المشهد» (test/studio_where.py)، وبناء الاستوديو وحزم العمل (build/studio.mjs)، والمسار كله في متصفح
+#      بميكروفون مزيّف (test/studio_run.py): اتفاق ← تسجيل ← مشهد ← دفعة ← أداة الاستلام ← حزمة صوت يستوردها تطبيق الأطفال.
+#   2) APK فحص (مفتاح تجريبي) دائماً، وAPK موقّع بمفتاح «واحة الرياضيات» من main.
+#   3) إصدار studio-v<versionName> (platforms/android-studio/app/build.gradle) من main، فيه APK والاستوديو وحزم العمل. سابق للإصدار
+#      (prerelease) فلا يصير «أحدث إصدار» مكان تطبيق الأطفال، وملفٌ نُشر لا يُستبدل.
+name: Studio
+
+on:
+  push:
+    branches: [ main, 'feature/studio**' ]
+    paths: [ 'studio/**', 'build/**', 'content/**', 'src/**', 'tools/studio_import.py', 'test/studio_*.py', 'platforms/android-studio/**', '.github/workflows/studio.yml' ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: studio-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PYTHONUTF8: '1'
+
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools
+        run: |
+          pip install openpyxl==3.1.5 playwright==1.56.0
+          python -m playwright install --with-deps chromium
+          sudo apt-get install -y -qq ffmpeg > /dev/null
+      - name: Build (children's and test builds)
+        run: |
+          node build/build.mjs
+          node build/build.mjs --dev
+      - name: Where each line is said ("watch the scene" map)
+        run: STUDIO_SEEDS=7 python3 test/studio_where.py
+      - name: Studio app and work packs
+        run: node build/studio.mjs
+      - name: Studio end to end (fake microphone)
+        run: python3 test/studio_run.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: studio
+          path: |
+            dist/studio/index.html
+            dist/packs/
+            dist/studio_where.json
+            test/out/studio/*.png
+
+  android:
+    needs: checks
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: studio
+          path: dl
+      - name: Studio page into Android assets
+        run: |
+          mkdir -p platforms/android-studio/app/src/main/assets/www
+          cp dl/dist/studio/index.html platforms/android-studio/app/src/main/assets/www/index.html
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android SDK
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Check APK
+        working-directory: platforms/android-studio
+        run: |
+          python3 ../tests/ci_run.py "Studio check APK" gradle assembleDebug --no-daemon --stacktrace
+          mkdir -p "$GITHUB_WORKSPACE/apk" && cp app/build/outputs/apk/debug/app-debug.apk "$GITHUB_WORKSPACE/apk/waha-studio-check.apk"
+      - name: What is inside
+        run: |
+          BT="$ANDROID_HOME/build-tools/34.0.0"; A=apk/waha-studio-check.apk
+          "$BT/aapt2" dump badging "$A" | grep -E "^package|uses-permission|application-label:|sdkVersion|targetSdk"
+          "$BT/aapt2" dump badging "$A" | grep -q "package: name='com.waha.studio'"
+          "$BT/aapt2" dump badging "$A" | grep -q "android.permission.RECORD_AUDIO"
+          ! "$BT/aapt2" dump badging "$A" | grep -q "android.permission.INTERNET"
+          unzip -l "$A" | grep -q "assets/www/index.html"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: studio-check-apk
+          path: apk/waha-studio-check.apk
+          retention-days: 14
+
+  release:
+    if: github.ref == 'refs/heads/main'
+    needs: checks
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: studio
+          path: dl
+      - name: Studio page into Android assets
+        run: |
+          mkdir -p platforms/android-studio/app/src/main/assets/www
+          cp dl/dist/studio/index.html platforms/android-studio/app/src/main/assets/www/index.html
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+      - name: Android SDK
+        run: |
+          SDKM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          yes | "$SDKM" --licenses > /dev/null || true
+          "$SDKM" --install "platforms;android-34" "build-tools;34.0.0" > /dev/null
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+      - name: Signing key
+        id: key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.WAHA_KEYSTORE_BASE64 }}
+        run: |
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/waha.jks"
+            echo "path=$RUNNER_TEMP/waha.jks" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::لا أسرار لمفتاح التوقيع (SIGNING-AR.md)"; exit 1
+          fi
+      - name: Signed APK
+        working-directory: platforms/android-studio
+        env:
+          WAHA_KEYSTORE: ${{ steps.key.outputs.path }}
+          WAHA_KEYSTORE_PASSWORD: ${{ secrets.WAHA_KEYSTORE_PASSWORD }}
+          WAHA_KEY_ALIAS: ${{ secrets.WAHA_KEY_ALIAS }}
+          WAHA_KEY_PASSWORD: ${{ secrets.WAHA_KEY_PASSWORD }}
+        run: |
+          python3 ../tests/ci_run.py "Studio signed APK" gradle assembleRelease --no-daemon --stacktrace
+          mkdir -p "$GITHUB_WORKSPACE/rel" && cp app/build/outputs/apk/release/app-release.apk "$GITHUB_WORKSPACE/rel/waha-studio.apk"
+          BT="$ANDROID_HOME/build-tools/34.0.0"
+          echo "::notice title=APK::$("$BT/apksigner" verify --print-certs "$GITHUB_WORKSPACE/rel/waha-studio.apk" | grep -E 'Signer #1 certificate SHA-256' | tr '\n' ' ')"
+      - name: Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp dl/dist/packs/*.wahawork rel/
+          (cd rel && sha256sum *) > SHA256.txt && mv SHA256.txt rel/
+          V="$(grep -oP 'versionName "\K[^"]+' platforms/android-studio/app/build.gradle)"; TAG="studio-v$V"
+          NOTES="استوديو الواحة $V: تسجيل أصوات «واحة الرياضيات» (المرحلة 1: المعلّق، و«شاهد المشهد»، والإرسال بعد كل جلسة).
+          - waha-studio.apk: يُثبَّت على هاتف المعلّق (أندرويد 8 فما فوق).
+          - حزم العمل (.wahawork): تُرسل للمعلّق عبر واتساب أو Drive، فيفتحها بالاستوديو. والحزمة التجريبية درس واحد لاعتماد الصوت أولاً.
+          - الاستلام عند المنسّق: python3 tools/studio_import.py الدفعات… (docs/مواصفة_استوديو_الواحة.md، القسم 7).
+          الإيداع ${GITHUB_SHA::7}."
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "::warning::الإصدار $TAG موجود ولا يُستبدل فيه شيء. شيفرة جديدة تحتاج رفع versionName وversionCode في platforms/android-studio/app/build.gradle"
+          else
+            gh release create "$TAG" rel/* --title "استوديو الواحة $TAG" --notes "$NOTES" --target "$GITHUB_SHA" --prerelease --latest=false
+          fi
