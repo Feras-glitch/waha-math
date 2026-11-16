@@ -177,7 +177,7 @@ ITEM.fill = {
 ITEM.trace = {
   make(spec) { return { ...spec, tag: 'trace' + spec.n, want: 'ok' }; },
   async ask(item, mode, tries) { const svg = newStage(270, { oasis: false, ground: 0 }); const tr = digitTrace(svg, item.n, 180, 136, 1.55, { onShort: () => S('gen.trace.more', { ifIdle: true, free: true }) });
-    if (tries === 0 && firstTime('digitTrace')) await tr.ghost(); if (tries >= 2) await tr.ghost();
+    if ((tries === 0 && firstTime('digitTrace')) || tries >= 1) await tr.ghost();   /* بعد كل خطأ تُعرض الطريقة من جديد (قرار فراس)، والتنبيه قبلها بلطف */
     await S(tries >= 3 ? 'gen.trace.together' : 'gen.trace.ask'); const r = await tr.p; return { ans: r.ok ? 'ok' : r.err, ctx: { svg, tr } }; },
   judge(item, a) { return a === 'ok' ? { ok: true } : { ok: false, err: a }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },

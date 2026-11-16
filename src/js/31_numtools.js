@@ -85,63 +85,95 @@ function sentenceLines(a, op, b, c) { const L = [[...lineOf(numw(a)), { noGap: t
   if (c != null) L.push([...lineOf('gen.op.eq'), { noGap: true, append: true }], [...lineOf(numw2(c)), { append: true }]); return L; }
 async function readSentence(a, op, b, c) { for (const [w, id, t, o] of sentenceLines(a, op, b, c)) await say(w, id, t, o); }
 
-/* ---------- تتبّع الأرقام المشرقية (N003): نموذج خطّ اليد، والنقطة الخضراء، وفحص بالتغطية ----------
-   النماذج مرسومة يدوياً على أشكال الخطوط المعيارية (صندوق 100×140). البدء من الأعلى، ومن اليمين حين يكون للرقم طرفان علويّان.
-   ويُقبل البدء من أيّ طرفَي الخط، لأن اتجاه ٧ و٨ يختلف بين المدارس؛ وتُراجع النماذج مع اختصاصي اللغة قبل الإنتاج. */
+/* ---------- تتبّع الأرقام (N003): نموذج خطّ اليد، والنقطة الخضراء، والاتجاه ----------
+   النماذج في صندوق 100×140، وكل رقم ضربة واحدة أو ضربات (مصفوفة نقاط لكل ضربة)، والنقطة الأولى بدايتها.
+   المشرقية بحسب كتب الصف الأول: «سلاح التلميذ» (مصر، نشاط «تتبّع واكتب»: الأسهم المرقّمة)، و«طريقة تدريس الأعداد من 1-9 للصف الأول الأساسي»
+   (أ. عبد الرحمن خليفة، من فريق تأليف المنهاج الفلسطيني)؛ وقرار فراس في ٩. فيها: ٥ من أعلى يميناً مع عقارب الساعة، و٨ من أسفل اليسار،
+   و٩ ضربة واحدة: من أسفل الرأس يساراً، ثم صعوداً مع عقارب الساعة حتى تُغلق الرأس عند البداية، ثم الساق إلى أسفل.
+   والاتجاه مفروض (قرار فراس): البدء من النقطة الخضراء، والسير مع الأسهم؛ ومن خالف نُبّه بلطف وعُرضت عليه الطريقة. */
 const DIGIT_SK = {
-  0: [[50, 70]], 1: [[45, 15], [52, 70], [55, 128]],
-  2: [[82, 15], [79, 33], [66, 45], [52, 43], [42, 30], [38, 16], [43, 70], [48, 128]],
-  3: [[88, 15], [86, 32], [78, 41], [70, 34], [66, 18], [62, 33], [52, 41], [43, 32], [38, 16], [43, 70], [48, 128]],
-  4: [[80, 16], [60, 13], [44, 22], [40, 36], [50, 47], [60, 52], [46, 58], [33, 76], [33, 104], [45, 123], [64, 128], [82, 120]],
-  5: [[50, 14], [34, 42], [26, 86], [32, 118], [50, 128], [68, 118], [74, 86], [66, 42], [50, 14]],
-  6: [[22, 16], [46, 21], [70, 16], [74, 40], [78, 90], [84, 128]],
-  7: [[86, 14], [52, 128], [16, 14]], 8: [[86, 128], [50, 14], [14, 128]],
-  9: [[64, 30], [52, 14], [34, 18], [26, 36], [34, 52], [50, 58], [66, 54], [68, 40], [70, 90], [76, 128]],
+  0: [[[50, 70]]], 1: [[[45, 15], [52, 70], [55, 128]]],
+  2: [[[82, 15], [79, 33], [66, 45], [52, 43], [42, 30], [38, 16], [43, 70], [48, 128]]],
+  3: [[[88, 15], [86, 32], [78, 41], [70, 34], [66, 18], [62, 33], [52, 41], [43, 32], [38, 16], [43, 70], [48, 128]]],
+  4: [[[80, 16], [60, 13], [44, 22], [40, 36], [50, 47], [60, 52], [46, 58], [33, 76], [33, 104], [45, 123], [64, 128], [82, 120]]],
+  5: [[[50, 14], [66, 42], [74, 86], [68, 118], [50, 128], [32, 118], [26, 86], [34, 42], [50, 14]]],
+  6: [[[22, 16], [46, 21], [70, 16], [74, 40], [78, 90], [84, 128]]],
+  7: [[[86, 14], [52, 128], [16, 14]]], 8: [[[14, 128], [50, 14], [86, 128]]],
+  9: [[[64, 50], [48, 57], [32, 50], [26, 35], [32, 20], [47, 14], [61, 20], [67, 35], [66, 52], [69, 90], [75, 128]]],
 };
-/* الأرقام الغربية (D229: يختارها الطفل بعد درس الأرقام): نماذج تتبّع العدد برقمين في «عشرة وآحاد» (N010، S1-U4 د5)، من الأعلى */
+/* الأرقام الغربية (D229: يختارها الطفل بعد درس الأرقام) بطريقة كتب المدارس: ٤ و٥ ضربتان، و٨ من أعلى اليمين، و٩ الرأس ثم الساق */
 const DIGIT_SK_W = {
-  0: [[50, 14], [28, 30], [22, 70], [28, 110], [50, 128], [72, 110], [78, 70], [72, 30], [50, 14]], 1: [[34, 32], [52, 14], [52, 128]],
-  2: [[24, 40], [36, 18], [56, 12], [74, 24], [76, 46], [62, 72], [24, 126], [80, 126]],
-  3: [[26, 24], [48, 12], [70, 22], [72, 44], [50, 64], [74, 82], [76, 108], [54, 128], [26, 118]],
-  4: [[62, 128], [62, 14], [18, 92], [84, 92]], 5: [[76, 14], [32, 14], [28, 62], [52, 54], [74, 70], [76, 102], [58, 126], [26, 120]],
-  6: [[72, 18], [48, 14], [28, 40], [22, 80], [30, 114], [52, 128], [74, 110], [74, 84], [54, 68], [30, 76], [22, 92]], 7: [[20, 14], [80, 14], [42, 128]],
-  8: [[50, 66], [30, 52], [28, 30], [44, 14], [60, 16], [72, 32], [68, 52], [50, 66], [28, 86], [26, 110], [42, 128], [60, 128], [76, 110], [74, 86], [50, 66]],
-  9: [[74, 46], [58, 64], [36, 62], [24, 42], [34, 18], [56, 12], [74, 26], [76, 50], [72, 128]],
+  0: [[[50, 14], [28, 30], [22, 70], [28, 110], [50, 128], [72, 110], [78, 70], [72, 30], [50, 14]]], 1: [[[50, 14], [50, 128]]],
+  2: [[[24, 40], [36, 18], [56, 12], [74, 24], [76, 46], [62, 72], [24, 126], [80, 126]]],
+  3: [[[26, 24], [48, 12], [70, 22], [72, 44], [50, 64], [74, 82], [76, 108], [54, 128], [26, 118]]],
+  4: [[[56, 14], [20, 88], [84, 88]], [[64, 40], [64, 128]]],
+  5: [[[30, 14], [27, 62], [52, 54], [74, 70], [76, 102], [58, 126], [26, 120]], [[30, 14], [76, 14]]],
+  6: [[[72, 18], [48, 14], [28, 40], [22, 80], [30, 114], [52, 128], [74, 110], [74, 84], [54, 68], [30, 76], [22, 92]]], 7: [[[20, 14], [80, 14], [42, 128]]],
+  8: [[[72, 26], [52, 13], [30, 24], [32, 46], [52, 64], [74, 84], [72, 112], [50, 128], [28, 112], [28, 86], [50, 66], [70, 48], [74, 30]]],
+  9: [[[74, 30], [56, 13], [34, 18], [24, 40], [36, 62], [58, 62], [74, 46]], [[74, 22], [72, 128]]],
 };
 /* منحنى ناعم يمرّ بالنقاط (كاتمول-روم) */
 function smoothPath(P) { if (P.length < 2) return ''; let d = `M${P[0][0]} ${P[0][1]}`;
   for (let i = 0; i < P.length - 1; i++) { const p0 = P[i - 1] || P[i], p1 = P[i], p2 = P[i + 1], p3 = P[i + 2] || p2;
     const c1 = [p1[0] + (p2[0] - p0[0]) / 6, p1[1] + (p2[1] - p0[1]) / 6], c2 = [p2[0] - (p3[0] - p1[0]) / 6, p2[1] - (p3[1] - p1[1]) / 6];
     d += ` C${c1[0].toFixed(1)} ${c1[1].toFixed(1)} ${c2[0].toFixed(1)} ${c2[1].toFixed(1)} ${p2[0]} ${p2[1]}`; } return d; }
-/* أداة التتبّع: تعيد {ok, err} — err: startDot (بدأ بعيداً عن طرف الخط) أو short (لم يُكمل) */
-function digitTrace(svg, n, x, y, k = 1.6, opt = {}) {   /* opt.sk: نماذج الأرقام (الغربية للعدد برقمين)، opt.noAuto: خطّاف الفحص لمن يجمع لوحين، opt.onFirst: أول لمسة على هذا اللوح */
-  const g = el('g', { transform: `translate(${x - 50 * k} ${y - 70 * k}) scale(${k})` }, svg); const P = (opt.sk || DIGIT_SK)[n];
+/* أداة التتبّع: تعيد {ok, err} — err: startDot (بدأ بعيداً عن النقطة الخضراء) أو traceDir (سار عكس الأسهم).
+   الحبر خطٌّ متصل يتبع الإصبع (تُملأ الفجوات بين نقاط اللمس، ومنها النقاط المجمّعة getCoalescedEvents)، فلا ينقطع مهما أسرع الإصبع.
+   والتقدّم على النموذج بترتيبه: لا يتقدّم إلا إلى ما أمامه قريباً، فلا يُحسب الرقم بالمرور عليه كيفما اتّفق. ورفع الإصبع والعودة من حيث وقف جائز. */
+function digitTrace(svg, n, x, y, k = 1.6, opt = {}) {   /* opt.sk: نماذج الأرقام (الغربية)، opt.noAuto: خطّاف الفحص لمن يجمع لوحين، opt.onFirst: أول لمسة على هذا اللوح */
+  const g = el('g', { transform: `translate(${x - 50 * k} ${y - 70 * k}) scale(${k})` }, svg); const SK = (opt.sk || DIGIT_SK)[n];
   el('rect', { x: -8, y: -6, width: 116, height: 152, rx: 14, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 2 }, g);
-  let path = null, samples;
-  if (P.length > 1) { path = el('path', { d: smoothPath(P), fill: 'none', stroke: css('--line'), 'stroke-width': 18, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
-    el('path', { d: smoothPath(P), fill: 'none', stroke: css('--muted'), 'stroke-width': 2, 'stroke-dasharray': '4 6', 'stroke-linecap': 'round' }, g);
-    const L = path.getTotalLength(); samples = []; for (let s = 0; s <= L; s += 6) { const q = path.getPointAtLength(s); samples.push([q.x, q.y]); }
-    const a0 = path.getPointAtLength(0), a1 = path.getPointAtLength(Math.min(14, L)); const ang = Math.atan2(a1.y - a0.y, a1.x - a0.x) * 180 / Math.PI;
-    const ar = el('g', { transform: `translate(${a0.x} ${a0.y}) rotate(${ang})` }, g); el('path', { d: 'M14 0 l-8 -6 M14 0 l-8 6', stroke: css('--good'), 'stroke-width': 3, 'stroke-linecap': 'round' }, ar);
-  } else { el('circle', { cx: 50, cy: 70, r: 9, fill: css('--line') }, g); samples = [[50, 70]]; }
-  const start = el('circle', { cx: P[0][0], cy: P[0][1], r: 8, fill: css('--good'), stroke: '#fff', 'stroke-width': 2.5 }, g);
-  const ink = el('g', { 'pointer-events': 'none' }, g); const hit = new Set(); let first = null, strokes = 0, done = false;
-  const ends = P.length > 1 ? [P[0], P[P.length - 1]] : [P[0]];
-  const local = ev => { const p = svgPoint(svg, ev); return [(p.x - (x - 50 * k)) / k, (p.y - (y - 70 * k)) / k]; };
-  const mark = q => { el('circle', { cx: q[0], cy: q[1], r: 6.5, fill: css('--compass'), opacity: .75 }, ink); samples.forEach((s, i) => { if (Math.hypot(s[0] - q[0], s[1] - q[1]) < 16) hit.add(i); }); };
-  let down = false, res;
+  const R = 17, AHEAD = 7, BACK = 26;   /* التسامح حول الخط، ونافذة الاستئناف والرجوع (عيّنات كل 4 وحدات)، ومسافة السير المعاكس قبل التنبيه؛ والتقدّم عيّنتان على الأكثر لكل 3 وحدات من الإصبع، فلا يسبق الإصبعَ إلى فرعٍ يعود على الخط */
+  const strokes = SK.map(P => { if (P.length < 2) { el('circle', { cx: P[0][0], cy: P[0][1], r: 9, fill: css('--line') }, g); return { P, path: null, smp: [P[0]] }; }
+    const d = smoothPath(P); const path = el('path', { d, fill: 'none', stroke: css('--line'), 'stroke-width': 18, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g);
+    el('path', { d, fill: 'none', stroke: css('--muted'), 'stroke-width': 2, 'stroke-dasharray': '4 6', 'stroke-linecap': 'round' }, g);
+    const L = path.getTotalLength(), smp = []; for (let s = 0; s <= L; s += 4) { const q = path.getPointAtLength(s); smp.push([q.x, q.y]); } if (L % 4) { const q = path.getPointAtLength(L); smp.push([q.x, q.y]); }
+    for (let s = 22; s < L - 10; s += 30) { const a = path.getPointAtLength(s), b = path.getPointAtLength(Math.min(L, s + 3)); const ang = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;   /* أسهم الاتجاه على الخط */
+      el('path', { d: 'M3 0 l-6 -4.5 M3 0 l-6 4.5', transform: `translate(${a.x.toFixed(1)} ${a.y.toFixed(1)}) rotate(${ang.toFixed(0)})`, fill: 'none', stroke: css('--good'), 'stroke-width': 2.4, 'stroke-linecap': 'round' }, g); }
+    return { P, path, smp }; });
+  strokes.forEach((S0, i) => { const c = el('g', { 'data-start': i + 1 }, g); el('circle', { cx: S0.P[0][0], cy: S0.P[0][1], r: 8, fill: css('--good'), stroke: '#fff', 'stroke-width': 2.5 }, c);
+    if (strokes.length > 1) { const t = el('text', { x: S0.P[0][0], y: S0.P[0][1] + 3.5, 'text-anchor': 'middle', 'font-size': 10, 'font-weight': 800, fill: '#fff' }, c); t.textContent = DG(i + 1); } });
+  const ink = el('g', { 'pointer-events': 'none' }, g);
+  let si = 0, pi = 0, done = false, first = null, down = false, bad = null, badRun = 0, back = 0, last = null, line = null, pts = '', res;
   const p = new Promise(r => res = r);
-  const finish = () => { if (done) return; const cov = hit.size / samples.length; const nearEnd = first && ends.some(e => Math.hypot(e[0] - first[0], e[1] - first[1]) < 24);
-    if (cov >= .85) { done = true; AUTO_CLEAR(); res({ ok: nearEnd, err: nearEnd ? null : 'startDot' }); } };
+  const D2 = (a, b) => Math.hypot(a[0] - b[0], a[1] - b[1]);
+  const local = ev => { const q = svgPoint(svg, ev); return [(q.x - (x - 50 * k)) / k, (q.y - (y - 70 * k)) / k]; };
+  const finish = r => { if (done) return; done = true; down = false; AUTO_CLEAR(); res(r); };
+  const startLine = q => { line = el('path', { d: '', fill: 'none', stroke: css('--compass'), 'stroke-width': 11, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', opacity: .8 }, ink); pts = `M${q[0].toFixed(1)} ${q[1].toFixed(1)}`; line.setAttribute('d', pts + ' l0 0'); };
+  const addInk = q => { pts += ` L${q[0].toFixed(1)} ${q[1].toFixed(1)}`; line.setAttribute('d', pts); };
+  const advance = q => {   /* يتقدّم إلى أبعد عيّنة قريبة أمامه؛ والسير قرب ما خلفه بعيداً عمّا أمامه سيرٌ معاكس */
+    const smp = strokes[si].smp; let hit = -1;
+    let best = R; for (let j = Math.max(0, pi - 1); j < Math.min(smp.length, pi + 3); j++) { const d = D2(smp[j], q); if (d < best - .5) { best = d; hit = j; } }   /* الأقرب لا الأبعد: حيث يعود الخط على نفسه (٢، ٣) لا يقفز التقدّم إلى الفرع التالي */
+    if (hit < 0) { best = R * .8; for (let j = pi + 3; j < Math.min(smp.length, pi + 3 * AHEAD); j++) { const d = D2(smp[j], q); if (d < best) { best = d; hit = j; } } }   /* إصبعٌ سريعٌ قطع رأس زاويةٍ يعود فيها الخط على نفسه (٢، ٣): يُلحق به إلى الفرع الذي هو عليه */
+    if (hit >= 0) { pi = Math.max(pi, hit + 1); back = 0; }   /* الإسقاط على الخط يشمل العيّنة التي وقف عندها، فلا يسبق التقدّمُ الإصبع */
+    else if ((pi > 3 && smp.slice(0, Math.max(0, pi - 6)).some(s => D2(s, q) < R * .8)) || smp.slice(pi + AHEAD + 6).some(s => D2(s, q) < R * .8)) back++;   /* رجوعٌ إلى ما خلفه، أو قفزٌ إلى آخر الخط: عكسُ الدائرة (٥) */
+    if (pi >= smp.length - 1) { si++; pi = 0; if (si >= strokes.length) finish({ ok: true, err: null }); else { down = false; } } };
+  const step = q => {   /* نقطة واحدة من الإصبع، والفجوة بينها وبين السابقة تُملأ بنقاط كل 3 وحدات */
+    const from = last || q; const L = D2(from, q), m = Math.max(1, Math.ceil(L / 3));
+    for (let i = 1; i <= m; i++) { const r = [from[0] + (q[0] - from[0]) * i / m, from[1] + (q[1] - from[1]) * i / m]; addInk(r);
+      if (bad) { badRun += L / m; if (badRun > 14) return finish({ ok: false, err: bad }); }
+      else { advance(r); if (done || !down) break; if (back * 3 > BACK) return finish({ ok: false, err: 'traceDir' }); } }
+    last = q; };
+  const begin = q => {   /* لمسة جديدة: من البداية، أو من حيث وقف بعد رفع الإصبع */
+    const S0 = strokes[si], smp = S0.smp; startLine(q); last = q; bad = null; badRun = 0; back = 0;
+    if (smp.length === 1) { if (D2(smp[0], q) < R + 4) { si++; if (si >= strokes.length) finish({ ok: true, err: null }); } else bad = 'startDot'; return; }
+    const resume = pi > 0 && smp.slice(Math.max(0, pi - 4), pi + AHEAD).some(s => D2(s, q) < R + 4);
+    if (pi === 0 && D2(smp[0], q) < 24) { pi = 1; return; }
+    if (resume) return;
+    const end = smp[smp.length - 1]; bad = pi === 0 && D2(end, q) < 24 && D2(smp[0], end) > 30 ? 'traceDir' : 'startDot'; };
   const inBox = ev => { const q = local(ev); return q[0] > -12 && q[0] < 112 && q[1] > -10 && q[1] < 150; };
-  const onDown = ev => { if (done || (opt.sk && !inBox(ev))) return; if (opt.onFirst && !first) opt.onFirst(); down = true; try { svg.setPointerCapture(ev.pointerId); } catch (e) {} const q = local(ev); if (!first) first = q; strokes++; mark(q); finish(); };
-  const onMove = ev => { if (!down || done) return; mark(local(ev)); finish(); };
-  const onUp = () => { if (!down) return; down = false; if (!done && strokes >= 1 && hit.size / samples.length < .85 && opt.onShort) opt.onShort(hit.size / samples.length); };
+  const onDown = ev => { if (done || (opt.sk && !inBox(ev))) return; if (opt.onFirst && !first) opt.onFirst(); down = true; try { svg.setPointerCapture(ev.pointerId); } catch (e) {} const q = local(ev); if (!first) first = q; begin(q); };
+  const onMove = ev => { if (!down || done) return; const evs = ev.getCoalescedEvents ? ev.getCoalescedEvents() : []; for (const e of (evs.length ? evs : [ev])) { if (!down || done) break; step(local(e)); } };
+  const onUp = () => { if (!down) return; down = false; if (done) return;
+    if (bad) { if (badRun <= 14) { ink.lastChild && ink.lastChild.remove(); bad = null; } return; }   /* لمسةٌ عابرة خارج البداية تُمحى ولا تُحسب */
+    if (si < strokes.length && opt.onShort) opt.onShort(); };
   svg.addEventListener('pointerdown', onDown); svg.addEventListener('pointermove', onMove); svg.addEventListener('pointerup', onUp); svg.addEventListener('pointercancel', onUp);
-  const demo = async (fromWrong) => { const L = path ? path.getTotalLength() : 0;
-    if (fromWrong) { const q = path ? path.getPointAtLength(L / 2) : null; first = q ? [q.x, q.y] : [50, 140]; } else if (!first) first = P[0];   /* الخطأ: البدء من وسط الرقم، بعيداً عن طرفيه أياً كان الرقم */
-    if (!path) { mark([50, 70]); finish(); return; } for (let s = 0; s <= L; s += 4) { const q = path.getPointAtLength(s); mark([q.x, q.y]); } finish(); };
+  const toBox = q => [x - 50 * k + q[0] * k, y - 70 * k + q[1] * k];
+  const demo = async (fromWrong) => {   /* خطّاف الفحص: الخطأ بدءٌ من وسط الضربة الأولى؛ والصواب السير على الضربات بترتيبها */
+    if (fromWrong) { const S0 = strokes[0]; const m = S0.smp.length > 1 ? S0.smp[Math.floor(S0.smp.length / 2)] : [50, 140]; first = first || m; down = true; begin(m); for (let i = 1; i <= 8 && !done; i++) step([m[0] + i * 2, m[1] + i * 2]); down = false; if (!done) finish({ ok: false, err: 'startDot' }); return; }
+    for (const S0 of strokes) { if (done) break; if (!first) first = S0.smp[0]; down = true; begin(S0.smp[0]); for (const q of S0.smp) { if (done || !down) break; step(q); } down = false; } };
   if (!opt.noAuto) AUTO({ kind: 'trace', ok: () => demo(false), wrong: () => demo(true) });
-  return { g, p, demo, ghost: async () => { const pts = P.length > 1 ? Array.from({ length: 12 }, (_, i) => { const q = path.getPointAtLength(path.getTotalLength() * i / 11); return [x - 50 * k + q.x * k, y - 70 * k + q.y * k]; }) : [[x, y], [x, y]]; await ghostHand(svg, pts, 1500); },
-    reset: () => { ink.innerHTML = ''; hit.clear(); first = null; strokes = 0; done = false; } };
+  return { g, p, demo,
+    ghost: async () => { for (const S0 of strokes) { const pts = S0.path ? Array.from({ length: 16 }, (_, i) => { const q = S0.path.getPointAtLength(S0.path.getTotalLength() * i / 15); return toBox([q.x, q.y]); }) : [toBox(S0.P[0]), toBox(S0.P[0])]; await ghostHand(svg, pts, S0.path ? 1600 : 600); } },
+    reset: () => { ink.innerHTML = ''; si = 0; pi = 0; first = null; done = false; bad = null; } };
 }

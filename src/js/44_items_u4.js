@@ -529,7 +529,7 @@ ITEM.teenTrace = {
     const L = digitTrace(svg, +t, TT_X[0], 140, 1.12, { sk, noAuto: true, onFirst: () => { if (!first) first = 'L'; } }), Rr = digitTrace(svg, +o, TT_X[1], 140, 1.12, { sk, noAuto: true, onFirst: () => { if (!first) first = 'R'; } });
     L.g.dataset.place = 'tens'; Rr.g.dataset.place = 'ones';
     if (tries >= 3) { const h = helpG(svg); el('path', { d: `M${TT_X[0]} 18 v24 m-9 -10 l9 10 l9 -10`, fill: 'none', stroke: css('--good'), 'stroke-width': 4, 'stroke-linecap': 'round' }, h); }
-    if (tries >= 2 || (tries === 0 && firstTime('teenTrace'))) await L.ghost();
+    if (tries >= 1 || (tries === 0 && firstTime('teenTrace'))) await L.ghost();
     say(...lineOf(tries >= 3 ? 'gen.teen.traceTogether' : item.q), { free: true }); await say(...lineOf(numw(item.n)), { append: true, free: true });
     AUTO({ kind: 'trace2', ok: async () => { first = first || 'L'; L.demo(false); await new Promise(r => setTimeout(r, 30)); Rr.demo(false); }, wrong: async () => { first = 'R'; Rr.demo(false); await new Promise(r => setTimeout(r, 30)); L.demo(false); } });
     const [a, b] = await gate(Promise.all([L.p, Rr.p])); AUTO_CLEAR(); hush();
