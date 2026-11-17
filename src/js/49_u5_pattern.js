@@ -55,6 +55,8 @@ function patRowAt(svg, seq, opt = {}) {
   const n = seq.length + (opt.slots || 0), y = opt.y ?? 100, step = opt.step || Math.min(56, 280 / Math.max(1, n - 1)), size = opt.size || Math.min(46, step - 8);
   const xR = (opt.cx ?? 180) + (n - 1) * step / 2, g = el('g', { 'data-pat': seq.join(',') }, opt.parent || svg), X = i => xR - i * step;
   if (opt.card) el('rect', { x: X(n - 1) - step / 2 - 4, y: y - size / 2 - 18, width: (n - 1) * step + step + 8, height: size + 36, rx: 16, fill: '#fffdf6', 'fill-opacity': .9, stroke: css('--line'), 'stroke-width': 2.5 }, g);
+  if (opt.ribbon) { const xa = X(n - 1) - step / 2 - 2, xb = xR + step / 2 + 2, h = size / 2 + 9;   /* شريط الزينة */
+    el('path', { d: `M${xa} ${y - h} H${xb} l-9 ${h} l9 ${h} H${xa} l9 ${-h} Z`, fill: '#fff3d6', stroke: '#e6b85c', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, g); }
   if (opt.string ?? patIsBead(seq)) {   /* خيط السلسلة، وعقدة عند أوله */
     el('path', { d: `M${xR + size / 2 + 9} ${y} H${X(n - 1) - size / 2 - 9}`, stroke: '#8a6a4a', 'stroke-width': 3, 'stroke-linecap': 'round', fill: 'none' }, g); el('circle', { cx: xR + size / 2 + 9, cy: y, r: 4.5, fill: '#8a6a4a' }, g); }
   if (opt.arrow !== false) { const ax = xR, ay = y - size / 2 - (opt.card ? 6 : 12);   /* من هنا نبدأ القراءة */
@@ -86,7 +88,7 @@ ITEM.patNext = {
   make(spec) { const seq = patSeq(spec.unit, spec.n), k = spec.slots || 1, want = Array.from({ length: k }, (_, i) => spec.unit[(spec.n + i) % spec.unit.length]);
     return { ...spec, seq, k, want, tray: shuffle(spec.pool || [...new Set(spec.unit)]), tag: 'pat-next' + k + '-u' + spec.unit.length }; },
   async ask(item, mode, tries) { const svg = newStage(280, { oasis: false, ground: 0 }), help = tries >= 3;
-    const row = patRowAt(svg, item.seq, { slots: item.k, y: 96 }); if (help) patLoops(helpG(svg), row, item.unit.length);
+    const row = patRowAt(svg, item.seq, { slots: item.k, y: 96, ribbon: item.ribbon }); if (help) patLoops(helpG(svg), row, item.unit.length);
     /* الصينية: الخيارات كبيرة تحت الصفّ */
     const tn = item.tray.length, tx = i => 180 + (tn - 1) * 48 - i * 96; el('rect', { x: 180 - tn * 48 - 6, y: 172, width: tn * 96 + 12, height: 84, rx: 22, fill: '#fffdf6', 'fill-opacity': .92, stroke: css('--line'), 'stroke-width': 2.5 }, svg);
     const tray = item.tray.map((t, i) => ({ g: patTokAt(svg, t, tx(i), 214, 52), k: t, label: patLabel(t) }));
@@ -192,3 +194,110 @@ WRAP_ART.beads = svg => { const seq = patSeq(['bR', 'bB'], 11);
   seq.forEach((t, i) => { const u = (i + .5) / seq.length, x = 320 - 280 * u, y = 150 + 300 * u * (1 - u), g = patTokAt(svg, t, x, y, 26);
     anim(g, [{ opacity: 0, transform: `translate(${x}px,${y - 40}px)` }, { opacity: 1, transform: `translate(${x}px,${y}px)` }], { duration: 380, delay: 200 + i * 120, fill: 'both', easing: 'cubic-bezier(.3,1.4,.6,1)' }); });
   palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
+
+/* =====================================================================
+   الدرس 2 «أنماط أطول» (C026، وC018 في موضعه الثاني): وحدة من ثلاثة عناصر، وإحاطة الوحدة بحلقة، وقراءة النمط بالأصوات.
+   ===================================================================== */
+/* حلقة واحدة حول العناصر من a إلى b */
+function patLoopAt(parent, row, a, b, opt = {}) { const pad = 5, xL = row.X(b) - row.size / 2 - pad, xRr = row.X(a) + row.size / 2 + pad;
+  return el('rect', { x: xL, y: row.y - row.size / 2 - pad - 2, width: xRr - xL, height: row.size + 2 * pad + 4, rx: 14, fill: 'none', stroke: opt.color || css('--compass'), 'stroke-width': 3.4, 'stroke-dasharray': opt.dash ? '7 5' : null, 'pointer-events': 'none', 'data-loop': opt.k ?? 0 }, parent); }
+/* قراءة الإيقاع وحدةً وحدة: وقفة بعد كل u عنصراً، فيُسمع أين تنتهي الوحدة */
+async function patSweepUnits(row, u) { for (const e of row.els) { patSound(e.t);
+    await anim(e.g, [{ transform: `translate(${e.x}px,${e.y}px) scale(1)` }, { transform: `translate(${e.x}px,${e.y - 9}px) scale(1.16)` }, { transform: `translate(${e.x}px,${e.y}px) scale(1)` }], { duration: 280 }).done.catch(() => {});
+    await sleep((e.i + 1) % u ? 60 : 520); } }
+
+/* ================= ④ أحط الوحدة المتكررة بحلقة (C018): يلمس الطفل آخر عنصر في الوحدة، فتُرسم الحلقة من أول الصفّ إليه ================= */
+ITEM.patUnit = {
+  make(spec) { return { ...spec, seq: patSeq(spec.unit, spec.n), want: spec.unit.length - 1, tag: 'pat-unit-u' + spec.unit.length }; },
+  async ask(item, mode, tries) { const svg = newStage(230, { oasis: false, ground: 0 }), help = tries >= 3, u = item.unit.length;
+    const row = patRowAt(svg, item.seq, { y: 112 }), m = helpG(svg); if (help) patLoopAt(m, row, u, 2 * u - 1, { dash: true, k: 1 });   /* الحلّ المشترك: الوحدة في مرّتها الثانية */
+    say(...lineOf(help ? 'gen.pat.together.unit' : item.q), { free: true });
+    const k = await tapOne(row.els.map(e => ({ g: e.g, k: e.i, label: patLabel(e.t) })), { ok: item.want, pad: 56, pulse: false }); hush();
+    const lp = patLoopAt(m, row, 0, k, { k: 0 }); SFX.tick(); await anim(lp, [{ opacity: 0 }, { opacity: 1 }], { duration: 220 }).done.catch(() => {}); await sleep(260);
+    return { ans: k, ctx: { svg, row, m } }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: k < item.want ? 'patUnitShort' : 'patUnitLong' }; },
+  async onOk(item, r) { SFX.good(); const { row, m } = r.ctx, u = item.unit.length; for (let a = u; a + u <= item.n; a += u) { SFX.tick(); await anim(patLoopAt(m, row, a, a + u - 1, { k: a / u }), [{ opacity: 0 }, { opacity: 1 }], { duration: 240 }).done.catch(() => {}); await sleep(140); } },
+  onWrong() { SFX.soft(); },
+  async hint2(item, r) { r.ctx.m.replaceChildren(); await patSweepUnits(r.ctx.row, item.unit.length); }, async together() {},
+  async reveal(item, r) { const { svg, row, m } = r.ctx; m.replaceChildren(); patLoops(m, row, item.unit.length); okRing(svg, row.els[item.want].g, 4); await S('gen.pat.reveal.unit'); },
+  praise: () => 'praisePattern', twin(item) { return item.twin || null; },
+};
+
+/* ================= ⑤ اقرأ النمط بالأصوات (C026): لكل لون صوت (map)، ويلمس الطفل الصوت لكل عنصر بالترتيب؛ ويقف عند أول خطأ ================= */
+function patPlayStage(seq, map, help) { const svg = newStage(300, { oasis: false, ground: 0 }), row = patRowAt(svg, seq, { y: 70 });
+  /* المفتاح: كل لون وصوته */
+  const keys = [...new Set(seq)], kx = i => 180 + (keys.length - 1) * 52 - i * 104;
+  keys.forEach((t, i) => { const g = el('g', { transform: `translate(${kx(i)} 168)`, 'data-key': t }, svg); el('rect', { x: -44, y: -19, width: 88, height: 38, rx: 19, fill: '#fffdf6', 'fill-opacity': .9, stroke: css('--line'), 'stroke-width': 2 }, g);
+    patTokAt(g, t, 22, 0, 24); patTokAt(g, map[t], -22, 2, 26); const eq = el('text', { y: 6, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: css('--muted'), 'font-family': css('--f') }, g); eq.textContent = '='; });
+  if (help) row.els.forEach(e => patTokAt(helpG(svg), map[e.t], e.x, e.y + row.size / 2 + 15, Math.min(22, row.step - 14)));
+  const btn = { clap: patTokAt(svg, 'clap', 252, 236, 78), drum: patTokAt(svg, 'drum', 108, 242, 78) }, at = { clap: [252, 236], drum: [108, 242] };
+  const mark = el('path', { d: 'M-8 0 L8 0 L0 -11 Z', fill: css('--compass'), opacity: 0 }, svg);
+  const point = i => { const e = row.els[i]; mark.setAttribute('opacity', e ? 1 : 0); if (e) mark.setAttribute('transform', `translate(${e.x} ${e.y + row.size / 2 + (help ? 40 : 16)})`); };
+  const hit = t => { patSound(t); const [x, y] = at[t]; anim(btn[t], [{ transform: `translate(${x}px,${y}px) scale(1)` }, { transform: `translate(${x}px,${y}px) scale(1.14)` }, { transform: `translate(${x}px,${y}px) scale(1)` }], { duration: 220 }); };
+  const bump = i => { const e = row.els[i]; anim(e.g, [{ transform: `translate(${e.x}px,${e.y}px) scale(1)` }, { transform: `translate(${e.x}px,${e.y - 8}px) scale(1.14)` }, { transform: `translate(${e.x}px,${e.y}px) scale(1)` }], { duration: 240 }); };
+  const targets = [{ g: btn.clap, k: 'clap', label: labelText('clap') }, { g: btn.drum, k: 'drum', label: labelText('drum') }];
+  return { svg, row, btn, point, hit, bump, targets }; }
+async function patPlayDemo(st, seq, map, n = seq.length) { for (let i = 0; i < n; i++) { st.point(i); st.bump(i); st.hit(map[seq[i]]); await sleep(430); } st.point(-1); }
+ITEM.patPlay = {
+  make(spec) { const seq = patSeq(spec.unit, spec.n); return { ...spec, seq, want: seq.map(t => spec.map[t]), tag: 'pat-play-u' + spec.unit.length }; },
+  async ask(item, mode, tries) { const help = tries >= 3, st = patPlayStage(item.seq, item.map, help), picks = [];
+    say(...lineOf(help ? 'gen.pat.together.play' : item.q), { free: true });
+    for (let i = 0; i < item.n; i++) { st.point(i); const t = await tapOne(st.targets, { ok: item.want[i], pad: 96, pulse: false, kind: i ? 'tap' + (i + 1) : 'tap' }); if (i === 0) hush();
+      st.hit(t); picks.push(t); if (t !== item.want[i]) break; st.bump(i); }
+    await sleep(260); return { ans: picks, ctx: st }; },
+  judge(item, a) { return a.length === item.want.length && a.every((t, i) => t === item.want[i]) ? { ok: true } : { ok: false, err: 'patPlayWrong' }; },
+  onOk(item, r) { SFX.good(); r.ctx.point(-1); }, onWrong() { SFX.soft(); },
+  async hint2(item, r) { await patPlayDemo(r.ctx, item.seq, item.map, item.unit.length); }, async together() {},
+  async reveal(item, r) { await patPlayDemo(r.ctx, item.seq, item.map); await S('gen.pat.reveal.play'); },
+  praise: () => 'praisePattern', twin(item) { return item.twin || null; },
+};
+
+/* ---------- مشاهد الدرس 2 ---------- */
+/* الإشعال: فوضى تكمل السلسلة بخرزة خطأ وتجزم؛ والطفل يضع ما يراه هو، بلا حكم، ثم تُظهر الحلقات الجواب */
+SCENES.chaosGuess = async c => {
+  const svg = newStage(280, { oasis: false, ground: 0 }), [l1, l2, l3, l4] = c.lines, seq = patSeq(c.unit, c.n), row = patRowAt(svg, seq, { slots: 1, y: 96 }), sl = row.slots[0], want = c.unit[c.n % c.unit.length];
+  const fz = chaosAt(svg, 44, 40, .38); await S(l1); await chaosGiggle(fz);
+  const ghost = patDrop(row, c.guess, sl, svg); ghost.setAttribute('opacity', .55); sl.g.setAttribute('opacity', .35); patSound(c.guess); await S(l2);
+  const pool = [...new Set(c.unit)], tn = pool.length, tx = i => 180 + (tn - 1) * 48 - i * 96; el('rect', { x: 180 - tn * 48 - 6, y: 172, width: tn * 96 + 12, height: 84, rx: 22, fill: '#fffdf6', 'fill-opacity': .92, stroke: css('--line'), 'stroke-width': 2.5 }, svg);
+  const tray = pool.map((t, i) => ({ g: patTokAt(svg, t, tx(i), 214, 52), k: t, label: patLabel(t) }));
+  const k = await answerWhile(l3, () => tapOne(tray, { ok: want, pad: 84 })); logAttempt({ scene: 'hook', tag: 'chaosGuess', ok: k === want });
+  ghost.remove(); fz.remove(); sl.g.setAttribute('opacity', 0); patDrop(row, want, sl, svg); patSound(want); await sleep(400);
+  await patLoopsIn(helpG(svg), { ...row, els: [...row.els, { ...sl, t: want }], slots: [] }, c.unit.length); await S(l4);
+};
+/* الاكتشاف: يقرأ الطفل الصفّ لمساً، ثم يحيط الوحدة بحلقة (يلمس آخر عنصر فيها)؛ والحلقة الخطأ تُرى ثم تُمحى بسؤال */
+SCENES.patCircle = async c => {
+  const svg = newStage(250, { oasis: false, ground: 0 }), seq = patSeq(c.unit, c.n), row = patRowAt(svg, seq, { y: 112 }), u = c.unit.length, m = helpG(svg);
+  say(...lineOf(c.intro), { free: true });
+  for (const e of row.els) { await tapOne([{ g: e.g, k: e.i, label: patLabel(e.t) }], { ok: e.i, pad: 56 }); if (e.i === 0) hush(); patSound(e.t); buzz(20);
+    anim(e.g, [{ transform: `translate(${e.x}px,${e.y}px) scale(1)` }, { transform: `translate(${e.x}px,${e.y - 9}px) scale(1.16)` }, { transform: `translate(${e.x}px,${e.y}px) scale(1)` }], { duration: 300 });
+    say(...lineOf(patName(e.t)), { num: true, noGap: true, free: true }); }
+  await sleep(500); hush(); S(c.ask, { free: true }); let tries = 0;
+  while (true) { const k = await tapOne(row.els.map(e => ({ g: e.g, k: e.i, label: patLabel(e.t) })), { ok: u - 1, pad: 56, pulse: false }); hush(); tries++;
+    const lp = patLoopAt(m, row, 0, k); SFX.tick(); await sleep(350); logAttempt({ scene: 'explore', tag: 'patCircle', ok: k === u - 1, firstTry: tries === 1 }); if (k === u - 1) break;
+    SFX.soft(); await S(c.retry); lp.remove(); if (tries >= 2) await patSweepUnits(row, u); }
+  SFX.good(); for (let a = u; a + u <= c.n; a += u) { SFX.tick(); patLoopAt(m, row, a, a + u - 1, { k: a / u }); await sleep(320); }
+  await S(c.after);
+};
+/* الاكتشاف: لكل لون صوت. فرجار يقرأ الوحدة الأولى بالأصوات، ثم يقرأ الطفل الصفّ كله؛ واللمسة الخطأ لا تتقدّم */
+SCENES.patSoundLab = async c => {
+  const seq = patSeq(c.unit, c.n), st = patPlayStage(seq, c.map, false), [l1, l2, l3] = c.lines;
+  await S(l1); await patPlayDemo(st, seq, c.map, c.unit.length); S(l2, { free: true }); let slips = 0;
+  for (let i = 0; i < c.n; i++) { st.point(i); while (true) { const t = await tapOne(st.targets, { ok: c.map[seq[i]], pad: 96, pulse: false }); if (i === 0) hush(); st.hit(t); if (t === c.map[seq[i]]) break; slips++; SFX.soft(); } st.bump(i); }
+  st.point(-1); logAttempt({ scene: 'explore', tag: 'patSound', ok: true, firstTry: slips === 0 }); SFX.good(); await sleep(400); await S(l3);
+};
+/* «صحّح لفوضى»: فوضى أحاطت كل عنصرين بحلقة، فحلقاتها لا تتشابه؛ يلمس الطفل آخر عنصر في الوحدة الصحيحة */
+SCENES.chaosLoops = async C => {
+  const svg = newStage(240, { oasis: false, ground: 0 }), row = patRowAt(svg, patSeq(C.unit, C.n), { y: 132 }), u = C.unit.length, m = helpG(svg);
+  for (let a = 0; a < C.n; a += C.wrongU) patLoopAt(m, row, a, Math.min(C.n - 1, a + C.wrongU - 1), { color: css('--chaos'), dash: true, k: a / C.wrongU });
+  const fz = chaosAt(svg, 44, 46, .4); await chaosGiggle(fz); S(C.find, { free: true }); let tries = 0;
+  while (true) { const k = await tapOne(row.els.map(e => ({ g: e.g, k: e.i, label: patLabel(e.t) })), { ok: u - 1, pad: 56, pulse: false }); tries++;
+    logAttempt({ scene: 'chaos', tag: 'find', ok: k === u - 1, firstTry: tries === 1 }); if (k === u - 1) break; hush(); SFX.soft(); await S('gen.chaos.no'); if (tries === 2) await patSweepUnits(row, u); }
+  hush(); SFX.good(); fz.remove(); m.replaceChildren(); await patLoopsIn(m, row, u); if (C.after) await S(C.after);
+};
+/* قطعة الواحة: شريط زينة من رايات، نمطه من ثلاث */
+WRAP_ART.bunting = svg => { const cols = [css(IDC.triangle), css(IDC.circle), css(IDC.circle)], n = 9;
+  el('path', { d: 'M30 96 Q180 170 330 96', fill: 'none', stroke: '#8a6a4a', 'stroke-width': 3 }, svg);
+  for (let i = 0; i < n; i++) { const u = (i + .5) / n, x = 330 - 300 * u, y = 96 + 148 * u * (1 - u), g = el('g', { transform: `translate(${x} ${y})` }, svg);
+    el('path', { d: 'M-13 0 H13 L0 30 Z', fill: cols[i % 3], stroke: '#fff', 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, g);
+    anim(g, [{ opacity: 0, transform: `translate(${x}px,${y - 30}px)` }, { opacity: 1, transform: `translate(${x}px,${y}px)` }], { duration: 360, delay: 200 + i * 110, fill: 'both', easing: 'cubic-bezier(.3,1.4,.6,1)' }); }
+  palmAt(svg, 336, 250, .8); palmAt(svg, 24, 250, .9); };
