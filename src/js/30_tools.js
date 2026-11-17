@@ -8,7 +8,7 @@ function tapOne(targets, opt = {}) { const mine = [];
   targets.forEach(t => { t.g.style.cursor = 'pointer'; t.g.setAttribute('role', 'button'); t.g.setAttribute('tabindex', 0); if (t.label) t.g.setAttribute('aria-label', plain(G(t.label)));
     if (opt.pad !== false) { const had = t.g.querySelector(':scope > rect.hit'); const r = hitPad(t.g, opt.pad || 76); if (r && !had) mine.push(r); }
     /*T*/if (TESTHOOK) t.g.dataset.ok = opt.ok == null ? '' : [].concat(opt.ok).includes(t.k);/*/T*/ });
-  const okT = targets.find(t => opt.ok != null && [].concat(opt.ok).includes(t.k)) || targets[0], badT = targets.find(t => !(opt.ok != null && [].concat(opt.ok).includes(t.k)));
+  const okT = targets.find(t => opt.ok != null && [].concat(opt.ok).includes(t.k)) || targets[0], badT = opt.bad != null ? targets.find(t => t.k === opt.bad) : targets.find(t => !(opt.ok != null && [].concat(opt.ok).includes(t.k)));
   AUTO({ kind: opt.kind || 'tap', ok: () => okT.g.dispatchEvent(new MouseEvent('click', { bubbles: true })), wrong: () => (badT || okT).g.dispatchEvent(new MouseEvent('click', { bubbles: true })) });
   const off = opt.pulse === false ? () => {} : pulse(targets.map(t => t.g));
   return gate(new Promise(res => { const act = t => { off(); AUTO_CLEAR(); /*T*/window.__actG = t.g;/*/T*/ targets.forEach(x => { x.g.onclick = null; x.g.onkeydown = null; delete x.g.__route; }); mine.forEach(r => r.remove()); res(t.k); };   /* والسائق يقارن ما اختاره المفتاح بهدفه (الفحص المستقل D2) */
