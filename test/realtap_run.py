@@ -36,7 +36,7 @@ CENTRES = """(sel) => { const svg = document.querySelector('#stage svg'); if (!s
 LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6', 'm1.u2.d1', 'm1.u2.d2', 'm1.u2.d3', 'm1.u2.d4', 'm1.u2.d5', 'm1.u2.d6',
            'm1.u3.d1', 'm1.u3.d2', 'm1.u3.d3', 'm1.u3.d4', 'm1.u3.d5', 'm1.u3.d6', 'm1.u3.d7',
            'm1.u4.d1', 'm1.u4.d2', 'm1.u4.d3', 'm1.u4.d4', 'm1.u4.d5', 'm1.u4.d6', 'm1.u4.d7', 'm1.u4.d8',
-           'm1.u5.d1', 'm1.u5.d2', 'm1.u5.d3']
+           'm1.u5.d1', 'm1.u5.d2', 'm1.u5.d3', 'm1.u5.d4', 'm1.u5.d5', 'm1.u5.d6']
 if os.environ.get('ONLY'): LESSONS = [l for l in LESSONS if l in os.environ['ONLY'].split(',')]   # تشغيل جزئي أثناء التطوير
 # ما خرج من نافذة الشريط (القطار، الطريق) مخفيّ لا يُلمس: يُلمس زرّ التحريك نحوه حتى يظهر
 REVEAL = """(sel) => { const g = document.querySelector(sel); if (!g || getComputedStyle(g).visibility !== 'hidden') return null;
@@ -163,6 +163,13 @@ async def run(p, dev):
         # «لوّن» بالإصبع في «لوّن العربات ثم المس» وحده (kamAyn، S1-U3)؛ وبند التلوين بالأوعية (paint، S1-U1) بخطّافه كما كان
         kam = k == 'paint' and await pg.evaluate("() => !!(window.__item && window.__item.ask === 'kamAyn')")
         U4 = ('align', 'order', 'weighPut', 'lay', 'layAll', 'barBuild', 'rods', 'framePaint', 'frameMove', 'frameTake', 'frameFill', 'rodFill', 'strip', 'tapCount')
+        if k.startswith('grid'):   # شبكة المئة (D275): لمسة حقيقية في مركز البلاطة الصحيحة، والعدسة تختار برفع الإصبع
+          await pg.wait_for_timeout(150); tried['grid'] = tried.get('grid', 0) + 1; xy = await pg.evaluate('() => window.__grid && window.__grid()')
+          if xy:
+            await tap(xy['x'], xy['y']); got = await pg.evaluate('() => window.__gridPicked')
+            if got != xy['n']: tried['grid-miss'] = tried.get('grid-miss', 0) + 1; print('  grid miss: wanted', xy['n'], 'picked', got, st['scene'])
+          else: await pg.evaluate('() => { const a = window.__auto; if (a) a.ok(); }')
+          await pg.wait_for_timeout(60); continue
         if k in ('tapAll', 'tap', 'house', 'sort', 'produce', 'fill', 'splitMake', 'place', 'prog', 'road') + U4 or kam:
           await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1
           if k == 'tapAll':
@@ -242,6 +249,7 @@ async def main():
       bad, tried, errs = await run(p, dev); allbad += bad
       print(dev, ('mouse' if MOUSE else 'touch'), 'waits tried:', tried, '| incomplete:', bad, '| errors:', errs[:3])
       allbad += [('errors', dev)] if errs else []
+      allbad += [('grid-miss', dev)] if tried.get('grid-miss') else []   # شبكة المئة: اللمسة الحقيقية في مركز البلاطة تختارها هي (D275)
   print('FAILS:', len(allbad))
   sys.exit(1 if allbad else 0)
 asyncio.run(main())

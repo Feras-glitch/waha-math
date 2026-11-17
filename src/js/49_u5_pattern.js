@@ -243,7 +243,7 @@ ITEM.patPlay = {
   async ask(item, mode, tries) { const help = tries >= 3, st = patPlayStage(item.seq, item.map, help), picks = [];
     say(...lineOf(help ? 'gen.pat.together.play' : item.q), { free: true });
     for (let i = 0; i < item.n; i++) { st.point(i); const t = await tapOne(st.targets, { ok: item.want[i], pad: 96, pulse: false, kind: i ? 'tap' + (i + 1) : 'tap' }); if (i === 0) hush();
-      st.hit(t); picks.push(t); if (t !== item.want[i]) break; st.bump(i); }
+      st.hit(t); picks.push(t); if (t !== item.want[i] && !NEUTRAL_ANS) break; st.bump(i); }   /* في الإتقان والاختبار لا يقف عند الخطأ (A-01) */
     await sleep(260); return { ans: picks, ctx: st }; },
   judge(item, a) { return a.length === item.want.length && a.every((t, i) => t === item.want[i]) ? { ok: true } : { ok: false, err: 'patPlayWrong' }; },
   onOk(item, r) { SFX.good(); r.ctx.point(-1); }, onWrong() { SFX.soft(); },
@@ -364,21 +364,23 @@ ITEM.patMake = {
 function pairAt(parent, kind, x, y) { const g = el('g', { transform: `translate(${x} ${y})`, 'data-pair': kind }, parent);
   el('rect', { x: -29, y: -24, width: 58, height: 48, rx: 12, fill: '#fffdf6', 'fill-opacity': .8, stroke: css('--line'), 'stroke-width': 2 }, g);
   if (kind === 'beads') { patTokAt(g, 'bR', 13, 0, 22); patTokAt(g, 'bB', -13, 0, 22); }
-  else for (const dx of [13, -13]) el('path', { d: 'M-6 -17 H6 V2 Q6 6 10 8 Q15 11 13 15 Q11 18 2 17 Q-6 16 -6 8 Z', fill: kind === 'shoes' ? '#7e9a4e' : '#5c9bb0', stroke: '#fff', 'stroke-width': 2, 'stroke-linejoin': 'round', transform: `translate(${dx} 0)` }, g);
-  if (kind !== 'beads') for (const dx of [13, -13]) el('path', { d: `M${dx - 6} -11 H${dx + 6}`, stroke: '#fff', 'stroke-width': 2.5 }, g);
+  else if (kind === 'hands') handAtN(g, 0, -4, 5, .44);
+  else if (kind === 'rods') for (let i = 0; i < 10; i++) el('rect', { x: -22 + (i % 5) * 9, y: i < 5 ? -11 : 1, width: 8, height: 10, rx: 2, fill: '#5fb6a8', stroke: '#fff', 'stroke-width': 1 }, g);
+  else if (kind === 'socks' || kind === 'shoes') for (const dx of [13, -13]) el('path', { d: 'M-6 -17 H6 V2 Q6 6 10 8 Q15 11 13 15 Q11 18 2 17 Q-6 16 -6 8 Z', fill: kind === 'shoes' ? '#7e9a4e' : '#5c9bb0', stroke: '#fff', 'stroke-width': 2, 'stroke-linejoin': 'round', transform: `translate(${dx} 0)` }, g);
+  if (kind === 'socks' || kind === 'shoes') for (const dx of [13, -13]) el('path', { d: `M${dx - 6} -11 H${dx + 6}`, stroke: '#fff', 'stroke-width': 2.5 }, g);
   return g; }
-function pairsAt(svg, kind, k, cy = 118) { const rows = k > 5 ? 2 : 1, out = [];
-  for (let i = 0; i < k; i++) { const r = Math.floor(i / 5), inRow = r === rows - 1 ? k - r * 5 : 5, c = i % 5, x = 180 + (inRow - 1) * 33 - c * 66, y = cy + (r - (rows - 1) / 2) * 84; out.push({ g: pairAt(svg, kind, x, y), x, y, i }); } return out; }
-const pairBadge = (m, p) => badge(m, p.x, p.y + 36, 2 * (p.i + 1));
+function pairsAt(svg, kind, k, cy = 118, by = 2) { const rows = k > 5 ? 2 : 1, out = [];
+  for (let i = 0; i < k; i++) { const r = Math.floor(i / 5), inRow = r === rows - 1 ? k - r * 5 : 5, c = i % 5, x = 180 + (inRow - 1) * 33 - c * 66, y = cy + (r - (rows - 1) / 2) * 84; out.push({ g: pairAt(svg, kind, x, y), x, y, i, by }); } return out; }
+const pairBadge = (m, p) => badge(m, p.x, p.y + 36, p.by * (p.i + 1));
 
 /* ================= ⑧ كم واحداً؟ عُدّ بالاثنين (N013): pairs أزواج (2–10) ================= */
 ITEM.skipCount = { ...numItem,
-  make(spec) { const w = 2 * spec.pairs; return { ...spec, want: w, nums: [w, spec.pairs, w + 2 <= 20 ? w + 2 : w - 2], tag: 'skip-count' }; },
-  async ask(item, mode, tries) { const svg = newStage(250, { oasis: false, ground: 0 }), P = pairsAt(svg, item.kind || 'socks', item.pairs, 112), help = tries >= 3;
+  make(spec) { const by = spec.by || 2, w = by * spec.pairs; return { ...spec, by, want: w, nums: [w, spec.pairs, w + by <= (by === 2 ? 20 : 100) ? w + by : w - by], tag: 'skip-count' + by }; },
+  async ask(item, mode, tries) { const svg = newStage(250, { oasis: false, ground: 0 }), P = pairsAt(svg, item.kind || 'socks', item.pairs, 112, item.by), help = tries >= 3;
     if (help) { const m = helpG(svg); P.slice(0, -1).forEach(p => pairBadge(m, p)); }
-    await S(help ? 'gen.skip.together' : item.q); const np = numberPick(shuffle(item.nums), item.want); const ans = await np.p; return { ans, ctx: { svg, np, P } }; },
-  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: k === item.pairs ? 'skipPairs' : 'skipWrong' }; },
-  async hint2(item, r) { const m = helpG(r.ctx.svg); for (const p of r.ctx.P) { pairBadge(m, p); SFX.tick(); await S(numw(2 * (p.i + 1)), { noGap: true, num: true }); } },
+    await S(help ? (item.by === 2 ? 'gen.skip.together' : 'gen.skip.togetherG') : item.q); const np = numberPick(shuffle(item.nums), item.want); const ans = await np.p; return { ans, ctx: { svg, np, P } }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: (k === item.pairs ? 'skipPairs' : 'skipWrong') + (item.by === 2 ? '' : 'G') }; },
+  async hint2(item, r) { const m = helpG(r.ctx.svg); for (const p of r.ctx.P) { pairBadge(m, p); SFX.tick(); await S(numw(p.by * (p.i + 1)), { noGap: true, num: true }); } },
   async together() {}, async reveal(item, r) { const m = helpG(r.ctx.svg); m.replaceChildren(); r.ctx.P.forEach(p => pairBadge(m, p)); await S(numw(item.want), { num: true }); },
   twin(item) { return item.twin || null; },
 };
@@ -430,10 +432,10 @@ SCENES.skipBeads = async c => {
 };
 /* المثال المحلول: نعدّ الأزواج بالاثنين، والزوج الأخير يلمسه الطفل */
 SCENES.skipWorked = async c => {
-  const svg = newStage(250, { oasis: false, ground: 0 }), [l1, l2, l3] = c.lines, P = pairsAt(svg, c.kind || 'socks', c.pairs, 112), m = helpG(svg);
-  await S(l1); for (const p of P.slice(0, -1)) { pairBadge(m, p); SFX.tick(); await S(numw(2 * (p.i + 1)), { noGap: true, num: true }); await sleep(200); }
+  const svg = newStage(250, { oasis: false, ground: 0 }), [l1, l2, l3] = c.lines, P = pairsAt(svg, c.kind || 'socks', c.pairs, 112, c.by || 2), m = helpG(svg);
+  await S(l1); for (const p of P.slice(0, -1)) { pairBadge(m, p); SFX.tick(); await S(numw(p.by * (p.i + 1)), { noGap: true, num: true }); await sleep(200); }
   const last = P[P.length - 1]; await answerWhile(l2, () => tapOne([{ g: last.g, k: 'p', label: labelText('patPair') }], { ok: 'p', pad: 64 }));
-  pairBadge(m, last); SFX.good(); await S(numw(2 * c.pairs), { noGap: true, num: true }); await sleep(400); await S(l3);
+  pairBadge(m, last); SFX.good(); await S(numw((c.by || 2) * c.pairs), { noGap: true, num: true }); await sleep(400); await S(l3);
 };
 /* «صحّح لفوضى»: فوضى عدّت الأزواج لا الجوارب */
 SCENES.chaosPairs = async C => {

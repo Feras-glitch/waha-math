@@ -13,6 +13,8 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
   const special = { stone: () => { const g = el('g', { transform: 'translate(36 30) scale(.32)' }, s); stoneArt(g, L.unit, 0, 0); },
     mail: () => { mailboxAt(s, 36, 34, 3).g.setAttribute('transform', 'translate(36 34) scale(.42)');   /* بطاقة الرقم بعد درس الأرقام نفسه، وقبله رسالة (D254 (4)) */
       if (digitsKnown()) digitCard(s, 58, 16, 3, { size: .36 }); else { el('rect', { x: 50, y: 8, width: 16, height: 11, rx: 2, fill: '#fffdf6', stroke: '#c98f55', 'stroke-width': 1.6 }, s); el('path', { d: 'M50.8 9 L58 14.5 L65.2 9', fill: 'none', stroke: '#c98f55', 'stroke-width': 1.6 }, s); } },
+    grid: () => { for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) el('rect', { x: 9 + c * 11, y: 6 + r * 11, width: 10, height: 10, rx: 2, fill: c === 4 ? '#5fb6a8' : (r + c) % 2 ? '#f3ead6' : '#e9dcc3', stroke: '#fff', 'stroke-width': .8 }, s); },
+    fives: () => { for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) el('rect', { x: 9 + c * 11, y: 6 + r * 11, width: 10, height: 10, rx: 2, fill: c === 4 ? '#5fb6a8' : c === 2 ? '#f2b33d' : '#e9dcc3', stroke: '#fff', 'stroke-width': .8 }, s); },
     patpic: () => { const g = el('g', { transform: 'translate(36 28) scale(.56)' }, s); PAT_PIC.tiles.draw(g); },
     pat3: () => { ['bR', 'bB', 'bB', 'bR', 'bB', 'bB'].forEach((t, i) => patTokAt(s, t, 63 - i * 11, 28, 10)); },
     pat: () => { ['tri', 'cir', 'tri', 'cir'].forEach((t, i) => patTokAt(s, t, 60 - i * 16, 28, 14)); },   /* S1-U5 */
