@@ -13,6 +13,7 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
   const special = { stone: () => { const g = el('g', { transform: 'translate(36 30) scale(.32)' }, s); stoneArt(g, L.unit, 0, 0); },
     mail: () => { mailboxAt(s, 36, 34, 3).g.setAttribute('transform', 'translate(36 34) scale(.42)');   /* بطاقة الرقم بعد درس الأرقام نفسه، وقبله رسالة (D254 (4)) */
       if (digitsKnown()) digitCard(s, 58, 16, 3, { size: .36 }); else { el('rect', { x: 50, y: 8, width: 16, height: 11, rx: 2, fill: '#fffdf6', stroke: '#c98f55', 'stroke-width': 1.6 }, s); el('path', { d: 'M50.8 9 L58 14.5 L65.2 9', fill: 'none', stroke: '#c98f55', 'stroke-width': 1.6 }, s); } },
+    pat: () => { ['tri', 'cir', 'tri', 'cir'].forEach((t, i) => patTokAt(s, t, 60 - i * 16, 28, 14)); },   /* S1-U5 */
     towers: () => { towerAt(s, 26, 52, 4, { size: 10, color: CUBE.lemon }); towerAt(s, 48, 52, 6, { size: 10, color: CUBE.white }); },
     plus: () => { towerAt(s, 22, 52, 3, { size: 10, color: CUBE.lemon }); towerAt(s, 50, 52, 2, { size: 10, color: CUBE.white }); el('path', { d: 'M30 30h12M36 24v12', stroke: css('--compass'), 'stroke-width': 4, 'stroke-linecap': 'round' }, s); },
     hunt: () => { [['circle', 18], ['triangle', 36], ['rect', 54]].forEach(([k, x]) => shapeAt(s, { type: k, size: 20, w: k === 'rect' ? 24 : k === 'triangle' ? 22 : undefined, h: k === 'rect' ? 14 : k === 'triangle' ? 20 : undefined, color: css(IDC[k]) }, x, 28)); },

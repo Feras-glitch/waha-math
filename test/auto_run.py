@@ -118,7 +118,7 @@ SQUEEZE = """() => { const s = document.querySelector('#stage svg'); if (!s) ret
   const live = [...s.querySelectorAll('[role=button]')].some(g => (g.onclick || getComputedStyle(g).cursor === 'grab') && !g.closest('[hidden]') && +getComputedStyle(g).opacity >= .5);
   const k = s.getScreenCTM().a, kw = r.width / vb.width; return k / kw < (live ? .75 : .6) ? [Math.round(100 * k / kw), Math.round(r.width), Math.round(r.height), (document.querySelector('#say') || {}).textContent.length, live ? 'targets' : 'view'] : null; }"""
 CARDS = """() => { const c = [...document.querySelectorAll('.choices.cards .card')]; if (!c.length) return null;   /* بطاقتا فوضى: كلتاهما مخفية النص، ومتماثلتان بالنظر (D254 (1)) */
-  if (!c.every(b => b.classList.contains('hidden-text'))) return 'card text visible'; return [...new Set(c.map(b => b.innerHTML))].length > 1 ? 'cards differ' : null; }"""
+  if (!c.every(b => b.classList.contains('hidden-text'))) return 'card text visible'; return [...new Set(c.map(b => b.innerHTML.replace(/<b class="cn">.*?<\/b>/, '')))].length > 1 ? 'cards differ' : null; }"""
 WATCH = """() => { window.__shown = []; const s = document.querySelector('#say'), b = document.querySelector('#bubble'); if (window.__obs) window.__obs.disconnect();   /* كل نصّ تظهره الفقاعة أثناء الإعادة */
   window.__obs = new MutationObserver(() => window.__shown.push([s.textContent, b.classList.contains('hidetext')])); window.__obs.observe(s, { childList: true, characterData: true, subtree: true }); }"""
 LEAKED = """() => { const L = CUR && LDATA[CUR.id]; const w = L && L.chaos && L.chaos.wrong; if (!w) return null; const t = G(lineOf(w, L)[2]); if (window.__obs) window.__obs.disconnect();

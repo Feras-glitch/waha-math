@@ -13,7 +13,8 @@
 const PROD = new Set(['reason', 'connect', 'completeRect', 'vertices', 'count', 'produce', 'fill', 'trace', 'buildTower', 'splitMake', 'buildTo', 'faceTap',
   'split', 'join', 'remove', 'eqPair', 'unknownStart', 'fact', 'story',
   'place', 'lineTap', 'lrTap', 'robot', 'mapPut', 'roadHop',   /* S1-U3: يضع الطفل الشيء، ويلمس العربة، ويلمس اليد، ويبرمج الروبوت، ويضع قطعة الخريطة، ويقفز */
-  'orderBy', 'unitLay', 'barBuild', 'rodBuild', 'teenTrace', 'framePaint', 'makeTen', 'backTen']);   /* S1-U4: يرتّب، ويضع الوحدات، ويبني اللوحة والعدد، ويكتبه، ويلوّن الصديقين، وينقل القطع ويبعدها؛ والميزان بتجربته (mode: test) */
+  'orderBy', 'unitLay', 'barBuild', 'rodBuild', 'teenTrace', 'framePaint', 'makeTen', 'backTen',
+  'patNext', 'patFix']);   /* S1-U5: يضع الطفل العناصر التالية في أماكنها، ويجد ما يكسر النمط */   /* S1-U4: يرتّب، ويضع الوحدات، ويبني اللوحة والعدد، ويكتبه، ويلوّن الصديقين، وينقل القطع ويبعدها؛ والميزان بتجربته (mode: test) */
 const isProd = it => PROD.has(it.t) || (it.t === 'balance' && it.mode === 'test');
 const TASK = { sort: 'cls', pick: 'cls', pickAll: 'cls', paint: 'cls', yesno: 'cls', reason: 'cls', count: 'cnt', vertices: 'cnt', faceTap: 'face', property: 'push' };
 const FMT = new Set(['how', 'q', 'line', 'prompt', 'why', 'err', 'errs', 'names', 'tag', 'x240', 'c', 'twin']);   // مفاتيح الصياغة لا الجوهر (والتوأم بند آخر يُفحص وحده)
@@ -265,7 +266,8 @@ export function d240(lessons, code, MAKERS) {
     'simonSays', 'lidCheck', 'chaosLid', 'queueBadge', 'queueSwap', 'trainOrdinals', 'chaosTrainBadge', 'ribbonHook', 'bodyMoves', 'robotIntro', 'chaosTurn', 'mapChaosHook', 'birdView', 'chaosSideDraw',
     'roadChaosHook', 'roadListen', 'roadCountChaos', 'chaosSkipBack', 'jumpChaosHook', 'roadRace', 'chaosSubForward', 'recallPic', 'queueOrdinals',   /* S1-U3: أشياؤها رسوم المواضع لا مولّدات */
     'pencilHook', 'alignExplore', 'wormRace', 'chaosEnds', 'ballStoneHook', 'balanceLab', 'gardenBalance', 'chaosHeavyBadge', 'gapsHook', 'clipLay', 'spansTable', 'chaosStartMid', 'mixedHook', 'contractorBoard', 'chaosBars',
-    'rugHook', 'rodMaker', 'teenWrite', 'rodFactory', 'chaos31', 'fingersHook', 'frameFriends', 'completeFrame', 'chaosFrame', 'countAllHook', 'makeTenLab', 'tenBus', 'chaosTakeMore', 'unitStrip', 'recallU4'];   /* S1-U4: رسوم القياس والعدد لا مولّدات */
+    'rugHook', 'rodMaker', 'teenWrite', 'rodFactory', 'chaos31', 'fingersHook', 'frameFriends', 'completeFrame', 'chaosFrame', 'countAllHook', 'makeTenLab', 'tenBus', 'chaosTakeMore', 'unitStrip', 'recallU4',
+    'rhythmHook', 'patRead', 'patWorked', 'chaosPattern', 'recallPat'];   /* S1-U5: عناصر النمط رسومه لا مولّدات */   /* S1-U4: رسوم القياس والعدد لا مولّدات */
   for (const m of code.matchAll(/^SCENES\.(\w+) = /gm)) if (!SCENE_DRAWS[m[1]] && !SCENE_NONE.includes(m[1])) errors.push(`المشهد ${m[1]} غير مسجَّل في SCENE_DRAWS أو SCENE_NONE في build/d240.mjs: هل يرسم شيئاً له مولّد؟ (D253 (1))`);
   /* ما رآه الطفل أو حلّه في درس: أسماء، وهيئات لكل مهمة، ونصوص البنود */
   const SKIPK = new Set(['lines', 'labels', 'talk', 'adultCard', 'bag', 'mat', 'concepts', 'riddles', 'title', 'icon', 'id', 'unit']);

@@ -58,6 +58,9 @@ function bagIcon(svg, r, x, y, sc = 1, maxW = 112) {
       el('text', { y: 10, 'text-anchor': 'middle', 'font-size': 26, 'font-weight': 800, fill: '#1b3440', 'font-family': css('--f') }, c).textContent = DG(n); }); },
     rods: () => { rodAt(g, -24, 50, { c: 9 }); for (let i = 0; i < 4; i++) oneAt(g, 30 - (i % 2) * 20, 40 - Math.floor(i / 2) * 20, { c: 16 }); },
     frame: () => { const F = frameAt(g, 0, 0, { cell: 20 }); F.fill(6, CUBE.lemon); },
+    /* S1-U5 */
+    beads: () => { ['bR', 'bB', 'bR', 'bB'].forEach((t, i) => patTokAt(g, t, 36 - i * 24, (i % 2) * 12 - 6, 24)); },
+    thread: () => { el('path', { d: 'M-46 16 Q-20 -30 0 6 Q20 40 46 -14', fill: 'none', stroke: '#8a6a4a', 'stroke-width': 4, 'stroke-linecap': 'round' }, g); el('circle', { cx: -46, cy: 16, r: 5, fill: '#8a6a4a' }, g); },
     squares: () => { for (let i = 0; i < 5; i++) el('rect', { x: 48 - (i + 1) * 19, y: -9, width: 19, height: 19, fill: i % 2 ? '#5c9bb0' : CUBE.lemon, stroke: '#fff', 'stroke-width': 2 }, g); } };
   if (typeof r === 'object' && r.icon && I[r.icon]) I[r.icon]();
   else { const s = make(typeof r === 'object' && r.mk ? r.mk : r); fitThing(g, { ...s, label: null }, 0, 0, 84); if (!lbl) labelFit(svg, x, y + 72, s.label || BIN_NAMES[s.kind] || '', 15, css('--muted'), maxW); }   /* اسم كل شيء في الحقيبة، حتى المكعب */
