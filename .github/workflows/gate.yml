@@ -1,0 +1,80 @@
+# بوابة الوحدة: المجموعة الكاملة test/run_all.sh على أجزائها (نحو ثماني ساعات متتابعةً؛ هنا أربعة أجزاء متوازية ثم الخلاصة).
+# تُشغَّل يدوياً (workflow_dispatch) عند كل بوابة، أو بالدفع إلى فرع feature/studio-gate*. لا تبني شيئاً ولا تنشر.
+# لماذا: «Build all» يشغّل الفحوص السريعة وحدها، فعطلٌ في درس قديم يمرّ منها (S1-U6 محا مشهداً من S1-U1 د2، وكشفه فحص الاستوديو لا هي).
+name: Gate
+on:
+  workflow_dispatch:
+  push:
+    branches: ['feature/studio-gate**']
+permissions:
+  contents: read
+concurrency:
+  group: gate-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  part:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    strategy:
+      fail-fast: false
+      matrix:
+        part: [a, m, n, b]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools
+        run: |
+          pip install openpyxl==3.1.5 playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Part ${{ matrix.part }}
+        run: |
+          MUT_UNTIL=$(( $(date +%s) + 19200 )) PART=${{ matrix.part }} sh test/run_all.sh test/out/all || true
+          echo "--- FAILED (part ${{ matrix.part }}) ---"; cat test/out/all/FAILED 2>/dev/null || echo "(none)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gate-${{ matrix.part }}
+          path: test/out/all
+          retention-days: 14
+  summary:
+    needs: part
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 350
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tools
+        run: |
+          pip install openpyxl==3.1.5 playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - uses: actions/download-artifact@v4
+        with:
+          path: parts
+      - name: Merge the parts
+        run: |
+          mkdir -p test/out/all/clips test/out/all/mutslices
+          for d in parts/gate-*; do cp -rn "$d"/. test/out/all/ 2>/dev/null || true; [ -f "$d/FAILED" ] && cat "$d/FAILED" >> test/out/all/FAILED.merged || true; done
+          rm -f test/out/all/FAILED; [ -f test/out/all/FAILED.merged ] && sort -u test/out/all/FAILED.merged > test/out/all/FAILED || true; rm -f test/out/all/FAILED.merged
+          ls test/out/all | head -80
+      - name: Part c and the verdict
+        run: |
+          rc=0; PART=c sh test/run_all.sh test/out/all || rc=$?
+          echo "--- SUMMARY ---"; cat test/out/all/SUMMARY.txt || true
+          exit $rc
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gate-all
+          path: test/out/all
+          retention-days: 30
