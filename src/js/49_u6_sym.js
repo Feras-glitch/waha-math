@@ -353,7 +353,7 @@ SCENES.chaosWing = async c => {
   for (const [r, cc] of c.cells) M.paint(r, cc + 2, null); await sleep(250); for (const [r, cc] of c.cells) { M.paint(r, 3 - cc, MIR.mine); SFX.tick(); await sleep(140); } logAttempt({ scene: 'hook', tag: 'chaosWing', ok: true }); SFX.good(); await S(l3);
 };
 /* «صحّح لفوضى» في الضعف: n على اليسار وخانة واحدة لفوضى على اليمين */
-SCENES.chaosDouble = async C => {
+SCENES.chaosDbl = async C => {   /* اسمه غير chaosDouble: ذاك مشهد S1-U1 د2، وكان هذا يمحوه (كشفه فحص الاستوديو) */
   const svg = newStage(216, { oasis: false, ground: 0 }), n = C.n, M = dblGridAt(svg, n), fz = chaosAt(svg, 324, 34, .3); M.paint(0, 2, css('--chaos')); await chaosGiggle(fz); let tries = 0;
   while (true) { await S(C.find); const np = numberPick(shuffle([2 * n, n + 1, 2 * n - 2]), 2 * n), k = await np.p; tries++; np.box && np.box.remove(); logAttempt({ scene: 'chaos', tag: 'find', ok: k === 2 * n, firstTry: tries === 1 }); if (k === 2 * n) break; SFX.soft(); await S('gen.pat.chaosNo'); if (tries >= 2) { M.paint(0, 2, null); await dblFill(M, n, 220); } }
   SFX.good(); fz.remove(); M.paint(0, 2, null); dblCells(n).forEach(([r, c]) => M.paint(r, 3 - c, MIR.mine)); if (C.after) await S(C.after);

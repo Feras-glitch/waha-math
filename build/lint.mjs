@@ -474,6 +474,8 @@ export function lint(content, js) {
           else if (fem !== both) errors.push(`${where}: transPick «${v.q}»: «${fem ? 'اِلْمِسْهَا' : 'اِلْمِسْهُ'}» وشيئاه «${v.a}» و«${v.b}» ${both ? 'مؤنثان' : 'ليسا مؤنثين'}، فالضمير يدلّ على الجواب أو يخالف جنسيهما (HOUSE_F)`); } }
       for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkU4(x, where, top); };
     for (const L of Object.values(lessons)) walkU4(L, L.id, L.id); }
+  /* لا يُعرَّف بند أو مشهد أو قطعة واحة مرتين: التعريف الثاني يمحو الأول بصمت (S1-U6 محا مشهد chaosDouble في S1-U1 د2) */
+  { const seen = new Map(); for (const m of code.matchAll(/^(ITEM|SCENES|WRAP_ART)\.(\w+) = /gm)) { const k = m[1] + '.' + m[2]; if (seen.has(k)) errors.push(`الشيفرة: ${k} معرَّف مرتين`); seen.set(k, 1); } }
   /* S1-U5 (الفحص المستقل للبوابة (1) و(2) و(10) و(14)): بند «أين الخطأ؟» فيه خطأ واحد لا يُصلح الصفَّ غيرُ إصلاحه، و«ما التالي؟» يُري وحدتين كاملتين، وصفّ «ليس نمطاً» بلا دورة حتى الأربعة */
   { const per = (s, p) => s.every((t, j) => t === s[j % p]), seqOf = (u, n) => Array.from({ length: n }, (_, i) => u[i % u.length]);
     const fixes = s => { const out = new Set(); s.forEach((_, i) => { for (const t of new Set(s)) { if (t === s[i]) continue; const c = [...s]; c[i] = t; if ([2, 3].some(p => 2 * p <= c.length && per(c, p))) out.add(i); } }); return [...out]; };

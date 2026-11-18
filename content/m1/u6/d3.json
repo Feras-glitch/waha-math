@@ -621,7 +621,7 @@
  },
  "chaos": {
   "kind": "scene",
-  "scene": "chaosDouble",
+  "scene": "chaosDbl",
   "n": 4,
   "find": "ch.find",
   "after": "ch.after",
