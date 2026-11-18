@@ -90,9 +90,10 @@ function stoneArt(svg, unit, x = 180, y = 150) {
   if (unit === 'm1.u4') {   /* حجر «قارن وقس»: ميزان صغير، وشريطان على خط واحد */
     const gg = el('g', { transform: 'translate(-34 -46) scale(.2)' }, b); balanceAt(gg, 0, 270).set(-1);
     el('line', { x1: 52, y1: -8, x2: 52, y2: 34, stroke: '#1b3440', 'stroke-width': 2, 'stroke-dasharray': '3 3' }, b); lenAt(b, { kind: 'strip', len: 44, color: NEUTRAL[0] }, 52, 0); lenAt(b, { kind: 'strip', len: 30, color: NEUTRAL[3] }, 52, 24); }
+  if (unit === 'm1.u6') { const h = symAt(b, 'heart', 0, 2, .78); el('line', { x1: 0, y1: -46, x2: 0, y2: 44, stroke: '#fff', 'stroke-width': 2.5, 'stroke-dasharray': '5 4' }, h); }   /* حجر «نصفان متطابقان»: قلب وخط طيّه */
   if (unit === 'm1.u5') {   /* حجر «الأنماط السحرية»: صفّ نمط من مثلث ودائرة، وتحته خرز */
     ['tri', 'cir', 'tri', 'cir'].forEach((t, i) => patTokAt(b, t, 36 - i * 24, -14, 20)); ['bR', 'bB', 'bB', 'bR', 'bB', 'bB'].forEach((t, i) => patTokAt(b, t, 40 - i * 16, 20, 13)); }
-  const ks = unit === 'm1.u2' ? ['cube', 'sphere', 'cylinder', 'cone'] : unit === 'm1.u3' || unit === 'm1.u4' || unit === 'm1.u5' ? [] : ['circle', 'square', 'triangle', 'rect'];
+  const ks = unit === 'm1.u2' ? ['cube', 'sphere', 'cylinder', 'cone'] : unit === 'm1.u3' || unit === 'm1.u4' || unit === 'm1.u5' || unit === 'm1.u6' ? [] : ['circle', 'square', 'triangle', 'rect'];
   ks.forEach((k, i) => { const px = (i % 2 ? 22 : -22), py = i < 2 ? -12 : 24;
     if (SOLIDC[k]) thingAt(b, { solid: k, size: 34 }, px, py);
     else shapeAt(b, { type: k, size: 28, w: k === 'rect' ? 34 : k === 'triangle' ? 32 : undefined, h: k === 'rect' ? 20 : k === 'triangle' ? 28 : undefined, color: css(IDC[k]) }, px, py); });
