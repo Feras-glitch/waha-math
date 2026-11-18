@@ -8,5 +8,130 @@
   "square",
   "triangle"
  ],
- "hunt": []
+ "hunt": [],
+ "workshop": {
+  "pieces": [
+   {
+    "k": "circle",
+    "size": 60
+   },
+   {
+    "k": "square",
+    "size": 64
+   },
+   {
+    "k": "triangle",
+    "size": 70,
+    "w": 70,
+    "h": 61
+   },
+   {
+    "k": "rect",
+    "size": 70,
+    "w": 96,
+    "h": 44
+   }
+  ],
+  "puzzles": [
+   {
+    "id": "bowtie",
+    "name": "gen.ws.p.bowtie",
+    "slots": [
+     {
+      "k": "triangle",
+      "x": 132,
+      "y": 130,
+      "size": 90,
+      "w": 90,
+      "h": 78,
+      "rot": 90
+     },
+     {
+      "k": "triangle",
+      "x": 228,
+      "y": 130,
+      "size": 90,
+      "w": 90,
+      "h": 78,
+      "rot": 270
+     },
+     {
+      "k": "circle",
+      "x": 180,
+      "y": 130,
+      "size": 34
+     }
+    ],
+    "extra": {
+     "k": "square",
+     "size": 56
+    }
+   },
+   {
+    "id": "kite",
+    "name": "gen.ws.p.kite",
+    "slots": [
+     {
+      "k": "triangle",
+      "x": 180,
+      "y": 82,
+      "size": 110,
+      "w": 110,
+      "h": 96
+     },
+     {
+      "k": "triangle",
+      "x": 180,
+      "y": 176,
+      "size": 110,
+      "w": 110,
+      "h": 96,
+      "rot": 180
+     }
+    ],
+    "extra": {
+     "k": "circle",
+     "size": 56
+    }
+   },
+   {
+    "id": "robot",
+    "name": "gen.ws.p.robot",
+    "slots": [
+     {
+      "k": "square",
+      "x": 180,
+      "y": 112,
+      "size": 110
+     },
+     {
+      "k": "circle",
+      "x": 154,
+      "y": 100,
+      "size": 30
+     },
+     {
+      "k": "circle",
+      "x": 206,
+      "y": 100,
+      "size": 30
+     },
+     {
+      "k": "rect",
+      "x": 180,
+      "y": 196,
+      "size": 150,
+      "w": 150,
+      "h": 40
+     }
+    ],
+    "extra": {
+     "k": "triangle",
+     "size": 60,
+     "w": 60,
+     "h": 52
+    }
+   }
+  ]
+ }
 }

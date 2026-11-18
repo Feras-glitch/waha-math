@@ -36,7 +36,8 @@ CENTRES = """(sel) => { const svg = document.querySelector('#stage svg'); if (!s
 LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6', 'm1.u2.d1', 'm1.u2.d2', 'm1.u2.d3', 'm1.u2.d4', 'm1.u2.d5', 'm1.u2.d6',
            'm1.u3.d1', 'm1.u3.d2', 'm1.u3.d3', 'm1.u3.d4', 'm1.u3.d5', 'm1.u3.d6', 'm1.u3.d7',
            'm1.u4.d1', 'm1.u4.d2', 'm1.u4.d3', 'm1.u4.d4', 'm1.u4.d5', 'm1.u4.d6', 'm1.u4.d7', 'm1.u4.d8',
-           'm1.u5.d1', 'm1.u5.d2', 'm1.u5.d3', 'm1.u5.d4', 'm1.u5.d5', 'm1.u5.d6']
+           'm1.u5.d1', 'm1.u5.d2', 'm1.u5.d3', 'm1.u5.d4', 'm1.u5.d5', 'm1.u5.d6',
+           'm1.u6.d1', 'm1.u6.d2', 'm1.u6.d3', 'm1.u6.d4', 'm1.u6.d5']
 if os.environ.get('ONLY'): LESSONS = [l for l in LESSONS if l in os.environ['ONLY'].split(',')]   # تشغيل جزئي أثناء التطوير
 # ما خرج من نافذة الشريط (القطار، الطريق) مخفيّ لا يُلمس: يُلمس زرّ التحريك نحوه حتى يظهر
 REVEAL = """(sel) => { const g = document.querySelector(sel); if (!g || getComputedStyle(g).visibility !== 'hidden') return null;

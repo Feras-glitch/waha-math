@@ -26,6 +26,12 @@ const SYM = {
   carSide: { lines: [], draw: g => { symP(g, 'M-46 16 V0 Q-44 -6 -30 -8 L-18 -26 H14 L30 -8 Q46 -6 46 4 V16 Z', SYMC.coral); symP(g, 'M-13 -21 H10 L22 -8 H-22 Z', '#cfe9f2'); for (const x of [-26, 26]) { el('circle', { cx: x, cy: 18, r: 11, fill: SYMC.ink }, g); el('circle', { cx: x, cy: 18, r: 4.5, fill: '#fff' }, g); } el('rect', { x: 38, y: -2, width: 8, height: 6, rx: 2, fill: SYMC.amber }, g); } },
   carFront: { lines: [90], draw: g => { symP(g, 'M-40 22 V-2 Q-40 -8 -32 -10 L-24 -32 H24 L32 -10 Q40 -8 40 -2 V22 Z', SYMC.coral); symP(g, 'M-20 -27 H20 L26 -11 H-26 Z', '#cfe9f2'); for (const s of [1, -1]) { el('circle', { cx: s * 27, cy: 4, r: 6, fill: SYMC.amber, stroke: '#fff', 'stroke-width': 1.5 }, g); el('rect', { x: s * 30 - 7, y: 20, width: 14, height: 16, rx: 3, fill: SYMC.ink }, g); } el('rect', { x: -14, y: 6, width: 28, height: 8, rx: 2, fill: SYMC.ink }, g); } },
   face: { lines: [90], draw: g => { el('circle', { r: 38, fill: '#f2c79c', stroke: '#fff', 'stroke-width': 2.5 }, g); for (const s of [1, -1]) { el('circle', { cx: s * 14, cy: -8, r: 4.5, fill: SYMC.ink }, g); el('path', { d: `M${s * 7} -20 Q${s * 14} -25 ${s * 21} -20`, fill: 'none', stroke: SYMC.ink, 'stroke-width': 2.5, 'stroke-linecap': 'round' }, g); } el('path', { d: 'M-14 12 Q0 24 14 12', fill: 'none', stroke: SYMC.ink, 'stroke-width': 3, 'stroke-linecap': 'round' }, g); el('path', { d: 'M-36 -12 Q-30 -44 0 -42 Q30 -44 36 -12 Q20 -30 0 -28 Q-20 -30 -36 -12 Z', fill: '#6b4a35' }, g); } },
+  crown: { lines: [90], draw: g => symP(g, 'M-40 34 V-22 L-20 4 L0 -36 L20 4 L40 -22 V34 Z', SYMC.amber) },
+  bell: { lines: [90], draw: g => { symP(g, 'M0 -40 C22 -40 26 -8 28 12 L38 26 H-38 L-28 12 C-26 -8 -22 -40 0 -40 Z', SYMC.amber); el('circle', { cy: 34, r: 7, fill: SYMC.wood, stroke: '#fff', 'stroke-width': 2 }, g); } },
+  rocket: { lines: [90], draw: g => { symP(g, 'M0 -44 C18 -26 18 6 14 26 H-14 C-18 6 -18 -26 0 -44 Z', '#e9eef0'); for (const s of [1, -1]) symP(g, `M${s * 14} 6 L${s * 32} 34 L${s * 14} 26 Z`, SYMC.coral); el('circle', { cy: -10, r: 8, fill: SYMC.blue, stroke: '#fff', 'stroke-width': 2 }, g); } },
+  arrow: { lines: [90], draw: g => symP(g, 'M0 -44 L34 -6 H14 V40 H-14 V-6 H-34 Z', SYMC.teal) },
+  drop: { lines: [90], draw: g => symP(g, 'M0 -44 C12 -18 32 0 32 16 C32 34 18 44 0 44 C-18 44 -32 34 -32 16 C-32 0 -12 -18 0 -44 Z', SYMC.blue) },
+  kite: { lines: [90], draw: g => { symP(g, 'M0 -44 L30 -8 L0 42 L-30 -8 Z', SYMC.amber); el('path', { d: 'M-30 -8 H30', stroke: '#fff', 'stroke-width': 2 }, g); } },
   /* ورقة شجر من الطبيعة: نصفاها متشابهان غير متطابقين (near) */
   leaf: { lines: [], near: true, draw: g => { symP(g, 'M0 -44 C34 -26 30 16 0 44 C-22 22 -30 -6 -22 -22 C-16 -32 -8 -40 0 -44 Z', SYMC.leaf); el('path', { d: 'M0 -40 V42 M0 -14 L14 -24 M0 4 L16 -6 M0 -8 L-12 -18 M0 12 L-13 4', fill: 'none', stroke: '#fff', 'stroke-width': 2, 'stroke-linecap': 'round', opacity: .8 }, g); } },
   bread: { lines: [90, 0], draw: g => { el('ellipse', { rx: 46, ry: 30, fill: '#d9a05b', stroke: '#fff', 'stroke-width': 2.5 }, g); el('ellipse', { rx: 34, ry: 19, fill: '#e8bd80' }, g); } },
@@ -198,7 +204,151 @@ SCENES.chaosHalf = async C => {
   SFX.good(); fz.remove(); if (C.after) await S(C.after);
 };
 /* التذكّر: شكل يُطوى أمامه */
+SCENES.recallMir = async c => { const svg = newStage(300, { oasis: false, ground: 0 }), M = mirGridAt(svg); c.cells.forEach(([r, cc]) => M.paint(r, cc, MIR.given)); await sleep(300); for (const [r, cc] of c.cells) { M.paint(r, 5 - cc, MIR.mine); SFX.tick(); await sleep(160); } await S(c.lines); };
 SCENES.recallSym = async c => { const svg = newStage(230, { oasis: false, ground: 0 }), F = symFoldAt(svg, c.sym || 'heart', 180, 116, 1.7, c.ang ?? 90); await sleep(300); await F.fold(900); await S(c.lines); };
 /* قطعة الواحة: قلوب ورقية */
 WRAP_ART.paperHearts = svg => { [[110, 130, 1.1], [180, 96, 1.5], [252, 132, 1.1]].forEach(([x, y, k], i) => { const g = symAt(svg, 'heart', x, y, k); el('line', { x1: 0, y1: -44, x2: 0, y2: 42, stroke: '#fff', 'stroke-width': 2, 'stroke-dasharray': '5 4' }, g);
     anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 400, delay: 200 + i * 220, fill: 'both' }); }); palmAt(svg, 326, 250, .8); palmAt(svg, 34, 250, .9); };
+
+/* =====================================================================
+   الدروس 2–4: خط التماثل والمرآة (C022)، وإكمال النصف على الشبكة (C023)، والضعف (N015)، وصيد التماثل.
+   ===================================================================== */
+SYM_KNOB.push('#8e6bbf');
+/* ================= ⑦ المرآة (C022، إنتاج): يحرّك الطفل المرآة حتى يُرى الشكل كاملاً. sym، start إزاحة البدء عن الوسط ================= */
+ITEM.mirrorSlide = {
+  make(spec) { return { ...spec, start: spec.start ?? -46, tag: 'mirror-slide' }; },
+  async ask(item, mode, tries) { const svg = newStage(270, { oasis: false, ground: 0 }), id = 'symm' + (++SYM_ID), cx = 180, cy = 128, k = 1.9; let m = cx + item.start;
+    if (tries >= 3) symAt(helpG(svg), item.sym, cx, cy, k).setAttribute('opacity', .2);   /* الحلّ المشترك: طيف الشكل الكامل، والمرآة للطفل */
+    const cp = el('clipPath', { id }, svg), cr = el('rect', { x: 0, y: 0, width: m, height: 270 }, cp), mk = () => { const w = el('g', { 'clip-path': `url(#${id})` }, svg); symAt(w, item.sym, cx, cy, k); return w; };
+    mk(); const refl = el('g', {}, svg); refl.appendChild(mk()); refl.setAttribute('opacity', .88);
+    const bar = el('g', {}, svg); el('rect', { x: -4, y: 14, width: 8, height: 226, rx: 4, fill: '#bfe6f2', stroke: css('--compass'), 'stroke-width': 2.5 }, bar); el('circle', { cy: 244, r: 17, fill: css('--compass'), stroke: '#fff', 'stroke-width': 3 }, bar);
+    el('path', { d: 'M-8 244 l-6 0 m0 0 l4 -4 m-4 4 l4 4 M8 244 l6 0 m0 0 l-4 -4 m4 4 l-4 4', stroke: '#fff', 'stroke-width': 2.4, 'stroke-linecap': 'round', fill: 'none' }, bar);
+    const set = x => { m = Math.max(84, Math.min(276, x)); cr.setAttribute('width', m); refl.setAttribute('transform', `translate(${2 * m} 0) scale(-1 1)`); bar.setAttribute('transform', `translate(${m} 0)`); /*T*/window.__mirror = m;/*/T*/ }; set(m);
+    say(...lineOf(tries >= 3 ? 'gen.sym.together.mirror' : item.q), { free: true });
+    const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { set(q[0]); }, move(q) { set(q[0]); }, up() {} });
+    const d = doneBtn(); AUTO({ kind: 'mirror', ok: () => { set(cx); d.b.click(); }, wrong: () => { set(cx + 42); d.b.click(); } });
+    let fin = false; await gate(new Promise(res => d.b.onclick = () => { if (fin) return; fin = true; AUTO_CLEAR(); hush(); input.off(); d.bar.remove(); res(); }));
+    return { ans: Math.round(m - cx), ctx: { svg, set, cx, cy, k } }; },
+  judge(item, dx) { return Math.abs(dx) <= 8 ? { ok: true } : { ok: false, err: 'mirrorOff' }; },
+  onOk(item, r) { SFX.good(); r.ctx.set(r.ctx.cx); }, onWrong() { SFX.soft(); },
+  async hint2(item, r) { const { svg, cx, cy, k } = r.ctx, g = symAt(helpG(svg), item.sym, cx, cy, k); await anim(g, [{ opacity: 0 }, { opacity: .3 }, { opacity: .3 }, { opacity: 0 }], { duration: 1800 }).done.catch(() => {}); g.remove(); }, async together() {},
+  async reveal(item, r) { const { set, cx } = r.ctx, a = cx + r.ans; await symTween(700, t => set(a + (cx - a) * t)); await S('gen.sym.reveal.mirror'); },
+  praise: () => 'praiseSym', twin(item) { return item.twin || null; },
+};
+
+/* ---------- شبكة التماثل: 6 أعمدة (3 يسار الخط و3 يمينه)، والخط شريط ملوّن في وسطها ---------- */
+function mirGridAt(svg, opt = {}) { const C = opt.cell || 56, rows = opt.rows || 5, x0 = 180 - 3 * C, y0 = opt.y0 ?? 10, g = el('g', { 'data-mirgrid': 1 }, svg), cells = [];
+  for (let r = 0; r < rows; r++) for (let c = 0; c < 6; c++) { const cg = el('g', { 'data-rc': r + ',' + c }, g), rc = el('rect', { x: x0 + c * C, y: y0 + r * C, width: C, height: C, rx: C * .14, fill: '#fffdf6', stroke: '#d9cfb8', 'stroke-width': 1.5 }, cg); cells.push({ r, c, g: cg, rc, on: false, x: x0 + c * C + C / 2, y: y0 + r * C + C / 2 }); }
+  el('rect', { x: 177, y: y0 - 6, width: 6, height: rows * C + 12, rx: 3, fill: css('--compass'), 'pointer-events': 'none' }, g);
+  const at = (r, c) => cells[r * 6 + c], paint = (r, c, col) => { const k = at(r, c); k.rc.setAttribute('fill', col || '#fffdf6'); k.on = !!col; k.col = col; };
+  return { g, cells, at, paint, C, rows, mirror: (r, c) => [r, 5 - c] }; }
+const MIR = { given: '#ee7f6a', mine: '#3fa796' };
+const mirKey = L => L.map(([r, c]) => r * 6 + c).sort((a, b) => a - b).join(',');
+/* ================= ⑧ أكمل النصف المقابل (C023، إنتاج): cells خانات النصف المعطى [صف، عمود] (أعمدته 0–2، أو 3–5 إن كان المعطى يميناً) ================= */
+ITEM.gridMirror = {
+  make(spec) { const want = spec.cells.map(([r, c]) => [r, 5 - c]); return { ...spec, want, tag: 'grid-mirror' + (spec.cells[0][1] > 2 ? '-r' : '') }; },
+  async ask(item, mode, tries) { const svg = newStage(300, { oasis: false, ground: 0 }), M = mirGridAt(svg), left = item.cells[0][1] <= 2, mine = c => left ? c > 2 : c <= 2;
+    item.cells.forEach(([r, c]) => M.paint(r, c, MIR.given));
+    const lastRow = Math.max(...item.want.map(w => w[0])), pre = tries >= 3 ? item.want.filter(w => w[0] !== lastRow) : []; pre.forEach(([r, c]) => M.paint(r, c, MIR.mine));   /* الحلّ المشترك: كل الصفوف إلا الأخير */
+    say(...lineOf(tries >= 3 ? 'gen.sym.together.grid' : item.q), { free: true }); let first = true;
+    const T = M.cells.filter(k => mine(k.c)); T.forEach(k => { k.g.style.cursor = 'pointer'; k.g.setAttribute('role', 'button'); k.g.setAttribute('tabindex', 0); k.g.setAttribute('aria-label', labelText('mirCell'));
+      const tog = () => { if (first) { hush(); first = false; } SFX.tick(); M.paint(k.r, k.c, k.on ? null : MIR.mine); buzz(15); }; k.g.onclick = tog; k.g.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); tog(); } }; });
+    const d = doneBtn(), put = L => { T.forEach(k => M.paint(k.r, k.c, null)); L.forEach(([r, c]) => M.paint(r, c, MIR.mine)); d.b.click(); };
+    /*T*/window.__mirWant = item.want.filter(w => !pre.some(p => p[0] === w[0] && p[1] === w[1])).map(([r, c]) => { const k = M.at(r, c), m = svg.getScreenCTM(); return { x: m.a * k.x + m.e, y: m.d * k.y + m.f }; });/*/T*/
+    AUTO({ kind: 'mirgrid', ok: () => put(item.want), wrong: () => put(item.cells.map(([r, c]) => [r, left ? c + 3 : c - 3])) });
+    let fin = false; await gate(new Promise(res => d.b.onclick = () => { if (fin) return; fin = true; AUTO_CLEAR(); hush(); d.bar.remove(); res(); }));
+    T.forEach(k => { k.g.onclick = null; k.g.onkeydown = null; k.g.removeAttribute('role'); k.g.removeAttribute('tabindex'); k.g.style.cursor = ''; });
+    return { ans: T.filter(k => k.on).map(k => [k.r, k.c]), ctx: { svg, M, T } }; },
+  judge(item, a) { if (mirKey(a) === mirKey(item.want)) return { ok: true }; const left = item.cells[0][1] <= 2, copy = item.cells.map(([r, c]) => [r, left ? c + 3 : c - 3]);
+    return { ok: false, err: mirKey(a) === mirKey(copy) ? 'mirCopy' : a.length !== item.want.length ? 'mirCount' : 'mirWrong' }; },
+  onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
+  /* التلميح: خانة معطاة وما يقابلها تومضان معاً (البعد نفسه عن الخط)، في الصف الأول وحده */
+  async hint2(item, r) { const M = r.ctx.M, r0 = Math.min(...item.cells.map(c => c[0])); for (const [rr, c] of item.cells.filter(c => c[0] === r0)) { const a = M.at(rr, c), b = M.at(rr, 5 - c), rg = [a, b].map(k => el('rect', { x: k.x - M.C / 2 + 2, y: k.y - M.C / 2 + 2, width: M.C - 4, height: M.C - 4, rx: 8, fill: 'none', stroke: css('--compass'), 'stroke-width': 4, 'pointer-events': 'none' }, helpG(r.ctx.svg))); SFX.tick(); await sleep(900); rg.forEach(x => x.remove()); } },
+  async together() {},
+  async reveal(item, r) { const { M, T } = r.ctx; T.forEach(k => M.paint(k.r, k.c, null)); for (const [rr, c] of item.want) { M.paint(rr, c, MIR.mine); SFX.tick(); await sleep(160); } await S('gen.sym.reveal.grid'); },
+  praise: () => 'praiseSym', twin(item) { return item.twin || null; },
+};
+
+/* ---------- الضعف: n خانة على يسار الخط (خانتان في كل صف ملاصقتان له) ---------- */
+const dblCells = n => Array.from({ length: n }, (_, i) => [Math.floor(i / 2), 2 - (i % 2)]);
+function dblGridAt(svg, n, opt = {}) { const M = mirGridAt(svg, { cell: opt.cell || 38, rows: 5, y0: opt.y0 ?? 12 }); dblCells(n).forEach(([r, c]) => M.paint(r, c, MIR.given)); return M; }
+async function dblFill(M, n, ms = 130) { for (const [r, c] of dblCells(n)) { M.paint(r, 5 - c, MIR.mine); SFX.tick(); await sleep(ms); } }
+/* ================= ⑨ كم في الشكل كله بعد إكماله؟ (N015): n خانات النصف (2–10) ================= */
+ITEM.doubleOf = { ...numItem,
+  make(spec) { const n = spec.n, w = 2 * n; return { ...spec, want: w, nums: [w, n + 1, n === 3 ? w + 2 : w - 2], tag: 'double' }; },
+  async ask(item, mode, tries) { const svg = newStage(216, { oasis: false, ground: 0 }), M = dblGridAt(svg, item.n); if (tries >= 3) dblCells(item.n).forEach(([r, c]) => M.paint(r, 5 - c, MIR.mine));   /* الحلّ المشترك: النصف المقابل مرسوم، والعدّ للطفل */
+    await S(tries >= 3 ? 'gen.sym.together.double' : item.q); const np = numberPick(shuffle(item.nums), item.want); return { ans: await np.p, ctx: { svg, np, M } }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: k === item.n + 1 ? 'dblPlusOne' : 'dblWrong' }; },
+  async hint2(item, r) { await dblFill(r.ctx.M, item.n, 220); await sleep(500); dblCells(item.n).forEach(([rr, c]) => r.ctx.M.paint(rr, 5 - c, null)); },
+  async together() {}, async reveal(item, r) { dblCells(item.n).forEach(([rr, c]) => r.ctx.M.paint(rr, 5 - c, MIR.mine)); await S(numw(item.want), { num: true }); },
+  twin(item) { return item.twin || null; },
+};
+
+/* ---------- مشاهد الدروس 2–4 ---------- */
+/* كل طرق طيّ الشكل: يلمس الطفل مقبض كل خط فيُطوى ويُفتح، وشارة تعدّ ما انطبق. c: { sym، angs، lines: [دعوة، بعد] } */
+SCENES.foldWays = async c => {
+  const svg = newStage(280, { oasis: false, ground: 0 }), k = 1.9, cx = 180, cy = 156, [l1, l2] = c.lines, L = symLinesAt(svg, cx, cy, k, c.angs.map(ang => ({ ang }))), sh = symAt(svg, c.sym, cx, cy, k); svg.insertBefore(sh, L[0].g);
+  S(l1, { free: true }); let left = [...L], n = 0, first = true;
+  while (left.length) { const i = await tapOne(left.map(l => ({ g: l.g, k: l.i, label: labelText('symLineN') + ' ' + DG(l.i + 1) })), { ok: left[0].i, pad: 56 }); if (first) { hush(); first = false; } const l = L[i]; left = left.filter(x => x !== l);
+    sh.setAttribute('opacity', 0); const F = symFoldAt(svg, c.sym, cx, cy, k, c.angs[i], 0, { line: false }); svg.insertBefore(F.g, L[0].g); await F.fold(800); await sleep(500);
+    if (F.match) { n++; SFX.good(); l.g.querySelector('circle').setAttribute('r', 16); badge(helpG(svg), 34, 34, n); } else { SFX.soft(); l.g.setAttribute('opacity', .3); }
+    await F.open(350); F.g.remove(); sh.setAttribute('opacity', 1); }
+  logAttempt({ scene: 'explore', tag: 'foldWays', ok: true }); await S(l2);
+};
+/* المثال المحلول: خطّان مرشّحان؛ فرجار يطوي عند الأول فلا ينطبقان، والطفل يلمس الآخر. c: { sym، angs: [خطأ، صحيح]، lines: [3] } */
+SCENES.lineWorked = async c => {
+  const svg = newStage(270, { oasis: false, ground: 0 }), k = 1.9, cx = 180, cy = 150, [l1, l2, l3] = c.lines, L = symLinesAt(svg, cx, cy, k, c.angs.map(ang => ({ ang }))), sh = symAt(svg, c.sym, cx, cy, k); svg.insertBefore(sh, L[0].g);
+  const fold = async (i, keep) => { sh.setAttribute('opacity', 0); const F = symFoldAt(svg, c.sym, cx, cy, k, c.angs[i], 0, { line: false }); svg.insertBefore(F.g, L[0].g); await F.fold(900); await sleep(500); if (!keep) { await F.open(350); F.g.remove(); sh.setAttribute('opacity', 1); } };
+  await S(l1); await fold(0); L[0].g.setAttribute('opacity', .3);
+  await answerWhile(l2, () => tapOne([{ g: L[1].g, k: 1, label: labelText('symLineN') + ' ' + DG(2) }], { ok: 1, pad: 56 })); await fold(1, true); SFX.good(); await S(l3);
+};
+/* «صحّح لفوضى» بالطيّ: شكل وخطّ فوضى؛ يطويه الطفل ثم يحكم: هل ينطبق النصفان؟ (الجواب لا) */
+SCENES.chaosFold = async C => {
+  const svg = newStage(250, { oasis: false, ground: 0 }), F = symFoldAt(svg, C.sym, 180, 128, 1.9, C.ang ?? 90, 0, { lineColor: css('--chaos') }), fz = chaosAt(svg, 46, 46, .4); await chaosGiggle(fz);
+  S(C.find, { free: true }); await tapOne([{ g: F.g, k: 'f', label: labelText('symFold') }], { ok: 'f', pad: 64 }); hush(); await F.fold(1000);
+  let tries = 0; while (true) { await S(C.ask); const k = await symYesNo('no'); tries++; logAttempt({ scene: 'chaos', tag: 'find', ok: k === 'no', firstTry: tries === 1 }); document.querySelectorAll('#stage .choices').forEach(b => b.remove()); if (k === 'no') break; SFX.soft(); await F.open(); await F.fold(1600); }
+  SFX.good(); fz.remove(); if (C.after) await S(C.after);
+};
+/* الإكمال الموجَّه على الشبكة: لكل خانة معطاة تنبض مقابلتها فيلمسها الطفل. c: { cells، lines: [دعوة، بعد…] } */
+SCENES.gridLab = async c => {
+  const svg = newStage(300, { oasis: false, ground: 0 }), M = mirGridAt(svg), [l1, ...rest] = c.lines; c.cells.forEach(([r, cc]) => M.paint(r, cc, MIR.given)); S(l1, { free: true }); let first = true, slips = 0;
+  for (const [r, cc] of c.cells) { const a = M.at(r, cc), b = M.at(r, 5 - cc), mk = k => el('rect', { x: k.x - M.C / 2 + 2, y: k.y - M.C / 2 + 2, width: M.C - 4, height: M.C - 4, rx: 8, fill: 'none', stroke: css('--compass'), 'stroke-width': 4, 'pointer-events': 'none' }, svg), ra = mk(a), rb = mk(b); rb.classList.add('pulse');
+    await tapOne([{ g: b.g, k: 'c', label: labelText('mirCell') }], { ok: 'c', pad: false, pulse: false }); if (first) { hush(); first = false; } M.paint(r, 5 - cc, MIR.mine); SFX.tick(); ra.remove(); rb.remove(); }
+  logAttempt({ scene: 'explore', tag: 'gridLab', ok: true, firstTry: slips === 0 }); SFX.good(); await sleep(300); await S(rest);
+};
+/* الضعف في المرآة: لكل عدد في ns يُرسم نصفه ثم يظهر مقابله، وجملته. c: { ns، lines } */
+SCENES.doubleShow = async c => { for (const [i, n] of c.ns.entries()) { const svg = newStage(216, { oasis: false, ground: 0 }), M = dblGridAt(svg, n); await sleep(400); await dblFill(M, n, 200); SFX.good(); await S(c.lines[i]); await sleep(300); } };
+/* المثال المحلول: صندوق بيض بصفّين؛ الصف الأول يُعدّ، والطفل يلمس الثاني فيكمل العدّ. c: { n، lines: [3] } */
+SCENES.doubleWorked = async c => {
+  const svg = newStage(230, { oasis: false, ground: 0 }), n = c.n || 6, [l1, l2, l3] = c.lines, X = i => 180 + (n - 1) * 25 - i * 50, row = y => { const g = el('g', {}, svg), E = []; el('rect', { x: X(n - 1) - 32, y: y - 34, width: (n - 1) * 50 + 64, height: 68, rx: 18, fill: '#e9dcc3', stroke: '#fff', 'stroke-width': 2.5 }, g);
+    for (let i = 0; i < n; i++) E.push(el('ellipse', { cx: X(i), cy: y, rx: 17, ry: 22, fill: '#fffdf6', stroke: '#d9cfb8', 'stroke-width': 2 }, g)); return { g, E }; }, A = row(70), B = row(156), m = helpG(svg);
+  const count = async (R, from) => { for (const [i, e] of R.E.entries()) { e.setAttribute('fill', '#f6cf7e'); SFX.tick(); await S(numw(from + i + 1), { noGap: true, num: true }); } };
+  await S(l1); await count(A, 0); await answerWhile(l2, () => tapOne([{ g: B.g, k: 'b', label: labelText('symRow2') }], { ok: 'b', pad: false })); await count(B, n); badge(m, 180, 208, 2 * n); SFX.good(); await S(l3);
+};
+/* إشعال الدرس 3: فوضى نسخت الجناح بالاتجاه نفسه؛ يلمس الطفل المرآة فيظهر المقابل الصحيح. c: { cells، lines: [فوضى، دعوة، بعد] } */
+SCENES.chaosWing = async c => {
+  const svg = newStage(300, { oasis: false, ground: 0 }), M = mirGridAt(svg), [l1, l2, l3] = c.lines; c.cells.forEach(([r, cc]) => { M.paint(r, cc, MIR.given); M.paint(r, cc + 3, css('--chaos')); });
+  const fz = chaosAt(svg, 318, 30, .3); await chaosGiggle(fz); await S(l1); const knob = el('g', {}, svg); el('circle', { cx: 180, cy: 150, r: 20, fill: css('--compass'), stroke: '#fff', 'stroke-width': 3 }, knob); el('path', { d: 'M172 150 h-7 m0 0 l4 -4 m-4 4 l4 4 M188 150 h7 m0 0 l-4 -4 m4 4 l-4 4', stroke: '#fff', 'stroke-width': 2.4, 'stroke-linecap': 'round', fill: 'none' }, knob);
+  await answerWhile(l2, () => tapOne([{ g: knob, k: 'm', label: labelText('symMirror') }], { ok: 'm', pad: 64 })); knob.remove(); fz.remove();
+  for (const [r, cc] of c.cells) M.paint(r, cc + 3, null); await sleep(250); for (const [r, cc] of c.cells) { M.paint(r, 5 - cc, MIR.mine); SFX.tick(); await sleep(140); } logAttempt({ scene: 'hook', tag: 'chaosWing', ok: true }); SFX.good(); await S(l3);
+};
+/* «صحّح لفوضى» في الضعف: n على اليسار وخانة واحدة لفوضى على اليمين */
+SCENES.chaosDouble = async C => {
+  const svg = newStage(216, { oasis: false, ground: 0 }), n = C.n, M = dblGridAt(svg, n), fz = chaosAt(svg, 324, 34, .3); M.paint(0, 3, css('--chaos')); await chaosGiggle(fz); let tries = 0;
+  while (true) { await S(C.find); const np = numberPick(shuffle([2 * n, n + 1, 2 * n - 2]), 2 * n), k = await np.p; tries++; np.box && np.box.remove(); logAttempt({ scene: 'chaos', tag: 'find', ok: k === 2 * n, firstTry: tries === 1 }); if (k === 2 * n) break; SFX.soft(); await S('gen.pat.chaosNo'); if (tries >= 2) { M.paint(0, 3, null); await dblFill(M, n, 220); } }
+  SFX.good(); fz.remove(); M.paint(0, 3, null); dblCells(n).forEach(([r, c]) => M.paint(r, 5 - c, MIR.mine)); if (C.after) await S(C.after);
+};
+/* فنّان الطلاء المطوي: يلمس الطفل النصف الأيسر من الورقة فتقع بقع الطلاء، ثم تُطوى فتُطبع في النصف الآخر. c.lines: [دعوة، بعد] */
+SCENES.paintFold = async c => {
+  const svg = newStage(280, { oasis: false, ground: 0 }), [l1, l2] = c.lines, COL = ['#d9483b', '#3d7cc0', '#f2b33d', '#4f9a6a', '#8e6bbf'], blobs = [];
+  el('rect', { x: 40, y: 20, width: 280, height: 200, rx: 6, fill: '#fffdf6', stroke: '#d9cfb8', 'stroke-width': 2.5 }, svg); el('line', { x1: 180, y1: 20, x2: 180, y2: 220, stroke: css('--compass'), 'stroke-width': 3, 'stroke-dasharray': '7 5' }, svg); const L = el('g', {}, svg), Rg = el('g', { opacity: 0 }, svg);
+  const add = (x, y) => { if (x < 52 || x > 170 || y < 32 || y > 208 || blobs.length >= 12) return; const col = COL[blobs.length % COL.length], r = 11 + (blobs.length * 7) % 9; el('circle', { cx: x, cy: y, r, fill: col, opacity: .9 }, L); el('circle', { cx: 360 - x, cy: y, r, fill: col, opacity: .9 }, Rg); blobs.push([x, y]); SFX.pop(); buzz(15); };
+  S(l1, { free: true }); const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { add(q[0], q[1]); return false; }, move() {}, up() {} });
+  const d = doneBtn(); AUTO({ kind: 'paint', ok: () => { [[90, 70], [130, 120], [100, 170]].forEach(p => add(...p)); d.b.click(); }, wrong: null });
+  let fin = false; await gate(new Promise(res => d.b.onclick = () => { if (fin || !blobs.length) return; fin = true; AUTO_CLEAR(); hush(); input.off(); d.bar.remove(); res(); }));
+  const cover = el('rect', { x: 40, y: 20, width: 140, height: 200, fill: '#f3ead6', stroke: '#d9cfb8', 'stroke-width': 2, opacity: 0 }, svg); cover.setAttribute('opacity', 1);
+  await symTween(600, t => { cover.setAttribute('x', 40 + 140 * t); L.setAttribute('opacity', 1 - t); }); await sleep(400); Rg.setAttribute('opacity', 1); await symTween(600, t => { cover.setAttribute('x', 180 - 140 * t); cover.setAttribute('opacity', 1 - t); L.setAttribute('opacity', t); });
+  cover.remove(); SFX.good(); logAttempt({ scene: 'explore', tag: 'paintFold', ok: true }); await S(l2);
+};
+WRAP_ART.butterflies = svg => { [[100, 120, 1], [190, 90, 1.3], [270, 140, .9]].forEach(([x, y, k], i) => { const g = symAt(svg, 'butterfly', x, y, k, [-12, 0, 10][i]); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 400, delay: 200 + i * 220, fill: 'both' }); }); palmAt(svg, 326, 250, .8); palmAt(svg, 34, 250, .9); };
+WRAP_ART.mirrorGate = svg => { el('rect', { x: 176, y: 40, width: 8, height: 190, rx: 4, fill: '#bfe6f2', stroke: css('--compass'), 'stroke-width': 2.5 }, svg); for (const s of [1, -1]) { symAt(svg, 'tree', 180 + s * 70, 150, 1.2); symAt(svg, 'star', 180 + s * 110, 70, .5); } palmAt(svg, 334, 250, .7); palmAt(svg, 26, 250, .7); };

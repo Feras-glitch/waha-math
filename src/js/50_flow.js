@@ -31,6 +31,7 @@ function bagIcon(svg, r, x, y, sc = 1, maxW = 112) {
     caps: () => { for (let i = 0; i < 5; i++) el('circle', { cx: -32 + i * 16, cy: (i % 2) * 14 - 6, r: 9, fill: ['#5c9bb0', '#d9483b', '#f2b33d', '#7e9a4e', '#6c7fa8'][i], stroke: '#fff', 'stroke-width': 2 }, g); },
     sand: () => { el('rect', { x: -52, y: -26, width: 104, height: 52, rx: 10, fill: '#c9a072' }, g); el('rect', { x: -44, y: -18, width: 88, height: 36, rx: 6, fill: '#ead9b2' }, g); },
     tape: () => { el('rect', { x: -54, y: -10, width: 108, height: 20, rx: 4, fill: '#fff4cf', stroke: '#c9a072', 'stroke-width': 2 }, g); },
+    gridPaper: () => { for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) el('rect', { x: -34 + c * 17, y: -34 + r * 17, width: 16, height: 16, rx: 2, fill: '#fffdf6', stroke: '#c9c2b0', 'stroke-width': 1.5 }, g); el('rect', { x: -1.5, y: -38, width: 3, height: 76, fill: '#d9483b' }, g); },
     paper: () => { el('rect', { x: -32, y: -42, width: 64, height: 84, rx: 4, fill: '#ffffff', stroke: css('--line'), 'stroke-width': 3 }, g); for (let i = 0; i < 4; i++) el('line', { x1: -22, y1: -24 + i * 14, x2: 22, y2: -24 + i * 14, stroke: '#a9cbe0', 'stroke-width': 2 }, g); },
     tray: () => { el('rect', { x: -56, y: -30, width: 112, height: 60, rx: 12, fill: '#c9a072', stroke: '#fff', 'stroke-width': 3 }, g); },
     mail: () => { mailboxAt(g, 0, 10, 2).g.setAttribute('transform', 'translate(0 10) scale(.7)'); },

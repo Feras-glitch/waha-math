@@ -146,6 +146,9 @@ export const factOf = it => { const t = it.t;
   if (t === 'halfCut') return `halfc|${it.sym}`;
   if (t === 'unfoldPick') return `unf|${it.half}`;
   if (t === 'symLine') return `syml|${it.sym}|${it.rot || 0}`;
+  if (t === 'mirrorSlide') return `mirs|${it.sym}`;
+  if (t === 'gridMirror') return `mirg|${it.cells.map(c => c.join('.')).sort().join(',')}`;
+  if (t === 'doubleOf') return `dbl|${it.n}`;
   if (t === 'frameNeed') return `friend|${it.n}`;
   if (t === 'frameGlance') return `fglance|${it.n}`;
   if (t === 'makeTen') return (it.ask || 'total') === 'moved' ? `friend|${it.a}` : `add|${s2(it.a, it.b)}`;
@@ -288,7 +291,7 @@ export function d240(lessons, code, MAKERS) {
     'pencilHook', 'alignExplore', 'wormRace', 'chaosEnds', 'ballStoneHook', 'balanceLab', 'gardenBalance', 'chaosHeavyBadge', 'gapsHook', 'clipLay', 'spansTable', 'chaosStartMid', 'mixedHook', 'contractorBoard', 'chaosBars',
     'rugHook', 'rodMaker', 'teenWrite', 'rodFactory', 'chaos31', 'fingersHook', 'frameFriends', 'completeFrame', 'chaosFrame', 'countAllHook', 'makeTenLab', 'tenBus', 'chaosTakeMore', 'unitStrip', 'recallU4',
     'rhythmHook', 'patRead', 'patWorked', 'chaosPattern', 'recallPat', 'chaosGuess', 'patCircle', 'patSoundLab', 'chaosLoops', 'patHunt', 'skipBeads', 'skipWorked', 'chaosPairs', 'recallSkip', 'gridHook', 'gridGuide', 'gridWorked', 'chaosGrid', 'recallGrid', 'handsHook',
-    'foldShow', 'foldLab', 'halfScene', 'chaosHalf', 'recallSym'];   /* S1-U6 */   /* S1-U5: عناصر النمط رسومه لا مولّدات */   /* S1-U4: رسوم القياس والعدد لا مولّدات */
+    'foldShow', 'foldLab', 'halfScene', 'chaosHalf', 'recallSym', 'foldWays', 'lineWorked', 'chaosFold', 'gridLab', 'doubleShow', 'doubleWorked', 'chaosWing', 'chaosDouble', 'paintFold', 'recallMir'];   /* S1-U6 */   /* S1-U5: عناصر النمط رسومه لا مولّدات */   /* S1-U4: رسوم القياس والعدد لا مولّدات */
   for (const m of code.matchAll(/^SCENES\.(\w+) = /gm)) if (!SCENE_DRAWS[m[1]] && !SCENE_NONE.includes(m[1])) errors.push(`المشهد ${m[1]} غير مسجَّل في SCENE_DRAWS أو SCENE_NONE في build/d240.mjs: هل يرسم شيئاً له مولّد؟ (D253 (1))`);
   /* ما رآه الطفل أو حلّه في درس: أسماء، وهيئات لكل مهمة، ونصوص البنود */
   const SKIPK = new Set(['lines', 'labels', 'talk', 'adultCard', 'bag', 'mat', 'concepts', 'riddles', 'title', 'icon', 'id', 'unit']);

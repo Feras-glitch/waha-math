@@ -13,6 +13,9 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
   const special = { stone: () => { const g = el('g', { transform: 'translate(36 30) scale(.32)' }, s); stoneArt(g, L.unit, 0, 0); },
     mail: () => { mailboxAt(s, 36, 34, 3).g.setAttribute('transform', 'translate(36 34) scale(.42)');   /* بطاقة الرقم بعد درس الأرقام نفسه، وقبله رسالة (D254 (4)) */
       if (digitsKnown()) digitCard(s, 58, 16, 3, { size: .36 }); else { el('rect', { x: 50, y: 8, width: 16, height: 11, rx: 2, fill: '#fffdf6', stroke: '#c98f55', 'stroke-width': 1.6 }, s); el('path', { d: 'M50.8 9 L58 14.5 L65.2 9', fill: 'none', stroke: '#c98f55', 'stroke-width': 1.6 }, s); } },
+    mirror: () => { el('rect', { x: 34, y: 6, width: 4, height: 46, rx: 2, fill: css('--compass') }, s); for (const d of [1, -1]) symP(el('g', { transform: `translate(${36 + d * 15} 30) scale(.3)` }, s), d > 0 ? 'M-30 34 L30 34 L-30 -40 Z' : 'M30 34 L-30 34 L30 -40 Z', css('--triangle')); },
+    wing: () => { symAt(s, 'butterfly', 36, 29, .46); },
+    hunt6: () => { symAt(s, 'face', 24, 29, .34); symAt(s, 'carFront', 52, 30, .3); },
     fold: () => { const h = symAt(s, 'heart', 36, 29, .4); el('line', { x1: 0, y1: -48, x2: 0, y2: 46, stroke: css('--compass'), 'stroke-width': 4, 'stroke-dasharray': '7 6' }, h); },   /* S1-U6 */
     grid: () => { for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) el('rect', { x: 9 + c * 11, y: 6 + r * 11, width: 10, height: 10, rx: 2, fill: c === 4 ? '#5fb6a8' : (r + c) % 2 ? '#f3ead6' : '#e9dcc3', stroke: '#fff', 'stroke-width': .8 }, s); },
     fives: () => { for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) el('rect', { x: 9 + c * 11, y: 6 + r * 11, width: 10, height: 10, rx: 2, fill: c === 4 ? '#5fb6a8' : c === 2 ? '#f2b33d' : '#e9dcc3', stroke: '#fff', 'stroke-width': .8 }, s); },
