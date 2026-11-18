@@ -126,6 +126,18 @@ export const factOf = it => { const t = it.t;
   if (t === 'rodMatch') return `teen|read|${it.n}`;
   if (t === 'teenCmp') return `teencmp|${s2(it.a, it.b)}`;
   if (t === 'teenTrace') return `trace|${it.n}`;
+  /* S1-U5 (الفحص المستقل للبوابة (4)): النمط بوحدته وطوله، والابتكار بعناصره (مجموعةً) وطول وحدته، والعدّ بالمجموعات بمقدارها وعددها أياً كان الشيء، والشبكة بعددها */
+  if (t === 'patNext') return `patn|${it.unit.join(',')}|${it.n}|${it.slots || 1}`;
+  if (t === 'patFix') return `patf|${it.unit.join(',')}|${it.n}|${it.bad}`;
+  if (t === 'patUnit' || t === 'patPlay') return `${t}|${it.unit.join(',')}|${it.n}`;
+  if (t === 'patMake') return `patm|${[...it.pool].sort().join(',')}|${it.u || 0}`;
+  if (t === 'patWhere') return `patw|${it.ask || 'pat'}|${[...it.pics].sort().join(',')}`;
+  if (t === 'skipCount') return `skipc|${it.by || 2}|${it.pairs}`;
+  if (t === 'skipHop') return `skiph|${it.a}|${it.b}`;
+  if (t === 'gridTap') return `gridt|${it.n}`;
+  if (t === 'gridNext') return `gridn|${it.n}|${it.dir || 1}`;
+  if (t === 'gridHidden') return `gridh|${it.n}`;
+  if (t === 'gridSeq') return `grids|${it.a}|${it.b}|${it.step || 1}`;
   if (t === 'frameNeed') return `friend|${it.n}`;
   if (t === 'frameGlance') return `fglance|${it.n}`;
   if (t === 'makeTen') return (it.ask || 'total') === 'moved' ? `friend|${it.a}` : `add|${s2(it.a, it.b)}`;

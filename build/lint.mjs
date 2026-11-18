@@ -474,6 +474,15 @@ export function lint(content, js) {
           else if (fem !== both) errors.push(`${where}: transPick «${v.q}»: «${fem ? 'اِلْمِسْهَا' : 'اِلْمِسْهُ'}» وشيئاه «${v.a}» و«${v.b}» ${both ? 'مؤنثان' : 'ليسا مؤنثين'}، فالضمير يدلّ على الجواب أو يخالف جنسيهما (HOUSE_F)`); } }
       for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkU4(x, where, top); };
     for (const L of Object.values(lessons)) walkU4(L, L.id, L.id); }
+  /* S1-U5 (الفحص المستقل للبوابة (1) و(2) و(10) و(14)): بند «أين الخطأ؟» فيه خطأ واحد لا يُصلح الصفَّ غيرُ إصلاحه، و«ما التالي؟» يُري وحدتين كاملتين، وصفّ «ليس نمطاً» بلا دورة حتى الأربعة */
+  { const per = (s, p) => s.every((t, j) => t === s[j % p]), seqOf = (u, n) => Array.from({ length: n }, (_, i) => u[i % u.length]);
+    const fixes = s => { const out = new Set(); s.forEach((_, i) => { for (const t of new Set(s)) { if (t === s[i]) continue; const c = [...s]; c[i] = t; if ([2, 3].some(p => 2 * p <= c.length && per(c, p))) out.add(i); } }); return [...out]; };
+    const walkP = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkP(x, where)); if (!v || typeof v !== 'object') return;
+      if (v.unit && v.badTok != null) { const s = seqOf(v.unit, v.n); if (s[v.bad] === v.badTok) errors.push(`${where}: بند الخطأ ${JSON.stringify(v.unit)} بلا خطأ: badTok هو العنصر الأصلي`); else { s[v.bad] = v.badTok; const f = fixes(s); if (f.length !== 1 || f[0] !== v.bad) errors.push(`${where}: بند الخطأ ${s.join(' ')} يُصلحه غير الموضع ${v.bad}: ${f.join('، ')}`); } }
+      if (v.t === 'patNext' && v.n < 2 * v.unit.length) errors.push(`${where}: «ما التالي؟» يُري ${v.n} من وحدة طولها ${v.unit.length}: أقل من وحدتين كاملتين`);
+      if (v.t === 'patIs') for (const r of v.rows) if (r.seq && [1, 2, 3, 4].some(p => per(r.seq, p))) errors.push(`${where}: صفّ «ليس نمطاً» ${r.seq.join(' ')} له دورة`);
+      for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkP(x, where); };
+    for (const L of Object.values(lessons)) walkP(L, L.id); }
   // 4ب3) التوأم (الفحص المستقل B، المبدأ 5): كل بند يُشغَّل بالمساعدة (التمرين، والعلاج، ومراحل البنود بوضع التمرين أو العلاج) من نوعٍ توأمُه في بياناته
   //      (دالة twin في الكود تعيد item.twin) له توأم؛ ولا توأم للتوأم (يُشغَّل مرة واحدة)، ولا توأم في بند لا يُشغَّل توأمه (التقييم والاكتشاف)
   { const TWIN_DATA = new Set(), starts = [...code.matchAll(/^ITEM\.(\w+) = \{/gm)];

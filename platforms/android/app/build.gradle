@@ -11,8 +11,8 @@ android {
         minSdk 26
         targetSdk 34
         // رقم النسخة: يُرفع مع كل إصدار (versionCode عدد صحيح يزيد دائماً)، ومنه اسم الإصدار في Releases
-        versionCode 8
-        versionName "1.1.4"
+        versionCode 9
+        versionName "1.2.0"
     }
 
     /* التوقيع بمفتاح «واحة الرياضيات» الخاص (D269): يأتي من أسرار GitHub (SIGNING-AR.md في جذر المستودع)،

@@ -291,7 +291,7 @@ SCENES.chaosLoops = async C => {
   for (let a = 0; a < C.n; a += C.wrongU) patLoopAt(m, row, a, Math.min(C.n - 1, a + C.wrongU - 1), { color: css('--chaos'), dash: true, k: a / C.wrongU });
   const fz = chaosAt(svg, 44, 46, .4); await chaosGiggle(fz); S(C.find, { free: true }); let tries = 0;
   while (true) { const k = await tapOne(row.els.map(e => ({ g: e.g, k: e.i, label: patLabel(e.t) })), { ok: u - 1, pad: 56, pulse: false }); tries++;
-    logAttempt({ scene: 'chaos', tag: 'find', ok: k === u - 1, firstTry: tries === 1 }); if (k === u - 1) break; hush(); SFX.soft(); await S('gen.chaos.no'); if (tries === 2) await patSweepUnits(row, u); }
+    logAttempt({ scene: 'chaos', tag: 'find', ok: k === u - 1, firstTry: tries === 1 }); if (k === u - 1) break; hush(); SFX.soft(); await S('gen.pat.chaosNo'); if (tries === 2) await patSweepUnits(row, u); }
   hush(); SFX.good(); fz.remove(); m.replaceChildren(); await patLoopsIn(m, row, u); if (C.after) await S(C.after);
 };
 /* قطعة الواحة: شريط زينة من رايات، نمطه من ثلاث */
@@ -332,9 +332,9 @@ ITEM.patWhere = {
     const P = item.pics.map((k, i) => patPicAt(svg, k, X[i], Y[i], .86)); if (help) item.pics.forEach((k, i) => patPicUnit(helpG(svg), k, X[i], Y[i], .86));
     say(...lineOf(help ? 'gen.pat.together.where' : item.q), { free: true });
     const k = await tapOne(P.map((g, i) => ({ g, k: i, label: labelText('patPic.' + item.pics[i]) })), { ok: item.want, pad: false }); hush(); return { ans: k, ctx: { svg, P } }; },
-  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'patWhereWrong' }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.ask === 'none' ? 'patWhereNone' : 'patWhereWrong' }; },
   onOk(item, r) { SFX.good(); okRing(r.ctx.svg, r.ctx.P[r.ans], 2); }, onWrong() { SFX.soft(); },
-  async hint2(item, r) { const m = helpG(r.ctx.svg), X = [276, 180, 84], Y = [96, 186, 96]; for (const [i, k] of item.pics.entries()) { const u = patPicUnit(m, k, X[i], Y[i], .86); if (u) { SFX.tick(); await anim(u, [{ opacity: 0 }, { opacity: 1 }], { duration: 300 }).done.catch(() => {}); await sleep(500); } } }, async together() {},
+  async hint2(item, r) { const m = helpG(r.ctx.svg), X = [276, 180, 84], Y = [96, 186, 96]; for (const [i, k] of item.pics.entries()) { const u = patPicUnit(m, k, X[i], Y[i], .86); if (u) { SFX.tick(); await anim(u, [{ opacity: 0 }, { opacity: 1 }, { opacity: 0 }], { duration: 1100 }).done.catch(() => {}); u.remove(); break; } } }, async together() {},   /* التلميح: وحدة صورة واحدة تومض وتزول، والحلّ المشترك يؤطّرها كلها */
   async reveal(item, r) { okRing(r.ctx.svg, r.ctx.P[item.want], 2); await S('gen.pat.reveal.where'); },
   praise: () => 'praisePattern', twin(item) { return item.twin || null; },
 };
@@ -343,7 +343,7 @@ ITEM.patWhere = {
 const patPeriod = seq => { for (let p = 1; p * 2 <= seq.length; p++) if (seq.every((t, i) => t === seq[i % p])) return p; return 0; };
 const patExample = item => patSeq(item.u === 3 ? (item.pool.length >= 3 ? item.pool.slice(0, 3) : [item.pool[0], item.pool[1], item.pool[1]]) : item.pool.slice(0, 2), item.n);
 ITEM.patMake = {
-  make(spec) { return { ...spec, n: spec.n || 6, tag: 'pat-make' + (spec.u || '') }; },
+  make(spec) { return { ...spec, n: spec.n || (spec.u ? 6 : 8), tag: 'pat-make' + (spec.u || '') }; },   /* الحرّ ثمانية: وحدة من أربعة (أ أ ب ب) تتكرر مرتين كاملتين فتُقبل (الفحص المستقل (10)) */
   async ask(item, mode, tries) { const svg = newStage(280, { oasis: false, ground: 0 }), help = tries >= 3, ex = patExample(item), pre = help ? ex.slice(0, item.u || 2) : [];
     const row = patRowAt(svg, pre, { slots: item.n - pre.length, y: 96, string: patIsBead(item.pool) }); if (help) patLoopAt(helpG(svg), row, 0, pre.length - 1);
     const tn = item.pool.length, tx = i => 180 + (tn - 1) * 48 - i * 96; el('rect', { x: 180 - tn * 48 - 6, y: 172, width: tn * 96 + 12, height: 84, rx: 22, fill: '#fffdf6', 'fill-opacity': .92, stroke: css('--line'), 'stroke-width': 2.5 }, svg);
@@ -380,7 +380,7 @@ ITEM.skipCount = { ...numItem,
     if (help) { const m = helpG(svg); P.slice(0, -1).forEach(p => pairBadge(m, p)); }
     await S(help ? (item.by === 2 ? 'gen.skip.together' : 'gen.skip.togetherG') : item.q); const np = numberPick(shuffle(item.nums), item.want); const ans = await np.p; return { ans, ctx: { svg, np, P } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: (k === item.pairs ? 'skipPairs' : 'skipWrong') + (item.by === 2 ? '' : 'G') }; },
-  async hint2(item, r) { const m = helpG(r.ctx.svg); for (const p of r.ctx.P) { pairBadge(m, p); SFX.tick(); await S(numw(p.by * (p.i + 1)), { noGap: true, num: true }); } },
+  async hint2(item, r) { const m = helpG(r.ctx.svg); for (const p of r.ctx.P.slice(0, -1)) { pairBadge(m, p); SFX.tick(); await S(numw(p.by * (p.i + 1)), { noGap: true, num: true }); } },
   async together() {}, async reveal(item, r) { const m = helpG(r.ctx.svg); m.replaceChildren(); r.ctx.P.forEach(p => pairBadge(m, p)); await S(numw(item.want), { num: true }); },
   twin(item) { return item.twin || null; },
 };
@@ -390,20 +390,20 @@ ITEM.skipHop = {
   make(spec) { return { ...spec, seq: Array.from({ length: (spec.b - spec.a) / 2 }, (_, i) => spec.a + 2 * (i + 1)), tag: 'skip-hop' }; },
   async ask(item, mode, tries) { const R = roadStage(item, { at: item.a }), path = [item.a]; let busy = false;
     const ahead = m => R.S.show(R.S.tileX(m) - 29, R.S.tileX(Math.min(R.S.tiles.length - 1, m + 2)) + 29);
-    const go = async m => { busy = true; SFX.tick(); await R.tok.leap(m); path.push(m); say(...lineOf(numw(m)), { free: true, num: true }); await ahead(m); busy = false; };
+    const go = async m => { busy = true; SFX.tick(); await R.tok.leap(m); const back = path.indexOf(m); if (back >= 0) path.length = back + 1; else path.push(m); say(...lineOf(numw(m)), { free: true, num: true }); await ahead(m); busy = false; };
     if (tries >= 3) { await S('gen.skip.togetherHop'); for (const m of item.seq.slice(0, -1)) { await go(m); await sleep(350); } } else await ahead(item.a);
     say(...lineOf(item.q), { free: true });
     const targets = R.S.tiles.map(t => ({ g: t.g, n: t.n }));
     targets.forEach(t => { t.g.style.cursor = 'pointer'; t.g.setAttribute('role', 'button'); t.g.setAttribute('aria-label', plain(T(numw(t.n)))); hitPad(t.g, 56);
       t.g.onclick = () => { if (R.S.dragged || busy) return; if (t.n === R.tok.n) { say(...lineOf(numw(t.n)), { free: true, num: true }); return; } go(t.n); }; }); routeClicks(targets.map(t => t.g));
-    const d = doneBtn(), left = () => item.seq.filter(m => !path.includes(m)), click = async L => { for (const m of L) { R.S.tiles[m].g.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 30)); while (busy) await new Promise(r => setTimeout(r, 20)); } d.b.click(); };
+    const d = doneBtn(), left = () => item.seq.filter(m => m > path[path.length - 1]), click = async L => { for (const m of L) { R.S.tiles[m].g.dispatchEvent(new MouseEvent('click', { bubbles: true })); await new Promise(r => setTimeout(r, 30)); while (busy) await new Promise(r => setTimeout(r, 20)); } d.b.click(); };
     /*T*/window.__road = { seq: left(), done: true };/*/T*/
     AUTO({ kind: 'road', ok: () => click(left()), wrong: () => click([R.tok.n + 1]) });
     let fin = false; await gate(new Promise(res => d.b.onclick = async () => { if (fin) return; fin = true; while (busy) await new Promise(r => setTimeout(r, 30)); AUTO_CLEAR(); hush(); d.bar.remove(); res(); }));
     targets.forEach(t => { t.g.onclick = null; delete t.g.__route; t.g.removeAttribute('role'); t.g.style.cursor = ''; t.g.querySelectorAll(':scope > rect.hit').forEach(h => h.remove()); });
     return { ans: path, ctx: R }; },
   judge(item, path) { const st = path.slice(1).map((m, i) => m - path[i]), fin = path[path.length - 1];
-    if (st.some(s => Math.abs(s) === 1)) return { ok: false, err: 'skipOne' }; if (st.length && st.every(s => s === 2)) return fin === item.b ? { ok: true } : { ok: false, err: 'skipStop' }; return { ok: false, err: st.length ? 'skipWrong' : 'skipStop' }; },
+    if (st.some(s => Math.abs(s) === 1)) return { ok: false, err: 'skipOne' }; if (st.length && st.every(s => s === 2)) return fin === item.b ? { ok: true } : { ok: false, err: 'skipStop' }; return { ok: false, err: st.length ? 'skipHopWrong' : 'skipStop' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { const R = r.ctx; R.tok.place(item.a); for (const m of item.seq.slice(0, 2)) { await R.tok.leap(m); await S(numw(m), { noGap: true, num: true }); } },
   async together() {},
@@ -442,7 +442,7 @@ SCENES.chaosPairs = async C => {
   const svg = newStage(250, { oasis: false, ground: 0 }), P = pairsAt(svg, C.kind2 || "socks", C.pairs, 112), m = helpG(svg), w = 2 * C.pairs;
   const fz = chaosAt(svg, 40, 40, .38); await chaosGiggle(fz); let tries = 0;
   while (true) { await S(C.find); const np = numberPick(shuffle([w, C.pairs, w - 2]), w), k = await np.p; tries++; np.box && np.box.remove();
-    logAttempt({ scene: 'chaos', tag: 'find', ok: k === w, firstTry: tries === 1 }); if (k === w) break; SFX.soft(); await S('gen.chaos.no');
+    logAttempt({ scene: 'chaos', tag: 'find', ok: k === w, firstTry: tries === 1 }); if (k === w) break; SFX.soft(); await S('gen.pat.chaosNo');
     if (tries >= 2) { m.replaceChildren(); for (const p of P) { pairBadge(m, p); SFX.tick(); await S(numw(2 * (p.i + 1)), { noGap: true, num: true }); } } }
   SFX.good(); fz.remove(); m.replaceChildren(); P.forEach(p => pairBadge(m, p)); if (C.after) await S(C.after);
 };

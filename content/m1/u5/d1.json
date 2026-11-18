@@ -417,9 +417,9 @@
        "seq": [
         "bB",
         "bY",
+        "bB",
+        "bB",
         "bY",
-        "bB",
-        "bB",
         "bY"
        ]
       },
@@ -486,7 +486,7 @@
      ],
      "n": 6,
      "bad": 4,
-     "badTok": "tri"
+     "badTok": "sq"
     }
    ]
   },
@@ -539,7 +539,7 @@
         "bR",
         "bR",
         "bY",
-        "bR"
+        "bY"
        ]
       }
      ],
@@ -618,9 +618,9 @@
      "seq": [
       "cir",
       "tri",
-      "tri",
-      "tri",
       "cir",
+      "cir",
+      "tri",
       "tri"
      ]
     },
@@ -643,7 +643,7 @@
    ],
    "n": 6,
    "bad": 2,
-   "badTok": "cir",
+   "badTok": "sq",
    "c": "C019"
   },
   {

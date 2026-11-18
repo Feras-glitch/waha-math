@@ -163,9 +163,9 @@
      "cir",
      "cir"
     ],
-    "n": 6,
-    "bad": 4,
-    "badTok": "tri"
+    "n": 7,
+    "bad": 3,
+    "badTok": "cir"
    },
    "lines": [
     "wk.01",
@@ -190,7 +190,7 @@
       "tri",
       "tri"
      ],
-     "n": 5,
+     "n": 7,
      "ribbon": true,
      "twin": {
       "t": "patNext",
@@ -200,7 +200,7 @@
        "cir",
        "cir"
       ],
-      "n": 5,
+      "n": 7,
       "ribbon": true
      }
     },
@@ -212,7 +212,7 @@
       "tri",
       "sq"
      ],
-     "n": 4,
+     "n": 6,
      "slots": 2,
      "ribbon": true,
      "twin": {
@@ -223,7 +223,7 @@
        "cir",
        "tri"
       ],
-      "n": 4,
+      "n": 6,
       "slots": 2,
       "ribbon": true
      }
@@ -295,7 +295,7 @@
     "q": "pr.2",
     "unit": [
      "sq",
-     "sq",
+     "tri",
      "tri"
     ],
     "n": 7,
@@ -350,7 +350,7 @@
      "cir",
      "sq"
     ],
-    "n": 5,
+    "n": 6,
     "slots": 3,
     "twin": {
      "t": "patNext",
@@ -360,7 +360,7 @@
       "tri",
       "cir"
      ],
-     "n": 5,
+     "n": 6,
      "slots": 3
     }
    },
@@ -373,8 +373,8 @@
      "sq"
     ],
     "n": 7,
-    "bad": 4,
-    "badTok": "cir",
+    "bad": 3,
+    "badTok": "sq",
     "twin": {
      "t": "patFix",
      "q": "pr.4",
@@ -384,8 +384,8 @@
       "cir"
      ],
      "n": 7,
-     "bad": 2,
-     "badTok": "tri"
+     "bad": 0,
+     "badTok": "cir"
     }
    },
    {
@@ -455,7 +455,7 @@
       "sq",
       "tri"
      ],
-     "n": 5,
+     "n": 6,
      "slots": 3
     },
     {
@@ -467,8 +467,8 @@
       "tri"
      ],
      "n": 7,
-     "bad": 3,
-     "badTok": "sq"
+     "bad": 6,
+     "badTok": "tri"
     }
    ],
    "C018": [
@@ -549,7 +549,7 @@
       "sq",
       "cir"
      ],
-     "n": 5,
+     "n": 7,
      "twin": {
       "t": "patNext",
       "q": "gm.q1",
@@ -558,8 +558,10 @@
        "sq",
        "sq"
       ],
-      "n": 5
-     }
+      "n": 7,
+      "ribbon": true
+     },
+     "ribbon": true
     }
    ],
    "C018": [
@@ -635,8 +637,8 @@
     "sq"
    ],
    "n": 7,
-   "bad": 5,
-   "badTok": "tri",
+   "bad": 3,
+   "badTok": "sq",
    "c": "C026"
   },
   {

@@ -8,5 +8,187 @@
   "circle",
   "square"
  ],
- "hunt": []
+ "hunt": [],
+ "workshop": {
+  "pieces": [
+   {
+    "k": "circle",
+    "size": 64
+   },
+   {
+    "k": "square",
+    "size": 64
+   },
+   {
+    "k": "triangle",
+    "size": 70,
+    "w": 70,
+    "h": 61
+   },
+   {
+    "k": "rect",
+    "size": 70,
+    "w": 96,
+    "h": 44
+   }
+  ],
+  "puzzles": [
+   {
+    "id": "garland",
+    "name": "gen.ws.p.garland",
+    "slots": [
+     {
+      "k": "triangle",
+      "x": 276,
+      "y": 110,
+      "size": 62,
+      "w": 62,
+      "h": 54,
+      "rot": 180
+     },
+     {
+      "k": "circle",
+      "x": 212,
+      "y": 112,
+      "size": 56
+     },
+     {
+      "k": "triangle",
+      "x": 148,
+      "y": 110,
+      "size": 62,
+      "w": 62,
+      "h": 54,
+      "rot": 180
+     },
+     {
+      "k": "circle",
+      "x": 84,
+      "y": 112,
+      "size": 56
+     }
+    ],
+    "extra": {
+     "k": "square",
+     "size": 56
+    }
+   },
+   {
+    "id": "crown",
+    "name": "gen.ws.p.crown",
+    "slots": [
+     {
+      "k": "rect",
+      "x": 180,
+      "y": 176,
+      "size": 200,
+      "w": 200,
+      "h": 44
+     },
+     {
+      "k": "triangle",
+      "x": 112,
+      "y": 120,
+      "size": 64,
+      "w": 64,
+      "h": 56
+     },
+     {
+      "k": "triangle",
+      "x": 180,
+      "y": 120,
+      "size": 64,
+      "w": 64,
+      "h": 56
+     },
+     {
+      "k": "triangle",
+      "x": 248,
+      "y": 120,
+      "size": 64,
+      "w": 64,
+      "h": 56
+     }
+    ],
+    "extra": {
+     "k": "circle",
+     "size": 56
+    }
+   },
+   {
+    "id": "caterpillar",
+    "name": "gen.ws.p.caterpillar",
+    "slots": [
+     {
+      "k": "circle",
+      "x": 292,
+      "y": 130,
+      "size": 76
+     },
+     {
+      "k": "circle",
+      "x": 224,
+      "y": 140,
+      "size": 54
+     },
+     {
+      "k": "circle",
+      "x": 152,
+      "y": 130,
+      "size": 76
+     },
+     {
+      "k": "circle",
+      "x": 84,
+      "y": 140,
+      "size": 54
+     }
+    ],
+    "extra": {
+     "k": "triangle",
+     "size": 60,
+     "w": 60,
+     "h": 52
+    }
+   },
+   {
+    "id": "wagon",
+    "name": "gen.ws.p.wagon",
+    "slots": [
+     {
+      "k": "square",
+      "x": 110,
+      "y": 118,
+      "size": 80
+     },
+     {
+      "k": "rect",
+      "x": 226,
+      "y": 130,
+      "size": 130,
+      "w": 130,
+      "h": 56
+     },
+     {
+      "k": "circle",
+      "x": 120,
+      "y": 190,
+      "size": 48
+     },
+     {
+      "k": "circle",
+      "x": 240,
+      "y": 190,
+      "size": 48
+     }
+    ],
+    "extra": {
+     "k": "triangle",
+     "size": 60,
+     "w": 60,
+     "h": 52
+    }
+   }
+  ]
+ }
 }

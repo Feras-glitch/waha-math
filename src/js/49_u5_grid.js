@@ -31,15 +31,15 @@ function gridPick(H, opt = {}) { const svg = H.svg, C = GRID.c; let cur = 0, rin
     el('text', { y: 12, 'text-anchor': 'middle', 'font-size': 32, 'font-weight': 800, fill: '#22343b', 'font-family': css('--f'), direction: 'ltr' }, H.lens); }
   const lens = H.lens, lt = lens.querySelector('text'); svg.appendChild(lens);
   const focus = n => { if (n === cur) return; cur = n; if (ring) ring.remove(); const c = H.cells[n]; ring = H.ring(n); lt.textContent = c.g.dataset.hid ? '؟' : DG(n); lt.setAttribute('font-size', n === 100 ? 25 : 32);
-    const ly = c.y - 62 < 34 ? c.y + 62 : c.y - 62, lx = Math.max(36, Math.min(324, c.x)); lens.setAttribute('transform', `translate(${lx} ${ly})`); lens.setAttribute('opacity', 1); SFX.tick(); /*T*/window.__gridCur = n;/*/T*/ };
+    const top = c.y - 62 < 34, ly = top ? Math.max(36, c.y - 14) : c.y - 62, lx = top ? c.x + (c.x < 180 ? 76 : -76) : Math.max(36, Math.min(324, c.x));   /* في الصفين العلويين إلى الجانب (الفحص المستقل (9): كانت تنزل تحت الإصبع) */ lens.setAttribute('transform', `translate(${lx} ${ly})`); lens.setAttribute('opacity', 1); SFX.tick(); /*T*/window.__gridCur = n;/*/T*/ };
   const blur = () => { cur = 0; if (ring) ring.remove(); ring = null; lens.setAttribute('opacity', 0); };
   return gate(new Promise(res => { let input = null;
-    const fin = n => { if (done) return; done = true; /*T*/window.__gridPicked = n;/*/T*/ AUTO_CLEAR(); if (input) input.off(); for (let n = 1; n <= 100; n++) { const cg = H.cells[n].g; cg.removeAttribute('tabindex'); cg.onfocus = null; cg.onkeydown = null; } blur(); res(n); };
+    const fin = n => { if (done) return; done = true; /*T*/window.__gridPicked = n;/*/T*/ AUTO_CLEAR(); if (input) input.off(); for (let n = 1; n <= 100; n++) { const cg = H.cells[n].g; cg.removeAttribute('tabindex'); cg.removeAttribute('role'); cg.onfocus = null; cg.onkeydown = null; } blur(); res(n); };
     input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; },
       down(q) { if (q[1] < GRID.y0 - 12 || q[1] > GRID.y0 + C * 10 + 12) return false; focus(H.at(q[0], q[1])); }, move(q) { focus(H.at(q[0], q[1])); },
       up(cancelled) { const n = cur; if (cancelled || !n) { blur(); return; } fin(n); } });
     /* لوحة المفاتيح: كل بلاطة تُبلغ بمفتاح التنقّل فتكبر في العدسة، ومفتاح الفعل يختارها */
-    for (let n = 1; n <= 100; n++) { const cg = H.cells[n].g; cg.setAttribute('tabindex', 0); cg.setAttribute('aria-label', plain(T(numw(n)))); cg.onfocus = () => focus(n); cg.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); fin(n); } }; }
+    for (let n = 1; n <= 100; n++) { const cg = H.cells[n].g; cg.setAttribute('tabindex', 0); cg.setAttribute('role', 'gridcell'); cg.setAttribute('aria-label', cg.dataset.hid ? labelText('gridHid') : plain(T(numw(n)))); cg.onfocus = () => focus(n); cg.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); fin(n); } }; }
     const xy = n => { const c = H.cells[n], m = svg.getScreenCTM(); return { x: m.a * c.x + m.e, y: m.d * c.y + m.f, n }; };
     /*T*/window.__grid = () => opt.ok != null ? xy(opt.ok) : null;/*/T*/
     AUTO({ kind: opt.kind || 'grid', ok: () => fin(opt.ok != null ? opt.ok : 1), wrong: () => fin(opt.bad != null ? opt.bad : (opt.ok % 10 ? opt.ok + 1 : opt.ok - 1)) }); })); }
@@ -50,11 +50,13 @@ ITEM.gridTap = {
   make(spec) { return { ...spec, want: spec.n, tag: spec.holes ? 'grid-place' : 'grid-tap' }; },
   async ask(item, mode, tries) { const svg = gridStage(), H = hundredAt(svg), help = tries >= 3; (item.holes || []).forEach(n => H.hide(n));
     if (help) H.band(Math.floor((item.n - 1) / 10));
-    await S(help ? 'gen.grid.together.tap' : item.q); if (!item.holes) await S(numw(item.n), { num: true });
+    /* العدد المسموع تتمّة السؤال (append)، و«أعد الجملة» يعيد السؤال والعدد معاً (الفحص المستقل لبوابة S1-U5 (3): كان يُقال مرة ولا يُعاد) */
+    let picked = false; const askQ = async () => { await S(help ? 'gen.grid.together.tap' : item.q); if (!item.holes) await say(...lineOf(numw(item.n)), { append: true }); };
+    await askQ(); if (!item.holes) { REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !picked && svg.isConnected; }
     if (item.holes) { const far = p => Math.min(...item.holes.map(n => Math.hypot(H.cells[n].x - p[0], H.cells[n].y - p[1]))), tileAt = [[62, 66], [298, 66], [62, 302], [298, 302]].sort((a, b) => far(b) - far(a))[0];   /* البلاطة في الركن الأبعد عن الأماكن الفارغة */
       const tile = el('g', { 'pointer-events': 'none', transform: `translate(${tileAt[0]} ${tileAt[1]})` }, svg); el('rect', { x: -30, y: -30, width: 60, height: 60, rx: 12, fill: GRID.paint, stroke: '#fff', 'stroke-width': 4 }, tile);
       const t = el('text', { y: 11, 'text-anchor': 'middle', 'font-size': 30, 'font-weight': 800, fill: '#22343b', 'font-family': css('--f'), direction: 'ltr' }, tile); t.textContent = DG(item.n); }
-    const bad = item.holes ? item.holes.find(n => n !== item.n) : null; const k = await gridPick(H, { ok: item.n, bad }); if (k !== item.n && !NEUTRAL_ANS) H.ring(k, css('--chaos')); return { ans: k, ctx: { svg, H } }; },
+    const bad = item.holes ? item.holes.find(n => n !== item.n) : null; const k = await gridPick(H, { ok: item.n, bad }); picked = true; REPLAY_HOOK = null; if (k !== item.n && !NEUTRAL_ANS) H.ring(k, css('--chaos')); return { ans: k, ctx: { svg, H } }; },
   judge(item, k) { if (k === item.n) return { ok: true }; const sw = (item.n % 10) * 10 + Math.floor(item.n / 10);
     return { ok: false, err: item.holes ? 'gridPlaceWrong' : k === sw && item.n < 100 ? 'gridSwap' : k % 10 === item.n % 10 ? 'gridRow' : 'gridWrong' }; },
   onOk(item, r) { SFX.good(); const H = r.ctx.H; if (item.holes) H.show(item.n); H.paint(item.n, GRID.done); H.pop(item.n); gridSayN(item.n); }, onWrong() { SFX.soft(); },
@@ -71,7 +73,7 @@ ITEM.gridNext = {
     await S(help ? 'gen.grid.together.next' : item.q); const k = await gridPick(H, { ok: item.want, bad: item.n + 10 <= 100 ? item.n + 10 : item.n - 10 }); if (k !== item.want && !NEUTRAL_ANS) H.ring(k, css('--chaos')); return { ans: k, ctx: { svg, H } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: Math.abs(k - item.n) === 10 ? 'gridNextCol' : 'gridNextWrong' }; },
   onOk(item, r) { SFX.good(); r.ctx.H.paint(item.want, GRID.done); r.ctx.H.pop(item.want); gridSayN(item.want); }, onWrong() { SFX.soft(); },
-  async hint2(item, r) { const H = r.ctx.H, a = Math.max(1, item.n - 2); for (let n = a; n <= item.n; n++) { H.pop(n); await S(numw(n), { noGap: true, num: true }); } }, async together() {},
+  async hint2(item, r) { const H = r.ctx.H, L = item.dir < 0 ? [item.n + 2, item.n + 1, item.n].filter(n => n <= 100) : [item.n - 2, item.n - 1, item.n].filter(n => n >= 1); for (const n of L) { H.pop(n); await S(numw(n), { noGap: true, num: true }); } }, async together() {},
   async reveal(item, r) { r.ctx.H.paint(item.want, GRID.done); r.ctx.H.pop(item.want); await S(numw(item.want), { num: true }); },
   praise: () => 'praiseCount', twin(item) { return item.twin || null; },
 };
@@ -95,9 +97,10 @@ const gridSeqOf = s => { const out = []; for (let n = s.a + s.step; n <= s.b; n 
 ITEM.gridSeq = {
   make(spec) { const step = spec.step || 1, it = { ...spec, step }; it.seq = gridSeqOf(it); it.pre = spec.from || (spec.a >= 1 ? [spec.a] : []); it.tag = 'grid-seq' + step; return it; },
   async ask(item, mode, tries) { const svg = gridStage(), H = hundredAt(svg), help = tries >= 3, col = item.step === 10 ? GRID.paint2 : GRID.paint; item.pre.forEach(n => H.paint(n, col));
-    const todo = help ? item.seq.slice(-1) : item.seq; if (help) item.seq.slice(0, -1).forEach(n => H.paint(n, col));
+    const todo = help ? item.seq.slice(-1) : item.seq, one = item.seq.length === 1; if (help) item.seq.slice(0, -1).forEach(n => H.paint(n, col));
+    if (help && one) for (let n = item.a + 1; n < item.seq[0]; n++) H.paint(n, GRID.done);   /* القفزة الواحدة: البلاطات التي نمرّ بها، والتي نصل إليها للطفل */
     if (item.mark !== false) H.ring(item.b, css('--muted')).setAttribute('stroke-dasharray', '5 4');   /* البلاطة المحاطة: إلى أين نعدّ */
-    await S(help ? 'gen.grid.together.seq' : item.q); const got = [];
+    await S(help ? (one ? 'gen.grid.together.one' : 'gen.grid.together.seq') : item.q); const got = [];
     for (const [i, n] of todo.entries()) { const k = await gridPick(H, { ok: n, bad: item.step === 1 ? Math.min(100, n + 1) : n + 1 > 100 ? n - 1 : n + 1, kind: i ? 'grid' + (i + 1) : 'grid' }); got.push(k);
       /* في الإتقان والاختبار لا إشارة صواب ولا خطأ (A-01): كل ما يُلمس يُلوَّن ويُنطق، ولا يقف التسلسل عند الخطأ */
       if (k !== n && !NEUTRAL_ANS) { H.ring(k, css('--chaos')); break; } H.paint(k, col); H.pop(k); gridSayN(k); }
@@ -105,7 +108,10 @@ ITEM.gridSeq = {
   /* الجواب: ما لُمس، وما كان مطلوباً لمسه (في الحلّ المشترك آخر التسلسل وحده) */
   judge(item, a) { return a.got.length === a.todo.length && a.got.every((k, i) => k === a.todo[i]) ? { ok: true } : { ok: false, err: item.step === 1 ? 'gridSeqSkip' : 'gridSeqStep' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
-  async hint2(item, r) { const H = r.ctx.H; let n = item.pre.length ? item.pre[item.pre.length - 1] : item.a; for (let j = 0; j < 2 && j < item.seq.length; j++) { for (let s = 1; s <= item.step; s++) { H.pop(Math.min(100, n + s)); SFX.tick(); await sleep(item.step === 1 ? 250 : 170); } n += item.step; await S(numw(n), { noGap: true, num: true }); } },
+  /* التلميح يعيد قفزاتٍ سبقت ولا يبلغ الجواب: بين الملوّنات إن كانت، وإلا القفزة الأولى وحدها إن بقي بعدها غيرها (الفحص المستقل (5)) */
+  async hint2(item, r) { const H = r.ctx.H, walk = async (a, b, sayIt) => { for (let n = a + 1; n <= b; n++) { H.pop(n); SFX.tick(); await sleep(item.step === 1 ? 250 : 170); } if (sayIt) await S(numw(b), { noGap: true, num: true }); };
+    if (item.pre.length >= 2) { const p = item.pre.slice(-3); for (let i = 1; i < p.length; i++) await walk(p[i - 1], p[i], true); }
+    else if (item.seq.length > 1) await walk(item.a, item.seq[0], true); else await walk(item.a, item.seq[0] - 1, false); },
   async together() {},
   async reveal(item, r) { const H = r.ctx.H; for (const n of item.seq) { H.paint(n, r.ctx.col); H.pop(n); await S(numw(n), { noGap: true, num: true }); } await S('gen.grid.reveal.seq'); },
   praise: () => 'praiseCount', twin(item) { return item.twin || null; },
@@ -141,9 +147,9 @@ SCENES.gridWorked = async c => {
 /* «صحّح لفوضى»: ما لُوّن قبلها (from)، وبلاطتها الخطأ بلونها (wrongN إن وُجدت)، ويلمس الطفل الصحيحة (want) */
 SCENES.chaosGrid = async C => {
   const svg = gridStage(), H = hundredAt(svg); (C.from || []).forEach(n => H.paint(n)); if (C.wrongN) H.paint(C.wrongN, css('--chaos'));
-  const fz = chaosAt(svg, C.want > 50 ? 300 : 300, C.want > 50 ? 60 : 300, .4); await chaosGiggle(fz); S(C.find, { free: true }); let tries = 0;
+  const fz = chaosAt(svg, 306, C.want > 50 ? 44 : 330, .3); await chaosGiggle(fz); S(C.find, { free: true }); let tries = 0;
   while (true) { const k = await gridPick(H, { ok: C.want, bad: C.wrongN || C.want + 10 }); tries++; logAttempt({ scene: 'chaos', tag: 'find', ok: k === C.want, firstTry: tries === 1 }); if (k === C.want) break;
-    hush(); SFX.soft(); await S('gen.chaos.no'); if (tries === 2) { const b = H.band(Math.floor((C.want - 1) / 10)); await sleep(900); b.remove(); } }
+    hush(); SFX.soft(); await S('gen.pat.chaosNo'); if (tries === 2) { const b = H.band(Math.floor((C.want - 1) / 10)); await sleep(900); b.remove(); } }
   hush(); SFX.good(); fz.remove(); if (C.wrongN) H.clear(C.wrongN); H.paint(C.want); H.pop(C.want); await S(numw(C.want), { num: true }); if (C.after) await S(C.after);
 };
 SCENES.recallGrid = async c => { const svg = gridStage(), H = hundredAt(svg); for (const n of c.paint || []) { H.paint(n, c.color === 2 ? GRID.paint2 : GRID.paint); } await sleep(300); await S(c.lines); };
