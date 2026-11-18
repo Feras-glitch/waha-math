@@ -480,6 +480,8 @@ export function lint(content, js) {
     const walkP = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkP(x, where)); if (!v || typeof v !== 'object') return;
       if (v.unit && v.badTok != null) { const s = seqOf(v.unit, v.n); if (s[v.bad] === v.badTok) errors.push(`${where}: بند الخطأ ${JSON.stringify(v.unit)} بلا خطأ: badTok هو العنصر الأصلي`); else { s[v.bad] = v.badTok; const f = fixes(s); if (f.length !== 1 || f[0] !== v.bad) errors.push(`${where}: بند الخطأ ${s.join(' ')} يُصلحه غير الموضع ${v.bad}: ${f.join('، ')}`); } }
       if (v.t === 'patNext' && v.n < 2 * v.unit.length) errors.push(`${where}: «ما التالي؟» يُري ${v.n} من وحدة طولها ${v.unit.length}: أقل من وحدتين كاملتين`);
+      if (v.t === 'gridMirror') { const left = v.cells[0][1] <= 2, key = L => L.map(([r, c]) => r * 6 + c).sort((a, b) => a - b).join(','); if (!v.cells.every(([r, c]) => (c <= 2) === left)) errors.push(`${where}: نصف الشبكة المعطى على جانبي الخط`);
+        if (key(v.cells.map(([r, c]) => [r, 5 - c])) === key(v.cells.map(([r, c]) => [r, left ? c + 3 : c - 3]))) errors.push(`${where}: نصف الشبكة ${JSON.stringify(v.cells)} نسخُه كعكسه: لا يكشف خطأ النسخ بالاتجاه نفسه (S1-U6)`); }
       if (v.t === 'patIs') for (const r of v.rows) if (r.seq && [1, 2, 3, 4].some(p => per(r.seq, p))) errors.push(`${where}: صفّ «ليس نمطاً» ${r.seq.join(' ')} له دورة`);
       for (const [k, x] of Object.entries(v)) if (!['lines', 'labels'].includes(k)) walkP(x, where); };
     for (const L of Object.values(lessons)) walkP(L, L.id); }

@@ -226,6 +226,7 @@ ITEM.mirrorSlide = {
     const set = x => { m = Math.max(84, Math.min(276, x)); cr.setAttribute('width', m); refl.setAttribute('transform', `translate(${2 * m} 0) scale(-1 1)`); bar.setAttribute('transform', `translate(${m} 0)`); /*T*/window.__mirror = m;/*/T*/ }; set(m);
     say(...lineOf(tries >= 3 ? 'gen.sym.together.mirror' : item.q), { free: true });
     const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { set(q[0]); }, move(q) { set(q[0]); }, up() {} });
+    /*T*/window.__mirrorAt = () => { const mm = svg.getScreenCTM(); return { x: mm.a * cx + mm.e, y: mm.d * cy + mm.f, far: mm.a * (cx - 70) + mm.e }; }; window.__mirrorDx = () => Math.round(m - cx);/*/T*/
     const d = doneBtn(); AUTO({ kind: 'mirror', ok: () => { set(cx); d.b.click(); }, wrong: () => { set(cx + 42); d.b.click(); } });
     let fin = false; await gate(new Promise(res => d.b.onclick = () => { if (fin) return; fin = true; AUTO_CLEAR(); hush(); input.off(); d.bar.remove(); res(); }));
     return { ans: Math.round(m - cx), ctx: { svg, set, cx, cy, k } }; },
@@ -254,7 +255,7 @@ ITEM.gridMirror = {
     const T = M.cells.filter(k => mine(k.c)); T.forEach(k => { k.g.style.cursor = 'pointer'; k.g.setAttribute('role', 'button'); k.g.setAttribute('tabindex', 0); k.g.setAttribute('aria-label', labelText('mirCell'));
       const tog = () => { if (first) { hush(); first = false; } SFX.tick(); M.paint(k.r, k.c, k.on ? null : MIR.mine); buzz(15); }; k.g.onclick = tog; k.g.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); tog(); } }; });
     const d = doneBtn(), put = L => { T.forEach(k => M.paint(k.r, k.c, null)); L.forEach(([r, c]) => M.paint(r, c, MIR.mine)); d.b.click(); };
-    /*T*/window.__mirWant = item.want.filter(w => !pre.some(p => p[0] === w[0] && p[1] === w[1])).map(([r, c]) => { const k = M.at(r, c), m = svg.getScreenCTM(); return { x: m.a * k.x + m.e, y: m.d * k.y + m.f }; });/*/T*/
+    /*T*/window.__mirWant = () => item.want.filter(w => !pre.some(p => p[0] === w[0] && p[1] === w[1])).map(([r, c]) => { const k = M.at(r, c), m = svg.getScreenCTM(); return { x: m.a * k.x + m.e, y: m.d * k.y + m.f }; }); window.__mirState = () => mirKey(T.filter(k => k.on).map(k => [k.r, k.c])) === mirKey(item.want);/*/T*/
     AUTO({ kind: 'mirgrid', ok: () => put(item.want), wrong: () => put(item.cells.map(([r, c]) => [r, left ? c + 3 : c - 3])) });
     let fin = false; await gate(new Promise(res => d.b.onclick = () => { if (fin) return; fin = true; AUTO_CLEAR(); hush(); d.bar.remove(); res(); }));
     T.forEach(k => { k.g.onclick = null; k.g.onkeydown = null; k.g.removeAttribute('role'); k.g.removeAttribute('tabindex'); k.g.style.cursor = ''; });
@@ -344,7 +345,8 @@ SCENES.paintFold = async c => {
   el('rect', { x: 40, y: 20, width: 280, height: 200, rx: 6, fill: '#fffdf6', stroke: '#d9cfb8', 'stroke-width': 2.5 }, svg); el('line', { x1: 180, y1: 20, x2: 180, y2: 220, stroke: css('--compass'), 'stroke-width': 3, 'stroke-dasharray': '7 5' }, svg); const L = el('g', {}, svg), Rg = el('g', { opacity: 0 }, svg);
   const add = (x, y) => { if (x < 52 || x > 170 || y < 32 || y > 208 || blobs.length >= 12) return; const col = COL[blobs.length % COL.length], r = 11 + (blobs.length * 7) % 9; el('circle', { cx: x, cy: y, r, fill: col, opacity: .9 }, L); el('circle', { cx: 360 - x, cy: y, r, fill: col, opacity: .9 }, Rg); blobs.push([x, y]); SFX.pop(); buzz(15); };
   S(l1, { free: true }); const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { add(q[0], q[1]); return false; }, move() {}, up() {} });
-  const d = doneBtn(); AUTO({ kind: 'paint', ok: () => { [[90, 70], [130, 120], [100, 170]].forEach(p => add(...p)); d.b.click(); }, wrong: null });
+  const d = doneBtn(); /*T*/{ const m = svg.getScreenCTM(); window.__blot = () => [[90, 70], [130, 120], [100, 170]].map(([x, y]) => ({ x: m.a * x + m.e, y: m.d * y + m.f })); }/*/T*/
+  AUTO({ kind: 'blot', ok: () => { [[90, 70], [130, 120], [100, 170]].forEach(p => add(...p)); d.b.click(); }, wrong: null });
   let fin = false; await gate(new Promise(res => d.b.onclick = () => { if (fin || !blobs.length) return; fin = true; AUTO_CLEAR(); hush(); input.off(); d.bar.remove(); res(); }));
   const cover = el('rect', { x: 40, y: 20, width: 140, height: 200, fill: '#f3ead6', stroke: '#d9cfb8', 'stroke-width': 2, opacity: 0 }, svg); cover.setAttribute('opacity', 1);
   await symTween(600, t => { cover.setAttribute('x', 40 + 140 * t); L.setAttribute('opacity', 1 - t); }); await sleep(400); Rg.setAttribute('opacity', 1); await symTween(600, t => { cover.setAttribute('x', 180 - 140 * t); cover.setAttribute('opacity', 1 - t); L.setAttribute('opacity', t); });

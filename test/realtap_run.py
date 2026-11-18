@@ -164,6 +164,18 @@ async def run(p, dev):
         # «لوّن» بالإصبع في «لوّن العربات ثم المس» وحده (kamAyn، S1-U3)؛ وبند التلوين بالأوعية (paint، S1-U1) بخطّافه كما كان
         kam = k == 'paint' and await pg.evaluate("() => !!(window.__item && window.__item.ask === 'kamAyn')")
         U4 = ('align', 'order', 'weighPut', 'lay', 'layAll', 'barBuild', 'rods', 'framePaint', 'frameMove', 'frameTake', 'frameFill', 'rodFill', 'strip', 'tapCount')
+        if k in ('mirgrid', 'mirror', 'blot'):   # S1-U6: لمس حقيقي لخانات الشبكة، وسحب حقيقي للمرآة إلى خط التماثل، وبقع الطلاء؛ ثم «تمّ»
+          await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1; DONE = "() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
+          if k == 'mirgrid':
+            for q in await pg.evaluate('() => window.__mirWant()'): await tap(q['x'], q['y']); await pg.wait_for_timeout(60)
+            if not await pg.evaluate('() => window.__mirState()'): tried['mir-miss'] = tried.get('mir-miss', 0) + 1; print('  mirror grid miss', st['scene'])
+          elif k == 'mirror':
+            q = await pg.evaluate('() => window.__mirrorAt()'); await tap(q['x'], q['y'])
+            dx = await pg.evaluate('() => window.__mirrorDx()')
+            if abs(dx) > 8: tried['mir-miss'] = tried.get('mir-miss', 0) + 1; print('  mirror miss dx', dx, st['scene'])
+          else:
+            for q in await pg.evaluate('() => window.__blot()'): await tap(q['x'], q['y']); await pg.wait_for_timeout(60)
+          xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
         if k.startswith('grid'):   # شبكة المئة (D275): لمسة حقيقية في مركز البلاطة الصحيحة، والعدسة تختار برفع الإصبع
           await pg.wait_for_timeout(150); tried['grid'] = tried.get('grid', 0) + 1; xy = await pg.evaluate('() => window.__grid && window.__grid()')
           if xy:
@@ -250,7 +262,7 @@ async def main():
       bad, tried, errs = await run(p, dev); allbad += bad
       print(dev, ('mouse' if MOUSE else 'touch'), 'waits tried:', tried, '| incomplete:', bad, '| errors:', errs[:3])
       allbad += [('errors', dev)] if errs else []
-      allbad += [('grid-miss', dev)] if tried.get('grid-miss') else []   # شبكة المئة: اللمسة الحقيقية في مركز البلاطة تختارها هي (D275)
+      allbad += [('grid-miss', dev)] if tried.get('grid-miss') or tried.get('mir-miss') else []   # شبكة المئة: اللمسة الحقيقية في مركز البلاطة تختارها هي (D275)
   print('FAILS:', len(allbad))
   sys.exit(1 if allbad else 0)
 asyncio.run(main())
