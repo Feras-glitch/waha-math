@@ -71,7 +71,7 @@ function wsPuzzle(U, P, ix) {
   const rotate = pc => { if (!pc || pc.placed) { if (!pc) S('gen.ws.pickFirst', { ifIdle: true, free: true }); return; } pc.p.rot = ((pc.p.rot || 0) + 90) % 360; pc.g.inner.setAttribute('transform', `rotate(${pc.p.rot})`); if (pc.x === pc.home.x && pc.y === pc.home.y) toShelf(pc); SFX.tick(); };
   let resolve; const doneP = gate(new Promise(r => resolve = r));
   const tryDrop = (pc, x, y, slot) => {
-    const near = slot || slots.filter(s => !s.filled && Math.hypot(s.x - x, s.y - y) < 50).sort((a, b) => Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];
+    const near = slot || slots.filter(s => !s.filled && Math.hypot(s.x - x, s.y - y) < 50).sort((a, b) => ((a.k === pc.p.k && a.size === pc.p.size) ? 0 : 1) - ((b.k === pc.p.k && b.size === pc.p.size) ? 0 : 1) || Math.hypot(a.x - x, a.y - y) - Math.hypot(b.x - x, b.y - y))[0];   /* ظلّ نوع القطعة أولاً، ثم الأقرب (الفحص المستقل لبوابة S1-U6 (20)) */
     if (near && !near.filled && near.k === pc.p.k && near.size === pc.p.size && planks && !rotOk(pc.p.k, pc.p.rot || 0, near.rot || 0)) { pc.p.rot = near.rot || 0; pc.g.inner.setAttribute('transform', `rotate(${pc.p.rot})`); }
     if (near && !near.filled && near.k === pc.p.k && near.size === pc.p.size && rotOk(pc.p.k, pc.p.rot || 0, near.rot || 0)) {
       near.filled = true; pc.placed = true; setPos(pc, near.x, near.y, 1); near.g.style.opacity = '0'; select(null); SFX.pop(); done++;

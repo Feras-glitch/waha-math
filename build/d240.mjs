@@ -15,7 +15,7 @@ const PROD = new Set(['reason', 'connect', 'completeRect', 'vertices', 'count', 
   'place', 'lineTap', 'lrTap', 'robot', 'mapPut', 'roadHop',   /* S1-U3: يضع الطفل الشيء، ويلمس العربة، ويلمس اليد، ويبرمج الروبوت، ويضع قطعة الخريطة، ويقفز */
   'orderBy', 'unitLay', 'barBuild', 'rodBuild', 'teenTrace', 'framePaint', 'makeTen', 'backTen',
   'patNext', 'patFix', 'patUnit', 'patPlay', 'patMake', 'skipHop', 'gridTap', 'gridNext', 'gridSeq',
-  'halfCut', 'symLine', 'mirrorSlide', 'gridMirror', 'doubleOf']);   /* S1-U6 */   /* S1-U5: يضع الطفل العناصر التالية في أماكنها، ويجد ما يكسر النمط */   /* S1-U4: يرتّب، ويضع الوحدات، ويبني اللوحة والعدد، ويكتبه، ويلوّن الصديقين، وينقل القطع ويبعدها؛ والميزان بتجربته (mode: test) */
+  'halfCut', 'symLine', 'mirrorSlide', 'gridMirror', 'doubleBuild']);   /* S1-U6 */   /* S1-U5: يضع الطفل العناصر التالية في أماكنها، ويجد ما يكسر النمط */   /* S1-U4: يرتّب، ويضع الوحدات، ويبني اللوحة والعدد، ويكتبه، ويلوّن الصديقين، وينقل القطع ويبعدها؛ والميزان بتجربته (mode: test) */
 const isProd = it => PROD.has(it.t) || (it.t === 'balance' && it.mode === 'test');
 const TASK = { sort: 'cls', pick: 'cls', pickAll: 'cls', paint: 'cls', yesno: 'cls', reason: 'cls', count: 'cnt', vertices: 'cnt', faceTap: 'face', property: 'push' };
 const FMT = new Set(['how', 'q', 'line', 'prompt', 'why', 'err', 'errs', 'names', 'tag', 'x240', 'c', 'twin']);   // مفاتيح الصياغة لا الجوهر (والتوأم بند آخر يُفحص وحده)
@@ -149,6 +149,7 @@ export const factOf = it => { const t = it.t;
   if (t === 'mirrorSlide') return `mirs|${it.sym}`;
   if (t === 'gridMirror') return `mirg|${it.cells.map(c => c.join('.')).sort().join(',')}`;
   if (t === 'doubleOf') return `dbl|${it.n}`;
+  if (t === 'doubleBuild') return `dblb|${it.n}`;
   if (t === 'frameNeed') return `friend|${it.n}`;
   if (t === 'frameGlance') return `fglance|${it.n}`;
   if (t === 'makeTen') return (it.ask || 'total') === 'moved' ? `friend|${it.a}` : `add|${s2(it.a, it.b)}`;
