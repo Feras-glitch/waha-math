@@ -111,7 +111,7 @@ ITEM.gridPoint = {
 /* ================= ③ اقرأ موقع النقطة: كم مربعاً يميناً (ask: r) أو إلى الأعلى (ask: u)؟ (C102) ================= */
 ITEM.gridRead = { ...numItem,
   make(spec) { const w = spec.ask === 'u' ? spec.u : spec.r, o = spec.ask === 'u' ? spec.r : spec.u; return { ...spec, want: w, nums: rulNear(w, o, w + 1, w - 1), tag: 'grid-read-' + (spec.ask || 'r') }; },
-  async ask(item, mode, tries) { const svg = newStage(270, { oasis: false, ground: 0 }), Gd = geoGrid(svg), [x, y] = Gd.P(item.r, item.u); ptAt(svg, x, y, item.name || 'a', { r: 7, lab: [14, -10] }); let walk = null;
+  async ask(item, mode, tries) { const svg = newStage(270, { oasis: false, ground: 0 }), Gd = geoGrid(svg), [x, y] = Gd.P(item.r, item.u); ptAt(svg, x, y, item.name || 'a', { r: 7, lab: [item.r >= Gd.cols ? -14 : 14, item.u >= Gd.rows ? 22 : -10] }); let walk = null;   /* الحرف داخل المسرح عند الحافة */
     if (tries >= 3) { await S('gen.geo.together.read'); walk = await Gd.walk(item.r, item.u, { silent: true }); } else await S(item.q);
     const np = numberPick(shuffle(item.nums), item.want, { digits: true }); return { ans: await np.p, ctx: { svg, np, Gd, walk } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: k === (item.ask === 'u' ? item.r : item.u) ? 'gridSwap' : k === item.want + 1 ? 'gridPlusOne' : 'gridOff' }; },
@@ -359,7 +359,7 @@ ITEM.rayDraw = {
     if (tries >= 3) { const m = helpG(svg), [x, y] = PT[item.want[0]]; el('circle', { cx: x, cy: y, r: 15, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5, 'stroke-dasharray': '4 3' }, m); }   /* الحلّ المشترك: نقطة البداية محاطة، واللمس للطفل */
     const askQ = async () => { await S(tries >= 3 ? 'gen.geo.together.ray' : (item.q || 'gen.geo.rayQ'), { noGap: true }); for (const [i, k] of [...item.want].entries()) await sayLtr(k, i ? {} : { noGap: true }); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
     const t = k => ({ g: G[k], k, label: labelText('geoPoint') + ' ' + LTR[k] }), p1 = await tapOne(keys.map(t), { ok: item.want[0], pad: 64 }); hush(); el('circle', { cx: PT[p1][0], cy: PT[p1][1], r: 12, fill: 'none', stroke: css('--compass'), 'stroke-width': 3, 'pointer-events': 'none' }, svg); SFX.tick();
-    const p2 = await tapOne(keys.filter(k => k !== p1).map(t), { ok: item.want[1], pad: 64 }); done = true; REPLAY_HOOK = null; rayLineAt(svg, PT[p1], PT[p2], css('--compass')); return { ans: p1 + p2, ctx: { svg, PT } }; },
+    const p2 = await tapOne(keys.filter(k => k !== p1).map(t), { ok: item.want[1], pad: 64, kind: 'rayTo' }); done = true;   /* kind آخر: مرحلتان لا محاولتان (عدّاد الفحص) */ REPLAY_HOOK = null; rayLineAt(svg, PT[p1], PT[p2], css('--compass')); return { ans: p1 + p2, ctx: { svg, PT } }; },
   judge(item, a) { return a === item.want ? { ok: true } : { ok: false, err: a === item.want[1] + item.want[0] ? 'rayReversed' : 'rayWrong' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { const m = helpG(r.ctx.svg), [x, y] = r.ctx.PT[item.want[0]]; el('circle', { cx: x, cy: y, r: 15, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, m); await sleep(1400); m.remove(); }, async together() {},
