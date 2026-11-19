@@ -25,6 +25,7 @@ async def main():
     b = await p.chromium.launch(); pg = await (await b.new_context(**p.devices['Pixel 5'])).new_page(); errs = []
     pg.on('pageerror', lambda e: errs.append(str(e)))
     await fresh(pg, SEEDS[0]); lessons = await pg.evaluate("() => UNITS.flatMap(u => u.lessons)")
+    if os.environ.get('STUDIO_ONLY'): lessons = [l for l in lessons if any(l.startswith(x) for x in os.environ['STUDIO_ONLY'].split(','))]   # خريطة جزئية لحزمة وحدة (لا تصلح للفحص الكامل)
     first, where, bad = {}, {}, []
     for pol, seed in ROUNDS:
       await fresh(pg, seed)

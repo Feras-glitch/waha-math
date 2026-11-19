@@ -305,12 +305,16 @@ async def rev_cases(b):
   r = await drive(pg, 'm1.u2.d6', test_ok=8); tones = await pg.evaluate("() => window.__tones")
   check('REV', r == 'done' and 'good' not in tones and 'soft' not in tones, 'الاختبار بلا نغمة صواب ولا نغمة خطأ (8 صحيحة و4 خاطئة)', [r, tones[:6]]); await ctx.close()
   # (4) الحيّ الأخير: لا جملة عن حيٍّ تالٍ؛ و«يحتاج دعماً» بعد «متقدّم مع دعم» سابق: اللوحة كالخريطة
-  P4 = {'badge:m1.u3': True, 'ws': {'m1.u4': 1}}
-  for u in ['m1.u1.d%d' % i for i in range(1, 7)] + ['m1.u2.d%d' % i for i in range(1, 7)] + ['m1.u3.d%d' % i for i in range(1, 8)] + ['m1.u4.d%d' % i for i in range(1, 8)]: P4[u] = {'done': True, 'at': 1, 'mastered': True}
-  for k in ('badge:m1.u1', 'badge:m1.u2'): P4[k] = True
-  ctx, pg, errs = await fresh(b, P4); r = await drive(pg, 'm1.u4.d8', test_ok=7)
+  # الحيّ الأخير يُؤخذ من عدد دروس كل حيّ (كان مثبّتاً على الحيّ 4، فلمّا أُضيف الحيّان 5 و6 صارت جملة «الحيّ التالي مفتوح» بعده صحيحةً والفحص يرفضها: بوابة Gate، 18 نوفمبر 2026)
+  NL = [6, 6, 7, 8, 6, 5]; LASTU = len(NL); P4 = {'ws': {'m1.u%d' % LASTU: 1}}
+  for ui, n in enumerate(NL, 1):
+    for i in range(1, n + (0 if ui == LASTU else 1)): P4['m1.u%d.d%d' % (ui, i)] = {'done': True, 'at': 1, 'mastered': True}
+    if ui < LASTU: P4['badge:m1.u%d' % ui] = True
+  ctx, pg, errs = await fresh(b, P4)
+  nl = await pg.evaluate("() => UNITS.map(u => u.lessons.length)"); check('REV', nl == NL, 'عدد دروس كل حيّ كما يفترضه فحص الحيّ الأخير', [nl])
+  r = await drive(pg, 'm1.u%d.d%d' % (LASTU, NL[-1]), test_ok=7)
   await gate_pass(pg); t = await pg.evaluate("() => document.querySelector('#panel').textContent")
-  check('REV', r == 'done' and 'متقدّم مع دعم' in t and 'الحيّ التالي' not in t, 'آخر حيّ بـ7 من 12: «متقدّم مع دعم» بلا جملةٍ عن حيٍّ تالٍ', [r, t[t.find('متقدّم'):][:80] if 'متقدّم' in t else '']); await ctx.close()
+  check('REV', r == 'done' and 'متقدّم مع دعم' in t and 'الحيّ التالي' not in t, 'آخر حيّ بـ7 صحيحة: «متقدّم مع دعم» بلا جملةٍ عن حيٍّ تالٍ', [r, t[t.find('متقدّم'):][:80] if 'متقدّم' in t else '']); await ctx.close()
   ctx, pg, errs = await fresh(b, prog_u2())
   await pg.evaluate("() => { const P = PROG['m1.u2.d6'] = PROG['m1.u2.d6'] || {}; Object.assign(P, { done: true, at: Date.now() - 2 * 864e5, score: 3, of: 12, band: 'low', failAt: Date.now() - 2 * 864e5, weak: 'm1.u2.d1' }); PROG['support:m1.u2'] = true; saveProg(); }")
   await reopen(pg); open3 = await pg.evaluate("() => unitOpen(2)"); await gate_pass(pg); t = await pg.evaluate("() => document.querySelector('#panel').textContent")
