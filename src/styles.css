@@ -161,6 +161,7 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .choices.icons .pick span { color: var(--ink); }
 .choices.icons.big .pick { min-height: 96px; font-size: 21px; }
 .choices.cards { grid-template-columns: 1fr; }
+.choices.cards.pair { grid-template-columns: 1fr 1fr; }   /* بطاقتان مسموعتان بلا نصّ */
 .choices.cards .card { text-align: center; font-size: 20px; min-height: 64px; }
 .choices.cards .card .cn { display: inline-grid; place-items: center; min-width: 26px; height: 26px; border-radius: 50%; background: var(--sky-bot); color: var(--ink); font-size: 16px; margin-inline-end: 8px; flex: none; }   /* رقم البطاقة (D271) */
 .choices.cards .card.chaos { color: var(--chaos); }

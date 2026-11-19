@@ -109,10 +109,12 @@ function cardPick(cards, opt = {}) {   // cards: [{id(line), k, ok, icon, hide, 
   const btns = list.map(c => { const b = document.createElement('button'); b.className = 'pick card' + (c.hide ? ' hidden-text' : ''); b.dataset.k = c.k;
     b.innerHTML = (c.hide && list.length > 1 ? `<b class="cn">${DG(list.indexOf(c) + 1)}</b>` : '') + (c.icon || '') + (c.hide ? `<span class="q">${EAR}</span>` : `<span>${esc(T(c.id))}</span>`);   /* رقم البطاقة المخفية: الأولى تُقرأ أولاً (D271) */ b.setAttribute('aria-label', c.hide ? plain(labelText('listenCard')) : plain(T(c.id)));
     /*T*/if (TESTHOOK) b.dataset.ok = !!c.ok;/*/T*/ box.appendChild(b); return b; });
+  /* بطاقتان مسموعتان بلا نصّ: جنباً إلى جنب، فلا تأخذان من المسرح ارتفاع بطاقتين (Gate، 18 نوفمبر 2026: في S1-U3 د6 صغر الطريق إلى 71٪ وسهماه إلى 45 بكسل على Pixel 5)؛ وحين يُكتب نصّ أيٍّ منهما تعودان عموداً */
+  if (list.length === 2 && list.every(c => c.hide)) box.classList.add('pair');
   let answered = false, run = 0, shown = false;
   /* بطاقةٌ مخفيّة لم تُسمع (كتمٌ، أو «بلا صوت»، أو «تخطَّ»، أو جهازٌ بلا صوت عربي): تُكتب البطاقتان، وبطاقة فوضى بنغمتها المكتوبة «فوضى تظنّ:»
      بلونها، كما تُسمع (D271)؛ فلا يبقى سؤالٌ بلا نصّ ولا صوت */
-  const showAll = () => { if (shown) return; shown = true; btns.forEach((b, i) => { const c = list[i]; if (!c.hide || answered) return; b.classList.remove('hidden-text'); b.classList.toggle('chaos', !!c.chaos);
+  const showAll = () => { if (shown) return; shown = true; if (!answered) box.classList.remove('pair'); btns.forEach((b, i) => { const c = list[i]; if (!c.hide || answered) return; b.classList.remove('hidden-text'); b.classList.toggle('chaos', !!c.chaos);
     b.innerHTML = `<b class="cn">${DG(i + 1)}</b>${c.icon || ''}<span>${c.chaos ? esc(T('gen.chaos.thinks')) + ' ' : ''}${esc(T(c.id))}</span>`; b.setAttribute('aria-label', plain(T(c.id))); }); };
   AUTO({ kind: 'card', ok: () => btns.find(b => list[btns.indexOf(b)].ok).click(), wrong: () => (btns.find(b => !list[btns.indexOf(b)].ok) || btns[0]).click() });
   const p = gate(new Promise(res => btns.forEach((b, i) => b.onclick = () => { if (box.dataset.done) return; answered = true; REPLAY_HOOK = null; AUTO_CLEAR(); hush(); btns.forEach(x => x.classList.remove('reading')); res(list[i]); })));
@@ -126,7 +128,7 @@ function cardPick(cards, opt = {}) {   // cards: [{id(line), k, ok, icon, hide, 
   REPLAY_HOOK = () => readAll(true); REPLAY_HOOK.live = () => !answered && !box.dataset.done && flow === FLOW && box.isConnected;
   readAll(false);
   return { box, btns, p, list, done: () => { box.dataset.done = 1; REPLAY_HOOK = null; },
-    reveal: k => { const i = list.findIndex(c => c.k === k); if (i >= 0) { btns[i].innerHTML = `<span>${esc(T(list[i].id))}</span>`; btns[i].classList.remove('hidden-text'); btns[i].setAttribute('aria-label', plain(T(list[i].id))); } } };
+    reveal: k => { const i = list.findIndex(c => c.k === k); if (i >= 0) { box.classList.remove('pair'); btns[i].innerHTML = `<span>${esc(T(list[i].id))}</span>`; btns[i].classList.remove('hidden-text'); btns[i].setAttribute('aria-label', plain(T(list[i].id))); } } };
 }
 /* الخيارات المقروءة بعد السؤال (D254 (3)): يضيء كل خيار حين يُقرأ، ولا يصير «آخر جملة» ولا يغيّر نصّ الفقاعة، فيبقى السؤال ظاهراً؛
    و«أعد الجملة» ما دامت الخيارات على الشاشة يعيد السؤال ثم الخيارات (D254 (5))، لا اسم آخر خيار وحده (فهو أحياناً الجواب وأحياناً الخطأ).

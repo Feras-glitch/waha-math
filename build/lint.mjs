@@ -362,7 +362,10 @@ export function lint(content, js) {
   const NUMK = ['n', 'a', 'b', 'k', 'target', 'start', 'ref', 'took', 'left', 'goal', 'from', 'to'];
   const ORDER = content.units.flatMap(u => u.lessons.map(l => l.id)), BIG_FROM = ORDER.indexOf('m1.u3.d5');
   const ORD_MAX = Math.max(0, ...[...LINES.keys()].filter(k => /^gen\.ord\.f\.\d+$/.test(k)).map(k => +k.slice(10)));
-  const maxN = id => (BIG_FROM >= 0 && ORDER.indexOf(id) >= BIG_FROM) ? Math.max(...[...LINES.keys()].filter(k => /^gen\.numw\.\d+$/.test(k)).map(k => +k.slice(9))) : 10;
+  /* ثلاثة حدود: 10 قبل طريق الأعداد، ثم 20 حتى أول درسٍ يعدّ فوق العشرين (العدّ القفزي في S1-U5)، ثم أكبر عددٍ له كلمة. كان الحدّ الثاني يُؤخذ من أكبر كلمة عدد،
+     فلمّا أُضيفت كلمات 21–100 للوحدة 5 صار 100 لدروس الوحدتين 3 و4 أيضاً ونجت طفرة «مجموع تكوين العشرة فوق العشرين» (بوابة Gate، 18 نوفمبر 2026) */
+  const HUGE_FROM = ORDER.indexOf('m1.u5.d3'), NUMW_MAX = Math.max(...[...LINES.keys()].filter(k => /^gen\.numw\.\d+$/.test(k)).map(k => +k.slice(9)));
+  const maxN = id => { const i = ORDER.indexOf(id); return (HUGE_FROM >= 0 && i >= HUGE_FROM) ? NUMW_MAX : (BIG_FROM >= 0 && i >= BIG_FROM) ? Math.min(20, NUMW_MAX) : 10; };
   const derived = v => { const o = [];
     if (['join', 'story', 'fact', 'sentence'].includes(v.t) && v.a != null && v.b != null) o.push(['المجموع', v.a + v.b]);
     if (['remove', 'fact', 'sentence', 'story'].includes(v.t) && v.op !== '+' && v.a != null && v.b != null) o.push(['الفرق', v.a - v.b]);

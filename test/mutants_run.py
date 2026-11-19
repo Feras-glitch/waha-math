@@ -605,7 +605,7 @@ finally:
 
 # ---------- 2) المتصفح ----------   (CONTENT_ONLY=1: فحص المحتوى وطفراته، ونصوص طفرات المتصفح في نسخة الفحص، وحدها، للتكرار السريع)
 RUNTIME = [
-  ('حزمة الصوت لا تُحمَّل عند الفتح', 'VPACK.load().catch(() => {});', '', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL voice: pack survives reopening'),
+  ('حزمة الصوت لا تُحمَّل عند الفتح', 'VBUNDLE.load().then(() => VPACK.load()).catch(() => {});', 'VBUNDLE.load().catch(() => {});', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL voice: pack survives reopening'),
   ('zip المضغوط لا يُفكّ', 'else if (method === 8)', 'else if (method === 88)', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL voice: four recordings imported'),
   ('النسخة تُقبل بلا فحص نوع القيمة', "if (r === NO || bad.length) return { ok: false, why: 'badValue', at: bad[0] || k };", '', ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: rejected badval.json'),
   ('اسم الطفل المستورد بعلامات الصفحة', ".replace(/[<>\"'&`]/g, '').replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ".replace(/\\s+/g, ' ').trim().slice(0, 24) : '';", ['test/backup_voice_run.py', '{F}'], {}, 'FAIL backup: a name with markup'),
@@ -697,7 +697,7 @@ RUNTIME = [
   ('R1-03 قاعدةٌ لا تُفتح تُعدّ بلا صور', "if (!db) return this.none ? done() : 'fail';", "if (!db) return done();", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-03'}, 'FAIL R1-03 قاعدة الصور لا تُفتح'),
   ('R1-01 اختيار الطفل المعلّق حذفه لا يلغي الحذف', "function kidDelCheck() { const id = kidDelPending(); if (id && id === KID && store.del(KID_DEL)) KID_DEL_STATE = { id, cancelled: true }; }", 'function kidDelCheck() {}', ['test/audit_run.py', '{F}'], {'ONLY': 'R1-01P'}, 'FAIL R1-01 واختيار الطفل المعلّق'),
   ('R1-03 صور الذاكرة تُمحى قبل اكتمال الحذف', "const done = () => { this.mem = this.mem.filter(x => x.kid !== id); return 'ok'; };", "this.mem = this.mem.filter(x => x.kid !== id); const done = () => 'ok';", ['test/audit_run.py', '{F}'], {'ONLY': 'R1-03'}, 'FAIL R1-03 قاعدة الصور لا تُفتح'),
-  ('زرّا تحريك القطار لا يعملان', 'b.onclick = go;', 'b.onclick = null;', ['test/realtap_run.py', 'Pixel 5'], {'ONLY': 'm1.u3.d2'}, "('Pixel 5', 'm1.u3.d2:"),
+  ('زرّا تحريك القطار لا يعملان', 'b.onclick = go; b.onkeydown = e => { if (actKey(e)) go(); }; S.btn[k] = b;', 'b.onclick = null; b.onkeydown = e => { if (actKey(e)) go(); }; S.btn[k] = b;', ['test/realtap_run.py', 'Pixel 5'], {'ONLY': 'm1.u3.d2'}, "('Pixel 5', 'm1.u3.d2:"),
   # الفحص المستقل B: اللمسة السريعة أثناء القفزة تُسقط، والطريق لا يكشف البلاطة التالية، و«أعد الجملة» يعيد العدد أو عرض المساعدة أو سؤال الخروج
   ('اللمسة أثناء القفزة تُسقط', 'if (busy) { if (pend.length < 6) pend.push(t.n); return; }', 'if (busy) return;', ['test/quicktap_run.py'], {}, 'FAIL Pixel 5: pr.1'),
   ('الطريق لا يكشف البلاطة التالية', 'nx = Math.max(0, Math.min(R.S.tiles.length - 1, to + dir));', 'nx = to;', ['test/quicktap_run.py'], {}, 'FAIL Pixel 5: البلاطة'),
@@ -888,8 +888,8 @@ RUNTIME = [
    ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u2.d4', 'STRICT': '1', 'SHOTS': '0', 'OUT': 'test/out/mut_auto'}, 'routed-wrong (bottom)'),
   ('تسمية الشيء تحت المسرح', "const svg = newStage(280, { oasis: false, ground: 0 }); floorLine(svg);", "const svg = newStage(260, { oasis: false, ground: 0 }); floorLine(svg);",
    ['test/auto_run.py', 'ok', 'screen', 'f'], {'ONLY': 'm1.u2.d1', 'STRICT': '1', 'SHOTS': '0', 'OUT': 'test/out/mut_auto'}, 'mastery pick'),
-  ('قطع الرفّ تتنازع اللمس', "pc.g.__down = down; pc.g.__route = (x, y) => tapRoute(liveP(), x, y, me).g;\n    pc.g.addEventListener('pointerdown', e => { if (!e.__routed && e.clientX != null) { const r = tapRoute(liveP(), e.clientX, e.clientY, me).pc; if (r !== pc && !r.placed) { e.__routed = true; return r.g.__down(e); } } down(e); });",
-   "pc.g.addEventListener('pointerdown', down);", ['test/ws_tap_run.py', 'Pixel 5', 'iPhone SE'], {}, 'FAIL Pixel 5 m1.u1 train: لمسة قرب حافة'),
+  ('قطع الرفّ تتنازع اللمس', "if (!e.__routed && e.clientX != null) { const r = tapRoute(liveP(), e.clientX, e.clientY, me).pc; if (r !== pc && !r.placed) { e.__routed = true; r.g.__down(e); return false; } }",
+   "", ['test/ws_tap_run.py', 'Pixel 5', 'iPhone SE'], {}, 'FAIL Pixel 5 m1.u1 train: لمسة قرب حافة'),
   ('سحب الشبر بلا بديل لمس', "else if (opt.tap) { t.align(); SFX.tick();", "else if (false) { t.align(); SFX.tick();", ['test/realtap_run.py', 'Pixel 5'], {'ONLY': 'm1.u4.d4'}, 'D246'),
   # والتوقّع الصحيح من الصورة بلا ميزان بعده (H11)، وبرج العدّ بلا عدد لمساته فلا يلمسه الفحص بالإصبع (كان يفترض صفّ الوحدات فتوقّف عند برج S1-U2)
   # (والميزان بعد التوقّع في ask نفسها: كانت الطفرة على رسمه في onOk بعد التوقّع الصحيح، فنجت حين صار ذلك الرسم ميتاً، فحُذف وصارت على الرسم الحيّ)
