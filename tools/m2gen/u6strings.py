@@ -74,7 +74,7 @@ def walk(x):
         for v in x.values(): walk(v)
     elif isinstance(x,list):
         for v in x: walk(v)
-for f in glob.glob(ROOT+'/content/m2/u6/d*.json'): walk(json.load(open(f,encoding='utf8')))
+for f in glob.glob(ROOT+'/content/m2/u6/d*.json')+glob.glob(ROOT+'/content/m2/u7/d*.json'): walk(json.load(open(f,encoding='utf8')))   # والبنود المشتبكة من S2-U6 في S2-U7
 G={}
 for u,n in simple: G['gen.len.%s.%d'%(u,n)]=phrase(n,u)
 for m,c in pairs: G['gen.len.mc.%d.%d'%(m,c)]=mcphrase(m,c)

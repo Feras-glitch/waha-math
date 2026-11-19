@@ -37,6 +37,14 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     plyfam: () => { polyAt(s, 'qKite', [24, 32], { s: .3, dots: false, fill: '#cfe6f5' }); polyAt(s, 'qTrap', [50, 34], { s: .2, dots: false, fill: '#f2d38a' }); },
     plyhex: () => { polyAt(s, 'r6', [36, 32], { s: .32, dots: false, fill: '#f2b84b' }); },
     plycut: () => { polyAt(s, 'cRect', [36, 32], { s: .36, dots: false, fill: '#f2d38a' }); geoLine(s, 18, 43, 54, 21, { color: PLY.cut, w: 2, dash: '4 3' }); },
+    /* S2-U7 */
+    arperim: () => { el('rect', { x: 14, y: 14, width: 44, height: 34, fill: '#cfe6f5', stroke: '#c8392d', 'stroke-width': 3.5 }, s); },
+    arrectp: () => { el('rect', { x: 10, y: 18, width: 52, height: 28, fill: '#cfe6f5', stroke: '#24323a', 'stroke-width': 2 }, s); const t = el('text', { x: 36, y: 38, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 800, fill: '#c8392d', direction: 'ltr' }, s); t.textContent = '2×(a+b)'; },
+    artile: () => { for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) el('rect', { x: 14 + i * 15, y: 10 + j * 15, width: 14, height: 14, fill: '#f2d38a', stroke: '#b9862a', 'stroke-width': 1.2 }, s); },
+    arrows: () => { for (let i = 0; i < 4; i++) for (let j = 0; j < 3; j++) el('rect', { x: 8 + i * 13, y: 14 + j * 13, width: 13, height: 13, fill: j ? '#cfe6f5' : '#bfe0b5', stroke: '#9fc3dc', 'stroke-width': 1 }, s); const t = el('text', { x: 66, y: 40, 'text-anchor': 'end', 'font-size': 11, 'font-weight': 800, fill: '#2f9d6b', direction: 'ltr' }, s); t.textContent = '×'; },
+    arcomp: () => { el('path', { d: 'M12 12 H60 V32 H36 V54 H12 Z', fill: '#cfe6f5', stroke: '#24323a', 'stroke-width': 2.5 }, s); geoLine(s, 12, 32, 36, 32, { color: '#c8392d', w: 1.6, dash: '3 3' }); },
+    arboth: () => { el('rect', { x: 10, y: 18, width: 24, height: 24, fill: '#8fca7a', stroke: '#b9794e', 'stroke-width': 2.5 }, s); el('rect', { x: 40, y: 24, width: 24, height: 12, fill: '#8fca7a', stroke: '#b9794e', 'stroke-width': 2.5 }, s); },
+    argarden: () => { el('rect', { x: 10, y: 12, width: 52, height: 38, fill: '#8fca7a', stroke: '#b9794e', 'stroke-width': 4 }, s); palmAt(s, 36, 46, .22); },
     /* S2-U6 */
     lentape: () => { tapeAt(s, { x: 14, y: 22, to: 20, pxcm: 2.4, label: 10 }); },
     lenconv: () => { const t = el('text', { x: 36, y: 38, 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 800, fill: '#33454c', direction: 'ltr' }, s); t.textContent = '1m=100'; },

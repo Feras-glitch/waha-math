@@ -44,7 +44,7 @@ LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6
            'm2.u3.d1', 'm2.u3.d2', 'm2.u3.d3', 'm2.u3.d4', 'm2.u3.d5', 'm2.u3.d6', 'm2.u3.d7', 'm2.u3.d8',
            'm2.u4.d1', 'm2.u4.d2', 'm2.u4.d3', 'm2.u4.d4', 'm2.u4.d5', 'm2.u4.d6', 'm2.u4.d7', 'm2.u4.d8',
            'm2.u5.d1', 'm2.u5.d2', 'm2.u5.d3', 'm2.u5.d4', 'm2.u5.d5',
-           'm2.u6.d1', 'm2.u6.d2', 'm2.u6.d3', 'm2.u6.d4', 'm2.u6.d5']
+           'm2.u6.d1', 'm2.u6.d2', 'm2.u6.d3', 'm2.u6.d4', 'm2.u6.d5', 'm2.u7.d1', 'm2.u7.d2', 'm2.u7.d3', 'm2.u7.d4', 'm2.u7.d5', 'm2.u7.d6', 'm2.u7.d7', 'm2.u7.d8']
 if os.environ.get('ONLY'): LESSONS = [l for l in LESSONS if l in os.environ['ONLY'].split(',')]   # تشغيل جزئي أثناء التطوير
 # ما خرج من نافذة الشريط (القطار، الطريق) مخفيّ لا يُلمس: يُلمس زرّ التحريك نحوه حتى يظهر
 REVEAL = """(sel) => { const g = document.querySelector(sel); if (!g || getComputedStyle(g).visibility !== 'hidden') return null;
@@ -200,12 +200,24 @@ async def run(p, dev):
                 q = await pg.evaluate("(s) => { const e = document.querySelector('#stage svg [data-step=\"' + s + '\"] circle'); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }", '%d:%d' % (i, d)); await tap(q['x'], q['y']); await pg.wait_for_timeout(70)
             if await pg.evaluate('() => window.__track') != goal: tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  track miss', st['scene'])
           xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
+        if k in ('rectDraw', 'maxArea'):   # S2-U7: لمسة حقيقية على ركن المستطيل في الشبكة، ولمسات على زرّي عرض المزرعة
+          await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1; DONE = "() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
+          if k == 'rectDraw':
+            w, h = await pg.evaluate('() => window.__rdWant'); q = await pg.evaluate('([w, h]) => window.__rdAt(w, h)', [w, h]); await tap(q['x'], q['y']); await pg.wait_for_timeout(90)
+            if await pg.evaluate('() => window.__rdCur') != [w, h]: tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  rect corner miss', st['scene'])
+          else:
+            for _ in range(30):
+              cw, tw = await pg.evaluate('() => [window.__maxW, window.__maxWant]')
+              if cw == tw: break
+              q = await pg.evaluate("(s) => { const e = document.querySelector('#stage svg [data-step=\"' + s + '\"] circle'); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }", '1' if cw < tw else '-1'); await tap(q['x'], q['y']); await pg.wait_for_timeout(70)
+            if await pg.evaluate('() => window.__maxW !== window.__maxWant'): tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  farm width miss', st['scene'])
+          xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
         if k in ('axPts', 'axHunt', 'dsg'):   # S2-U5: لمسات حقيقية على تقاطعات الشبكة (الصورة)، وعلى طرفي كل محور (عدّاد المحاور)، وعلى خانات التصميم
           await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1; DONE = "() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
           if k == 'axPts':
             want = await pg.evaluate('() => window.__axWant')
             for r, u in want: q = await pg.evaluate('([r, u]) => window.__axAt(r, u)', [r, u]); await tap(q['x'], q['y']); await pg.wait_for_timeout(120)
-            if await pg.evaluate('() => window.__axPlaced') != len(want): tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  image points miss', st['scene'])
+            if await pg.evaluate('() => window.__axPlaced') != len(want): tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  image points miss', st['scene'], want, await pg.evaluate('() => [window.__axPlaced, window.__item && window.__item.id, window.__item && JSON.stringify(window.__item.pts)]'))
             await pg.wait_for_timeout(60); continue
           if k == 'axHunt':
             want = await pg.evaluate('() => window.__axHuntWant')

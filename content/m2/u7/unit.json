@@ -1,0 +1,139 @@
+{
+ "id": "m2.u7",
+ "title": "سُورُ المَدِينَةِ وَأَرْضُهَا",
+ "sub": "المَرْحَلَةُ الثَّانِيَةُ: البَنَّاؤُونَ",
+ "district": "حَيُّ الأَسْوَارِ",
+ "hosts": [
+  "square",
+  "rect",
+  "circle"
+ ],
+ "hunt": [],
+ "workshop": {
+  "pieces": [
+   {
+    "k": "square",
+    "size": 40
+   },
+   {
+    "k": "rect",
+    "size": 80,
+    "w": 80,
+    "h": 40
+   },
+   {
+    "k": "rtri",
+    "size": 40
+   }
+  ],
+  "puzzles": [
+   {
+    "id": "yard",
+    "name": "gen.ws.p.yard",
+    "slots": [
+     {
+      "k": "rect",
+      "x": 130,
+      "y": 150,
+      "size": 80,
+      "w": 80,
+      "h": 40
+     },
+     {
+      "k": "rect",
+      "x": 170,
+      "y": 190,
+      "size": 80,
+      "w": 80,
+      "h": 40
+     },
+     {
+      "k": "square",
+      "x": 190,
+      "y": 150,
+      "size": 40
+     }
+    ],
+    "extra": {
+     "k": "rtri",
+     "size": 40
+    }
+   },
+   {
+    "id": "field",
+    "name": "gen.ws.p.field",
+    "slots": [
+     {
+      "k": "square",
+      "x": 110,
+      "y": 150,
+      "size": 40
+     },
+     {
+      "k": "square",
+      "x": 150,
+      "y": 150,
+      "size": 40
+     },
+     {
+      "k": "square",
+      "x": 190,
+      "y": 150,
+      "size": 40
+     },
+     {
+      "k": "rect",
+      "x": 150,
+      "y": 190,
+      "size": 120,
+      "w": 120,
+      "h": 40
+     }
+    ],
+    "extra": {
+     "k": "rect",
+     "size": 80,
+     "w": 80,
+     "h": 40
+    }
+   },
+   {
+    "id": "farm",
+    "name": "gen.ws.p.farm",
+    "slots": [
+     {
+      "k": "rect",
+      "x": 150,
+      "y": 110,
+      "size": 120,
+      "w": 120,
+      "h": 40
+     },
+     {
+      "k": "square",
+      "x": 110,
+      "y": 150,
+      "size": 40
+     },
+     {
+      "k": "square",
+      "x": 190,
+      "y": 150,
+      "size": 40
+     },
+     {
+      "k": "rtri",
+      "x": 150,
+      "y": 150,
+      "size": 40,
+      "rot": 180
+     }
+    ],
+    "extra": {
+     "k": "square",
+     "size": 40
+    }
+   }
+  ]
+ }
+}

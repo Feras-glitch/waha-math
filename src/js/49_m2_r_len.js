@@ -155,10 +155,10 @@ ITEM.lenCompare = {
 };
 
 /* ================= ⑦ رتّب من الأقصر إلى الأطول (C189، إنتاج): vals أربعة. يلمس الطفل البطاقات بالترتيب فتُرقَّم ================= */
-const ORD_XY = [[262, 66], [98, 66], [262, 146], [98, 146]];
+const ORD_XY = [[262, 62], [98, 62], [262, 150], [98, 150]];   /* بطاقات 70 وحدة: 56 بكسلاً على أضيق شاشة (0.8 بكسل للوحدة؛ الفحص على iPhone SE) */
 ITEM.lenOrder = {
   make(spec) { const order = spec.vals.map((v, i) => i).sort((i, j) => lenMM(spec.vals[i]) - lenMM(spec.vals[j])); return { ...spec, want: order.join(','), tag: 'len-order' }; },
-  async ask(item, mode, tries) { const svg = lenStage(222), cards = item.vals.map((v, i) => { const g = lenCard(svg, ORD_XY[i][0], ORD_XY[i][1], v, { w: 146 }); g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.setAttribute('aria-label', plain(lenTxt(v))); g.style.cursor = 'pointer'; return g; }), picked = [], badges = el('g', { 'pointer-events': 'none' }, svg);
+  async ask(item, mode, tries) { const svg = lenStage(222), cards = item.vals.map((v, i) => { const g = lenCard(svg, ORD_XY[i][0], ORD_XY[i][1], v, { w: 146, h: 70 }); g.setAttribute('role', 'button'); g.setAttribute('tabindex', 0); g.setAttribute('aria-label', plain(lenTxt(v))); g.style.cursor = 'pointer'; return g; }), picked = [], badges = el('g', { 'pointer-events': 'none' }, svg);
     if (tries >= 3) { const m = helpG(svg), u = item.vals.some(v => v[1] === 'mm') ? 'mm' : 'cm'; item.vals.forEach((v, i) => { const t = el('text', { x: ORD_XY[i][0], y: ORD_XY[i][1] + 44, 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700, fill: css('--think'), direction: 'rtl' }, m); t.textContent = '= ' + (lenMM(v) / LEN_MM[u]) + ' ' + labelText(LEN_LB[u]); }); await S('gen.len.together.order'); }
     else await S(item.q);
     /*T*/window.__ordWant = item.want.split(',').map(Number); window.__ordAt = i => { const r = cards[i].getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };/*/T*/
@@ -212,14 +212,14 @@ ITEM.lenRound = {
 };
 
 /* ================= ⑩ بنّاء السور (C190، إنتاج): fence طول السور بالسنتيمتر، pieces قطع بالسنتيمتر؛ يلمس الطفل القطع (لمسة ثانية تعيدها)، والمجموع مكتوب ================= */
-const FENCE_XY = i => [300 - (i % 3) * 120, 168 + Math.floor(i / 3) * 64];
+const FENCE_XY = i => [300 - (i % 3) * 120, 172 + Math.floor(i / 3) * 78];   /* بطاقات 70 وحدة بينها ثمانٍ (أضيق شاشة) */
 ITEM.fenceBuild = {
   make(spec) { const n = spec.pieces.length, goal = spec.fence; let ok = null; for (let m = 1; m < 1 << n; m++) { let s = 0; for (let i = 0; i < n; i++) if (m >> i & 1) s += spec.pieces[i]; if (s === goal) { ok = m; break; } } /*T*/if (TESTHOOK && ok == null) testBug('fenceBuild: لا قطع مجموعها الهدف');/*/T*/ return { ...spec, goal, okMask: ok, want: goal, tag: 'fence-build' }; },
-  async ask(item, mode, tries) { const svg = newStage(268, { oasis: false, ground: 0 }), on = new Set(), g = el('g', {}, svg), W = 280, x0 = 40, k = W / item.goal;
+  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }), on = new Set(), g = el('g', {}, svg), W = 280, x0 = 40, k = W / item.goal;
     el('rect', { x: x0, y: 70, width: W, height: 22, rx: 4, fill: 'none', stroke: LENC.ink, 'stroke-width': 2, 'stroke-dasharray': '6 4' }, g); const gl = el('text', { x: 180, y: 56, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: LENC.ink, direction: 'rtl' }, g); gl.textContent = labelText('lenGoal') + ' ' + lenTxt([item.goal, 'mc']);
     const built = el('g', {}, g), tot = el('text', { x: 180, y: 122, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: LENC.bar, direction: 'rtl' }, g);
     const redraw = () => { built.innerHTML = ''; let x = x0 + W, s = 0; [...on].sort((a, b) => a - b).forEach(i => { const w = item.pieces[i] * k; s += item.pieces[i]; el('rect', { x: Math.max(x - w, x0 - 40), y: 72, width: w, height: 18, fill: i % 2 ? '#b9794e' : '#d39a66', stroke: '#8a5a3a', 'stroke-width': 1.5 }, built); x -= w; }); tot.textContent = labelText('lenSum') + ' ' + lenTxt([s, 'mc']); tot.setAttribute('fill', s > item.goal ? '#c8392d' : LENC.bar); /*T*/window.__fenceSum = s;/*/T*/ return s; };
-    const P = item.pieces.map((c, i) => { const [x, y] = FENCE_XY(i), pg = lenCard(svg, x, y, [c, 'mc'], { w: 112, h: 56, fs: 16 }); pg.setAttribute('role', 'button'); pg.setAttribute('tabindex', 0); pg.setAttribute('aria-label', plain(lenTxt([c, 'mc']))); pg.style.cursor = 'pointer';
+    const P = item.pieces.map((c, i) => { const [x, y] = FENCE_XY(i), pg = lenCard(svg, x, y, [c, 'mc'], { w: 112, h: 70, fs: 16 }); pg.setAttribute('role', 'button'); pg.setAttribute('tabindex', 0); pg.setAttribute('aria-label', plain(lenTxt([c, 'mc']))); pg.style.cursor = 'pointer';
       const tog = () => { if (on.has(i)) on.delete(i); else on.add(i); pg.querySelector('rect').setAttribute('fill', on.has(i) ? '#f2d38a' : '#fffdf6'); SFX.tick(); redraw(); }; pg.onclick = tog; pg.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); tog(); } }; return { pg, tog }; });
     redraw(); if (tries >= 3) { const i0 = item.pieces.findIndex((c, i) => item.okMask >> i & 1); P[i0].tog(); await S('gen.len.together.fence'); } else await S(item.q);
     /*T*/window.__fenceAt = i => { const r = P[i].pg.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }; window.__fenceWant = item.pieces.map((c, i) => i).filter(i => item.okMask >> i & 1);/*/T*/

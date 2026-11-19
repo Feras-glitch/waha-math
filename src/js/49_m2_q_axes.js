@@ -53,7 +53,7 @@ function axLinesAt(parent, S, C, o = {}) { const g = el('g', { 'pointer-events':
   return g; }
 async function axLinesOneByOne(parent, Sh, C, o = {}) { const g = el('g', { 'pointer-events': 'none' }, parent), R0 = o.r || 104; const angs = Sh.axes === 'all' ? [0, 45, 90, 135, 22.5, 67.5, 112.5, 157.5] : Sh.axes;
   for (const [i, ang] of angs.entries()) { const a = ang * Math.PI / 180, u = [Math.cos(a), -Math.sin(a)]; const ln = el('line', { x1: C[0] - u[0] * R0, y1: C[1] - u[1] * R0, x2: C[0] + u[0] * R0, y2: C[1] + u[1] * R0, stroke: AXC.line, 'stroke-width': 3, 'stroke-dasharray': '9 6', 'stroke-linecap': 'round' }, g); SFX.tick();
-    if (o.count && Sh.axes !== 'all') { const p = [C[0] + u[0] * (R0 + 4), C[1] + u[1] * (R0 + 4)]; badge(g, Math.max(36, Math.min(324, p[0])), Math.max(30, Math.min(220, p[1])), i + 1, AXC.line); await S(numw(i + 1), { noGap: true, num: true }); } else await sleep(FAST ? 20 : 260); }
+    if (o.count && Sh.axes !== 'all') { const p = [C[0] + u[0] * (R0 + 4), C[1] + u[1] * (R0 + 4)]; badge(g, Math.max(36, Math.min(324, p[0])), Math.max(30, Math.min(o.maxY || 220, p[1])), i + 1, AXC.line); await S(numw(i + 1), { noGap: true, num: true }); } else await sleep(FAST ? 20 : 260); }
   return g; }
 
 /* ================= ① هل الخط محور تماثل؟ (C171): يحكم الطفل ثم يُطوى الشكل فيتحقق. k أو sym، ang أو thru، rot ================= */
@@ -89,24 +89,27 @@ ITEM.axisCount = {
 
 /* مقياس عدّاد المحاور: أقرب موضعين للمس (رأس ومنتصف ضلع) بينهما 58 على الأقل (هدف لمس كامل)، ما دام الشكل يسع الإطار */
 function axHuntScale(item) { const S0 = axShape({ ...item, s: 1 }), P = S0.P, n = P.length, Q = [...P, ...P.map((p, i) => axMid(p, P[(i + 1) % n]))]; let md = 1e9; for (let i = 0; i < Q.length; i++) for (let j = i + 1; j < Q.length; j++) md = Math.min(md, Math.hypot(Q[i][0] - Q[j][0], Q[i][1] - Q[j][1]));
-  const mx = Math.max(...P.map(p => Math.abs(p[0]))), my = Math.max(...P.map(p => Math.abs(p[1]))); return Math.max(1, Math.min(58 / md, 146 / mx, 100 / my)); }
+  const mx = Math.max(...P.map(p => Math.abs(p[0]))), my = Math.max(...P.map(p => Math.abs(p[1]))); return Math.max(1, Math.min(72 / md, 146 / mx, 124 / my)); }
+/* مسرح عدّاد المحاور أطول: المواضع متباعدة 72 وحدة حيث يتّسع الإطار، فكل موضع 56 بكسلاً على أضيق شاشة (المسرح فيها 0.8 بكسل للوحدة) */
+const AXH_C = [180, 150], AXH_H = 320;
 /* ================= ③ عدّاد المحاور (C173، إنتاج): يلمس الطفل موضعين على حافة الشكل (رأسين أو منتصفي ضلعين) فيُطوى عليهما؛
    المحور يبقى بنجمة، وغيره يُمحى. «تمّ» حين يظنّ أنه وجدها كلها، ثم يُعدّ ما وُجد ================= */
 ITEM.axisHunt = {
   make(spec) { const Sh = axShape(spec); /*T*/if (TESTHOOK && (!Sh.P || !Sh.axes.length)) testBug('axisHunt: شكل بلا محاور أو بلا رؤوس');/*/T*/ return { ...spec, want: Sh.axes.length, tag: 'axis-hunt' }; },
-  async ask(item, mode, tries) { const svg = axStage(262), C = AX_C, sc = axHuntScale(item), Sh = axShape({ ...item, s: sc }), n = Sh.P.length, spots = [...Sh.P.map((p, i) => ({ id: i, p })), ...Sh.P.map((p, i) => ({ id: 'm' + i, p: axMid(p, Sh.P[(i + 1) % n]) }))];
+  async ask(item, mode, tries) { const svg = axStage(AXH_H), C = AXH_C, sc = axHuntScale(item), Sh = axShape({ ...item, s: sc }), n = Sh.P.length, spots = [...Sh.P.map((p, i) => ({ id: i, p })), ...Sh.P.map((p, i) => ({ id: 'm' + i, p: axMid(p, Sh.P[(i + 1) % n]) }))];
     const base = el('polygon', { points: polyStr(Sh.P.map(p => [p[0] + C[0], p[1] + C[1]])), fill: PLY.fill, stroke: PLY.edge, 'stroke-width': 4, 'stroke-linejoin': 'round' }, svg);
     const found = [], kept = el('g', { 'pointer-events': 'none' }, svg), stars = el('g', { 'pointer-events': 'none' }, svg); let first = null, busy = false, done = false;
-    if (tries >= 3) axLinesAt(svg, Sh, C, { dim: true, color: AXC.guide });   /* الحلّ المشترك: المحاور كلها باهتة، وعلى الطفل أن يطويها */
+    const ext = Sh.P ? Math.max(...Sh.P.map(p => Math.hypot(p[0], p[1]))) + 14 : 120, spc = (() => { const Q = spots.map(x => x.p); let md = 1e9; for (let i = 0; i < Q.length; i++) for (let j = i + 1; j < Q.length; j++) md = Math.min(md, Math.hypot(Q[i][0] - Q[j][0], Q[i][1] - Q[j][1])); return md; })(), hr = Math.max(28, Math.min(36, spc / 2 - 1));
+    if (tries >= 3) axLinesAt(svg, Sh, C, { dim: true, color: AXC.guide, r: ext });   /* الحلّ المشترك: المحاور كلها باهتة، وعلى الطفل أن يطويها */
     const dots = spots.map(s => { const g = el('g', { role: 'button', tabindex: 0, 'aria-label': plain(G(labelText(typeof s.id === 'number' ? 'plyVertex' : 'axMidSide'))), 'data-spot': s.id, style: 'cursor:pointer' }, svg), x = s.p[0] + C[0], y = s.p[1] + C[1];
-      el('circle', { cx: x, cy: y, r: 28, fill: '#fff', opacity: .01 }, g); el('circle', { cx: x, cy: y, r: typeof s.id === 'number' ? 7 : 6, fill: typeof s.id === 'number' ? PLY.edge : '#fff', stroke: PLY.edge, 'stroke-width': 2.5, class: 'dot' }, g); s.g = g; s.x = x; s.y = y; return s; });
+      el('circle', { cx: x, cy: y, r: hr, fill: '#fff', opacity: .01 }, g); el('circle', { cx: x, cy: y, r: typeof s.id === 'number' ? 7 : 6, fill: typeof s.id === 'number' ? PLY.edge : '#fff', stroke: PLY.edge, 'stroke-width': 2.5, class: 'dot' }, g); s.g = g; s.x = x; s.y = y; return s; });
     const sameAx = (a, b) => Math.abs(a - b) < .6 || Math.abs(Math.abs(a - b) - 180) < .6;
     const pickSpot = async s => { if (busy || done) return; if (!first) { first = s; s.g.querySelector('.dot').setAttribute('fill', AXC.line); SFX.tick(); return; } if (first === s) { first.g.querySelector('.dot').setAttribute('fill', typeof s.id === 'number' ? PLY.edge : '#fff'); first = null; return; }
       busy = true; const A = first, B = s; first = null; A.g.querySelector('.dot').setAttribute('fill', typeof A.id === 'number' ? PLY.edge : '#fff');
       const L = { at: A.p, ang: axNorm(Math.atan2(-(B.p[1] - A.p[1]), B.p[0] - A.p[0]) * 180 / Math.PI) }, isAx = axIsAxis(Sh, L), dup = isAx && found.some(f => sameAx(f, L.ang));
-      base.setAttribute('opacity', 0); const F = axFoldAt(svg, item, C, L, { S: Sh }); svg.insertBefore(F.g, kept); await F.fold(FAST ? 200 : 700); await sleep(isAx ? 350 : 650); await F.open(FAST ? 100 : 400); F.g.remove(); base.setAttribute('opacity', 1);
-      if (isAx && !dup) { found.push(L.ang); const a = L.ang * Math.PI / 180, u = [Math.cos(a), -Math.sin(a)], R0 = 112; el('line', { x1: C[0] - u[0] * R0, y1: C[1] - u[1] * R0, x2: C[0] + u[0] * R0, y2: C[1] + u[1] * R0, stroke: AXC.ok, 'stroke-width': 3.4, 'stroke-dasharray': '9 6', 'stroke-linecap': 'round' }, kept);
-        const st = el('path', { d: starPath(318 - (found.length - 1) * 30, 236, 12), fill: '#f2b33d', stroke: '#b07a10', 'stroke-width': 1.5 }, stars); anim(st, [{ transform: 'scale(.2)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 300 }); SFX.good(); }
+      base.setAttribute('opacity', 0); const F = axFoldAt(svg, item, C, L, { S: Sh, lineR: ext }); svg.insertBefore(F.g, kept); await F.fold(FAST ? 200 : 700); await sleep(isAx ? 350 : 650); await F.open(FAST ? 100 : 400); F.g.remove(); base.setAttribute('opacity', 1);
+      if (isAx && !dup) { found.push(L.ang); const a = L.ang * Math.PI / 180, u = [Math.cos(a), -Math.sin(a)], R0 = ext; el('line', { x1: C[0] - u[0] * R0, y1: C[1] - u[1] * R0, x2: C[0] + u[0] * R0, y2: C[1] + u[1] * R0, stroke: AXC.ok, 'stroke-width': 3.4, 'stroke-dasharray': '9 6', 'stroke-linecap': 'round' }, kept);
+        const st = el('path', { d: starPath(318 - (found.length - 1) * 30, AXH_H - 30, 12), fill: '#f2b33d', stroke: '#b07a10', 'stroke-width': 1.5 }, stars); anim(st, [{ transform: 'scale(.2)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], { duration: 300 }); SFX.good(); }
       else if (!isAx) SFX.soft();
       /*T*/window.__axFound = found.length;/*/T*/ busy = false; };
     dots.forEach(s => { s.g.onclick = () => pickSpot(s); s.g.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); pickSpot(s); } }; });
@@ -114,11 +117,11 @@ ITEM.axisHunt = {
     await S(tries >= 3 ? 'gen.ax.together.hunt' : item.q);
     AUTO({ kind: 'axHunt', ok: () => { for (const a of Sh.axes) found.push(a); rulDoneBtn().click(); }, wrong: () => rulDoneBtn().click() });
     await rulDone(() => { done = true; dots.forEach(s => { s.g.onclick = null; s.g.onkeydown = null; s.g.removeAttribute('role'); }); });
-    return { ans: found.length, ctx: { svg, Sh, kept, found } }; },
+    return { ans: found.length, ctx: { svg, Sh, kept, found, ext } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: k > item.want ? 'axCountOff' : 'axHuntMiss' }; },
   async onOk(item, r) { SFX.good(); await S('gen.ax.huntN', { noGap: true }); await S(numw(item.want), { num: true }); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { await S('gen.ax.hint.hunt'); }, async together() {},
-  async reveal(item, r) { r.ctx.kept.innerHTML = ''; await axLinesOneByOne(r.ctx.svg, r.ctx.Sh, AX_C, { count: true }); },
+  async reveal(item, r) { r.ctx.kept.innerHTML = ''; await axLinesOneByOne(r.ctx.svg, r.ctx.Sh, AXH_C, { count: true, r: r.ctx.ext, maxY: AXH_H - 30 }); },
   praise: () => 'praiseSym', twin(item) { return item.twin || null; },
 };
 
@@ -134,10 +137,10 @@ function axGrid(svg, ax, a, G0 = AXG) { const g = el('g', { 'data-grid': 1 }, sv
   el('rect', { x: x0 - 12, y: y0 - rows * c - 12, width: cols * c + 24, height: rows * c + 24, rx: 10, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, g);
   for (let i = 0; i <= cols; i++) geoLine(g, x0 + i * c, y0, x0 + i * c, y0 - rows * c, { color: '#d5e2ea', w: 1.3 }); for (let j = 0; j <= rows; j++) geoLine(g, x0, y0 - j * c, x0 + cols * c, y0 - j * c, { color: '#d5e2ea', w: 1.3 });
   /* المحور مقصوص بحدود الشبكة */
-  let A, B; if (ax === 'v') { A = axgP(G0, a, 0); B = axgP(G0, a, rows); } else if (ax === 'h') { A = axgP(G0, 0, a); B = axgP(G0, cols, a); }
+  let A, B; if (ax === 'none') { /* شبكة بلا محور: مسألة «أين المحور؟» (axisFind) */ } else if (ax === 'v') { A = axgP(G0, a, 0); B = axgP(G0, a, rows); } else if (ax === 'h') { A = axgP(G0, 0, a); B = axgP(G0, cols, a); }
   else { const sg = ax === 'd' ? 1 : -1, ts = []; for (let t = -20; t <= 20; t++) { const r = a[0] + t, u = a[1] + sg * t; if (r >= 0 && r <= cols && u >= 0 && u <= rows) ts.push(t); } const t0 = Math.min(...ts), t1 = Math.max(...ts); A = axgP(G0, a[0] + t0, a[1] + sg * t0); B = axgP(G0, a[0] + t1, a[1] + sg * t1); }
-  const axl = el('line', { x1: A[0], y1: A[1], x2: B[0], y2: B[1], stroke: AXC.line, 'stroke-width': 3.6, 'stroke-dasharray': '10 6', 'stroke-linecap': 'round', 'pointer-events': 'none' }, g);
-  const P = (r, u) => axgP(G0, r, u), at = ax === 'v' ? P(a, 0) : ax === 'h' ? P(0, a) : P(a[0], a[1]);
+  const axl = ax === 'none' ? null : el('line', { x1: A[0], y1: A[1], x2: B[0], y2: B[1], stroke: AXC.line, 'stroke-width': 3.6, 'stroke-dasharray': '10 6', 'stroke-linecap': 'round', 'pointer-events': 'none' }, g);
+  const P = (r, u) => axgP(G0, r, u), at = ax === 'none' ? null : ax === 'v' ? P(a, 0) : ax === 'h' ? P(0, a) : P(a[0], a[1]);
   return { g, P, axl, at, ang: axAngOf(ax), G0, ...G0,
     snap(q) { return [Math.max(0, Math.min(cols, Math.round((q[0] - x0) / c))), Math.max(0, Math.min(rows, Math.round((y0 - q[1]) / c)))]; } }; }
 /* الشكل على الشبكة: نقاطه (أقراص) وقطعه */
@@ -165,7 +168,7 @@ ITEM.ptImage = {
     const focus = async () => { if (guide) { guide.remove(); guide = null; } if (cur >= item.off.length) { ring.setAttribute('opacity', 0); return; } const [x, y] = Gd.P(...item.pts[item.off[cur]]); ring.setAttribute('cx', x); ring.setAttribute('cy', y); ring.setAttribute('opacity', 1);
       if (tries >= 3) guide = await axGuide(svg, Gd, item.ax, item.a, item.pts[item.off[cur]], { count: true }); };
     redraw(); await S(tries >= 3 ? 'gen.ax.together.img' : item.q); await focus();
-    const fin = new Promise(res => { const put = async q => { if (done || cur >= item.off.length) return; const i = item.off[cur]; placed[i] = q; ans.push(q); SFX.tick(); redraw(); cur++; /*T*/window.__axPlaced = ans.length;/*/T*/ if (cur >= item.off.length) { done = true; input.off(); kg.remove(); res(); } else await focus(); };
+    const fin = new Promise(res => { const put = async q => { if (done || cur >= item.off.length) return; const i = item.off[cur]; placed[i] = q; ans.push(q); SFX.tick(); redraw(); cur++; /*T*/window.__axPlaced = ans.length;/*/T*/ if (cur >= item.off.length) { done = true; AUTO_CLEAR(); input.off(); kg.remove(); res(); } else await focus(); };   /* AUTO_CLEAR: انتظار البند المنتهي لا يبقى لسائق الفحص (realtap: بقي فلمس نقاط البند السابق) */
       const input = fingerInput(svg, { map: e => { const p = svgPoint(svg, e); return [p.x, p.y]; }, down(q) { if (q[1] > Gd.y0 + 20 || q[1] < Gd.y0 - Gd.rows * Gd.c - 20) return false; put(Gd.snap(q)); return false; }, move() {}, up() {} });
       /* بلوحة المفاتيح: كل تقاطع خانة */
       var kg = el('g', { role: 'grid', 'aria-label': labelText('geoGrid') }, svg); for (let u = Gd.rows; u >= 0; u--) { const row = el('g', { role: 'row' }, kg); for (let r = 0; r <= Gd.cols; r++) { const [x, y] = Gd.P(r, u), b = el('g', { role: 'gridcell', tabindex: 0, 'aria-label': `${DG(r)}، ${DG(u)}` }, row); el('circle', { cx: x, cy: y, r: 10, fill: 'transparent', 'pointer-events': 'none' }, b); b.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); put([r, u]); } }; } }
@@ -187,10 +190,11 @@ ITEM.ptImage = {
 ITEM.axisFind = {
   make(spec) { const m = [(spec.p[0] + spec.p2[0]) / 2, (spec.p[1] + spec.p2[1]) / 2]; /*T*/if (TESTHOOK && (m[0] % 1 || m[1] % 1)) testBug('axisFind: المنتصف ليس على الشبكة');/*/T*/ return { ...spec, want: m.join(','), m, tag: 'axis-find' }; },
   async ask(item, mode, tries) { const svg = newStage(252, { oasis: false, ground: 0 }), G0 = AXG, { p, p2: q } = item, dr = q[0] - p[0], du = q[1] - p[1], g0 = Math.abs(dr) && Math.abs(du) ? Math.min(Math.abs(dr), Math.abs(du)) : Math.max(Math.abs(dr), Math.abs(du));
-    const Gd = axGrid(svg, 'v', -99, G0); Gd.axl.remove(); const A = Gd.P(...p), B = Gd.P(...q); geoLine(svg, A[0], A[1], B[0], B[1], { color: AXC.guide, w: 3, dash: '7 5' });
+    const Gd = axGrid(svg, 'none', 0, G0); const A = Gd.P(...p), B = Gd.P(...q); geoLine(svg, A[0], A[1], B[0], B[1], { color: AXC.guide, w: 3, dash: '7 5' });
     axFigAt(svg, Gd, [p], []); axFigAt(svg, Gd, [q], [], { color: AXC.img });
     const T = []; for (let i = 1; i < g0; i++) { const r = p[0] + dr / g0 * i, u = p[1] + du / g0 * i, [x, y] = Gd.P(r, u), g = el('g', { 'data-k': r + ',' + u }, svg); el('circle', { cx: x, cy: y, r: 9, fill: '#fff', stroke: AXC.guide, 'stroke-width': 2.5 }, g); T.push({ g, k: r + ',' + u, label: labelText('axSpot') }); }
-    if (tries >= 3) { const m = helpG(svg), half = g0 / 2; for (let i = 1; i <= half; i++) { const a1 = Gd.P(p[0] + dr / g0 * (i - .5), p[1] + du / g0 * (i - .5)), b1 = Gd.P(q[0] - dr / g0 * (i - .5), q[1] - du / g0 * (i - .5)); badge(m, a1[0], a1[1] - 16, i, css('--think')); badge(m, b1[0], b1[1] - 16, i, AXC.img); } }
+    if (tries >= 3) { const m = helpG(svg), half = g0 / 2, dl = Math.hypot(B[0] - A[0], B[1] - A[1]), nx = -(B[1] - A[1]) / dl, ny = (B[0] - A[0]) / dl;   /* الشارات متناوبة على جانبي الواصل، والوسطيّتان متقابلتان، فلا تتراكب حين الخطوة 28 بكسل (الفحص: ladder) */
+      for (let i = 1; i <= half; i++) { const a1 = Gd.P(p[0] + dr / g0 * (i - .5), p[1] + du / g0 * (i - .5)), b1 = Gd.P(q[0] - dr / g0 * (i - .5), q[1] - du / g0 * (i - .5)), sg = i % 2 ? 1 : -1; badge(m, a1[0] + nx * 18 * sg, a1[1] + ny * 18 * sg, i, css('--think')); badge(m, b1[0] - nx * 18 * sg, b1[1] - ny * 18 * sg, i, AXC.img); } }
     await S(tries >= 3 ? 'gen.ax.together.find' : item.q);
     const k = await tapOne(T, { ok: item.want, pad: 40 }); return { ans: k, ctx: { svg, Gd, A, B, T } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'axMidOff' }; },
@@ -307,12 +311,12 @@ ITEM.worldPick = {
 };
 
 /* ================= ⑪ صمّم بمحاور (C177، إنتاج): شبكة 4×4 يلوّن الطفل خاناتها؛ need: أقلّ عدد للمحاور (المحاور الممكنة أربعة: رأسي وأفقي وقطران) ================= */
-const DSG = { n: 4, c: 66, x0: 48, y0: 14 };   /* شبكة 4×4 وخانة 66: هدف لمس كامل على كل شاشة */
+const DSG = { n: 4, c: 72, x0: 36, y0: 14 };   /* شبكة 4×4 وخانة 72: 56 بكسلاً على أضيق شاشة (0.8 بكسل للوحدة؛ كانت 66 فصارت 51، الفحص على iPhone SE) */
 const dsgAxes = on => { const n = DSG.n, has = f => on.size > 0 && [...on].every(k => { const [r, c] = k.split(',').map(Number), [r2, c2] = f(r, c); return on.has(r2 + ',' + c2); });
   return [['v', (r, c) => [r, n - 1 - c]], ['h', (r, c) => [n - 1 - r, c]], ['d', (r, c) => [c, r]], ['e', (r, c) => [n - 1 - c, n - 1 - r]]].filter(([, f]) => has(f)).map(([k]) => k); };
 ITEM.designSym = {
   make(spec) { return { ...spec, want: spec.need, tag: 'design-sym-' + spec.need }; },
-  async ask(item, mode, tries) { const svg = newStage(292, { oasis: false, ground: 0 }), { n, c, x0, y0 } = DSG, on = new Set(), cells = {};
+  async ask(item, mode, tries) { const svg = newStage(318, { oasis: false, ground: 0 }), { n, c, x0, y0 } = DSG, on = new Set(), cells = {};
     el('rect', { x: x0 - 8, y: y0 - 8, width: n * c + 16, height: n * c + 16, rx: 10, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg);
     const axG = el('g', { 'pointer-events': 'none' }, svg), mid = x0 + n * c / 2, midY = y0 + n * c / 2;
     const guides = { v: [mid, y0 - 4, mid, y0 + n * c + 4], h: [x0 - 4, midY, x0 + n * c + 4, midY], d: [x0, y0, x0 + n * c, y0 + n * c], e: [x0 + n * c, y0, x0, y0 + n * c] };

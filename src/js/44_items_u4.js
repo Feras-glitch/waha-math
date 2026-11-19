@@ -52,6 +52,8 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
     if (P.measure) for (let i = 0; i < R.n; i++) sideLabel(g, R, i); if (P.angles) for (let i = 0; i < R.n; i++) vertLabel(g, R, i); }
   else if (P.kind === 'axis') { rayFrame(g); const Sh = axShape({ k: P.k, sym: P.sym, rot: P.rot || 0 }), L = axLineOf(Sh, P);   /* S2-U5: شكل وخطّ عليه، ومطويّاً إن طُلب (fold) */
     const F = axFoldAt(g, { k: P.k, sym: P.sym, rot: P.rot || 0 }, [180, 118], L, { S: Sh }); if (P.fold) F.flat(); if (P.axes) axLinesAt(g, Sh, [180, 118], { r: 96 }); }
+  else if (P.kind === 'arrect') { rayFrame(g); const top = P.perim || P.area; rectLab(g, P.w, P.h, { sq: P.w === P.h, showH: true, unit: P.unit, grid: P.grid, cy: top ? 128 : 118, maxH: top ? 100 : 130 }); if (top) arLab(g, 180, 40, `${labelText(P.perim ? 'arPerim' : 'arArea')} ${top} ${labelText(P.perim ? (P.unit === 'm' ? 'lenM' : 'rulCm') : (P.unit === 'm' ? 'arM2' : 'arCm2'))}`, 0, P.perim ? ARC.perim : ARC.ok); }   /* S2-U7 */
+  else if (P.kind === 'argrid') { rayFrame(g); shpDraw(g, P.rows, { at: [180, 116] }); }
   else if (P.kind === 'tape') { rayFrame(g); ITEM.tapeRead.draw({ len: P.len, thing: P.thing || 'table' }, g); }   /* S2-U6 */
   else if (P.kind === 'thing') { rayFrame(g); lenThing(g, P.thing, 180, 112, 1.3); }
   else if (P.kind === 'conv') { rayFrame(g); convEq(g, { v: P.v, to: P.to }, 112); }

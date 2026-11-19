@@ -119,9 +119,9 @@ const PLY_TOOL_IC = { len: '<rect x="-17" y="-7" width="34" height="14" rx="2" f
   ang: '<path d="M-14 10 H14 M-14 10 L6 -12" stroke="#24323a" stroke-width="3" fill="none" stroke-linecap="round"/><path d="M-4 10 A10 10 0 0 0 -7.4 2.6" stroke="#2f9d6b" stroke-width="2.6" fill="none"/>' };
 function plyTools(svg, R, o = {}) { const used = { len: false, ang: false }, gs = [], layer = o.layer || el('g', { 'pointer-events': 'none' }, svg);
   const mk = (k, x, y, fn) => { const g = el('g', { role: 'button', tabindex: 0, 'aria-label': plain(G(labelText(k === 'len' ? 'plyMeasure' : 'plyAngles'))), style: 'cursor:pointer', 'data-tool': k }, svg); el('circle', { cx: x, cy: y, r: 23, fill: '#fff', stroke: css('--line'), 'stroke-width': 2 }, g); const ic = el('g', { transform: `translate(${x} ${y})`, 'pointer-events': 'none' }, g); ic.innerHTML = PLY_TOOL_IC[k]; hitPad(g, 56, 56);
-    g.onclick = async () => { if (used[k]) return; used[k] = true; g.setAttribute('opacity', .45); SFX.tick(); for (let i = 0; i < R.n; i++) { if (k === 'len') { if (R.sides[i]) sideLabel(layer, R, i); } else vertLabel(layer, R, i); await sleep(FAST ? 10 : 160); } if (o.after) o.after(k); }; gs.push(g); return g; };
+    g.onclick = g.__go = async () => { if (used[k]) return; used[k] = true; g.setAttribute('opacity', .45); SFX.tick(); for (let i = 0; i < R.n; i++) { if (k === 'len') { if (R.sides[i]) sideLabel(layer, R, i); } else vertLabel(layer, R, i); await sleep(FAST ? 10 : 160); } if (o.after) o.after(k); }; gs.push(g); return g; };
   if (o.len !== false) mk('len', 48, 44); if (o.ang) mk('ang', 48, o.len === false ? 44 : 100);
-  return { used, layer, off: () => gs.forEach(g => { g.onclick = null; g.removeAttribute('role'); g.setAttribute('opacity', .2); }), show: k => gs.find(g => g.dataset.tool === k)?.onclick() }; }
+  return { used, layer, off: () => gs.forEach(g => { g.onclick = null; g.removeAttribute('role'); g.setAttribute('opacity', .2); }), show: k => { const g = gs.find(x => x.dataset.tool === k); return g && g.__go(); } }; }   /* show بعد off (الحلّ المشترك والكشف): onclick صار null، فيُستدعى العمل المحفوظ (S2-U5 د2: trapLegs) */
 
 /* ---------- مسرح البنود: إطار وشكل في وسطه ---------- */
 const plyStage = (H = 232) => { const svg = newStage(H, { oasis: false, ground: 0 }); plyFrame(svg, H - 28); return svg; };
