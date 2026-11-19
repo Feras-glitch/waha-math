@@ -1,0 +1,131 @@
+{
+ "id": "m2.u8",
+ "title": "كَعْكَةُ الهَنْدَسَةِ",
+ "sub": "المَرْحَلَةُ الثَّانِيَةُ: البَنَّاؤُونَ",
+ "district": "حَيُّ المَخْبَزِ",
+ "hosts": [
+  "circle",
+  "square",
+  "rect"
+ ],
+ "hunt": [],
+ "workshop": {
+  "pieces": [
+   {
+    "k": "rtri",
+    "size": 72
+   },
+   {
+    "k": "square",
+    "size": 40
+   },
+   {
+    "k": "rect",
+    "size": 40,
+    "w": 40,
+    "h": 120
+   }
+  ],
+  "puzzles": [
+   {
+    "id": "cakeHalf",
+    "name": "gen.ws.p.cakeHalf",
+    "slots": [
+     {
+      "k": "rtri",
+      "x": 150,
+      "y": 140,
+      "size": 96
+     },
+     {
+      "k": "rtri",
+      "x": 150,
+      "y": 140,
+      "size": 96,
+      "rot": 180
+     },
+     {
+      "k": "rect",
+      "x": 150,
+      "y": 214,
+      "size": 120,
+      "w": 120,
+      "h": 28
+     }
+    ],
+    "extra": {
+     "k": "square",
+     "size": 40
+    }
+   },
+   {
+    "id": "cakeQuarter",
+    "name": "gen.ws.p.cakeQuarter",
+    "slots": [
+     {
+      "k": "square",
+      "x": 128,
+      "y": 128,
+      "size": 44
+     },
+     {
+      "k": "square",
+      "x": 172,
+      "y": 128,
+      "size": 44
+     },
+     {
+      "k": "square",
+      "x": 128,
+      "y": 172,
+      "size": 44
+     },
+     {
+      "k": "square",
+      "x": 172,
+      "y": 172,
+      "size": 44
+     }
+    ],
+    "extra": {
+     "k": "rtri",
+     "size": 44
+    }
+   },
+   {
+    "id": "cakeThird",
+    "name": "gen.ws.p.cakeThird",
+    "slots": [
+     {
+      "k": "rect",
+      "x": 108,
+      "y": 150,
+      "size": 42,
+      "w": 42,
+      "h": 126
+     },
+     {
+      "k": "rect",
+      "x": 150,
+      "y": 150,
+      "size": 42,
+      "w": 42,
+      "h": 126
+     },
+     {
+      "k": "rect",
+      "x": 192,
+      "y": 150,
+      "size": 42,
+      "w": 42,
+      "h": 126
+     }
+    ],
+    "extra": {
+     "k": "square",
+     "size": 42
+    }
+   }
+  ]
+ }
+}

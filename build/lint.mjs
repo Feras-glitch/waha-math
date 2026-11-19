@@ -16,7 +16,7 @@ const SKIP = new Set(['lines', 'labels', 'concepts', 'talk', 'title', 'adultCard
 const REF_ONE = ['mk', 'show', 'shape'], REF_MANY = ['objs', 'opts', 'shapes', 'objects', 'things', 'items'];
 const STAGES = new Set(['hook', 'explore', 'worked', 'practice', 'game', 'chaos', 'mastery', 'test', 'wrap']);
 
-const KAF_OK = new Set(['ذلك', 'ذاك', 'هناك', 'تلك', 'أولئك', 'مشابك', 'مشبك', 'سمك', 'سلك', 'تفكيك']); const TA_OK = new Set(['تحت', 'بيت', 'وقت', 'صوت', 'اخت', 'بنت']);   /* أسماء إشارة وكلمات كافها من أصلها (4ب7 العامة) */
+const KAF_OK = new Set(['ذلك', 'ذاك', 'هناك', 'تلك', 'أولئك', 'مشابك', 'مشبك', 'سمك', 'سلك', 'تفكيك', 'كعك']);   /* الكعك: كافه من أصله (S2-U8) */ const TA_OK = new Set(['تحت', 'بيت', 'وقت', 'صوت', 'اخت', 'بنت']);   /* أسماء إشارة وكلمات كافها من أصلها (4ب7 العامة) */
 /* يمحو التعليقات ويُبقي النصوص والقوالب والتعابير النمطية والأسطر في مواضعها (طول كل سطر كما هو): يمرّ على الكود حرفاً حرفاً،
    فلا يبدأ تعليقٌ داخل نص («image/*») ولا يبدأ نصٌّ داخل تعبير نمطي (/[<>"'&`]/) */
 export function stripComments(js) {

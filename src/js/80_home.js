@@ -37,6 +37,15 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     plyfam: () => { polyAt(s, 'qKite', [24, 32], { s: .3, dots: false, fill: '#cfe6f5' }); polyAt(s, 'qTrap', [50, 34], { s: .2, dots: false, fill: '#f2d38a' }); },
     plyhex: () => { polyAt(s, 'r6', [36, 32], { s: .32, dots: false, fill: '#f2b84b' }); },
     plycut: () => { polyAt(s, 'cRect', [36, 32], { s: .36, dots: false, fill: '#f2d38a' }); geoLine(s, 18, 43, 54, 21, { color: PLY.cut, w: 2, dash: '4 3' }); },
+    /* S2-U8 */
+    frcake: () => { fracShape(s, { k: 'circle', n: 4, parts: [.4, .3, .2, .1], shade: [3] }, [36, 32], { r: 24 }); },
+    frread: () => { fracShape(s, { k: 'circle', n: 8, shade: [0, 1, 2] }, [36, 32], { r: 24 }); },
+    frhalf: () => { halfGridAt(s, ['aab', 'abb', 'abb'], [36, 32], { c: 14 }); },
+    frline: () => { geoLine(s, 8, 36, 64, 36, { color: '#7a4a2a', w: 3 }); for (const x of [8, 22, 36, 50, 64]) geoLine(s, x, 30, x, 42, { color: '#7a4a2a', w: 2 }); el('path', { d: 'M50 26 l-5 -9 h10 Z', fill: '#c8392d' }, s); },
+    freqv: () => { fracShape(s, { k: 'bar', n: 2, shade: [0] }, [36, 22], { w: 52, h: 14 }); fracShape(s, { k: 'bar', n: 4, shade: [0, 1] }, [36, 42], { w: 52, h: 14 }); },
+    frcmp: () => { fracShape(s, { k: 'bar', n: 3, shade: [0] }, [36, 22], { w: 52, h: 14 }); fracShape(s, { k: 'bar', n: 5, shade: [0] }, [36, 42], { w: 52, h: 14 }); },
+    frorder: () => { for (const [i, w] of [[0, 14], [1, 26], [2, 40]].entries()) el('rect', { x: 64 - w[1], y: 14 + i * 14, width: w[1], height: 10, fill: '#e9894a', stroke: '#7a4a2a', 'stroke-width': 1.2 }, s); },
+    frset: () => { for (const [x, y] of [[20, 22], [36, 22], [52, 22], [20, 42], [36, 42], [52, 42]]) frThing(s, 'cookie', x, y, .38); el('rect', { x: 10, y: 12, width: 52, height: 20, rx: 6, fill: 'none', stroke: '#e9894a', 'stroke-width': 2 }, s); },
     /* S2-U7 */
     arperim: () => { el('rect', { x: 14, y: 14, width: 44, height: 34, fill: '#cfe6f5', stroke: '#c8392d', 'stroke-width': 3.5 }, s); },
     arrectp: () => { el('rect', { x: 10, y: 18, width: 52, height: 28, fill: '#cfe6f5', stroke: '#24323a', 'stroke-width': 2 }, s); const t = el('text', { x: 36, y: 38, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 800, fill: '#c8392d', direction: 'ltr' }, s); t.textContent = '2×(a+b)'; },

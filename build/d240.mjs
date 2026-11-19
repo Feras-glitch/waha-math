@@ -10,7 +10,7 @@
 // وفوق ذلك (D240 «لكل مفهوم بند تعرّف وبند إنتاج أو تعليل»): لكل مفهوم يتقنه التطبيق بند إنتاج أو تعليل واحد على الأقل، ولكل مفهوم
 // «تأسيس» في الدرس فحص إتقان (إلا «المدخل»)، ولكل درس اختيار حقيقي للطفل (D239).
 
-const PROD = new Set(['convMachine', 'lenOrder', 'fenceBuild', 'trackDesign', 'rectDraw', 'maxArea',   /* S2-U7: يرسم المستطيل، ويبحث عن أكبر أرض */   /* S2-U6: يضبط آلة التحويل، ويرتّب، ويبني السور، ويصمّم المضمار */
+const PROD = new Set(['convMachine', 'lenOrder', 'fenceBuild', 'trackDesign', 'rectDraw', 'maxArea', 'fracColor', 'cellColor', 'linePlace', 'fracOrder', 'setColor',   /* S2-U8: يلوّن ويضع ويرتّب */   /* S2-U7: يرسم المستطيل، ويبحث عن أكبر أرض */   /* S2-U6: يضبط آلة التحويل، ويرتّب، ويبني السور، ويصمّم المضمار */
   'axisHunt', 'ptImage', 'axisFind', 'designSym',   /* S2-U5: يجد المحاور بالطيّ، ويرسم الصورة، ويجد المحور، ويصمّم بمحاور */
   'rulerAlign', 'drawLen', 'gridPoint', 'midMark', 'rayDraw', 'paraDraw', 'perpTurn', 'angleMatch', 'angleDraw', 'polyFix', 'diagDraw', 'polyDraw',   /* S2-U4: يغلق الشكل ويقوّم ضلعه، ويرسم القطر، ويرسم المضلع على الشبكة */   /* S2-U3: يفتح الباب بانفتاح الزاوية، ويرسم الزاوية بالمنقلة */   /* S2-U2: يرسم الموازي ويدير المعامد */   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
   'reason', 'connect', 'completeRect', 'vertices', 'count', 'produce', 'fill', 'trace', 'buildTower', 'splitMake', 'buildTo', 'faceTap',
@@ -267,6 +267,27 @@ export const factOf = it => { const t = it.t;
   if (t === 'pOrA') return `pa|${it.sit}|${it.ask || 'kind'}|${it.unit || 'cm'}`;
   if (t === 'sameCmp') return `sc|${[it.a.join('x'), it.b.join('x')].sort().join(',')}|${it.ask}`;
   if (t === 'maxArea') return `mx|${it.fence}`;
+  /* S2-U8: الكسور بأشكالها وقيمها (الشكل والكسر معاً، فالكسر نفسه على شكل آخر مسألة أخرى) */
+  if (t === 'fracEqual') return `fe|${it.figs.map(f => f.k + f.n + (f.parts ? ':' + f.parts.join(',') : '')).sort().join(';')}`;
+  if (t === 'fairCut') return `fc|${it.fig.k}${it.fig.n}${it.fig.parts ? ':' + it.fig.parts.join(',') : ''}`;
+  if (t === 'partName') return `pn|${it.fig.k}${it.fig.n}`;
+  if (t === 'fracRead') return `frd|${it.fig.k}|${it.fig.shade.length}/${it.fig.n}`;
+  if (t === 'fracColor') return `fcol|${it.fig.k}|${it.f.join('/')}`;
+  if (t === 'fracName') return `fnm|${it.f.join('/')}`;
+  if (t === 'unitFrac') return `uf|${it.ask}|${it.opts.map(f => f.join('/')).sort().join(',')}`;
+  if (t === 'halfGrid') return `hg|${it.rows.join('/')}`;
+  if (t === 'cellColor') return `cc|${it.cols}x${it.rows}|${it.f.join('/')}`;
+  if (t === 'wholeRef') return `wr|${it.f.join('/')}`;
+  if (t === 'lineRead') return `lr|${it.a}/${it.b}`;
+  if (t === 'linePlace') return `lp|${it.a}/${it.b}`;
+  if (t === 'eqvFill') return `ef|${it.f.join('/')}|${it.m}`;
+  if (t === 'eqvPick') return `ep|${it.f.join('/')}|${it.opts.map(f => f.join('/')).sort().join(',')}`;
+  if (t === 'fracCmp') return `fcmp|${[it.a.join('/'), it.b.join('/')].sort().join(',')}`;
+  if (t === 'halfBench') return `hb|${it.f.join('/')}`;
+  if (t === 'fracOrder') return `fo|${it.fs.map(f => f.join('/')).sort().join(',')}`;
+  if (t === 'setFrac') return `sf|${it.n}|${it.f.join('/')}`;
+  if (t === 'setColor') return `scol|${it.n}|${it.f.join('/')}`;
+  if (t === 'reason' && it.pic && /^fr/.test(it.pic.kind)) return `frpic|${it.pic.kind}|${JSON.stringify(it.pic.fig || it.pic.rows || [it.pic.a, it.pic.b, it.pic.n])}`;
   if (t === 'reason' && it.pic && it.pic.kind === 'arrect') return `arrpic|${it.pic.w}x${it.pic.h}`;
   if (t === 'reason' && it.pic && it.pic.kind === 'argrid') return `argpic|${it.pic.rows.join('/')}`;
   if (t === 'reason' && it.pic && it.pic.kind === 'tape') return `tapepic|${it.pic.len}`;
@@ -396,6 +417,10 @@ export function d240(lessons, code, MAKERS) {
     tapeIntro: () => ['tape|85|cm'], kmWalk: () => [], unitTable: s => (s.pics || ['ant', 'pencil', 'door', 'road']).map(k => `unit|${k}`), convTable: () => ['conv|1m|cm', 'conv|2m|cm', 'conv|3m|cm', 'conv|1m|mm'],
     mcSplit: s => [`mc|${s.cm || 235}|toMC`], cmpShow: s => [`lcmp|${[(s.a || [2, 'm']).join(''), (s.b || [150, 'cm']).join('')].sort().join(',')}`], addWorked: s => [`lcalc|${(s.a || [2, 40]).join('.')}|${s.op || '+'}|${(s.b || [1, 80]).join('.')}`],
     roundShow: s => [`lround|${(s.v || [2, 40]).join('.')}`], refsShow: s => (s.refs || ['finger', 'pencil', 'door']).map(k => `est|${k}`), roomPlan: () => [],
+    /* S2-U8 */
+    chaosCake: () => [], frFoldStrip: () => [], partNames: () => ['pn|circle2', 'pn|circle3', 'pn|circle4'], readFrac: s => [`frd|circle|${s.a || 3}/${s.n || 8}`], unitWhole: () => [], halfWays: () => [], bigSmall: () => ['wr|1/2'],
+    lineIntro: () => [], spacesNotMarks: s => [`lr|1/${s.b || 4}`], foldEqv: () => [], gridEqv: () => [], frCmpShow: s => (s.pairs || [[[3, 8], [5, 8]]]).map(([a, b]) => `fcmp|${[a.join('/'), b.join('/')].sort().join(',')}`), wall12: () => ['fcmp|2/3,3/4'],
+    cookieShare: s => [`sf|${s.n || 12}|${s.a || 1}/${s.b || 4}`], partyCake: () => [], recallFrac: () => [],
     /* S2-U7 */
     stringAround: () => [], gridBorder: s => [`pg|${(s.rows || ['####', '####', '##..']).join('/')}`], perimShow: s => s.sq ? [`rp|${s.w || 5}x${s.w || 5}|cm`] : [`rp|${s.w || 5}x${s.h || 3}|cm`].concat(s.area ? [`ra|${s.w || 5}x${s.h || 3}|cm`] : []),
     tileCover: s => [`ac|${(s.rows || ['####', '###.', '##..']).join('/')}`], halfShow: s => [`ae|${(s.rows || ['b##c', '####', 'a##d']).join('/')}`], rowsCols: s => [`ra|${s.w || 4}x${s.h || 5}|cm`],
@@ -474,6 +499,7 @@ export function d240(lessons, code, MAKERS) {
     'rhythmHook', 'patRead', 'patWorked', 'chaosPattern', 'recallPat', 'chaosGuess', 'patCircle', 'patSoundLab', 'chaosLoops', 'patHunt', 'skipBeads', 'skipWorked', 'chaosPairs', 'recallSkip', 'gridHook', 'gridGuide', 'gridWorked', 'chaosGrid', 'recallGrid', 'handsHook',
     'foldShow', 'foldLab', 'halfScene', 'chaosHalf', 'recallSym', 'foldWays', 'lineWorked', 'chaosFold', 'gridLab', 'doubleShow', 'doubleWorked', 'chaosWing', 'chaosDbl', 'paintFold', 'recallMir',
     'doorHook', 'sticksAngle', 'turnShow', 'nameShow', 'cornerCompare', 'doorStraight', 'degreeDisc', 'clockTwins', 'cakeSlice', 'protIntro', 'protSteps', 'angDrawShow', 'estimateShow', 'compassIntro', 'compassTurns', 'angleCity', 'recallAngle', 'recallKinds', 'recallProt', 'recallTurn', 'recallRose',   /* S2-U3 */
+    'chaosCake', 'frFoldStrip', 'partNames', 'readFrac', 'unitWhole', 'halfWays', 'bigSmall', 'lineIntro', 'spacesNotMarks', 'foldEqv', 'gridEqv', 'frCmpShow', 'wall12', 'cookieShare', 'partyCake', 'recallFrac',   /* S2-U8 */
     'arRibbonHook', 'stringAround', 'gridBorder', 'perimShow', 'tileCover', 'halfShow', 'rowsCols', 'lTwoWays', 'lPerimShow', 'sameTables', 'fenceOrTile', 'm2Show', 'recallPerim', 'recallArea',   /* S2-U7 */
     'tapeIntro', 'kmWalk', 'unitTable', 'convTable', 'mcSplit', 'cmpShow', 'addWorked', 'roundShow', 'refsShow', 'roomPlan', 'recallTape', 'recallConv', 'recallCalc', 'recallUnit',   /* S2-U6 */
     'lakeHook', 'mirrorDist', 'pinFold', 'axPerpShow', 'checkWays', 'trapIntro', 'foldTable', 'regularAxes', 'slantAxes', 'axGridWorked', 'turnPaper', 'worldTour', 'nearLeaf', 'letterStyles', 'recallAxis', 'recallImg', 'recallCount', 'recallWorld',   /* S2-U5 */

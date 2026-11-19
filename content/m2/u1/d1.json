@@ -468,7 +468,7 @@
    "concept": "C183",
    "item": {
     "t": "rulerRead",
-    "q": "pr.1",
+    "q": "ms.q",
     "b": 10,
     "a": 6,
     "thing": "key"

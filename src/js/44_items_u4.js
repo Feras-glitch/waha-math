@@ -52,6 +52,12 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
     if (P.measure) for (let i = 0; i < R.n; i++) sideLabel(g, R, i); if (P.angles) for (let i = 0; i < R.n; i++) vertLabel(g, R, i); }
   else if (P.kind === 'axis') { rayFrame(g); const Sh = axShape({ k: P.k, sym: P.sym, rot: P.rot || 0 }), L = axLineOf(Sh, P);   /* S2-U5: شكل وخطّ عليه، ومطويّاً إن طُلب (fold) */
     const F = axFoldAt(g, { k: P.k, sym: P.sym, rot: P.rot || 0 }, [180, 118], L, { S: Sh }); if (P.fold) F.flat(); if (P.axes) axLinesAt(g, Sh, [180, 118], { r: 96 }); }
+  else if (P.kind === 'frfig') { rayFrame(g); fracShape(g, P.fig, [180, 116], { r: 86 }); }   /* S2-U8 */
+  else if (P.kind === 'frhalf') { rayFrame(g); halfGridAt(g, P.rows, [180, 116]); }
+  else if (P.kind === 'frline') { rayFrame(g); const Ln = fracLine(g, P.b); fracArrow(g, Ln.X(P.a)); }
+  else if (P.kind === 'frstrips') { rayFrame(g); frStrips(g, P.rows, { y0: 60, h: 40, gap: 30 }); P.rows.forEach(([n, a], j) => fracText(g, 40, 74 + j * 70, [a, n], { fs: 15 })); }
+  else if (P.kind === 'frset') { rayFrame(g); setXY(P.n, 180, 116, 52).forEach(([x, y]) => frThing(g, P.what || 'cookie', x, y, .85)); }
+  else if (P.kind === 'frbig') { rayFrame(g); fracShape(g, { k: 'circle', n: 2, shade: [0] }, [250, 112], { r: 74 }); fracShape(g, { k: 'circle', n: 2, shade: [0] }, [96, 128], { r: 40 }); }
   else if (P.kind === 'arrect') { rayFrame(g); const top = P.perim || P.area; rectLab(g, P.w, P.h, { sq: P.w === P.h, showH: true, unit: P.unit, grid: P.grid, cy: top ? 128 : 118, maxH: top ? 100 : 130 }); if (top) arLab(g, 180, 40, `${labelText(P.perim ? 'arPerim' : 'arArea')} ${top} ${labelText(P.perim ? (P.unit === 'm' ? 'lenM' : 'rulCm') : (P.unit === 'm' ? 'arM2' : 'arCm2'))}`, 0, P.perim ? ARC.perim : ARC.ok); }   /* S2-U7 */
   else if (P.kind === 'argrid') { rayFrame(g); shpDraw(g, P.rows, { at: [180, 116] }); }
   else if (P.kind === 'tape') { rayFrame(g); ITEM.tapeRead.draw({ len: P.len, thing: P.thing || 'table' }, g); }   /* S2-U6 */

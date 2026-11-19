@@ -61,6 +61,8 @@ function homeArt(svg, art) { const g = el('g', { 'pointer-events': 'none' }, svg
   else if (art === 'corner') { el('rect', { x: 70, y: 40, width: 220, height: 150, rx: 6, fill: '#efe6d6', stroke: css('--line'), 'stroke-width': 2 }, g); for (let x = 70; x <= 290; x += 44) geoLine(g, x, 40, x, 190, { color: '#c9b79c', w: 2 }); paperCornerAt(g, [70, 190], 0, 60); }
   else if (art === 'fold') { el('rect', { x: 110, y: 46, width: 140, height: 140, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 2.5 }, g); geoLine(g, 180, 40, 180, 192, { color: '#c8392d', w: 3, dash: '8 6' }); geoLine(g, 104, 116, 256, 116, { color: '#c8392d', w: 3, dash: '8 6' }); }   /* S2-U6: مهمة المحاور */
   else if (art === 'tile') { el('rect', { x: 120, y: 56, width: 120, height: 120, fill: '#e6d3b3', stroke: '#b9794e', 'stroke-width': 3 }, g); el('rect', { x: 150, y: 86, width: 60, height: 60, transform: 'rotate(45 180 116)', fill: '#3d7cc0', opacity: .7 }, g); }
+  else if (art === 'rug') { el('rect', { x: 100, y: 70, width: 160, height: 100, rx: 8, fill: '#c8392d', stroke: '#8a2a20', 'stroke-width': 4 }, g); el('rect', { x: 116, y: 84, width: 128, height: 72, fill: 'none', stroke: '#f2d38a', 'stroke-width': 3 }, g); }   /* S2-U7: السجادة */
+  else if (art === 'frame') { el('rect', { x: 120, y: 50, width: 120, height: 130, fill: '#dff0fb', stroke: '#8a5a3a', 'stroke-width': 12 }, g); el('path', { d: 'M136 160 L164 120 L184 142 L198 128 L226 160 Z', fill: '#7fb6d9' }, g); }
   else if (art === 'tape') { tapeAt(g, { x: 50, y: 92, to: 100, pxcm: 2.6, label: 10 }); }   /* S2-U6: شريط القياس */
   else if (art === 'window') { el('rect', { x: 110, y: 36, width: 140, height: 152, rx: 4, fill: '#dff0fb', stroke: '#8a6a4a', 'stroke-width': 6 }, g); geoLine(g, 180, 36, 180, 188, { color: '#8a6a4a', w: 5 }); geoLine(g, 110, 112, 250, 112, { color: '#8a6a4a', w: 5 }); }   /* S2-U5: نافذة الغرفة */
   else if (art === 'shapes') { [['tScaR', 100, 110, .6], ['cRect', 250, 110, .7]].forEach(([k, x, y, s]) => polyAt(g, k, [x, y], { s, dots: false, fill: '#f2d38a' })); }
@@ -76,6 +78,8 @@ const HOME_SAY = {
   axes: async () => S('gen.home.axesSay'),   /* S2-U5 */
   tape: async (r, v) => S([1, 2, 3].every(i => Math.abs(v['e' + i] - v['m' + i]) <= 20) ? 'gen.home.tapeClose' : 'gen.home.tapeFar'),   /* S2-U6: التقدير قريب حتى عشرين سنتيمتراً */
   roomAgain: async (r, v) => S(v.rt === v.rm * 100 + v.rc ? 'gen.home.roomOk' : 'gen.home.roomNo'),
+  rug: async () => S('gen.home.rugSay'),   /* S2-U7 */
+  frameAgain: async (r, v) => S(v.fk === 0 && v.fu === 0 ? 'gen.home.frameOk' : 'gen.home.frameNo'),
   tileAgain: async (r, v) => S(v.tile === 4 ? 'gen.home.tileOk' : 'gen.home.tileNo'),
   winAgain: async (r, v) => S(v.sides === v.verts ? 'gen.home.winEq' : 'gen.home.winNe'),
   clockAgain: async (r, v) => { const svg = newStage(230, { oasis: false, ground: 0 }); homeArt(svg, 'clock'); homeClock(svg, 6); await S(v.kind === 2 ? 'gen.home.sixOk' : 'gen.home.sixNo'); await S(v.q === 1 ? 'gen.home.quarterOk' : 'gen.home.quarterNo'); },

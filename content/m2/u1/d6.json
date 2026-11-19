@@ -375,11 +375,8 @@
      "t": "reason",
      "q": "ms.4",
      "pic": {
-      "kind": "geoname",
-      "gk": "line",
-      "pts": "up",
-      "from": "a",
-      "to": "b"
+      "kind": "twopts",
+      "pts": "up"
      },
      "opts": [
       {
