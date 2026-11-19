@@ -37,6 +37,7 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
   else if (P.kind === 'units') { const it = { obj: P.obj || 'book', unit: P.unit || 'clip', n: P.n, bad: P.bad }; measPanel(g, it, 100, P.bad ? 'bad' : 'ok'); }
   else if (P.kind === 'span') spanTables(g, P.a, P.b);
   else if (P.kind === 'sym') { const F = symFoldAt(g, P.sym, 180, 100, 1.5, P.ang ?? 90); if (P.folded) F.flat(); }   /* S1-U6 */
+  else if (P.kind === 'ruler') rulerReasonPic(g, P);   /* S2-U0 */
   else if (P.kind === 'pat') patRowAt(svg, P.seq || patSeq(P.unit, P.n), { y: 100, parent: g, arrow: false });   /* S1-U5 */
   const bb = g.getBBox(), k = Math.min(1, 340 / bb.width, 186 / bb.height); g.setAttribute('transform', `translate(${180 - (bb.x + bb.width / 2) * k} ${100 - (bb.y + bb.height / 2) * k}) scale(${k})`); return g; }
 

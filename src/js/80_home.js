@@ -16,6 +16,9 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     mirror: () => { el('rect', { x: 34, y: 6, width: 4, height: 46, rx: 2, fill: css('--compass') }, s); for (const d of [1, -1]) symP(el('g', { transform: `translate(${36 + d * 15} 30) scale(.3)` }, s), d > 0 ? 'M-30 34 L30 34 L-30 -40 Z' : 'M30 34 L-30 34 L30 -40 Z', css('--triangle')); },
     wing: () => { symAt(s, 'butterfly', 36, 29, .46); },
     hunt6: () => { symAt(s, 'face', 24, 29, .34); symAt(s, 'carFront', 52, 30, .3); },
+    ruler: () => { rulerAt(s, { x: 8, y: 18, pxcm: 11, from: 0, to: 5, mm: false, lead: 3 }).g.setAttribute('transform', 'rotate(-8 36 30)'); },   /* S2-U0 */
+    rulmm: () => { rulerAt(s, { x: 8, y: 22, pxcm: 28, from: 0, to: 2, mm: true, lead: 3 }); el('rect', { x: 8, y: 10, width: 39, height: 9, rx: 2, fill: css('--compass') }, s); },
+    rulbrk: () => { rulerAt(s, { x: 12, y: 22, pxcm: 16, from: 3, to: 6, mm: false, broken: true }); el('rect', { x: 12, y: 10, width: 32, height: 9, rx: 2, fill: css('--chaos') }, s); },
     fold: () => { const h = symAt(s, 'heart', 36, 29, .4); el('line', { x1: 0, y1: -48, x2: 0, y2: 46, stroke: css('--compass'), 'stroke-width': 4, 'stroke-dasharray': '7 6' }, h); },   /* S1-U6 */
     grid: () => { for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) el('rect', { x: 9 + c * 11, y: 6 + r * 11, width: 10, height: 10, rx: 2, fill: c === 4 ? '#5fb6a8' : (r + c) % 2 ? '#f3ead6' : '#e9dcc3', stroke: '#fff', 'stroke-width': .8 }, s); },
     fives: () => { for (let r = 0; r < 4; r++) for (let c = 0; c < 5; c++) el('rect', { x: 9 + c * 11, y: 6 + r * 11, width: 10, height: 10, rx: 2, fill: c === 4 ? '#5fb6a8' : c === 2 ? '#f2b33d' : '#e9dcc3', stroke: '#fff', 'stroke-width': .8 }, s); },

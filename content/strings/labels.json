@@ -345,6 +345,17 @@
   "sym.ltA": "حَرْفُ الأَلِفِ",
   "sym.ltB": "حَرْفُ البَاءِ",
   "sym.ltH": "حَرْفُ الحَاءِ",
-  "sym.ltW": "حَرْفُ الوَاوِ"
+  "sym.ltW": "حَرْفُ الوَاوِ",
+  "rulVaries": "يَخْتَلِفُ",
+  "rulTool.ruler": "مِسْطَرَةٌ",
+  "rulTool.tape": "شَرِيطُ قِيَاسٍ",
+  "rulTool.cmStrip": "شَرِيطُ مُرَبَّعَاتٍ",
+  "rulTool.span": "شِبْرٌ",
+  "rulTool.step": "خُطْوَةٌ",
+  "rulTool.arm": "ذِرَاعٌ",
+  "rulTool.stick": "غُصْنٌ",
+  "rulTiles": "البَلَاطَاتُ",
+  "rulZero": "خَطُّ البِدَايَةِ",
+  "rulGap": "مَسَافَةٌ"
  }
 }

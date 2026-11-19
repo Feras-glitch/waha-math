@@ -63,6 +63,7 @@ function bagIcon(svg, r, x, y, sc = 1, maxW = 112) {
     beads: () => { ['bR', 'bB', 'bR', 'bB'].forEach((t, i) => patTokAt(g, t, 36 - i * 24, (i % 2) * 12 - 6, 24)); },
     paper: () => { el('rect', { x: -32, y: -40, width: 64, height: 80, rx: 4, fill: '#fffdf6', stroke: '#c9c2b0', 'stroke-width': 2.5 }, g); el('line', { x1: 0, y1: -40, x2: 0, y2: 40, stroke: '#c9c2b0', 'stroke-width': 2, 'stroke-dasharray': '5 4' }, g); },
     grid100: () => { for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) el('rect', { x: -34 + c * 17, y: -34 + r * 17, width: 16, height: 16, rx: 3, fill: c === 3 ? '#5fb6a8' : (r + c) % 2 ? '#f3ead6' : '#e9dcc3', stroke: '#fff', 'stroke-width': 1 }, g); },
+    ruler: () => { const R = rulerAt(g, { x: -46, y: -22, pxcm: 15, from: 0, to: 6, mm: false, lead: 5 }); R.g.setAttribute('transform', 'rotate(-10)'); },   /* S2-U0 */
     thread: () => { el('path', { d: 'M-46 16 Q-20 -30 0 6 Q20 40 46 -14', fill: 'none', stroke: '#8a6a4a', 'stroke-width': 4, 'stroke-linecap': 'round' }, g); el('circle', { cx: -46, cy: 16, r: 5, fill: '#8a6a4a' }, g); },
     squares: () => { for (let i = 0; i < 5; i++) el('rect', { x: 48 - (i + 1) * 19, y: -9, width: 19, height: 19, fill: i % 2 ? '#5c9bb0' : CUBE.lemon, stroke: '#fff', 'stroke-width': 2 }, g); } };
   if (typeof r === 'object' && r.icon && I[r.icon]) I[r.icon]();
