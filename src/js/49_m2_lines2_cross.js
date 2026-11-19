@@ -14,6 +14,19 @@ function fullLineAt(parent, P, ang, o = {}) { const a = ang * Math.PI / 180, u =
   return g; }
 /* مربع التعامد الصغير عند P بين الاتجاهين a1 وa2 */
 function perpMarkAt(parent, P, a1, a2, s = 13) { const r = d => [Math.cos(d * Math.PI / 180), -Math.sin(d * Math.PI / 180)], u = r(a1), v = r(a2); return el('path', { d: `M${P[0] + u[0] * s} ${P[1] + u[1] * s} L${P[0] + (u[0] + v[0]) * s} ${P[1] + (u[1] + v[1]) * s} L${P[0] + v[0] * s} ${P[1] + v[1] * s}`, fill: 'none', stroke: CRS.mark, 'stroke-width': 2.6, 'pointer-events': 'none' }, parent); }
+/* رموز التوازي والتعامد والزاوية (∥ ⊥ ∠ ليست في خط القراءة، D256): تُرسم. symGlyph في مربع طوله s حول (x، y) */
+function symGlyph(parent, x, y, kind, s = 18, col = GEO.ink) { const g = el('g', { 'pointer-events': 'none', 'data-sym': kind }, parent), h = s / 2, w = Math.max(2.2, s * .13);
+  if (kind === 'par') for (const dx of [-s * .16, s * .16]) geoLine(g, x + dx + s * .12, y - h, x + dx - s * .12, y + h, { color: col, w });
+  else if (kind === 'perp') { geoLine(g, x - h, y + h, x + h, y + h, { color: col, w }); geoLine(g, x, y + h, x, y - h, { color: col, w }); }
+  else if (kind === 'ang') { geoLine(g, x + h, y + h, x - h, y + h, { color: col, w }); geoLine(g, x - h, y + h, x + h * .6, y - h, { color: col, w }); }
+  return g; }
+/* تعبير بالرمز يُقرأ من اليمين: tokens مفاتيح LTR أو رموز (par، perp، ang)، مثل ['ab'، 'par'، 'jd'] */
+function symCaption(parent, x, y, tokens, o = {}) { const g = el('g', { 'pointer-events': 'none' }, parent), fs = o.size || 22, gap = 8; let cx = x + (o.w || 0) / 2;
+  const parts = tokens.map(t => ['par', 'perp', 'ang'].includes(t) ? { sym: t, w: fs * .9 } : { txt: [...t].map(c => LTR[c] || c).join(''), w: t.length * fs * .62 }), W = parts.reduce((a, p) => a + p.w + gap, -gap); cx = x + W / 2;
+  for (const p of parts) { const mid = cx - p.w / 2; if (p.sym) symGlyph(g, mid, y - fs * .35, p.sym, fs * .8, o.color); else { const t = el('text', { x: mid, y, 'text-anchor': 'middle', 'font-size': fs, 'font-weight': 700, fill: o.color || GEO.ink, 'font-family': 'var(--font-read)' }, g); t.textContent = p.txt; } cx -= p.w + gap; }
+  return g; }
+/* بطاقة رمز صغيرة (في سؤال يطلب بالرمز) */
+function symCard(parent, x, y, kind) { const g = el('g', { 'pointer-events': 'none' }, parent); el('rect', { x: x - 22, y: y - 20, width: 44, height: 40, rx: 9, fill: '#fff', stroke: css('--line'), 'stroke-width': 2 }, g); symGlyph(g, x, y, kind, 20); return g; }
 /* زوج من المستقيمات في إطار: kind = cross (زاوية ang بينهما) | perp | para (بُعد d) | conv (يكادان يتوازيان ويلتقيان خارج الرسم). rot: دوران الزوج كله. marks: علامات التوازي أو مربع التعامد */
 function linePairAt(parent, kind, o = {}) { const C = o.C || [180, 116], rot = o.rot || 0, g = el('g', { 'data-pair': kind }, parent), d = o.d || 56, n = [Math.sin(rot * Math.PI / 180), Math.cos(rot * Math.PI / 180)];
   if (kind === 'para' || kind === 'conv') { const P1 = [C[0] - n[0] * d / 2, C[1] - n[1] * d / 2], P2 = [C[0] + n[0] * d / 2, C[1] + n[1] * d / 2], dv = kind === 'conv' ? (o.dv || 7) : 0, sh = o.short;
@@ -21,8 +34,8 @@ function linePairAt(parent, kind, o = {}) { const C = o.C || [180, 116], rot = o
   const ang = kind === 'perp' ? 90 : (o.ang || 55); fullLineAt(g, C, rot, { color: CRS.a }); fullLineAt(g, C, rot + ang, { color: CRS.b }); if (o.marks && kind === 'perp') perpMarkAt(g, C, rot, rot + 90); return { g, meet: C, ang }; }
 Object.assign(LFIG, {
   pX: { p: { cross: 1 }, d: g => { geoObj(g, 'line', [-22, 14], [22, -14], { ext: 14, dots: false, color: CRS.a }); geoObj(g, 'line', [-18, -16], [18, 16], { ext: 14, dots: false, color: CRS.b }); } },
-  pX2: { p: { cross: 1 }, d: g => { geoObj(g, 'line', [-24, 4], [24, -4], { ext: 12, dots: false, color: CRS.a }); geoObj(g, 'line', [-6, -24], [6, 24], { ext: 10, dots: false, color: CRS.b }); } },
-  pNear: { p: { cross: 1, conv: 1 }, d: g => { geoLine(g, -34, -12, 30, -4, { color: CRS.a }); geoLine(g, -34, 14, 30, 4, { color: CRS.b }); } },
+  pX2: { p: { cross: 1 }, d: g => { geoObj(g, 'line', [-24, 4], [24, -4], { ext: 12, dots: false, color: CRS.a }); geoObj(g, 'line', [-14, -22], [14, 22], { ext: 8, dots: false, color: CRS.b }); } },   /* زاويتهما نحو 67 درجة: لا تُحسب متعامدة بالنظر (الفحص المستقل (مهم 8)) */
+  pNear: { p: { cross: 1, conv: 1 }, d: g => { geoObj(g, 'line', [-26, -11], [22, -5], { ext: 10, dots: false, color: CRS.a }); geoObj(g, 'line', [-26, 13], [22, 5], { ext: 10, dots: false, color: CRS.b }); } },   /* مستقيمان بسهميهما كغيرهما: لا يُعرف بغياب الأسهم */
   pPar: { p: { par: 1 }, d: g => { geoObj(g, 'line', [-24, -14], [24, -14], { ext: 12, dots: false, color: CRS.a }); geoObj(g, 'line', [-24, 14], [24, 14], { ext: 12, dots: false, color: CRS.b }); } },
   pParV: { p: { par: 1 }, d: g => { geoObj(g, 'line', [-14, -24], [-14, 24], { ext: 12, dots: false, color: CRS.a }); geoObj(g, 'line', [14, -24], [14, 24], { ext: 12, dots: false, color: CRS.b }); } },
   pParD: { p: { par: 1 }, d: g => { geoObj(g, 'line', [-30, 6], [10, -26], { ext: 10, dots: false, color: CRS.a }); geoObj(g, 'line', [-10, 26], [30, -6], { ext: 10, dots: false, color: CRS.b }); } },
@@ -60,9 +73,10 @@ ITEM.meetJudge = {
   make(spec) { return { ...spec, want: spec.kind === 'para' ? 'no' : 'yes', tag: 'meet-' + spec.kind }; },
   /* conv: يلتقي المستقيمان عند M داخل الإطار، والجزآن المرسومان بعيدان عنها (لا يلتقيان في الرسم)؛ para: بُعدهما 54 في كل مكان */
   geo(item) { const rot = item.rot || 0, a = rot * Math.PI / 180, u = [Math.cos(a), -Math.sin(a)], n = [u[1], -u[0]], para = item.kind === 'para', dv = para ? 0 : (item.dv || 8), O = [180, 116]; let h = 27, C = O, M = null;
-    if (!para) { h = 24; let dist = h / Math.tan(dv * Math.PI / 180); if (dist > 200) { dist = 200; h = dist * Math.tan(dv * Math.PI / 180); } M = [O[0] - u[0] * 95, O[1] - u[1] * 95]; C = [M[0] + u[0] * dist, M[1] + u[1] * dist]; }
-    const dir = s => { const b = (rot + s * dv) * Math.PI / 180; return [Math.cos(b), -Math.sin(b)]; };
-    return { P1: [C[0] - n[0] * h, C[1] - n[1] * h], P2: [C[0] + n[0] * h, C[1] + n[1] * h], u1: dir(-1), u2: dir(1), M, L: para ? 60 : 46 }; },
+    const dir = s => { const b = (rot + s * dv) * Math.PI / 180; return [Math.cos(b), -Math.sin(b)]; }, L = para ? 60 : 46, inF = (P, q) => [-1, 1].every(t => { const x = P[0] + q[0] * L * t, y = P[1] + q[1] * L * t; return x >= 28 && x <= 332 && y >= 22 && y <= 210; });
+    if (!para) { M = [O[0] - u[0] * 95, O[1] - u[1] * 95]; let dist = Math.min(200, 24 / Math.tan(dv * Math.PI / 180));
+      for (; dist > 90; dist -= 5) { h = dist * Math.tan(dv * Math.PI / 180); C = [M[0] + u[0] * dist, M[1] + u[1] * dist]; if (inF([C[0] - n[0] * h, C[1] - n[1] * h], dir(-1)) && inF([C[0] + n[0] * h, C[1] + n[1] * h], dir(1))) break; } }   /* يُقرَّب الجزآن من نقطة الالتقاء حتى يبقيا في الإطار بأي دوران (الفحص المستقل (10)) */
+    return { P1: [C[0] - n[0] * h, C[1] - n[1] * h], P2: [C[0] + n[0] * h, C[1] + n[1] * h], u1: dir(-1), u2: dir(1), M, L }; },
   meetDot(item, svg) { const Gm = this.geo(item); if (Gm.M) el('circle', { cx: Gm.M[0], cy: Gm.M[1], r: 7, fill: CRS.mark, stroke: '#fff', 'stroke-width': 2.5, 'pointer-events': 'none' }, svg); },
   async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }); rayFrame(svg); const Gm = this.geo(item), L = Gm.L, seg = (P, u, col) => geoLine(svg, P[0] - u[0] * L, P[1] - u[1] * L, P[0] + u[0] * L, P[1] + u[1] * L, { color: col, w: 4 }); seg(Gm.P1, Gm.u1, CRS.a); seg(Gm.P2, Gm.u2, CRS.b);
     const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg); el('rect', { x: 26, y: 20, width: 308, height: 192, rx: 10, fill: '#fff', opacity: .01 }, g);
@@ -96,7 +110,7 @@ ITEM.paraSeg = {
   make(spec) { const ord = spec.ord || [0, 1, 2]; return { ...spec, ord, want: ord.indexOf(0), tag: 'para-seg' }; },
   async ask(item, mode, tries) { const svg = newStage(270, { oasis: false, ground: 0 }), Pg = paraGridAt(svg, item.d, { lo: 1 }), Gd = Pg.Gd, X0 = [1, 3, 5], SL = [0, 1, 2], COL = [css('--compass'), css('--think'), '#8e6bbf'];
     const G = item.ord.map((kind, i) => { const [x1, y1] = Gd.P(X0[i], 1), [x2, y2] = Gd.P(X0[i] + SL[kind], 1 + item.d), g = el('g', {}, svg); geoLine(g, x1, y1, x2, y2, { color: 'transparent', w: 34 }); geoLine(g, x1, y1, x2, y2, { color: COL[i], w: 5 }); ptAt(g, x1, y1, null, { r: 4, color: COL[i] }); ptAt(g, x2, y2, null, { r: 4, color: COL[i] }); return g; });
-    if (tries >= 3) { const i = item.want, [x, y] = Gd.P(X0[i], 1); perpMarkAt(helpG(svg), [x, y], 0, 90, 11); }   /* الحلّ المشترك: مربع التعامد على أحد القياسات، والاختيار للطفل */
+    if (tries >= 3) { const m = helpG(svg), c = X0[item.want]; for (let i = 0; i < item.d; i++) { const [xa, ya] = Gd.P(c, 1 + i), [, yb] = Gd.P(c, 2 + i); el('path', { d: `M${xa} ${ya} Q${xa - 16} ${(ya + yb) / 2} ${xa} ${yb}`, fill: 'none', stroke: css('--think'), 'stroke-width': 2.6 }, m); } }   /* الحلّ المشترك: قفزات على خطّ الشبكة المستقيم من خطّ إلى خطّ (لا مربع تعامد قبل د3)، والاختيار للطفل */
     say(...lineOf(tries >= 3 ? 'gen.crs.together.seg' : item.q), { free: true });
     const k = await tapOne(G.map((g, i) => ({ g, k: i, label: labelText('crsMeasure') + ' ' + DG(i + 1) })), { ok: item.want, pad: 56 }); hush(); return { ans: k, ctx: { svg, G, Gd, X0 } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'paraSlant' }; },
@@ -108,14 +122,15 @@ ITEM.paraSeg = {
 /* ================= ⑤ ارسم مستقيماً يوازي المعطى على بُعد d مربعات (C121، إنتاج): dir، lo موضع المعطى. يحرّك الطفل المستقيم الثاني بزرّين أو بالسحب ================= */
 ITEM.paraDraw = {
   make(spec) { return { ...spec, tag: 'para-draw' }; },
-  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }), Pg = paraGridAt(svg, 0, { dir: item.dir, lo: item.lo ?? 1, noOther: true, marks: true }), Gd = Pg.Gd, v = Pg.v, max = v ? Gd.cols : Gd.rows; let k = item.start ?? Math.min(max, Pg.lo + 1), mv = null, done = false;
+  async ask(item, mode, tries) { const svg = newStage(300, { oasis: false, ground: 0 }), Pg = paraGridAt(svg, 0, { dir: item.dir, lo: item.lo ?? 1, noOther: true, marks: true }), Gd = Pg.Gd, v = Pg.v, max = v ? Gd.cols : Gd.rows, w0 = Pg.lo + item.d <= max ? Pg.lo + item.d : Pg.lo - item.d;
+    let k = item.start ?? [w0 + 2, w0 - 2, w0 + 3, w0 - 3, w0 + 1, w0 - 1].find(x => x >= 0 && x <= max && x !== Pg.lo && x !== w0), mv = null, done = false;   /* يبدأ بعيداً عن الجواب وعن المعطى (الفحص المستقل (مهم 4)) */
     const g2 = el('g', { 'pointer-events': 'none' }, svg), set = n => { k = Math.max(0, Math.min(max, Math.round(n))); g2.innerHTML = ''; const [x1, y1] = v ? Gd.P(k, 0) : Gd.P(0, k), [x2, y2] = v ? Gd.P(k, Gd.rows) : Gd.P(Gd.cols, k); geoLine(g2, x1, y1, x2, y2, { color: CRS.b, w: 4 }); geoArrow(g2, (x1 + x2) / 2 + (v ? 0 : 8), (y1 + y2) / 2 - (v ? 8 : 0), v ? -90 : 0, CRS.mark, 9); /*T*/window.__paraK = k;/*/T*/ }; set(k);
-    { const t = el('text', { x: 180, y: 252, 'text-anchor': 'middle', 'font-size': 20, 'font-weight': 700, fill: GEO.ink, 'pointer-events': 'none' }, svg); t.textContent = DG(item.d); }
+    { const t = el('text', { x: 180, y: 262, 'text-anchor': 'middle', 'font-size': 20, 'font-weight': 700, fill: GEO.ink, 'pointer-events': 'none' }, svg); t.textContent = DG(item.d); } if (item.sym) symCard(svg, 124, 258, item.sym);
     if (tries >= 3) { const m = helpG(svg), c = 3; for (let i = 0; i < item.d; i++) { const [xa, ya] = v ? Gd.P(Pg.lo + i, c) : Gd.P(c, Pg.lo + i), [xb, yb] = v ? Gd.P(Pg.lo + i + 1, c) : Gd.P(c, Pg.lo + i + 1); el('path', { d: v ? `M${xa} ${ya} Q${(xa + xb) / 2} ${ya - 16} ${xb} ${yb}` : `M${xa} ${ya} Q${xa + 16} ${(ya + yb) / 2} ${xb} ${yb}`, fill: 'none', stroke: css('--think'), 'stroke-width': 2.6 }, m); } }   /* الحلّ المشترك: القفزات من المستقيم المعطى مرسومة */
     const askQ = async () => { await S(tries >= 3 ? 'gen.crs.together.draw' : (item.q || 'gen.crs.drawQ'), { noGap: true }); await S(numw(item.d), { append: true }); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
     const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { if (q[1] > Gd.y0 + 20) return false; const s = Gd.snap(q); set(v ? s[0] : s[1]); }, move(q) { const s = Gd.snap(q); set(v ? s[0] : s[1]); }, up() {} });
     /*T*/window.__paraAt = n => { const m = svg.getScreenCTM(), [x, y] = v ? Gd.P(n, 2) : Gd.P(3, n); return { x: m.a * x + m.e, y: m.d * y + m.f }; }; window.__paraWant = Pg.lo + item.d <= max ? Pg.lo + item.d : Pg.lo - item.d;/*/T*/
-    const nudge = rulNudges(svg, 262, s => set(k + (v ? s : s)), v ? ['rulLeft', 'rulRight'] : ['crsDown', 'crsUp']); AUTO({ kind: 'paraDraw', ok: () => { set(Pg.lo + item.d <= max ? Pg.lo + item.d : Pg.lo - item.d); rulDoneBtn().click(); }, wrong: () => { const w = Pg.lo + item.d + 1 <= max ? Pg.lo + item.d + 1 : Pg.lo + item.d - 1; set(w === Pg.lo ? Pg.lo + 1 : w); rulDoneBtn().click(); } });
+    const nudge = rulNudges(svg, 258, s => set(k + s), v ? ['crsLeft', 'crsRight'] : ['crsDown', 'crsUp'], { vert: !v }); AUTO({ kind: 'paraDraw', ok: () => { set(Pg.lo + item.d <= max ? Pg.lo + item.d : Pg.lo - item.d); rulDoneBtn().click(); }, wrong: () => { const w = Pg.lo + item.d + 1 <= max ? Pg.lo + item.d + 1 : Pg.lo + item.d - 1; set(w === Pg.lo ? Pg.lo + 1 : w); rulDoneBtn().click(); } });
     await rulDone(() => { done = true; REPLAY_HOOK = null; input.off(); nudge.forEach(b => b.remove()); }); return { ans: Math.abs(k - Pg.lo), ctx: { svg, set, Pg } }; },
   judge(item, d) { return d === item.d ? { ok: true } : { ok: false, err: d === item.d + 1 ? 'gridPlusOne' : 'paraDrawOff' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2() { await S('gen.crs.hint.draw'); }, async together() {},
@@ -140,7 +155,7 @@ ITEM.cornerCheck = {
 /* ================= ⑦ أدر الشارع حتى يتعامد مع الآخر (C124، إنتاج): rot اتجاه الشارع الثابت، ang0 زاوية البدء بينهما. زرّان يديران 15 درجة ================= */
 ITEM.perpTurn = {
   make(spec) { return { ...spec, tag: 'perp-turn' }; },
-  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }); rayFrame(svg); const rot = item.rot || 0, C = [180, 116]; fullLineAt(svg, C, rot, { color: CRS.a, w: 7, arrows: false }); let ang = item.ang0 ?? 45, pc = null;   /* ang0: زاوية البدء (لا تُنطق، فليست start) */
+  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }); rayFrame(svg); const rot = item.rot || 0, C = [180, 116]; fullLineAt(svg, C, rot, { color: CRS.a, w: 7, arrows: false }); if (item.sym) symCard(svg, 50, 40, item.sym); let ang = item.ang0 ?? 45, pc = null;   /* ang0: زاوية البدء (لا تُنطق، فليست start) */
     const g2 = el('g', { 'pointer-events': 'none' }, svg), set = a => { ang = ((Math.round(a / 15) * 15) % 180 + 180) % 180; if (ang === 0) ang = 15; g2.innerHTML = ''; fullLineAt(g2, C, rot + ang, { color: CRS.b, w: 7, arrows: false }); /*T*/window.__perpAng = ang;/*/T*/ }; set(ang);
     if (tries >= 3) pc = paperCornerAt(helpG(svg), C, rot);   /* الحلّ المشترك: ركن الورقة موضوع على الشارع الثابت، والتدوير للطفل */
     say(...lineOf(tries >= 3 ? 'gen.crs.together.turn' : item.q), { free: true });
@@ -160,8 +175,8 @@ const SIDE_REL = { rectT: { par: { ab: ['jd'], bj: ['da'], jd: ['ab'], da: ['bj'
 ITEM.sideRel = {
   make(spec) { return { ...spec, wants: (SIDE_REL[spec.fig][spec.rel] || {})[spec.ref] || [], tag: 'side-' + spec.rel }; },
   async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), { F, G } = segFigAt(svg, item.fig), others = F.segs.filter(k => k !== item.ref); ITEM.segTap.mark({ ctx: { G } }, item.ref, css('--compass')); let done = false;
-    if (tries >= 3) { const m = helpG(svg); if (item.rel === 'perp') { const P = F.pts[item.ref[0]]; paperCornerAt(m, P, 0, 40).setAttribute('opacity', .7); } else for (const sg of [item.ref, ...item.wants]) { const P = F.pts[sg[0]], Q = F.pts[sg[1]]; geoArrow(m, (P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2, Math.atan2(Q[1] - P[1], Q[0] - P[0]) * 180 / Math.PI, CRS.mark, 10); } }
-    const askQ = async () => { await S(tries >= 3 ? 'gen.crs.together.side' : item.q, { noGap: true }); for (const [i, k] of [...item.ref].entries()) await sayLtr(k, i ? {} : { noGap: true }); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
+    if (tries >= 3) { const m = helpG(svg); if (item.rel === 'perp' && item.wants.length) { const w = item.wants[0], v = [...item.ref].find(x => w.includes(x)), P = F.pts[v], o1 = F.pts[item.ref.replace(v, '')], o2 = F.pts[w.replace(v, '')], ang = Q => Math.atan2(-(Q[1] - P[1]), Q[0] - P[0]) * 180 / Math.PI, t1 = ang(o1), t2 = ang(o2), d = ((t2 - t1) % 360 + 360) % 360; paperCornerAt(m, P, Math.abs(d - 90) < 5 ? t1 : t2, 40).setAttribute('opacity', .75); }   /* ركن الورقة عند الرأس المشترك، ضلعه على الضلع المسمّى (الفحص المستقل (مهم 1)) */ else for (const sg of [item.ref, ...item.wants]) { const P = F.pts[sg[0]], Q = F.pts[sg[1]]; geoArrow(m, (P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2, Math.atan2(Q[1] - P[1], Q[0] - P[0]) * 180 / Math.PI, CRS.mark, 10); } }
+    const askQ = async () => { await S(tries >= 3 ? (item.rel === 'par' ? 'gen.crs.together.sidePar' : 'gen.crs.together.sidePerp') : item.q, { noGap: true }); for (const [i, k] of [...item.ref].entries()) await sayLtr(k, i ? {} : { noGap: true }); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
     const k = await tapOne(others.map(sg => ({ g: G[sg], k: sg, label: labelText('geoSeg') + ' ' + LTR[sg[0]] + ' ' + LTR[sg[1]] })), { ok: item.wants, pad: 56 }); done = true; REPLAY_HOOK = null; hush(); return { ans: k, ctx: { svg, G } }; },
   judge(item, k) { return item.wants.includes(k) ? { ok: true } : { ok: false, err: item.rel === 'par' ? 'sidePar' : 'sidePerp' }; },
   onOk(item, r) { SFX.good(); ITEM.segTap.mark(r, r.ans, GEO.hl); }, onWrong() { SFX.soft(); },
@@ -188,16 +203,44 @@ ITEM.shortToLine = {
 };
 /* ================= ⑩ ما علاقة المستقيمين؟ (C120، C121، C124): kind para | perp | cross، rot، ang. عند المتقاطعين يوضع ركن الورقة فيُحكم به لا بالنظر ================= */
 ITEM.pairName = {
-  make(spec) { return { ...spec, want: spec.kind, tag: 'pair-' + spec.kind }; },
+  make(spec) { return { ...spec, want: spec.kind, ok: spec.kind === 'perp' ? ['perp', 'cross'] : [spec.kind], tag: 'pair-' + spec.kind }; },   /* D241: المتعامدان متقاطعان أيضاً، فـ«متقاطعان» مقبول مع «وله اسم أخصّ» */
   async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }); rayFrame(svg); const C = [180, 126], Pr = linePairAt(svg, item.kind, { C, rot: item.rot || 0, ang: item.ang || 60, d: item.d });
     if (Pr.meet) paperCornerAt(svg, C, item.rot || 0, 52); if (tries >= 3) { const t = el('text', { x: 180, y: 34, 'text-anchor': 'middle', 'font-size': 15, fill: css('--think') }, helpG(svg)); t.textContent = labelText(Pr.meet ? 'crsAidMeet' : 'crsAidNoMeet'); }
-    await S(tries >= 3 ? 'gen.crs.together.pair' : item.q); const k = await choosePick([['para', labelText('crsPara')], ['perp', labelText('crsPerp')], ['cross', labelText('crsCross')]], item.want); return { ans: k, ctx: { svg } }; },
-  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.want === 'para' || k === 'para' ? 'crossPar' : 'perpEye' }; },
-  onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2(item) { await S(item.kind === 'para' ? 'gen.crs.hint.meet' : 'gen.crs.hint.corner'); }, async together() {},
+    await S(tries >= 3 ? 'gen.crs.together.pair' : item.q); const k = await choosePick([['para', labelText('crsPara')], ['perp', labelText('crsPerp')], ['cross', labelText('crsCross')]], item.ok); return { ans: k, ctx: { svg } }; },
+  judge(item, k) { return item.ok.includes(k) ? { ok: true } : { ok: false, err: item.want === 'para' || k === 'para' ? 'crossPar' : 'perpEye' }; },
+  async onOk(item, r) { SFX.good(); if (r.ans !== item.want) await S('gen.crs.exact.perp'); }, onWrong() { SFX.soft(); }, async hint2(item) { await S(item.kind === 'para' ? 'gen.crs.hint.meet' : 'gen.crs.hint.corner'); }, async together() {},
   async reveal(item) { await S('gen.crs.reveal.pair.' + item.kind); },
   praise: () => 'praiseThink', twin(item) { return item.twin || null; },
 };
 
+/* ================= ⑪ أيّ شارعين متعامدان؟ وكيف نتأكّد؟ (C124، C127، تطبيقي): خريطة فيها أربعة شوارع بأسمائها؛ يلمس الطفل شارعين ثم يختار طريقة التأكّد ================= */
+const STREETS = { A: { a: [[180, 78], 0], b: [[150, 130], 68], j: [[262, 130], 90], d: [[180, 176], 9] }, B: { a: [[176, 120], 22], b: [[110, 120], 100], j: [[236, 104], 112], d: [[200, 60], -40] } };
+function streetsAt(svg, lay) { el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#e3ecd9', stroke: css('--line'), 'stroke-width': 2 }, svg); const G = {};
+  for (const [k, [P, a]] of Object.entries(STREETS[lay])) { const g = el('g', { 'data-street': k }, svg), r = a * Math.PI / 180, u = [Math.cos(r), -Math.sin(r)], E1 = rayEdge(P, [P[0] + u[0], P[1] + u[1]]), E2 = rayEdge(P, [P[0] - u[0], P[1] - u[1]]);
+    geoLine(g, E2[0], E2[1], E1[0], E1[1], { color: '#9aa5ae', w: 16 }); geoLine(g, E2[0], E2[1], E1[0], E1[1], { color: '#fff', w: 1.6, dash: '8 7' }); const q = [E1[0] - u[0] * 16, E1[1] - u[1] * 16]; el('circle', { cx: q[0], cy: q[1], r: 12, fill: '#fff', stroke: '#6a7f8c', 'stroke-width': 2 }, g); const t = el('text', { x: q[0], y: q[1] + 6, 'text-anchor': 'middle', 'font-size': 16, 'font-weight': 700, fill: GEO.ink, 'pointer-events': 'none' }, g); t.textContent = LTR[k]; G[k] = g; }
+  return G; }
+const streetMeet = (lay, x, y) => { const [[P, a], [Q, b]] = [STREETS[lay][x], STREETS[lay][y]], u = [Math.cos(a * Math.PI / 180), -Math.sin(a * Math.PI / 180)], v = [Math.cos(b * Math.PI / 180), -Math.sin(b * Math.PI / 180)], d = u[0] * v[1] - u[1] * v[0], t = ((Q[0] - P[0]) * v[1] - (Q[1] - P[1]) * v[0]) / d; return { M: [P[0] + u[0] * t, P[1] + u[1] * t], a, b }; };
+ITEM.streetPair = {
+  make(spec) { const S2 = STREETS[spec.lay], ks = Object.keys(S2), perp = []; for (let i = 0; i < 4; i++) for (let j = i + 1; j < 4; j++) { const d = Math.abs(((S2[ks[i]][1] - S2[ks[j]][1]) % 180 + 180) % 180); if (Math.abs(d - 90) < .5) perp.push(ks[i] + ks[j]); }
+    /*T*/if (TESTHOOK && perp.length !== 1) testBug('streetPair: الأزواج المتعامدة ' + perp.length);/*/T*/ return { ...spec, want: perp[0], tag: 'street-pair' }; },
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), G = streetsAt(svg, item.lay), T = ex => Object.keys(G).filter(k => !ex.includes(k)).map(k => ({ g: G[k], k, label: labelText('crsStreet') + ' ' + LTR[k] }));
+    if (tries >= 3) { const M = streetMeet(item.lay, item.want[0], item.want[1]); paperCornerAt(helpG(svg), M.M, Math.min(M.a, M.b) < 0 ? Math.max(M.a, M.b) : Math.min(M.a, M.b), 40).setAttribute('opacity', .75); }   /* الحلّ المشترك: ركن الورقة موضوع عند تقاطع، والاختيار للطفل */
+    say(...lineOf(tries >= 3 ? 'gen.crs.together.street' : item.q), { free: true });
+    const x = await tapOne(T([]), { ok: [...item.want], pad: 30 }); hush(); G[x].querySelector('line').setAttribute('stroke', GEO.hl); await S('gen.crs.streetOther');
+    const y = await tapOne(T([x]), { ok: [...item.want].filter(k => k !== x).length ? [...item.want].filter(k => k !== x) : [...item.want], pad: 30 }); hush(); G[y].querySelector('line').setAttribute('stroke', GEO.hl); const pair = [x, y].sort().join('');
+    await S('gen.crs.streetHow'); const how = await choosePick([['corner', labelText('crsHowCorner'), '<i></i>', 'gen.crs.how.corner'], ['eye', labelText('crsHowEye'), '<i></i>', 'gen.crs.how.eye'], ['long', labelText('crsHowLong'), '<i></i>', 'gen.crs.how.long']], 'corner');
+    return { ans: { pair, how }, ctx: { svg, G } }; },
+  judge(item, a) { if (a.pair !== item.want) return { ok: false, err: 'perpEye' }; return a.how === 'corner' ? { ok: true } : { ok: false, err: 'perpProof' }; },
+  onOk(item, r) { SFX.good(); const M = streetMeet(item.lay, item.want[0], item.want[1]); paperCornerAt(r.ctx.svg, M.M, Math.min(M.a, M.b) < 0 ? Math.max(M.a, M.b) : Math.min(M.a, M.b), 40); }, onWrong() { SFX.soft(); },
+  async hint2() { await S('gen.crs.hint.street'); }, async together() {},
+  async reveal(item, r) { const M = streetMeet(item.lay, item.want[0], item.want[1]); for (const k of item.want) r.ctx.G[k].querySelector('line').setAttribute('stroke', GEO.hl); paperCornerAt(r.ctx.svg, M.M, Math.min(M.a, M.b) < 0 ? Math.max(M.a, M.b) : Math.min(M.a, M.b), 40); await S('gen.crs.reveal.street'); },
+  praise: () => 'praiseThink', twin(item) { return item.twin || null; },
+};
+/* الرمز: الشكل بأسماء نقاطه وعلاماته، ثم تعبيره بالرمز تحته. c.kind par | perp، lines: [الرسم، الرمز، القراءة] */
+SCENES.symShow = async c => { const svg = newStage(250, { oasis: false, ground: 0 }), [l1, l2, l3] = c.lines, par = (c.kind || 'par') === 'par'; rayFrame(svg);
+  if (par) { geoObj(svg, 'seg', [80, 60], [280, 60], { names: ['a', 'b'], labP: [-14, 0], labQ: [14, 0] }); geoObj(svg, 'seg', [80, 140], [280, 140], { names: ['j', 'd'], labP: [-14, 0], labQ: [14, 0] }); geoArrow(svg, 186, 60, 0, CRS.mark, 9); geoArrow(svg, 186, 140, 0, CRS.mark, 9); }
+  else { geoObj(svg, 'seg', [90, 150], [280, 150], { names: ['a', 'b'], labP: [-14, 0], labQ: [14, 0] }); geoObj(svg, 'seg', [280, 150], [280, 40], { names: [null, 'j'], labQ: [14, 0] }); perpMarkAt(svg, [280, 150], 180, 90, 13); }
+  await S(l1); const cap = symCaption(svg, 180, 200, par ? ['ab', 'par', 'jd'] : ['ab', 'perp', 'bj'], { size: 26 }); anim(cap, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, fill: 'both' }); SFX.tick(); await S(l2); await S(l3); logAttempt({ scene: c.s || 'explore', tag: 'symShow', ok: true }); };
 /* ---------- مشاهد S2-U2 ---------- */
 const crsHot = svg => { const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg); el('rect', { x: 26, y: 20, width: 308, height: 192, rx: 10, fill: '#fff', opacity: .01 }, g); return g; };
 /* تقاطع شارعين: يلمس الطفل حيث يلتقيان فتظهر نقطة التقاطع م. lines: [السؤال، بعد] */
@@ -222,7 +265,7 @@ SCENES.extendShow = async c => { const it = ITEM.meetJudge.make({ kind: c.kind |
 SCENES.distShow = async c => { const svg = newStage(270, { oasis: false, ground: 0 }), d = c.d || 3, Pg = paraGridAt(svg, d, { lo: 1, marks: true }), Gd = Pg.Gd, [l1, l2] = c.lines, X0 = [5, 3, 1], SL = [2, 1, 0], COL = ['#8e6bbf', css('--think'), css('--compass')]; S(l1, { free: true });
   for (let i = 0; i < 3; i++) { const [x1, y1] = Gd.P(X0[i], 1), [x2, y2] = Gd.P(X0[i] + SL[i], 1 + d), g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg); geoLine(g, x1, y1, x2, y2, { color: 'transparent', w: 34 }); geoLine(g, x1, y1, x2, y2, { color: COL[i], w: 5 });
     await tapOne([{ g, k: i, label: labelText('crsMeasure') + ' ' + DG(i + 1) }], { ok: i, pad: 56, pulse: true }); if (i === 0) hush(); const mm = Math.round(Math.hypot(SL[i], d) * 10), t = el('text', { x: (x1 + x2) / 2 + 30, y: (y1 + y2) / 2 + 6, 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 700, fill: COL[i], 'pointer-events': 'none' }, svg); t.textContent = DG(Math.floor(mm / 10)) + ' ' + labelText('rulCm') + (mm % 10 ? ' ' + DG(mm % 10) + ' ' + labelText('rulMm') : ''); SFX.tick();
-    await sayLen(Math.floor(mm / 10), 'cm', { append: false, ...(mm % 10 ? { noGap: true } : {}) }); if (mm % 10) { await S('gen.rul.and', { noGap: true, append: true }); await sayLen(mm % 10, 'mm'); } if (i === 2) perpMarkAt(svg, [x1, y1], 0, 90, 11); }
+    await sayLen(Math.floor(mm / 10), 'cm', { append: false, ...(mm % 10 ? { noGap: true } : {}) }); if (mm % 10) { await S('gen.rul.and', { noGap: true, append: true }); await sayLen(mm % 10, 'mm'); } }
   logAttempt({ scene: c.s || 'explore', tag: 'distShow', ok: true }); SFX.good(); await S(l2); };
 /* ركن الورقة: ورقة تُطوى مرتين فيظهر ركنها. lines: [الطيّة الأولى، الطيّة الثانية، الركن] */
 SCENES.cornerFold = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2, l3] = c.lines; rayFrame(svg); const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg), r = el('path', { d: 'M96 44 L250 30 L268 180 L84 196 Z', fill: CRS.paper, stroke: CRS.paperEdge, 'stroke-width': 2.5, 'stroke-linejoin': 'round' }, g);
@@ -244,7 +287,7 @@ SCENES.sidesShow = async c => { const svg = newStage(232, { oasis: false, ground
   await answerWhile(l3, () => tapOne([{ g: G.bj, k: 'bj', label: labelText('geoSeg') }], { ok: 'bj', pad: 56, pulse: true })); ITEM.segTap.mark({ ctx: { G } }, 'bj', CRS.b); perpMarkAt(svg, F.pts.b, 180, 270, 14); SFX.good(); logAttempt({ scene: c.s || 'explore', tag: 'sidesShow', ok: true }); await S(l4); };
 SCENES.recallPair = async c => { const svg = newStage(232, { oasis: false, ground: 0 }); rayFrame(svg); const Pr = linePairAt(svg, c.kind || 'para', { C: [180, 126], rot: c.rot || 0, ang: c.ang, marks: true }); if (c.corner && Pr.meet) paperCornerAt(svg, [180, 126], c.rot || 0, 52); await sleep(300); await S(c.lines); };
 SCENES.recallShore = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), Gm = shoreAt(svg, c.ix || 150); geoLine(svg, Gm.I[0], Gm.I[1] + 15, Gm.foot[0], Gm.foot[1], { color: GEO.road, w: 3 }); perpMarkAt(svg, Gm.foot, 0, 90, 11); await sleep(300); await S(c.lines); };
-SCENES.recallParaGrid = async c => { const svg = newStage(270, { oasis: false, ground: 0 }), Pg = paraGridAt(svg, c.d || 3, { lo: 1, marks: true }), [x, y] = Pg.Gd.P(3, 1), [x2, y2] = Pg.Gd.P(3, 1 + (c.d || 3)); geoLine(svg, x, y, x2, y2, { color: css('--compass'), w: 5 }); perpMarkAt(svg, [x, y], 0, 90, 11); await sleep(300); await S(c.lines); };
+SCENES.recallParaGrid = async c => { const svg = newStage(270, { oasis: false, ground: 0 }), Pg = paraGridAt(svg, c.d || 3, { lo: 1, marks: true }), [x, y] = Pg.Gd.P(3, 1), [x2, y2] = Pg.Gd.P(3, 1 + (c.d || 3)); geoLine(svg, x, y, x2, y2, { color: css('--compass'), w: 5 }); if (c.square) perpMarkAt(svg, [x, y], 0, 90, 11); await sleep(300); await S(c.lines); };
 WRAP_ART.crossRoads = svg => { const g = el('g', {}, svg); el('rect', { x: 60, y: 60, width: 240, height: 130, rx: 14, fill: '#e3ecd9', stroke: css('--line'), 'stroke-width': 2 }, g); geoLine(g, 70, 150, 290, 100, { color: '#8d9aa3', w: 16 }); geoLine(g, 150, 66, 200, 184, { color: '#8d9aa3', w: 16 }); el('circle', { cx: 178, cy: 126, r: 7, fill: CRS.mark, stroke: '#fff', 'stroke-width': 2 }, g); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
 WRAP_ART.railPair = svg => { const g = el('g', {}, svg); el('rect', { x: 60, y: 70, width: 240, height: 110, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, g); for (const y of [104, 146]) { geoLine(g, 70, y, 290, y, { color: '#5b6770', w: 5 }); geoArrow(g, 190, y, 0, CRS.mark, 10); } anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
 WRAP_ART.paperCorner = svg => { const g = el('g', {}, svg); paperCornerAt(g, [130, 190], 0, 120); el('circle', { cx: 130, cy: 190, r: 16, fill: 'none', stroke: CRS.mark, 'stroke-width': 3 }, g); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };

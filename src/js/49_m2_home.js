@@ -50,3 +50,35 @@ SCENES.homeSeg = async c => { const unit = c.unit, H = PROG.home = isObj(PROG.ho
   const ask = async (q, val) => { S(q, { free: true }); const v = await stepperAsk([{ key: 'cm', min: 0, max: 99, val, unit: 'rulCm' }, { key: 'mm', min: 0, max: 9, val: 0, unit: 'rulMm' }]); return { est: 0, cm: v.cm, mm: v.mm }; };
   const whole = await ask('gen.home.segQ', 20), p1 = await ask('gen.home.part1Q', Math.round(whole.cm / 2)), p2 = await ask('gen.home.part2Q', p1.cm); H[unit] = { at: Date.now(), items: [whole, p1, p2].map(({ est, cm, mm }) => ({ est, cm, mm })) }; saveProg();
   const mm = x => x.cm * 10 + x.mm; logAttempt({ scene: c.s || 'hook', tag: 'homeSeg', ok: true }); SFX.good(); await S(Math.abs(mm(p1) - mm(p2)) <= 2 ? 'gen.home.segEq' : 'gen.home.segNe'); await S('gen.home.thanks'); if (back) await S(back); };
+/* =====================================================================
+   مهمة البيت بأعداد (S2-U2 فما بعدها، D221، D244): يُدخل الطفل أعداد مهمته (عدد، أو قياس بالسنتيمتر، أو اختيار)، ويُقال له ما تعنيه بلا حكم على البيت.
+   c: unit، art (رسم المسرح: corner | clock | shapes)، fields: [{ key، q، min، max، val، unit } أو { key، q، pick: [[k، تسمية، جملة]…] }]، say (تعليق بعد الإدخال)،
+   again: الحقول نفسها لسؤال «بعد سبعة أيام» (يُسأل في أول درس يحمله بعد مرورها، وquiet بلا خطّاف)، lines: [خطّاف العودة].
+   المحفوظ: PROG.home[الوحدة] = { at، items: []، n: { مفتاح: عدد }، an: { مفتاح: عدد } } (الاختيار برقم موضعه)
+   ===================================================================== */
+function homeArt(svg, art) { const g = el('g', { 'pointer-events': 'none' }, svg);
+  if (art === 'clock') { el('circle', { cx: 180, cy: 112, r: 80, fill: '#fffdf6', stroke: GEO.ink, 'stroke-width': 4 }, g); for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; geoLine(g, 180 + Math.cos(a) * 68, 112 + Math.sin(a) * 68, 180 + Math.cos(a) * (k % 3 ? 62 : 56), 112 + Math.sin(a) * (k % 3 ? 62 : 56), { color: GEO.ink, w: k % 3 ? 2 : 3.5 }); } }
+  else if (art === 'corner') { el('rect', { x: 70, y: 40, width: 220, height: 150, rx: 6, fill: '#efe6d6', stroke: css('--line'), 'stroke-width': 2 }, g); for (let x = 70; x <= 290; x += 44) geoLine(g, x, 40, x, 190, { color: '#c9b79c', w: 2 }); paperCornerAt(g, [70, 190], 0, 60); }
+  else if (art === 'shapes') { [['tScaR', 100, 110, .6], ['cRect', 250, 110, .7]].forEach(([k, x, y, s]) => polyAt(g, k, [x, y], { s, dots: false, fill: '#f2d38a' })); }
+  return g; }
+/* ساعة بعقربين: الصغير عند h والكبير عند الثانية عشرة، وقوس الزاوية الصغرى بينهما */
+function homeClock(svg, h) { const g = el('g', { 'pointer-events': 'none' }, svg), C = [180, 112], a = 90 - h * 30, P = angP(C, a, 46), Q = angP(C, 90, 66); geoLine(g, C[0], C[1], Q[0], Q[1], { color: GEO.ink, w: 4 }); geoLine(g, C[0], C[1], P[0], P[1], { color: '#b0552f', w: 6 });
+  const d = ((h % 12) * 30), sm = d > 180 ? 360 - d : d; if (sm) el('path', { d: d > 180 ? angArc(C, 24, 90, 90 + sm) : angArc(C, 24, 90 - sm, 90), fill: 'none', stroke: ANG.arc, 'stroke-width': 3.2 }, g); return sm; }
+const HOME_SAY = {
+  par: async (r, v) => S(Math.abs(v.d1 - v.d2) <= 1 ? 'gen.home.parEq' : 'gen.home.parNe'),
+  parAgain: async (r, v) => S(r.n && Math.abs(v.d3 - r.n.d1) <= 1 ? 'gen.home.par3Eq' : 'gen.home.par3Ne'),
+  clock: async (r, v) => { const svg = newStage(230, { oasis: false, ground: 0 }); homeArt(svg, 'clock'); const sm = homeClock(svg, v.hour); await S(sm === 90 ? 'gen.home.clockRight' : 'gen.home.clockNot'); if (sm !== 90) { const s2 = newStage(230, { oasis: false, ground: 0 }); homeArt(s2, 'clock'); homeClock(s2, 3); await S('gen.home.clockThree'); } },
+  clockAgain: async (r, v) => { const svg = newStage(230, { oasis: false, ground: 0 }); homeArt(svg, 'clock'); homeClock(svg, 6); await S(v.kind === 2 ? 'gen.home.sixOk' : 'gen.home.sixNo'); await S(v.q === 1 ? 'gen.home.quarterOk' : 'gen.home.quarterNo'); },
+};
+SCENES.homeNums = async c => { const unit = c.unit, H = PROG.home = isObj(PROG.home) ? PROG.home : {}, [back] = c.lines || []; let rec = H[unit];
+  const stage0 = () => { const v = newStage(230, { oasis: false, ground: 0 }); homeArt(v, c.art); return v; };
+  const again = !!c.again && !!rec; if (again) { let due = !rec.an && Date.now() - rec.at >= 6.5 * 864e5; /*T*/if (TESTHOOK && window.__homeDue !== false && !rec.an) due = true;/*/T*/ if (!due) { if (back && !c.quiet) { stage0(); await S(back); } return; } }
+  else if (c.again) return;   /* سؤال المراجعة لمهمة لم تُدخل بعد: لا شيء هنا (تُسأل في درسها) */
+  if (!again && rec) { if (back && !c.quiet) { stage0(); await S(back); } return; }
+  stage0(); const askId = again ? c.askAgain || 'gen.home.askAgain' : c.ask || 'gen.home.ask'; await S(askId); const cp = cardPick([{ id: 'gen.home.did', k: 'yes', ok: true }, { id: 'gen.home.no', k: 'no' }], { keepOrder: true, intro: askId }), pick = await cp.p; cp.done(); cp.box.remove();
+  if (pick.k === 'no') { logAttempt({ scene: c.s || 'hook', tag: 'homeLater', ok: true }); await S('gen.home.later'); if (back && !c.quiet) await S(back); return; }
+  const vals = {}; for (const f of again ? c.again : c.fields) { stage0(); if (f.pick) { await S(f.q); const k = await choosePick(f.pick.map(([k2, lab, line]) => [k2, labelText(lab), '<i></i>', line]), null); vals[f.key] = f.pick.findIndex(x => x[0] === k); }
+    else { S(f.q, { free: true }); const v = await stepperAsk([{ key: f.key, min: f.min ?? 0, max: f.max ?? 99, val: f.val ?? 1, unit: f.unit || 'rulCm' }]); vals[f.key] = v[f.key]; } }
+  if (again) rec.an = vals; else rec = H[unit] = { at: Date.now(), items: [], n: vals }; saveProg();
+  logAttempt({ scene: c.s || 'hook', tag: again ? 'homeAgain' : 'homeNums', ok: true }); SFX.good(); const say = again ? c.sayAgain : c.say; if (say && HOME_SAY[say]) await HOME_SAY[say](rec, vals);
+  await S('gen.home.saved'); if (back && !c.quiet) await S(back); };

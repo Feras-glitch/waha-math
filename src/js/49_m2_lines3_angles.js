@@ -32,9 +32,9 @@ async function sayDeg(n, opt = {}) { return S(degw(n), { append: true, ...opt })
 function protAt(parent, V, base, o = {}) { const R = o.R || 140, g = el('g', { 'data-prot': base, 'pointer-events': 'none' }, parent), A = t => base + t;
   const P0 = angP(V, base, R), P1 = angP(V, base + 180, R); el('path', { d: `M${P0[0]} ${P0[1]} A${R} ${R} 0 0 0 ${P1[0]} ${P1[1]} Z`, fill: ANG.prot, stroke: ANG.protEdge, 'stroke-width': 2, opacity: .93 }, g);
   for (let t = 0; t <= 180; t += 5) { const big = t % 10 === 0, a = angP(V, A(t), R), b = angP(V, A(t), R - (big ? 12 : 7)); el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: ANG.protInk, 'stroke-width': big ? 1.6 : 1 }, g); }
-  const step = o.step || 10; for (let t = 0; t <= 180; t += step) for (const [val, r, sz, col] of [[t, R - 23, 11, ANG.protInk], [180 - t, R - 41, 9.5, '#6a7f8c']]) { const q = angP(V, A(t), r), tx = el('text', { x: q[0], y: q[1] + 4, 'text-anchor': 'middle', 'font-size': sz, 'font-weight': 700, fill: col, direction: 'ltr', 'font-family': 'var(--font-read)' }, g); tx.textContent = String(val); }
+  const step = o.step || 10, lab = el('g', { 'pointer-events': 'none', 'data-prot-lab': 1 }, g); for (let t = 0; t <= 180; t += step) for (const [val, r, sz, col] of [[t, R - 23, 11, ANG.protInk], [180 - t, R - 41, 9.5, '#6a7f8c']]) { const q = angP(V, A(t), r), tx = el('text', { x: q[0], y: q[1] + 4, 'text-anchor': 'middle', 'font-size': sz, 'font-weight': 700, fill: col, direction: 'ltr', 'font-family': 'var(--font-read)', stroke: ANG.prot, 'stroke-width': 3, 'paint-order': 'stroke', 'stroke-linejoin': 'round' }, lab); tx.textContent = String(val); }   /* حدّ بلون المنقلة حول كل عدد: يُقرأ وإن مرّ تحته ضلع (الفحص المستقل لبوابة S2-U2/U3 (11)) */
   geoLine(g, P0[0], P0[1], P1[0], P1[1], { color: ANG.protEdge, w: 2 }); el('circle', { cx: V[0], cy: V[1], r: 5, fill: 'none', stroke: ANG.v, 'stroke-width': 2 }, g); geoLine(g, V[0], V[1] - 9, V[0], V[1] + 2, { color: ANG.v, w: 1.6 });
-  return { g, R, mark(t, col = ANG.v) { const a = angP(V, A(t), R), b = angP(V, A(t), R - 46); el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: col, 'stroke-width': 3 }, g); } }; }
+  return { g, R, lab, top() { parent.appendChild(lab); }, mark(t, col = ANG.v) { const a = angP(V, A(t), R), b = angP(V, A(t), R - 46); el('line', { x1: a[0], y1: a[1], x2: b[0], y2: b[1], stroke: col, 'stroke-width': 3 }, g); } }; }
 /* إطار الزاوية (مسرح 232) */
 const angFrame = svg => rayFrame(svg);
 /* عدد بالدرجات: الرقم ودائرة صغيرة فوقه (رمز الدرجة لا يغطّيه خط القراءة، D256) */
@@ -56,14 +56,18 @@ ITEM.angleParts = {
 /* ================= ② أيّ الزاويتين أكبر (أو أصغر)؟ (C130): degs [يمين، يسار]، lens طولا ضلعي كلٍّ منهما، ask big | small ================= */
 ITEM.angleBig = {
   make(spec) { const big = (spec.ask || 'big') === 'big', d = spec.degs, w = big ? (d[0] > d[1] ? 0 : 1) : (d[0] < d[1] ? 0 : 1); /*T*/if (TESTHOOK && d[0] === d[1]) testBug('angleBig: زاويتان متساويتان');/*/T*/ return { ...spec, ask: big ? 'big' : 'small', want: w, tag: 'ang-big-' + (big ? 'big' : 'small') }; },
-  draw(item, svg) { const X = [262, 98]; return item.degs.map((d, i) => { const V = [X[i] - 44, 176], A = angleAt(svg, V, item.rots ? item.rots[i] : 0, d, { l1: item.lens[i], l2: item.lens[i] }); return A; }); },
+  draw(item, svg) {   /* كل زاوية تُوضع بعرضها الحقيقي داخل الإطار (الضلع الطويل لا يخرج منه)، والفراغ يُوزَّع بالتساوي؛ الأولى إلى اليمين */
+    const ext = item.degs.map((d, i) => { const r = item.rots ? item.rots[i] : 0, l = item.lens[i], xs = [0, l * Math.cos(r * Math.PI / 180), l * Math.cos((r + d) * Math.PI / 180)]; return [Math.min(...xs), Math.max(...xs)]; });
+    const w = ext.map(([a, b]) => b - a), s = Math.max(8, (308 - w[0] - w[1]) / 3), left = [26 + s + w[1] + s, 26 + s];
+    /*T*/if (TESTHOOK && w[0] + w[1] + 24 > 308) testBug('angleBig: الزاويتان أعرض من الإطار');/*/T*/
+    return item.degs.map((d, i) => angleAt(svg, [left[i] - ext[i][0], 176], item.rots ? item.rots[i] : 0, d, { l1: item.lens[i], l2: item.lens[i] })); },
   async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }); angFrame(svg); const As = this.draw(item, svg), G = As.map(A => A.g);
     if (tries >= 3) { const m = helpG(svg); As.forEach(A => el('path', { d: angArc(A.V, 40, A.a1, A.a2), fill: 'none', stroke: css('--think'), 'stroke-width': 5, opacity: .7 }, m)); }   /* الحلّ المشترك: قوسان بنصف قطر واحد، فيُقارَن الانفتاح لا الضلعان */
-    say(...lineOf(tries >= 3 ? 'gen.ang.together.big' : item.q), { free: true });
+    say(...lineOf(tries >= 3 ? (item.ask === 'small' ? 'gen.ang.together.small' : 'gen.ang.together.big') : item.q), { free: true });
     const k = await tapOne(G.map((g, i) => ({ g, k: i, label: labelText('angAngle') + ' ' + DG(i + 1) })), { ok: item.want, pad: 30 }); hush(); return { ans: k, ctx: { svg, G } }; },
   judge(item, k) { if (k === item.want) return { ok: true }; const longer = item.lens[k] > item.lens[1 - k]; return { ok: false, err: longer ? 'angSideLen' : 'angOpen' }; },
   onOk(item, r) { SFX.good(); okRing(r.ctx.svg, r.ctx.G[r.ans], 2); }, onWrong() { SFX.soft(); },
-  async hint2() { await S('gen.ang.hint.big'); }, async together() {},
+  async hint2(item) { await S(item.ask === 'small' ? 'gen.ang.hint.small' : 'gen.ang.hint.big'); }, async together() {},
   async reveal(item, r) { okRing(r.ctx.svg, r.ctx.G[item.want], 2); await S('gen.ang.reveal.big'); },
   praise: () => 'praiseLook', twin(item) { return item.twin || null; },
 };
@@ -103,9 +107,9 @@ ITEM.angleTurn = {
 /* ================= ⑤ باب القلعة: أدر الباب حتى ينفتح انفتاح الزاوية النموذج (C130، إنتاج): deg المطلوب، l طول ضلعي النموذج، from0 زاوية البدء. زرّان بخطوة 15 ================= */
 ITEM.angleMatch = {
   make(spec) { return { ...spec, tag: 'ang-match' }; },
-  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }); angFrame(svg); const Vm = [266, 176]; angleAt(svg, [Vm[0] - 36, Vm[1]], 0, item.deg, { l1: item.l || 56, col: '#6a7f8c' });   /* النموذج صغير الضلعين على اليمين */
-    const Vd = [52, 176]; geoLine(svg, Vd[0], Vd[1], Vd[0] + 150, Vd[1], { color: '#8a6a4a', w: 7 }); let ang = item.from0 ?? 30; const door = el('g', { 'pointer-events': 'none' }, svg), arc = el('path', { fill: 'none', stroke: ANG.arc, 'stroke-width': 3, 'pointer-events': 'none' }, svg);
-    const set = a => { ang = Math.max(15, Math.min(180, Math.round(a / 15) * 15)); door.innerHTML = ''; const P = angP(Vd, ang, 140); geoLine(door, Vd[0], Vd[1], P[0], P[1], { color: '#b0552f', w: 9 }); arc.setAttribute('d', angArc(Vd, 30, 0, ang)); /*T*/window.__angMatch = ang;/*/T*/ }; set(ang);
+  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }); angFrame(svg); angleAt(svg, [262, 74], 0, item.deg, { l1: item.l || 56, col: '#6a7f8c' });   /* النموذج صغير الضلعين أعلى اليمين */
+    const Vd = [166, 200]; geoLine(svg, 40, Vd[1], 320, Vd[1], { color: '#8a6a4a', w: 7 });   /* المفصل في الوسط: الباب يبقى في الإطار حتى نصف الدورة */ let ang = item.from0 ?? 30; const door = el('g', { 'pointer-events': 'none' }, svg), arc = el('path', { fill: 'none', stroke: ANG.arc, 'stroke-width': 3, 'pointer-events': 'none' }, svg);
+    const set = a => { ang = Math.max(15, Math.min(180, Math.round(a / 15) * 15)); door.innerHTML = ''; const P = angP(Vd, ang, 118); geoLine(door, Vd[0], Vd[1], P[0], P[1], { color: '#b0552f', w: 9 }); arc.setAttribute('d', angArc(Vd, 30, 0, ang)); /*T*/window.__angMatch = ang;/*/T*/ }; set(ang);
     el('circle', { cx: Vd[0], cy: Vd[1], r: 7, fill: ANG.v, stroke: '#fff', 'stroke-width': 2 }, svg);
     if (tries >= 3) el('path', { d: angArc(Vd, 52, 0, item.deg), fill: 'none', stroke: css('--think'), 'stroke-width': 5, opacity: .65 }, helpG(svg));   /* الحلّ المشترك: قوس الانفتاح المطلوب عند الباب، والتدوير للطفل */
     say(...lineOf(tries >= 3 ? 'gen.ang.together.match' : item.q), { free: true });
@@ -122,7 +126,7 @@ ITEM.angleMatch = {
 const ANG_ERR = (want, k) => (want === 'right' || k === 'right') ? 'angRightEye' : (want === 'reflex' || k === 'reflex') ? 'angReflexObtuse' : (want === 'straight' || k === 'straight') ? 'angStraight' : (want === 'full' || k === 'full' || want === 'zero' || k === 'zero') ? 'angFullZero' : 'angAcuteObtuse';
 ITEM.angleKind = {
   make(spec) { const want = ANG_KIND(spec.deg); /*T*/if (TESTHOOK && !spec.set.includes(want)) testBug('angleKind: النوع الصحيح ليس بين الخيارات');/*/T*/ return { ...spec, want, tag: 'ang-kind-' + want }; },
-  draw(item, svg) { angFrame(svg); const d = item.deg, V = d > 180 ? [190, 120] : d === 180 ? [180, 150] : (item.V || [130, 160]); return angleAt(svg, V, item.rot || 0, d >= 360 ? 360 : d, { arc: d > 180 && d < 360 ? 'out' : 'in', l1: 100, l2: 100 }); },
+  draw(item, svg) { angFrame(svg); const d = item.deg, V = d > 180 ? [190, 120] : d === 180 ? [180, 116] : (item.V || [130, 160]), l = d === 180 ? 88 : 100; return angleAt(svg, V, item.rot || 0, d >= 360 ? 360 : d, { arc: d > 180 && d < 360 ? 'out' : 'in', l1: l, l2: l }); },   /* المستقيمة في وسط الإطار بضلعين أقصر: تبقى فيه بأي دوران */
   async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }); let A;
     if (item.deg > 180 && item.deg < 360) { A = angleAt((angFrame(svg), svg), [180, 120], item.rot || 0, 360 - item.deg, { arc: 'out', l1: 92, l2: 92 }); }   /* المنعكسة: يُرسم ضلعاها، والقوس على الجهة الكبرى */
     else A = this.draw(item, svg);
@@ -132,7 +136,7 @@ ITEM.angleKind = {
       await S(tries >= 3 ? 'gen.ang.together.kind' : item.q); }
     const k = await choosePick(item.set.map(s => [s, labelText('angK.' + s), '<i></i>', 'gen.ang.k.' + s]), item.want);   /* بلا أيقونة PICKICON (للمستقيمة فيها سهم من م1) */ return { ans: k, ctx: { svg, A } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: ANG_ERR(item.want, k) }; },
-  onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2(item) { await S(item.deg > 180 ? 'gen.ang.hint.half' : 'gen.ang.hint.quarter'); }, async together() {},
+  onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2(item) { await S(item.deg >= 180 ? 'gen.ang.hint.half' : 'gen.ang.hint.quarter'); }, async together() {},
   async reveal(item) { await S('gen.ang.reveal.' + item.want); },
   praise: () => 'praiseThink', twin(item) { return item.twin || null; },
 };
@@ -140,7 +144,8 @@ ITEM.angleKind = {
 ITEM.angleKindPick = {
   make(spec) { const has = spec.degs.map(d => ANG_KIND(d) === spec.ask), want = has.indexOf(true); /*T*/if (TESTHOOK && has.filter(Boolean).length !== 1) testBug('angleKindPick: النوع ' + spec.ask + ' ليس لرسم واحد');/*/T*/ return { ...spec, want, tag: 'ang-pick-' + spec.ask }; },
   async ask(item, mode, tries) { const svg = newStage(200, { oasis: false, ground: 0 }), G = item.degs.map((d, i) => { const x = LINE_X3[i], g = el('g', { transform: `translate(${x} 100)` }, svg); el('rect', { x: -50, y: -50, width: 100, height: 100, rx: 16, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2.5 }, g);
-      const rx = d > 180 && d < 360, V = rx ? [0, 0] : d === 180 ? [0, 14] : [-26, 26]; angleAt(g, V, (item.rots || [])[i] || 0, rx ? 360 - d : d, { l1: d === 180 ? 40 : 54, arc: rx ? 'out' : 'in', r: 16, w: 3.4 }); return g; });
+      const rx = d > 180 && d < 360, r0 = (item.rots || [])[i] || 0, sw = rx ? 360 - d : d, l = d === 180 ? 40 : 44, xs = [0, Math.cos(r0 * Math.PI / 180) * l, Math.cos((r0 + sw) * Math.PI / 180) * l], ys = [0, -Math.sin(r0 * Math.PI / 180) * l, -Math.sin((r0 + sw) * Math.PI / 180) * l];
+      const V = rx ? [0, 0] : [-(Math.min(...xs) + Math.max(...xs)) / 2, -(Math.min(...ys) + Math.max(...ys)) / 2]; angleAt(g, V, r0, sw, { l1: l, arc: rx ? 'out' : 'in', r: 14, w: 3.4 }); return g; });   /* كل رسم في وسط بطاقته بعرضه الحقيقي: ضلع المنفرجة لا يدخل البطاقة المجاورة */
     if (tries >= 3) { const m = helpG(svg); item.degs.forEach((d, i) => { const t = el('text', { x: LINE_X3[i], y: 176, 'text-anchor': 'middle', 'font-size': 12.5, fill: css('--think') }, m); t.textContent = labelText('angAid.' + (d > 180 ? 'gtHalf' : d === 180 ? 'eqHalf' : d === 90 ? 'eqQ' : d < 90 ? 'ltQ' : 'gtQ')); }); }
     say(...lineOf(tries >= 3 ? 'gen.geo.together.pick' : item.q), { free: true });
     const k = await tapOne(G.map((g, i) => ({ g, k: i, label: labelText('angAngle') + ' ' + DG(i + 1) })), { ok: item.want, pad: 100 }); hush(); return { ans: k, ctx: { svg, G } }; },
@@ -170,26 +175,26 @@ ITEM.turnDeg = { ...numItem,
 ITEM.reflexOf = { ...numItem,
   make(spec) { const w = 360 - spec.deg, alt = [...new Set([180 + spec.deg, 180 - spec.deg, 270 - spec.deg, spec.deg + 90])].filter(x => x !== w && x > 0 && x < 360); return { ...spec, want: w, nums: [w, ...alt].slice(0, 3), tag: 'reflex-of' }; },
   async ask(item, mode, tries) { const svg = newStage(item.prot ? 250 : 232, { oasis: false, ground: 0 }); angFrame(svg); const V = item.prot ? [180, 196] : [180, 124];
-    if (item.prot) protAt(svg, V, 0, { R: 140 }); const A = angleAt(svg, V, item.prot ? 0 : (item.rot || 0), item.deg, { arc: 'both', l1: 104, l2: 104 });
+    const PR = item.prot ? protAt(svg, V, 0, { R: 140 }) : null; const A = angleAt(svg, V, item.prot ? 0 : (item.rot || 0), item.deg, { arc: 'both', l1: 104, l2: 104 }); if (PR) PR.top();
     if (!item.prot) { const q = angP(V, A.a1 + item.deg / 2, 48); degText(svg, q[0], q[1] + 6, item.deg, { size: 15, color: ANG.arc }); }   /* الزاوية الداخلية مكتوبة، والمنعكسة بقوسها البنفسجي */
     let aid = null; if (tries >= 3) { await S('gen.ang.together.reflex'); aid = helpG(svg); const t = el('text', { x: 180, y: 34, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 700, fill: css('--think'), direction: 'ltr' }, aid); t.textContent = '360 − ' + item.deg; } else await S(item.q);
     const np = numberPick(shuffle(item.nums), item.want, { west: true, word: degw }); return { ans: await np.p, ctx: { svg, np, aid } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: k === 180 - item.deg ? 'reflex180' : 'reflexCalc' }; },
   async hint2() { await S('gen.ang.hint.reflex'); }, async together() {},
-  async reveal(item) { await S('gen.ang.reveal.reflex', { noGap: true }); await sayDeg(item.want); },
+  async reveal(item) { await S('gen.ang.reveal.rfxCalc', { noGap: true }); await sayDeg(item.want); },
   praise: () => 'praiseThink', twin(item) { return item.twin || null; },
 };
 
 /* ================= ⑩ اقرأ المنقلة (C137): deg، side r (الضلع الأول إلى اليمين: المقياس الخارجي) أو l (إلى اليسار: الداخلي). الخطأ المقصود قراءة المقياس الآخر ================= */
 ITEM.protRead = { ...numItem,
-  make(spec) { const w = spec.deg, other = 180 - w, near = w < 90 ? (w >= 20 ? w - 15 : w + 15) : (w <= 160 ? w + 15 : w - 15); /*T*/if (TESTHOOK && (other === w || w % 5)) testBug('protRead: قياس لا يميّز المقياسين أو ليس من مضاعفات 5: ' + w);/*/T*/ return { ...spec, side: spec.side || 'r', want: w, nums: [w, other, near], tag: 'prot-read' }; },
-  draw(item, svg) { angFrame(svg); const V = [180, 200], P = protAt(svg, V, 0, { R: 142 }), l = item.side === 'l', a1 = l ? 180 : 0, a2 = l ? 180 - item.deg : item.deg; const A = angleAt(svg, V, Math.min(a1, a2), item.deg, { arc: 'in', l1: 150, l2: 150, r: 22 }); return { P, A, V, l }; },
+  make(spec) { const w = spec.deg, other = w === 90 ? 60 : 180 - w, near = w < 90 ? (w >= 20 ? w - 15 : w + 15) : (w <= 160 ? w + 15 : w - 15); /*T*/if (TESTHOOK && w % 5) testBug('protRead: قياس ليس من مضاعفات 5: ' + w);/*/T*/ return { ...spec, side: spec.side || 'r', want: w, nums: [w, other, near], tag: 'prot-read' }; },   /* القائمة يقرؤها المقياسان تسعين: مشتّتها غير المقياس الآخر */
+  draw(item, svg) { angFrame(svg); const V = [180, 200], P = protAt(svg, V, 0, { R: 142 }), l = item.side === 'l', a1 = l ? 180 : 0, a2 = l ? 180 - item.deg : item.deg; const A = angleAt(svg, V, Math.min(a1, a2), item.deg, { arc: 'in', l1: 150, l2: 150, r: 22 }); P.top(); return { P, A, V, l }; },
   async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), D = this.draw(item, svg); let aid = null;
-    if (tries >= 3) { await S('gen.ang.together.prot'); aid = helpG(svg); const z = angP(D.V, D.l ? 180 : 0, 120), t = el('text', { x: z[0] + (D.l ? 18 : -18), y: z[1] - 14, 'text-anchor': 'middle', 'font-size': 16, 'font-weight': 800, fill: css('--think'), direction: 'ltr' }, aid); t.textContent = '0'; el('circle', { cx: z[0], cy: z[1] - 18, r: 13, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, aid); }   /* الحلّ المشترك: الصفر الذي نبدأ منه محاط */
+    if (tries >= 3) { await S('gen.ang.together.prot'); aid = helpG(svg); const z = angP(D.V, D.l ? 180 : 0, D.l ? D.P.R - 41 : D.P.R - 23); el('circle', { cx: z[0], cy: z[1], r: 11, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, aid); }   /* الحلّ المشترك: الصفر الذي نبدأ منه محاط على مقياسه نفسه (الخارجي حين الضلع الأول يميناً، والداخلي حين يساراً) */
     else await S(item.q);
     const np = numberPick(shuffle(item.nums), item.want, { west: true, word: degw }); return { ans: await np.p, ctx: { svg, np, D, aid } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: k === 180 - item.deg ? 'protScale' : 'protRead' }; },
-  async hint2(item) { await S(item.deg < 90 ? 'gen.ang.hint.protAcute' : 'gen.ang.hint.protObtuse'); }, async together() {},
+  async hint2(item) { await S(item.deg < 90 ? 'gen.ang.hint.protAcute' : item.deg === 90 ? 'gen.ang.hint.protZero' : 'gen.ang.hint.protObtuse'); }, async together() {},
   async reveal(item, r) { r.ctx.D.P.mark(r.ctx.D.l ? 180 - item.deg : item.deg); await S('gen.ang.reveal.prot', { noGap: true }); await sayDeg(item.want); },
   praise: () => 'praiseMeasure', twin(item) { return item.twin || null; },
 };
@@ -212,11 +217,11 @@ ITEM.protPlace = {
    reflex: deg أكبر من 180، فيرسم الطفل 360 − deg ثم يلمس جهة القوس الكبرى ================= */
 ITEM.angleDraw = {
   make(spec) { const rx = spec.deg > 180; return { ...spec, reflex: rx, inner: rx ? 360 - spec.deg : spec.deg, tag: 'ang-draw' + (rx ? '-reflex' : '') }; },
-  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }); angFrame(svg); const V = [180, 196]; protAt(svg, V, 0, { R: 142 }); geoLine(svg, V[0], V[1], V[0] + 150, V[1], { color: ANG.side, w: 4 });
-    let a = item.from0 ?? 20, done = false; const g2 = el('g', { 'pointer-events': 'none' }, svg), arc = el('path', { fill: 'none', stroke: ANG.arc, 'stroke-width': 3.2, 'pointer-events': 'none' }, svg);
+  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }); angFrame(svg); const V = [180, 196], PR = protAt(svg, V, 0, { R: 142 }); geoLine(svg, V[0], V[1], V[0] + 150, V[1], { color: ANG.side, w: 4 });
+    let a = item.from0 ?? 20, done = false; const g2 = el('g', { 'pointer-events': 'none' }, svg), arc = el('path', { fill: 'none', stroke: ANG.arc, 'stroke-width': 3.2, 'pointer-events': 'none' }, svg); PR.top();
     const set = n => { a = Math.max(5, Math.min(180, Math.round(n / 5) * 5)); g2.innerHTML = ''; const P = angP(V, a, 150); geoLine(g2, V[0], V[1], P[0], P[1], { color: ANG.hand, w: 4.5 }); el('circle', { cx: P[0], cy: P[1], r: 11, fill: css('--compass'), stroke: '#fff', 'stroke-width': 3 }, g2); arc.setAttribute('d', angArc(V, 24, 0, a)); /*T*/window.__angDraw = a;/*/T*/ }; set(a);
     el('circle', { cx: V[0], cy: V[1], r: 6, fill: ANG.v, stroke: '#fff', 'stroke-width': 2 }, svg);
-    degText(svg, 180, 262, item.deg, { size: 20 });
+    degText(svg, 158, 262, item.deg, { size: 20 }); { const t = el('text', { x: 214, y: 262, 'text-anchor': 'middle', 'font-size': 15, fill: GEO.ink, 'pointer-events': 'none' }, svg); t.textContent = labelText('angWant'); }   /* القياس المطلوب مكتوب بجانب كلمته، فلا يُظنّ أنه قراءة الضلع الآن */
     if (tries >= 3) { const m = helpG(svg), P = angP(V, item.inner, 142), Q = angP(V, item.inner, 100); geoLine(m, P[0], P[1], Q[0], Q[1], { color: css('--think'), w: 4 }); if (item.reflex) { const t = el('text', { x: 180, y: 34, 'text-anchor': 'middle', 'font-size': 16, 'font-weight': 700, fill: css('--think'), direction: 'ltr' }, m); t.textContent = '360 − ' + item.deg + ' = ' + item.inner; } }   /* الحلّ المشترك: علامة القياس على المنقلة، والتدوير للطفل */
     const askQ = async () => { await S(tries >= 3 ? 'gen.ang.together.draw' : (item.q || 'gen.ang.drawQ'), { noGap: true }); await sayDeg(item.deg); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
     const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { if (q[1] > V[1] + 14 || Math.hypot(q[0] - V[0], q[1] - V[1]) < 40) return false; set(Math.atan2(V[1] - q[1], q[0] - V[0]) * 180 / Math.PI); }, move(q) { set(Math.atan2(V[1] - q[1], q[0] - V[0]) * 180 / Math.PI); }, up() {} });
@@ -229,7 +234,7 @@ ITEM.angleDraw = {
     return { ans: { a, side }, ctx: { svg, set, V } }; },
   judge(item, r) { if (r.a !== item.inner) return { ok: false, err: r.a === 180 - item.inner ? 'protScale' : 'angDrawOff' }; return !item.reflex || r.side === 'out' ? { ok: true } : { ok: false, err: 'angDrawSide' }; },
   onOk(item, r) { SFX.good(); if (item.reflex) el('path', { d: angArc(r.ctx.V, 34, item.inner, 360), fill: 'none', stroke: ANG.rx, 'stroke-width': 3.2 }, r.ctx.svg); }, onWrong() { SFX.soft(); },
-  async hint2(item) { await S(item.reflex ? 'gen.ang.hint.drawReflex' : item.deg < 90 ? 'gen.ang.hint.protAcute' : 'gen.ang.hint.protObtuse'); }, async together() {},
+  async hint2(item) { await S(item.reflex ? 'gen.ang.hint.drawReflex' : item.deg < 90 ? 'gen.ang.hint.protAcute' : item.deg === 90 ? 'gen.ang.hint.protZero' : 'gen.ang.hint.protObtuse'); }, async together() {},
   async reveal(item, r) { const a = r.ans.a; await symTween(700, t => r.ctx.set(a + (item.inner - a) * t)); r.ctx.set(item.inner); if (item.reflex) el('path', { d: angArc(r.ctx.V, 34, item.inner, 360), fill: 'none', stroke: ANG.rx, 'stroke-width': 3.2 }, r.ctx.svg); await S('gen.ang.reveal.draw', { noGap: true }); await sayDeg(item.deg); },
   praise: () => 'praiseMeasure', twin(item) { return item.twin || null; },
 };
@@ -239,7 +244,7 @@ ITEM.angleEstimate = { ...numItem,
   async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }); angFrame(svg); const V = [180, 196], A = angleAt(svg, V, 0, item.deg, { l1: 130, l2: 130 }); let aid = null;
     if (tries >= 3) { await S('gen.ang.together.est'); aid = helpG(svg); for (const t of [45, 90, 135]) { const P = angP(V, t, 120); geoLine(aid, V[0], V[1], P[0], P[1], { color: css('--think'), w: 1.6, dash: '5 4' }); const q = angP(V, t, 134), x = el('text', { x: q[0], y: q[1] + 4, 'text-anchor': 'middle', 'font-size': 12, fill: css('--think'), direction: 'ltr' }, aid); x.textContent = String(t); } }   /* الحلّ المشترك: خطوط مرجعية عند 45 و90 و135 */
     else await S(item.q);
-    const np = numberPick(item.nums, item.want, { west: true, word: degw }); return { ans: await np.p, ctx: { svg, np, V, aid } }; },
+    const np = numberPick(shuffle(item.nums), item.want, { west: true, word: degw }); return { ans: await np.p, ctx: { svg, np, V, aid } }; },   /* مخلوطة: الأقرب ليس في الوسط دائماً (الفحص المستقل (3)) */
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'angEstimate' }; },
   show(item, r) { const p = protAt(r.ctx.svg, r.ctx.V, 0, { R: 142 }); r.ctx.svg.insertBefore(p.g, r.ctx.svg.children[1]); p.mark(item.deg); },
   onOk(item, r) { SFX.good(); this.show(item, r); }, onWrong() { SFX.soft(); },
@@ -288,8 +293,8 @@ ITEM.compassTurn = {
 /* ---------- مشاهد S2-U3 ---------- */
 const angHot = (svg, H = 192) => { const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg); el('rect', { x: 26, y: 20, width: 308, height: H, rx: 10, fill: '#fff', opacity: .01 }, g); return g; };
 /* الباب ينفتح: يلمسه الطفل فيزيد انفتاحه ثلاث مرات. c.steps، lines: [الدعوة، ختام] */
-SCENES.doorHook = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2] = c.lines, V = [110, 200]; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#efe6d6', stroke: css('--line'), 'stroke-width': 2 }, svg); geoLine(svg, 30, V[1], 330, V[1], { color: '#8a6a4a', w: 6 });
-  const door = el('g', { 'pointer-events': 'none' }, svg), arc = el('path', { fill: 'none', stroke: ANG.arc, 'stroke-width': 3.5 }, svg), set = a => { door.innerHTML = ''; const P = angP(V, a, 150); geoLine(door, V[0], V[1], P[0], P[1], { color: '#b0552f', w: 12 }); arc.setAttribute('d', a > 1 ? angArc(V, 46, 0, a) : ''); }; set(2); el('circle', { cx: V[0], cy: V[1], r: 7, fill: ANG.v }, svg);
+SCENES.doorHook = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2] = c.lines, V = [180, 200]; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#efe6d6', stroke: css('--line'), 'stroke-width': 2 }, svg); geoLine(svg, 30, V[1], 330, V[1], { color: '#8a6a4a', w: 6 });
+  const door = el('g', { 'pointer-events': 'none' }, svg), arc = el('path', { fill: 'none', stroke: ANG.arc, 'stroke-width': 3.5 }, svg), set = a => { door.innerHTML = ''; const P = angP(V, a, 130); geoLine(door, V[0], V[1], P[0], P[1], { color: '#b0552f', w: 12 }); arc.setAttribute('d', a > 1 ? angArc(V, 46, 0, a) : ''); }; set(2); el('circle', { cx: V[0], cy: V[1], r: 7, fill: ANG.v }, svg);
   const hot = angHot(svg); S(l1, { free: true }); let a = 2; for (const b of c.steps || [25, 55, 95]) { await tapOne([{ g: hot, k: b, label: labelText('angDoor') }], { ok: b, pad: 20 }); if (a === 2) hush(); const a0 = a; await symTween(600, t => set(a0 + (b - a0) * t)); a = b; SFX.tick(); }
   hot.remove(); logAttempt({ scene: c.s || 'hook', tag: 'doorHook', ok: true }); await S(l2); };
 /* العودان والمشبك: يلمس الطفل فيُفتح العودان ويُغلقان، ثم تُسمّى الأجزاء. lines: [الدعوة، الرأس، الضلعان، الانفتاح] */
@@ -305,9 +310,10 @@ SCENES.turnShow = async c => { const svg = newStage(232, { oasis: false, ground:
 /* التسمية: زاوية بحروفها؛ يلمس الطفل الرأس فيُنطق الاسم مرتين (الحرف الأوسط هو الرأس). c.nm، lines: [الدعوة، ختام] */
 SCENES.nameShow = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2] = c.lines, nm = c.nm || ['a', 'b', 'j']; angFrame(svg); const A = angleAt(svg, [170, 150], 15, 55, { names: nm });
   await answerWhile(l1, () => tapOne([{ g: A.vtx, k: 'v', label: labelText('angVertex') }], { ok: 'v', pad: 40, pulse: true })); el('circle', { cx: A.V[0], cy: A.V[1], r: 22, fill: 'none', stroke: ANG.v, 'stroke-width': 3 }, svg); SFX.pop();
-  await S('gen.ang.nm.' + nm.join('')); await S('gen.ang.nm.' + [...nm].reverse().join('')); logAttempt({ scene: c.s || 'explore', tag: 'nameShow', ok: true }); await S(l2); };
+  await S('gen.ang.nm.' + nm.join('')); await S('gen.ang.nm.' + [...nm].reverse().join('')); logAttempt({ scene: c.s || 'explore', tag: 'nameShow', ok: true }); await S(l2);
+  if (c.lines[2]) { const cap = symCaption(svg, 260, 204, ['ang', nm.join('')], { size: 26 }); anim(cap, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, fill: 'both' }); SFX.tick(); await S(c.lines[2]); } };   /* رمز الزاوية ∠ مرسوماً قبل الأحرف (ليس في خط القراءة) */
 /* ركن الورقة مرجعاً: ثلاث زوايا، يلمس الطفل كلاً منها فيوضع عليها ركن الورقة ويُنطق نوعها. c.degs، lines: [الدعوة، ختام] */
-SCENES.cornerCompare = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2] = c.lines, degs = c.degs || [50, 90, 130]; angFrame(svg); const X = [262, 160, 50]; S(l1, { free: true });
+SCENES.cornerCompare = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2] = c.lines, degs = c.degs || [50, 90, 130]; angFrame(svg); const X = [255, 160, 72]; S(l1, { free: true });
   for (const [i, d] of degs.entries()) { const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg), V = [X[i], 190]; el('rect', { x: V[0] - 26, y: 40, width: 100, height: 160, fill: '#fff', opacity: .01 }, g); angleAt(g, V, 0, d, { l1: 70, l2: 70, r: 18 });
     await tapOne([{ g, k: i, label: labelText('angAngle') + ' ' + DG(i + 1) }], { ok: i, pad: 20, pulse: true }); if (!i) hush(); paperCornerAt(svg, V, 0, 46).setAttribute('opacity', .85); SFX.tick(); await S('gen.ang.k.' + ANG_KIND(d)); }
   logAttempt({ scene: c.s || 'explore', tag: 'cornerCompare', ok: true }); await S(l2); };
@@ -361,11 +367,11 @@ SCENES.compassTurns = async c => { const svg = newStage(250, { oasis: false, gro
 /* مدينة الزوايا (مشروع د7): صورة فيها سطح وسلّم ومقصّ وساعة؛ يختار الطفل ثلاثة منها، ولكلٍّ يقيس الزاوية ثم يصنّفها. lines: [المقدمة، دعوة الاختيار، بعد كل زاوية، ختام] */
 const CITY_ANG = { roof: { deg: 110, side: 'l' }, ladder: { deg: 70, side: 'r' }, scissors: { deg: 40, side: 'r' }, clock: { deg: 90, side: 'r' }, slide: { deg: 140, side: 'l' } };
 SCENES.angleCity = async c => { const L = c.lines, chosen = [], picAt = (g, k, x, y) => { const p = el('g', { transform: `translate(${x} ${y})` }, g);
-    if (k === 'roof') { el('rect', { x: -26, y: -4, width: 52, height: 34, fill: '#e0c9a6' }, p); el('path', { d: 'M-34 -4 L0 -34 L34 -4 Z', fill: '#b0552f' }, p); }
-    else if (k === 'ladder') { geoLine(p, -20, 30, 10, -34, { color: '#8a6a4a', w: 5 }); geoLine(p, 4, 30, 30, -26, { color: '#8a6a4a', w: 5 }); for (let i = 0; i < 4; i++) geoLine(p, -16 + i * 7, 20 - i * 15, 8 + i * 6, 22 - i * 15, { color: '#8a6a4a', w: 3 }); }
-    else if (k === 'scissors') { geoLine(p, -26, -20, 22, 8, { color: '#5b6770', w: 5 }); geoLine(p, -26, 20, 22, -8, { color: '#5b6770', w: 5 }); el('circle', { cx: -30, cy: -22, r: 8, fill: 'none', stroke: '#c8392d', 'stroke-width': 4 }, p); el('circle', { cx: -30, cy: 22, r: 8, fill: 'none', stroke: '#c8392d', 'stroke-width': 4 }, p); }
+    if (k === 'roof') { el('rect', { x: -26, y: -4, width: 52, height: 34, fill: '#e0c9a6' }, p); el('path', { d: 'M-34 -4 L0 -27.8 L34 -4 Z', fill: '#b0552f' }, p); }   /* رأس السطح 110 درجة */
+    else if (k === 'ladder') { geoLine(p, -36, 30, 36, 30, { color: '#6a7f8c', w: 3 }); for (const o of [0, 20]) geoLine(p, -18 + o, 30, 5 + o, -33, { color: '#8a6a4a', w: 5 }); for (let i = 1; i <= 4; i++) { const t = i / 5; geoLine(p, -18 + 23 * t, 30 - 63 * t, 2 + 23 * t, 30 - 63 * t, { color: '#8a6a4a', w: 3 }); } }   /* السلّم على الأرض بزاوية 70 درجة */
+    else if (k === 'scissors') { geoLine(p, -24.2, 10.3, 21, -6.2, { color: '#5b6770', w: 5 }); geoLine(p, -24.2, -10.3, 21, 6.2, { color: '#5b6770', w: 5 }); el('circle', { cx: -30, cy: 13, r: 8, fill: 'none', stroke: '#c8392d', 'stroke-width': 4 }, p); el('circle', { cx: -30, cy: -13, r: 8, fill: 'none', stroke: '#c8392d', 'stroke-width': 4 }, p); }   /* شفرتان بينهما 40 درجة */
     else if (k === 'clock') { el('circle', { r: 30, fill: '#fffdf6', stroke: GEO.ink, 'stroke-width': 3 }, p); geoLine(p, 0, 0, 0, -22, { color: GEO.ink, w: 4 }); geoLine(p, 0, 0, 18, 0, { color: GEO.ink, w: 4 }); }
-    else { geoLine(p, -32, 26, 20, -24, { color: '#3d7cc0', w: 6 }); geoLine(p, 20, -24, 32, -24, { color: '#3d7cc0', w: 6 }); geoLine(p, 32, -24, 32, 30, { color: '#8a6a4a', w: 4 }); }
+    else { geoLine(p, -32, 19.6, 20, -24, { color: '#3d7cc0', w: 6 }); geoLine(p, 20, -24, 32, -24, { color: '#3d7cc0', w: 6 }); geoLine(p, 32, -24, 32, 30, { color: '#8a6a4a', w: 4 }); }   /* الزحليقة والمنصّة 140 درجة */
     return p; };
   const city = () => { const svg = newStage(250, { oasis: false, ground: 0 }); el('rect', { x: 14, y: 10, width: 332, height: 230, rx: 14, fill: '#e3ecd9', stroke: css('--line'), 'stroke-width': 2 }, svg); const G = {}; [['roof', 290, 70], ['ladder', 180, 70], ['scissors', 70, 70], ['clock', 290, 180], ['slide', 120, 180]].forEach(([k, x, y]) => { G[k] = picAt(svg, k, x, y); if (chosen.includes(k)) G[k].setAttribute('opacity', .35); }); return { svg, G }; };
   { city(); await S(L[0]); }
@@ -375,13 +381,14 @@ SCENES.angleCity = async c => { const L = c.lines, chosen = [], picAt = (g, k, x
       while (true) { const r = await def.ask(it, 'explore', n >= 2 ? 3 : 0), ok = def.judge(it, r.ans).ok; document.querySelectorAll('#stage .choices').forEach(b => b.remove()); logAttempt({ scene: c.s || 'game', tag, ok, firstTry: n === 0 }); n++; if (ok) { if (def.onOk) await def.onOk(it, r); break; } SFX.soft(); await S('gen.ang.again'); } }
     await S(L[2]); }
   { const { svg } = city(); SFX.good(); logAttempt({ scene: c.s || 'game', tag: 'angleCity', ok: true }); await S(L[3]); } };
-SCENES.recallAngle = async c => { const svg = newStage(232, { oasis: false, ground: 0 }); angFrame(svg); const d = c.deg || 60, rx = d > 180 && d < 360; angleAt(svg, rx ? [180, 120] : d === 180 ? [180, 150] : [140, 160], c.rot || 0, rx ? 360 - d : d, { names: c.nm, arc: rx ? 'out' : c.arc || 'in', l1: 100, l2: 100 }); if (c.corner) paperCornerAt(svg, rx ? [180, 120] : [140, 160], c.rot || 0, 56); await sleep(300); await S(c.lines); };
+SCENES.recallAngle = async c => { const svg = newStage(232, { oasis: false, ground: 0 }); angFrame(svg); const d = c.deg || 60, rx = d > 180 && d < 360; angleAt(svg, rx ? [180, 120] : d === 180 ? [180, 116] : [140, 160], c.rot || 0, rx ? 360 - d : d, { names: c.nm, arc: rx ? c.arc || 'out' : c.arc || 'in', l1: d === 180 ? 88 : 100, l2: d === 180 ? 88 : 100 }); if (c.corner) paperCornerAt(svg, rx ? [180, 120] : [140, 160], c.rot || 0, 56); await sleep(300); await S(c.lines); };
 SCENES.recallKinds = async c => { const svg = newStage(200, { oasis: false, ground: 0 }), degs = c.degs || [50, 90, 130]; degs.forEach((d, i) => { const g = el('g', { transform: `translate(${LINE_X3[i]} 100)` }, svg), rx = d > 180 && d < 360; el('rect', { x: -50, y: -50, width: 100, height: 100, rx: 16, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2.5 }, g); angleAt(g, rx ? [0, 0] : d === 180 ? [0, 14] : [-26, 26], 0, rx ? 360 - d : d, { l1: d === 180 ? 40 : 54, arc: rx ? 'out' : 'in', r: 16, w: 3.4 }); const t = el('text', { x: 0, y: 72, 'text-anchor': 'middle', 'font-size': 13, fill: GEO.ink }, g); t.textContent = labelText('angK.' + ANG_KIND(d)); }); await sleep(300); await S(c.lines); };
 SCENES.recallProt = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), it = ITEM.protRead.make({ deg: c.deg || 120, side: c.side || 'r' }), D = ITEM.protRead.draw(it, svg); D.P.mark(D.l ? 180 - it.deg : it.deg); await sleep(300); await S(c.lines); };
 SCENES.recallTurn = async c => { const svg = newStage(220, { oasis: false, ground: 0 }); discAt(svg, [180, 110], 88, c.turns || 1); await sleep(300); await S(c.lines); };
 SCENES.recallRose = async c => { const svg = newStage(250, { oasis: false, ground: 0 }), C = [180, 128]; roseAt(svg, C, 80); if (c.face) faceArrow(svg, C, c.face); await sleep(300); await S(c.lines); };
 WRAP_ART.angleDoor = svg => { const g = el('g', {}, svg), V = [130, 190]; el('rect', { x: 60, y: 60, width: 240, height: 140, rx: 14, fill: '#efe6d6' }, g); geoLine(g, 70, V[1], 290, V[1], { color: '#8a6a4a', w: 6 }); geoLine(g, V[0], V[1], ...angP(V, 60, 120), { color: '#b0552f', w: 10 }); el('path', { d: angArc(V, 40, 0, 60), fill: 'none', stroke: ANG.arc, 'stroke-width': 4 }, g); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
 WRAP_ART.angleKinds = svg => { const g = el('g', {}, svg); el('rect', { x: 50, y: 70, width: 260, height: 120, rx: 14, fill: '#fffdf6' }, g); [[45, 250], [90, 160], [135, 70]].forEach(([d, x]) => angleAt(g, [x + 20, 170], 0, d, { l1: 60, l2: 60, r: 16, w: 3 })); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
+WRAP_ART.turnArt = svg => { const g = el('g', {}, svg); discAt(g, [180, 140], 70, 2); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
 WRAP_ART.cakeArt = svg => { const g = el('g', {}, svg), C = [180, 130]; el('circle', { cx: C[0], cy: C[1], r: 62, fill: '#f2c98a', stroke: '#b9853d', 'stroke-width': 3 }, g); el('path', { d: `M${C[0]} ${C[1]} L${angP(C, 0, 62).join(' ')} ${angArc(C, 62, 0, 60).replace(/^M[^A]*/, '')} Z`, fill: '#e8a94f', stroke: '#fff', 'stroke-width': 3, transform: 'translate(16 -10)' }, g); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
 WRAP_ART.protArt = svg => { const g = el('g', {}, svg); protAt(g, [180, 190], 0, { R: 110, step: 30 }); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
 WRAP_ART.roseArt = svg => { const g = el('g', {}, svg); roseAt(g, [180, 130], 56); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };

@@ -29,6 +29,14 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     angprot: () => { protAt(s, [36, 50], 0, { R: 32, step: 90 }); },
     angdraw: () => { geoLine(s, 12, 48, 62, 48, { color: GEO.ink }); geoLine(s, 12, 48, 48, 14, { color: ANG.hand }); el('circle', { cx: 48, cy: 14, r: 5, fill: css('--compass') }, s); },
     angrose: () => { roseAt(s, [36, 30], 16); },
+    /* S2-U4 */
+    plyx: () => { polyAt(s, 'r5', [36, 32], { s: .3, dots: false, fill: '#f2d38a' }); },
+    plytri: () => { polyAt(s, 'tIsoA2', [24, 32], { s: .3, dots: false, fill: '#f2d38a' }); polyAt(s, 'tScaR', [50, 34], { s: .2, dots: false, fill: '#cfe6f5' }); },
+    plyquad: () => { polyAt(s, 'qRect', [36, 32], { s: .3, dots: false, fill: '#cfe6f5', marks: ['right'] }); },
+    plypara: () => { polyAt(s, 'qPara', [36, 32], { s: .28, dots: false, fill: '#cfe6f5' }); },
+    plyfam: () => { polyAt(s, 'qKite', [24, 32], { s: .3, dots: false, fill: '#cfe6f5' }); polyAt(s, 'qTrap', [50, 34], { s: .2, dots: false, fill: '#f2d38a' }); },
+    plyhex: () => { polyAt(s, 'r6', [36, 32], { s: .32, dots: false, fill: '#f2b84b' }); },
+    plycut: () => { polyAt(s, 'cRect', [36, 32], { s: .36, dots: false, fill: '#f2d38a' }); geoLine(s, 18, 43, 54, 21, { color: PLY.cut, w: 2, dash: '4 3' }); },
     crsx: () => { geoLine(s, 10, 44, 62, 16, { color: CRS.a }); geoLine(s, 14, 12, 58, 48, { color: CRS.b }); el('circle', { cx: 36, cy: 30, r: 4.5, fill: CRS.mark }, s); },   /* S2-U2 */
     crspar: () => { for (const [y, c] of [[20, CRS.a], [40, CRS.b]]) { geoLine(s, 10, y, 62, y, { color: c }); geoArrow(s, 40, y, 0, CRS.mark, 7); } },
     crsperp: () => { geoLine(s, 10, 44, 62, 44, { color: CRS.a }); geoLine(s, 28, 8, 28, 52, { color: CRS.b }); perpMarkAt(s, [28, 44], 0, 90, 9); },

@@ -10,7 +10,7 @@
 // وفوق ذلك (D240 «لكل مفهوم بند تعرّف وبند إنتاج أو تعليل»): لكل مفهوم يتقنه التطبيق بند إنتاج أو تعليل واحد على الأقل، ولكل مفهوم
 // «تأسيس» في الدرس فحص إتقان (إلا «المدخل»)، ولكل درس اختيار حقيقي للطفل (D239).
 
-const PROD = new Set(['rulerAlign', 'drawLen', 'gridPoint', 'midMark', 'rayDraw', 'paraDraw', 'perpTurn', 'angleMatch', 'angleDraw',   /* S2-U3: يفتح الباب بانفتاح الزاوية، ويرسم الزاوية بالمنقلة */   /* S2-U2: يرسم الموازي ويدير المعامد */   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
+const PROD = new Set(['rulerAlign', 'drawLen', 'gridPoint', 'midMark', 'rayDraw', 'paraDraw', 'perpTurn', 'angleMatch', 'angleDraw', 'polyFix', 'diagDraw', 'polyDraw',   /* S2-U4: يغلق الشكل ويقوّم ضلعه، ويرسم القطر، ويرسم المضلع على الشبكة */   /* S2-U3: يفتح الباب بانفتاح الزاوية، ويرسم الزاوية بالمنقلة */   /* S2-U2: يرسم الموازي ويدير المعامد */   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
   'reason', 'connect', 'completeRect', 'vertices', 'count', 'produce', 'fill', 'trace', 'buildTower', 'splitMake', 'buildTo', 'faceTap',
   'split', 'join', 'remove', 'eqPair', 'unknownStart', 'fact', 'story',
   'place', 'lineTap', 'lrTap', 'robot', 'mapPut', 'roadHop',   /* S1-U3: يضع الطفل الشيء، ويلمس العربة، ويلمس اليد، ويبرمج الروبوت، ويضع قطعة الخريطة، ويقفز */
@@ -206,6 +206,26 @@ export const factOf = it => { const t = it.t;
   if (t === 'angleEstimate') return `ange|${it.deg}`;
   if (t === 'compassFind') return `cmpf|${it.want}|${(it.hide || []).join('')}`;
   if (t === 'compassTurn') return `cmpt|${it.face}|${it.turns}|${it.cw === false ? 0 : 1}`;
+  /* S2-U4: الشكل (مفتاحه في المكتبة) ودورانه، ومهمّته */
+  if (t === 'streetPair') return `street|${it.lay}`;
+  if (t === 'polyIs') return `plyis|${it.k}|${it.rot || 0}`;
+  if (t === 'polyCount') return `plycnt|${it.k}|${it.rot || 0}`;
+  if (t === 'polyFix') return `plyfix|${it.k}`;
+  if (t === 'triKind') return `tri|${it.by || 'side'}|${it.k}|${it.rot || 0}`;
+  if (t === 'quadOpp') return `qopp|${it.ask}|${it.k}|${it.i || 0}|${it.rot || 0}`;
+  if (t === 'quadName') return `qname|${it.k}|${it.rot || 0}`;
+  if (t === 'quadCheck') return `qchk|${it.ask}|${it.k}|${it.rot || 0}`;
+  if (t === 'quadRiddle') return `qrd|${it.is}|${[...it.figs].sort().join(',')}`;
+  if (t === 'diagDraw') return `diagd|${it.k}|${it.rot || 0}`;
+  if (t === 'diagCount') return `diagn|${it.k}`;
+  if (t === 'famSlot') return `fam|${it.k}|${it.rot || 0}`;
+  if (t === 'polyName') return `pname|${it.k}|${it.rot || 0}`;
+  if (t === 'regularQ') return `reg|${it.k}|${it.rot || 0}`;
+  if (t === 'concaveTap') return it.figs ? `concp|${[...it.figs].sort().join(',')}` : `concv|${it.k}|${it.rot || 0}`;
+  if (t === 'partsCount') return `parts|${it.k}|${JSON.stringify(it.cuts)}`;
+  if (t === 'polyDraw') return `pdrawn|${it.n}`;
+  if (t === 'polyMino') return `mino|${it.n}`;
+  if (t === 'reason' && it.pic && it.pic.kind === 'poly') return `polypic|${it.pic.k}|${it.pic.rot || 0}`;
   if (t === 'reason' && it.pic && it.pic.kind === 'angle') return `angpic|${it.pic.deg}|${it.pic.rot || 0}`;
   if (t === 'reason' && it.pic && it.pic.kind === 'prot') return `protpic|${it.pic.deg}|${it.pic.side || 'r'}`;
   if (t === 'reason' && it.pic) { const P = it.pic; if (P.kind === 'paragrid') return `pgpic|${P.d}`; if (P.kind === 'shore') return `shorepic|${P.ix || 150}`;
@@ -313,6 +333,16 @@ export function d240(lessons, code, MAKERS) {
     angDrawShow: s => [`angd|${s.deg}`], estimateShow: s => [`ange|${s.deg}`], recallProt: s => [`prot|${s.deg || 120}|${s.side || 'r'}`, `protpic|${s.deg || 120}|${s.side || 'r'}`], recallTurn: s => [`tdeg|${s.turns || 1}|0`],
     recallAngle: s => [`angk|${s.deg || 60}|${s.rot || 0}`, `angpic|${s.deg || 60}|${s.rot || 0}`], degreeDisc: () => ['tdeg|1|0', 'tdeg|2|0', 'tdeg|4|0'], cakeSlice: s => [`rfx|${s.deg || 60}`],
     compassTurns: () => [1, 2, 3, 4].map(q => `cmpt|n|${q}|1`), recallRose: s => s.face ? [`cmpf|${s.face}|`] : [],
+    /* S2-U4: ما يعرضه المشهد بجوابه */
+    polyRules: s => (s.keys || ['tEq2', 'nCircle', 'nOpen', 'nStar', 'r5', 'nCurve2']).map(k => `plyis|${k}|0`), polyParts: s => [`plycnt|${s.k || 'i5h'}|0`],
+    triMeasure: s => (s.keys || ['tEq2', 'tIsoA2', 'tScaA2']).map(k => `tri|${s.by || 'side'}|${k}|0`),
+    adjOppShow: s => ['oppSide', 'adjSide', 'oppAng', 'adjN', 'oppN'].map(a => `qopp|${a}|${s.k || 'qRect'}|0|0`),
+    quadChecks: s => [`qchk|par|${s.k}|${s.rot || 0}`, `qchk|right|${s.k}|${s.rot || 0}`, `qname|${s.k}|${s.rot || 0}`], squareTilt: s => [`qname|${s.k || 'qSq'}|45`],
+    diagShow: s => [`diagd|${s.k || 'qRect'}|0`, `diagn|${s.k || 'qRect'}`], famBuild: () => ['fam|qPara|0', 'fam|qRect|0', 'fam|qRhom2|0', 'fam|qSq|0', 'fam|qTrap|0', 'fam|qKite|0'],
+    polyNames: s => (s.keys || ['r5', 'r6', 'r8']).flatMap(k => [`pname|${k}|0`, `plycnt|${k}|0`]), regularShow: s => (s.keys || ['qSq', 'qRect', 'qRhom']).map(k => `reg|${k}|0`),
+    concaveShow: s => [`concv|${s.k || 'c5'}|0`], trominoes: () => ['mino|3'], composeShow: s => (s.order || ['rect', 'para', 'kite']).map(f => `qname|${{ rect: 'cRect', para: 'cPara', kite: 'cKite', tri: 'cTri' }[f]}|0`),
+    polyCity: () => ['qSq', 'qRect2', 'r6', 'r8', 'qKite'].flatMap(k => [`pname|${k}|0`, `reg|${k}|0`]),
+    recallPoly: s => [`pname|${s.k || 'r5'}|${s.rot || 0}`, `qname|${s.k || 'r5'}|${s.rot || 0}`, `plycnt|${s.k || 'r5'}|${s.rot || 0}`, ...(s.measure || s.angles ? [`reg|${s.k || 'r5'}|${s.rot || 0}`] : [])],
     angleCity: () => ['prot|110|l', 'prot|70|r', 'prot|40|r', 'prot|90|r', 'prot|140|l', 'angk|110|0', 'angk|70|0', 'angk|40|0', 'angk|90|0', 'angk|140|0'], sidesShow: () => ['side|rectF|par|ab', 'side|rectF|par|jd', 'side|rectF|perp|ab', 'side|rectF|perp|bj'], streetMap: () => ['pdraw|2|h|1', 'pturn|0|45', 'shore|120'],
     shelvesWalk: s => Array.from({ length: Math.max(0, s.n - 1) }, (_, i) => `part|${s.n}|${s2(i + 1, s.n - i - 1)}`),
     mailExplore: s => (s.boxes || []).map(b => `digitMatch|${b.n}`),
@@ -376,6 +406,7 @@ export function d240(lessons, code, MAKERS) {
     'rhythmHook', 'patRead', 'patWorked', 'chaosPattern', 'recallPat', 'chaosGuess', 'patCircle', 'patSoundLab', 'chaosLoops', 'patHunt', 'skipBeads', 'skipWorked', 'chaosPairs', 'recallSkip', 'gridHook', 'gridGuide', 'gridWorked', 'chaosGrid', 'recallGrid', 'handsHook',
     'foldShow', 'foldLab', 'halfScene', 'chaosHalf', 'recallSym', 'foldWays', 'lineWorked', 'chaosFold', 'gridLab', 'doubleShow', 'doubleWorked', 'chaosWing', 'chaosDbl', 'paintFold', 'recallMir',
     'doorHook', 'sticksAngle', 'turnShow', 'nameShow', 'cornerCompare', 'doorStraight', 'degreeDisc', 'clockTwins', 'cakeSlice', 'protIntro', 'protSteps', 'angDrawShow', 'estimateShow', 'compassIntro', 'compassTurns', 'angleCity', 'recallAngle', 'recallKinds', 'recallProt', 'recallTurn', 'recallRose',   /* S2-U3 */
+    'symShow', 'polyRules', 'polyParts', 'triMeasure', 'twoRight', 'adjOppShow', 'quadChecks', 'squareTilt', 'quadMaker', 'diagShow', 'famBuild', 'polyNames', 'regularShow', 'concaveShow', 'honeycomb', 'cutRect', 'composeShow', 'trominoes', 'polyCity', 'recallPoly', 'recallFam', 'homeNums',   /* S2-U4 */
     'crossHook', 'sticksLab', 'extendShow', 'distShow', 'cornerFold', 'perpShow', 'shoreShow', 'sidesShow', 'recallPair', 'recallShore', 'recallParaGrid', 'streetMap',   /* S2-U2 */
     'digitPairs', 'spanClash', 'tileRuler', 'mmZoom', 'rulerWorked', 'chaosRuler', 'recallRuler', 'recallTools', 'alignShow', 'mmRead', 'cardSteps', 'drawShow', 'stringShow', 'recallAlign', 'recallMm', 'recallDraw', 'recallString', 'homeMeasure',
     'treasureHook', 'pointShow', 'gridWalk', 'chaosGridPt', 'recallGridPt', 'recallFigs', 'figLab', 'zigHook', 'antEscape', 'chaosFig', 'tautString', 'segNameShow', 'chaosItem', 'recallSeg', 'recallRoads', 'ticksShow', 'foldStrip', 'recallTicks', 'recallMid', 'torchHook', 'rayOrderShow', 'recallRay', 'railHook', 'linesThrough', 'recallCol', 'roadMap', 'homeSeg'];   /* S2-U1: النقاط والخطوط رسوم لا مولّدات */   /* S2-U0: المسطرة وأدوات القياس رسوم لا مولّدات */   /* S1-U6 */   /* S1-U5: عناصر النمط رسومه لا مولّدات */   /* S1-U4: رسوم القياس والعدد لا مولّدات */

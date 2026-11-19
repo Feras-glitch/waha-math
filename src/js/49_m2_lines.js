@@ -72,7 +72,7 @@ const FIG_GRP = { fine: 'fine', straight: 'kind', curve: 'kind', broken: 'kind',
 const FIG_COLPTS = { col: [[-30, 18], [30, -18]], col2: [[-32, -8], [32, 8]], ncol: [[-30, 18], [30, 14]], ncol2: [[-30, -6], [30, -10]], col3: [[-28, -22], [27, 22]], ncol3: [[-32, 12], [32, 14]] };
 ITEM.figPick = {
   make(spec) { const has = spec.pics.map(n => !!LFIG[n].p[spec.ask]), want = has.indexOf(true); /*T*/if (TESTHOOK && has.filter(Boolean).length !== 1) testBug('figPick: الخاصيّة ' + spec.ask + ' ليست لرسم واحد في ' + spec.pics.join(','));/*/T*/ return { ...spec, want, tag: 'line-' + spec.ask }; },
-  async ask(item, mode, tries) { const svg = newStage(200, { oasis: false, ground: 0 }), G = item.pics.map((n, i) => lfigAt(svg, n, LINE_X3[i], 100));
+  async ask(item, mode, tries) { const svg = newStage(200, { oasis: false, ground: 0 }), G = item.pics.map((n, i) => lfigAt(svg, n, LINE_X3[i], 100)); if (item.sym) symCard(svg, 180, 26, item.sym);   /* sym: السؤال بالرمز المرسوم (∥ أو ⊥) */
     if (tries >= 3) this.aid(item, svg, G);   /* الحلّ المشترك: علامة على ما يميّز كل رسم، والاختيار للطفل */
     say(...lineOf(tries >= 3 ? (FIG_GRP[item.ask] === 'col' ? 'gen.geo.together.pickCol' : 'gen.geo.together.pick') : item.q), { free: true });
     const k = await tapOne(G.map((g, i) => ({ g, k: i, label: labelText('geoFig') + ' ' + DG(i + 1) })), { ok: item.want, pad: 100 }); hush(); return { ans: k, ctx: { svg, G } }; },
