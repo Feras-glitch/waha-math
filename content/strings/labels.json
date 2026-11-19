@@ -382,6 +382,9 @@
   "geoAidStraight": "مُسْتَقِيمٌ",
   "geoAidSeg": "طَرَفَانِ",
   "geoAidRay": "طَرَفٌ وَسَهْمٌ",
-  "geoAidLine": "سَهْمَانِ"
+  "geoAidLine": "سَهْمَانِ",
+  "geoRoad": "الطَّرِيقُ",
+  "geoOpenFig": "الخَطُّ المَفْتُوحُ",
+  "geoClosedFig": "الخَطُّ المُغْلَقُ"
  }
 }
