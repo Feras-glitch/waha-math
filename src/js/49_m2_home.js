@@ -8,7 +8,7 @@ function stepperAsk(spec) { const box = document.createElement('div'); box.class
   for (const s of spec) { V[s.key] = s.val; const w = document.createElement('div'); w.className = 'stp'; const mk = (d, lab) => { const b = document.createElement('button'); b.className = 'pick stpb'; b.textContent = d < 0 ? '−' : '+'; b.setAttribute('aria-label', plain(labelText(lab)) + ' ' + plain(labelText(s.unit)));
       b.onclick = () => { V[s.key] = Math.max(s.min, Math.min(s.max, V[s.key] + d)); show(); SFX.tick(); }; return b; };
     const out = document.createElement('span'); out.className = 'stpv'; out.setAttribute('aria-live', 'polite'); const show = () => { out.innerHTML = `<b>${DG(V[s.key])}</b><small>${esc(G(labelText(s.unit)))}</small>`; out.dataset.v = V[s.key]; };
-    w.appendChild(mk(1, 'stepMore')); w.appendChild(out); w.appendChild(mk(-1, 'stepLess')); box.appendChild(w); show(); }
+    w.appendChild(mk(-1, 'stepLess')); w.appendChild(out); w.appendChild(mk(1, 'stepMore'));   /* الأقلّ يساراً والأكثر يميناً، كاتجاه طريق الأعداد والمسطرة */ box.appendChild(w); show(); }
   const d = doneBtn(); let fin = false; AUTO({ kind: 'homeNum', ok: () => d.b.click(), wrong: () => d.b.click() });
   return gate(new Promise(res => d.b.onclick = () => { if (fin) return; fin = true; AUTO_CLEAR(); hush(); box.remove(); d.bar.remove(); res(V); })); }
 /* شريطا التقدير والقياس على مسطرة 0–30 */
