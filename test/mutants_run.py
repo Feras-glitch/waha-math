@@ -759,7 +759,7 @@ RUNTIME = [
   ('الشاشة الأخرى لا تُسقط الإيقاف', "if (PAUSED) { hush(); resumeLesson(); $('#confetti').innerHTML = ''; }", '', ['test/replay_run.py'], {'SECTION': '9', 'SUB9': 'د'}, 'FAIL انتظار بالبوابة'),
   ('لا علامة لبقية الفقاعة', "b.classList.toggle('saymore',", "b.classList.toggle('saymoreX',", ['test/replay_run.py'], {'SECTION': '8'}, 'FAIL iPhone SE: جملة أطول'),
   # الفحص المستقل C: بطاقة «ينقص واحداً عن عشرين» واحد وعشرون (يتوقّف الدرس)، والحلّ المشترك يُمحى قبل الجواب، وطريق التوأم يقطع السرير
-  ('بطاقة الطريق خارج الطريق', 'return o >= 0 && o <= (item.last || 20) ? o : item.n; };', 'return o; };', ['test/items_run.py'], {'ONLY': 'm1.u3.d6', 'PROBES': 'none'}, 'gen.numw.21'),
+  ('بطاقة الطريق خارج الطريق', 'return o >= 0 && o <= (item.last || 20) ? o : item.n; };', 'return o; };', ['test/items_run.py'], {'ONLY': 'm1.u3.d6', 'PROBES': 'none'}, 'بطاقة خارج الطريق'),
   ('عدّ «أيّ عربة؟» يُمحى قبل أن يختار الطفل', 'if (tries >= 3) (item.k > 1 ? await rowCount(R, item.k - 1, g) : await rowFront(R, true)).dataset.help = 1;', 'if (tries >= 3) (item.k > 1 ? await rowCount(R, item.k - 1, g) : await rowFront(R, true)).remove();', ['test/ladder_run.py'], {'ONLY': 'm1.u3.d2'}, 'FAIL linePick'),
   ('لا حلّ مشترك أصلاً في «أيّ عربة؟»', 'if (tries >= 3) (item.k > 1 ? await rowCount(R, item.k - 1, g) : await rowFront(R, true)).dataset.help = 1;', '', ['test/ladder_run.py'], {'ONLY': 'm1.u3.d2'}, 'FAIL linePick'),
   ('ما في اليد على الأرض', "placeThingAt(svg, th, h.x + (side === 'R' ? 8 : -8), h.y + H * .7, { scale: sc });", "placeThingAt(svg, th, h.x, h.y + 24 + H0 * .3, { scale: .8 });", ['test/items_run.py'], {'ONLY': 'm1.u3.d4', 'PROBES': 'none'}, 'على الأرض'),

@@ -155,7 +155,8 @@ async def main():
     if ONLY: await pg.evaluate("() => { PROG.unlockAll = true; saveProg(); showHome(); }"); await pg.wait_for_timeout(300)
     matd = {}; matq = [0]; small = {}; noname = {}; empty = {}; squeeze = {}; clipt = {}; coverb = {}; keyless = {}; knon = [0]; kasync = [0]; krace = [0]; kpress = [0]; kspace = [0]; kpan = [0]; taps = {}; leaks = []; failed_rev = {}; redo_seen = set(); replay_q = None; crashes = 0; seen_types = set(); deep = {}; failed_test = {}; shots = set(); report = []; lessons = 0
     visits = 0   # MAXL يعدّ الدروس وحدها (لا المراجعة ولا الورشة)، وسقف الزيارات كلها 200 حارس من حلقة
-    while lessons < MAXL and visits < 200:
+    VCAP = int(os.environ.get('VCAP', '400'))   # سقف الزيارات: failreview يعيد كل درس ويمرّ بالمراجعات، و38 درساً تتجاوز 200 (Gate، 19 نوفمبر)
+    while lessons < MAXL and visits < VCAP:
       if os.environ.get('ONLY'):
         if not ONLY: break
         nx = ONLY.pop(0); target = ['ws', nx[3:]] if nx.startswith('ws:') else ['lesson', nx]
@@ -322,6 +323,7 @@ async def main():
     if PATH == 'mat' and lessons > 3 and not matq[0]: matd.setdefault(('-', '-', 'لم يُرَ سؤال عددي بعد «معي»'), 0)
     print('mat distractors:', len(matd), '(أسئلة عددية بعد «معي»: %d)' % matq[0]); [print('  «معي»:', *k) for k in list(matd)[:20]]
     print('blocked lessons:', len(blocked)); [print(' ', *r) for r in blocked[:20]]
+    if visits >= VCAP: print('visit cap reached:', visits, '(VCAP)')
     print('lessons not done:', len(not_done) if MAXL >= len(all_ids) else 0, not_done if MAXL >= len(all_ids) else '(MAXL)')
     # STRICT=1 (لفحص الفحوص، الدرس 98): يخرج بـ 1 إن كان في العدّادات شيء، كما تحكم خلاصة المجموعة
     # والعدّادان الجديدان والتوائم المفقودة كما في الخلاصة (طفرة «تسمية الشيء تحت المسرح» نجت لأن STRICT لم يعدّ النصوص المقصوصة)

@@ -68,7 +68,7 @@ SHOTS=0 CLIPS_OUT="$O/clips/auto_deep_mat_f.json" timeout 1800 python3 test/auto
 SHOTS=0 CLIPS_OUT="$O/clips/auto_failmastery_screen_f.json" timeout 1800 python3 test/auto_run.py failmastery screen f > "$O/auto_failmastery_screen_f.txt" 2>&1
 SHOTS=0 CLIPS_OUT="$O/clips/auto_failtest_mat_m.json" timeout 1800 python3 test/auto_run.py failtest mat m    > "$O/auto_failtest_mat_m.txt" 2>&1
 SHOTS=0 CLIPS_OUT="$O/clips/auto_replay_screen_f.json" timeout 1800 python3 test/auto_run.py replay screen f   > "$O/auto_replay_screen_f.txt" 2>&1
-SHOTS=0 CLIPS_OUT="$O/clips/auto_failreview_screen_m.json" timeout 3600 python3 test/auto_run.py failreview screen m > "$O/auto_failreview_screen_m.txt" 2>&1   # المبدأ 14
+SHOTS=0 CLIPS_OUT="$O/clips/auto_failreview_screen_m.json" timeout 5400 python3 test/auto_run.py failreview screen m > "$O/auto_failreview_screen_m.txt" 2>&1   # المبدأ 14
 SHOTS=0 DARK=1 CLIPS_OUT="$O/clips/auto_dark_ok_mat_f.json" timeout 1800 python3 test/auto_run.py ok mat f   > "$O/auto_dark_ok_mat_f.txt" 2>&1            # الوضع الليلي
 SHOTS=0 DEVICE='Galaxy S5' CLIPS_OUT="$O/clips/auto_s5_mixed_screen_m.json" timeout 1800 python3 test/auto_run.py mixed screen m > "$O/auto_s5_mixed_screen_m.txt" 2>&1   # 360×640
 SHOTS=0 DEVICE='iPhone SE' CLIPS_OUT="$O/clips/auto_se_ok_screen_f.json" timeout 1800 python3 test/auto_run.py ok screen f > "$O/auto_se_ok_screen_f.txt" 2>&1        # 320×568، أضيق شاشة
