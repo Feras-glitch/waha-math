@@ -166,7 +166,7 @@ function numberPick(nums, ok, opt = {}) {
   const box = document.createElement('div'); box.className = 'choices nums'; (opt.host || $('#stage')).appendChild(box);
   const showDigits = opt.digits ?? digitsKnown(), teens = teenDigits();
   const btns = nums.map(n => { const b = document.createElement('button'); b.className = 'pick num'; b.dataset.k = n;
-    b.innerHTML = (showDigits && (n <= 10 || teens) ? `<b>${DG(n)}</b>` : '') + `<span>${esc(T(numw(n)))}</span>`; b.setAttribute('aria-label', plain(T(numw(n))));
+    b.innerHTML = (opt.west ? `<b dir="ltr">${n}</b>` : showDigits && (n <= 10 || teens) ? `<b>${DG(n)}</b>` : '') + `<span>${esc(T(numw(n)))}</span>`; b.setAttribute('aria-label', plain(T(numw(n))));
     /*T*/if (TESTHOOK) b.dataset.ok = n === ok;/*/T*/ box.appendChild(b); return b; });
   let answered = false;
   AUTO({ kind: 'num', ok: () => btns.find(b => +b.dataset.k === ok).click(), wrong: () => (btns.find(b => +b.dataset.k !== ok) || btns[0]).click() });

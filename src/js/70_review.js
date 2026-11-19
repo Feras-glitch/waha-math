@@ -117,7 +117,7 @@ async function streamModel(s) {
 function breakScene(next) { hush(); /*T*/window.__scene = 'break';/*/T*/
   const c = cover('breakCover', `<div class="breakbox">${coverHead()}<svg class="restart" viewBox="0 0 360 160" aria-hidden="true"></svg>
     <button class="go big" id="restBtn" aria-label="${esc(G(labelText('restNow')))}">${ICON.moon}<span>${esc(G(labelText('restNow')))}</span></button><button class="more" id="moreBtn">${esc(labelText('adultMore'))}</button></div>`);
-  const sv = c.querySelector('.restart'); backdrop(sv, 160, { oasisOpacity: 1 }); const p1 = palmAt(sv, 90, 150, .9), p2 = palmAt(sv, 280, 150, .8); springAt(sv, 180, 140, 1, { stones: UNITS.filter(u => PROG['badge:' + u.id]).length, total: 6, level: .5 });
+  const sv = c.querySelector('.restart'); backdrop(sv, 160, { oasisOpacity: 1 }); const p1 = palmAt(sv, 90, 150, .9), p2 = palmAt(sv, 280, 150, .8); springAt(sv, 180, 140, 1, { stones: stageStones('m1').placed, total: 6, level: .5 });
   [p1, p2].forEach((p, i) => anim(p, [{ transform: p.getAttribute('transform').replace(/translate\(([-\d.]+) ([-\d.]+)\)/, 'translate($1px,$2px)') + ' rotate(-2deg)' }, { transform: p.getAttribute('transform').replace(/translate\(([-\d.]+) ([-\d.]+)\)/, 'translate($1px,$2px)') + ' rotate(2deg)' }], { duration: 3000 + i * 400, iterations: 10, direction: 'alternate', easing: 'ease-in-out' }));
   coverSay(c, 'gen.session.break');
   $('#restBtn').onclick = () => { hush(); c.hidden = true; SFX.tick(); showHome(); };

@@ -295,7 +295,7 @@ SCENES.reviewCards = async c => { const svg = newStage(300, { oasisOpacity: .15 
     const g = thingAt(svg, s, x, 140); anim(g, [{ transform: `translate(${x}px,140px) scale(.3)` }, { transform: `translate(${x}px,140px) scale(1.15)` }, { transform: `translate(${x}px,140px) scale(1)` }], { duration: 500, fill: 'both' }); await S(id); }
   if (c.after) await S(c.after); };
 /* حجر النبع في يد فوضى (إشعال درس التحدّي، قوس فوضى D236) */
-SCENES.stoneHook = async c => { const svg = newStage(300, { oasisOpacity: .3 }); springAt(svg, 180, 250, 1.2, { stones: c.placed || 0, total: 6, level: (c.placed || 0) / 6 });
+SCENES.stoneHook = async c => { const svg = newStage(300, { oasisOpacity: .3 }); const TT = stageStones(stageOf(CUR.id)).total; springAt(svg, 180, 250, 1.2, { stones: c.placed || 0, total: TT, level: (c.placed || 0) / TT });
   const fz = chaosAt(svg, 250, 120, .6); const st = el('g', { transform: 'translate(190 140) scale(.35)' }, svg); stoneArt(st, unitOf(CUR), 0, 0);
   anim(st, [{ transform: 'translate(190px,140px) scale(.35) rotate(-6deg)' }, { transform: 'translate(190px,132px) scale(.35) rotate(6deg)' }], { duration: 1200, iterations: Infinity, direction: 'alternate' });
   await S(c.lines); };

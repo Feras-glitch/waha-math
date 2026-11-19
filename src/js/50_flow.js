@@ -186,10 +186,10 @@ async function testStage(L) {
 }
 /* فوضى تضع حجر النبع في مكانه (قوس فوضى، D236)، فيجري الماء في جدول الحيّ (D230) */
 async function stoneScene(L) {
-  const U = UNITS.find(u => u.id === L.unit); const placed = UNITS.filter(u => PROG['badge:' + u.id]).length;
-  const svg = newStage(300, { oasisOpacity: .4 }); const sp = springAt(svg, 180, 240, 1.3, { stones: placed - 1, total: 6, level: (placed - 1) / 6 });
+  const U = UNITS.find(u => u.id === L.unit); const { placed, total: TT } = stageStones(stageOf(U.id));
+  const svg = newStage(300, { oasisOpacity: .4 }); const sp = springAt(svg, 180, 240, 1.3, { stones: placed - 1, total: TT, level: (placed - 1) / TT });
   const fz = chaosAt(svg, 290, 120, .55); const st = el('g', { transform: 'translate(270 150) scale(.32)' }, svg); stoneArt(st, L.unit, 0, 0);
   await S(L.test.stoneLine); await anim(st, [{ transform: 'translate(270px,150px) scale(.32)' }, { transform: 'translate(180px,236px) scale(.24)' }], { duration: 1200, fill: 'forwards', easing: 'cubic-bezier(.3,1.2,.6,1)' }).done;
-  SFX.win(); confetti(); sp.remove(); springAt(svg, 180, 240, 1.3, { stones: placed, total: 6, level: placed / 6 });
+  SFX.win(); confetti(); sp.remove(); springAt(svg, 180, 240, 1.3, { stones: placed, total: TT, level: placed / TT });
   await S(L.test.winLines);
 }

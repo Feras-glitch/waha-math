@@ -57,10 +57,10 @@ function lessonOpen(U, i) { const ids = U.lessons; if (PROG.unlockAll) return tr
 const wsOpen = U => PROG.unlockAll || !!PROG['badge:' + U.id] || !!(PROG[U.lessons[U.lessons.length - 2]] || {}).done;
 
 /* لافتة الواحة: النبع بحجارة الشارات، وجدول لكل حيّ أُتقن، ونخيل يخضرّ */
-function oasisBanner() { const n = UNITS.filter(U => PROG['badge:' + U.id]).length;
+function oasisBanner() { const n = stageStones('m1').placed;   /* لافتة الواحة نبع م1 بأحجاره الستة؛ وقنوات م2 تُرسم مع هويتها */
   const b = el('svg', { viewBox: '0 0 360 150', 'aria-hidden': 'true' }); backdrop(b, 150, { oasis: false, ground: 30 }); dunes(b, 140, 1);
   [[40, 132, .8], [96, 140, .7], [262, 138, .75], [322, 132, .85]].forEach(([x, y, s], i) => palmAt(b, x, y, s, i < 2 + n * 2 || i === 0));
-  UNITS.forEach((U, i) => { if (!PROG['badge:' + U.id]) return; const dir = i % 2 ? 1 : -1; const p = el('path', { d: `M180 132 Q${180 + dir * 50} 140 ${180 + dir * (90 + i * 20)} 146`, stroke: 'url(#waterG)', 'stroke-width': 7, fill: 'none', 'stroke-linecap': 'round' }, b);
+  UNITS.forEach((U, i) => { if (!PROG['badge:' + U.id] || stageOf(U.id) !== 'm1') return; const dir = i % 2 ? 1 : -1; const p = el('path', { d: `M180 132 Q${180 + dir * 50} 140 ${180 + dir * (90 + i * 20)} 146`, stroke: 'url(#waterG)', 'stroke-width': 7, fill: 'none', 'stroke-linecap': 'round' }, b);
     anim(p, [{ strokeDasharray: '4 200' }, { strokeDasharray: '200 0' }], { duration: 1600, fill: 'forwards' }); });
   springAt(b, 180, 128, 1, { stones: n, total: 6, level: n / 6 }); return b.outerHTML; }
 
