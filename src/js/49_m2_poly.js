@@ -371,6 +371,8 @@ const PGRID = { c: 38, cols: 7, rows: 4, x0: 47, y0: 32 }, pgP = (r, u) => [PGRI
 function polyCheck(pts, n) { if (pts.length < 3) return { ok: false, err: 'polyDrawOpen' }; const P = pts.map(([r, u]) => pgP(r, u)), m = P.length;
   const keep = P.filter((p, i) => { const a = P[(i + m - 1) % m], b = P[(i + 1) % m]; return Math.abs((p[0] - a[0]) * (b[1] - p[1]) - (p[1] - a[1]) * (b[0] - p[0])) > 1; });   /* نقطة على استقامة جارتيها ليست رأساً */
   const pr = polyProps({ p: keep }); if (!pr.poly) return { ok: false, err: 'polyDrawCross' }; if (keep.length !== n) return { ok: false, err: 'polyDrawCount', n: keep.length }; return { ok: true, pr }; }
+/* مضلّع مثالٌ بعدد الأضلاع (الكشف وسائق الفحص): كان مثال الكشف من خطاف الفحص وحده، فلم يُرسم في النسخة الإنتاجية (البناء الإنتاجي، 19 نوفمبر) */
+const PD_EX = n => n === 6 ? [[1, 1], [3, 0], [5, 1], [5, 3], [3, 4], [1, 3], [1, 1]] : n === 5 ? [[1, 3], [2, 1], [4, 0], [6, 2], [4, 4], [1, 3]] : [[1, 1], [5, 1], [6, 3], [2, 3], [1, 1]];
 ITEM.polyDraw = {
   make(spec) { return { ...spec, tag: 'poly-draw-' + spec.n }; },
   async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), g = el('g', {}, svg); el('rect', { x: 26, y: 14, width: 308, height: 172, rx: 12, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, g);
@@ -386,13 +388,13 @@ ITEM.polyDraw = {
     const kg = el('g', { role: 'grid', 'aria-label': labelText('plyGrid') }, svg); for (let u = 0; u <= PGRID.rows; u++) { const row = el('g', { role: 'row' }, kg); for (let r = 0; r <= PGRID.cols; r++) { const [x, y] = pgP(r, u), b = el('g', { role: 'gridcell', tabindex: 0, 'aria-label': `${DG(r + 1)}، ${DG(u + 1)}` }, row); el('circle', { cx: x, cy: y, r: 8, fill: 'transparent', 'pointer-events': 'none' }, b); b.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); add(r, u); } }; } }
     if (tries >= 3) { const m = helpG(svg), ex = item.n === 6 ? [[1, 1], [3, 0], [5, 1], [5, 3], [3, 4], [1, 3]] : item.n === 5 ? [[1, 3], [2, 1], [4, 0], [6, 2], [4, 4]] : [[1, 1], [5, 1], [6, 3], [2, 3]]; ex.forEach(([r, u], i) => { const [x, y] = pgP(r, u); thinkRing(m, [x, y], 11); }); }   /* الحلّ المشترك: رؤوس مقترحة محاطة، والوصل للطفل */
     const askQ = async () => { await S(tries >= 3 ? 'gen.poly.together.draw' : item.q); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
-    /*T*/window.__polyDrawAt = (r, u) => { const m = svg.getScreenCTM(), [x, y] = pgP(r, u); return { x: m.a * x + m.e, y: m.d * y + m.f }; }; window.__polyDrawWant = item.n === 6 ? [[1, 1], [3, 0], [5, 1], [5, 3], [3, 4], [1, 3], [1, 1]] : item.n === 5 ? [[1, 3], [2, 1], [4, 0], [6, 2], [4, 4], [1, 3]] : [[1, 1], [5, 1], [6, 3], [2, 3], [1, 1]];/*/T*/
-    AUTO({ kind: 'polyDraw', ok: () => { pts = []; closed = false; for (const [r, u] of window.__polyDrawWant || []) add(r, u); rulDoneBtn().click(); }, wrong: () => { pts = []; closed = false; for (const [r, u] of [[1, 1], [5, 1], [3, 4], [1, 1]]) add(r, u); rulDoneBtn().click(); } });
+    /*T*/window.__polyDrawAt = (r, u) => { const m = svg.getScreenCTM(), [x, y] = pgP(r, u); return { x: m.a * x + m.e, y: m.d * y + m.f }; }; window.__polyDrawWant = PD_EX(item.n);/*/T*/
+    AUTO({ kind: 'polyDraw', ok: () => { pts = []; closed = false; for (const [r, u] of PD_EX(item.n)) add(r, u); rulDoneBtn().click(); }, wrong: () => { pts = []; closed = false; for (const [r, u] of [[1, 1], [5, 1], [3, 4], [1, 1]]) add(r, u); rulDoneBtn().click(); } });
     await rulDone(() => { done = true; REPLAY_HOOK = null; input.off(); kg.remove(); }); return { ans: { pts: pts.slice(), closed }, ctx: { svg, lay } }; },
   judge(item, a) { if (!a.closed) return { ok: false, err: 'polyDrawOpen' }; const c = polyCheck(a.pts, item.n); return c.ok ? { ok: true } : { ok: false, err: c.err }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { const c = r.ans.closed ? polyCheck(r.ans.pts, item.n) : { err: 'polyDrawOpen' }; await S('gen.poly.hint.draw.' + (c.err || 'polyDrawCount')); }, async together() {},
-  async reveal(item, r) { const lay = r.ctx.lay; lay.innerHTML = ''; const ex = window.__polyDrawWant || [], P = ex.slice(0, -1).map(([a, b]) => pgP(a, b)); el('polygon', { points: polyStr(P), fill: PLY.fill, stroke: css('--think'), 'stroke-width': 3.6 }, lay); await S('gen.poly.reveal.draw'); },
+  async reveal(item, r) { const lay = r.ctx.lay; lay.innerHTML = ''; const ex = PD_EX(item.n), P = ex.slice(0, -1).map(([a, b]) => pgP(a, b)); el('polygon', { points: polyStr(P), fill: PLY.fill, stroke: css('--think'), 'stroke-width': 3.6 }, lay); await S('gen.poly.reveal.draw'); },
   praise: () => 'praiseThink', twin(item) { return item.twin || null; },
 };
 /* ================= ⑰ كم شكلاً مختلفاً من n مربعات متجاورة ضلعاً بضلع؟ (C163، تحدٍّ): المقلوب والمدوَّر شكل واحد ================= */
