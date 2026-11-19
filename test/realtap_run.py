@@ -38,7 +38,8 @@ LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6
            'm1.u4.d1', 'm1.u4.d2', 'm1.u4.d3', 'm1.u4.d4', 'm1.u4.d5', 'm1.u4.d6', 'm1.u4.d7', 'm1.u4.d8',
            'm1.u5.d1', 'm1.u5.d2', 'm1.u5.d3', 'm1.u5.d4', 'm1.u5.d5', 'm1.u5.d6',
            'm1.u6.d1', 'm1.u6.d2', 'm1.u6.d3', 'm1.u6.d4', 'm1.u6.d5',
-           'm2.u0.d1', 'm2.u0.d2', 'm2.u0.d3', 'm2.u0.d4']
+           'm2.u0.d1', 'm2.u0.d2', 'm2.u0.d3', 'm2.u0.d4',
+           'm2.u1.d1', 'm2.u1.d2', 'm2.u1.d3', 'm2.u1.d4', 'm2.u1.d5', 'm2.u1.d6', 'm2.u1.d7']
 if os.environ.get('ONLY'): LESSONS = [l for l in LESSONS if l in os.environ['ONLY'].split(',')]   # تشغيل جزئي أثناء التطوير
 # ما خرج من نافذة الشريط (القطار، الطريق) مخفيّ لا يُلمس: يُلمس زرّ التحريك نحوه حتى يظهر
 REVEAL = """(sel) => { const g = document.querySelector(sel); if (!g || getComputedStyle(g).visibility !== 'hidden') return null;
@@ -177,12 +178,18 @@ async def run(p, dev):
           else:
             for q in await pg.evaluate('() => window.__blot()'): await tap(q['x'], q['y']); await pg.wait_for_timeout(60)
           xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
-        if k in ('rulAlign', 'rulDraw'):   # S2-U0: سحب حقيقي للمسطرة حتى الصفر، ولمسة حقيقية عند طول الخط المطلوب؛ ثم «تمّ»
+        if k in ('rulAlign', 'rulDraw', 'gridPt', 'midMark'):   # S2-U0: سحب حقيقي للمسطرة حتى الصفر، ولمسة حقيقية عند طول الخط المطلوب؛ ثم «تمّ»
           await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1; DONE = "() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
           if k == 'rulAlign':
             q = await pg.evaluate('() => window.__rulAt()'); off = await pg.evaluate('() => window.__rulOff'); await drag(q['x'], q['y'], q['x'] + off * q['k'], q['y'], 14)
             off = await pg.evaluate('() => window.__rulOff')
             if abs(off) > .1: tried['rul-miss'] = tried.get('rul-miss', 0) + 1; print('  ruler align miss: off', off, st['scene'])
+          elif k == 'gridPt':   # S2-U1: لمسة حقيقية عند تقاطع الشبكة المطلوب
+            w = await pg.evaluate('() => window.__gridPtWant'); q = await pg.evaluate('([r, u]) => window.__gridPtAt(r, u)', w); await tap(q['x'], q['y']); got = await pg.evaluate('() => window.__gridPt')
+            if got != w: tried['rul-miss'] = tried.get('rul-miss', 0) + 1; print('  grid point miss: wanted', w, 'got', got, st['scene'])
+          elif k == 'midMark':   # ولمسة حقيقية عند منتصف القطعة
+            want = await pg.evaluate('() => window.__midWant'); q = await pg.evaluate('(n) => window.__midAt(n)', want); await tap(q['x'], q['y']); got = await pg.evaluate('() => window.__midV')
+            if abs(got - want) > 1: tried['rul-miss'] = tried.get('rul-miss', 0) + 1; print('  mid miss: wanted', want, 'got', got, st['scene'])
           else:
             want = await pg.evaluate('() => window.__drawWant'); q = await pg.evaluate('(n) => window.__drawAt(n)', want); await tap(q['x'], q['y']); got = await pg.evaluate('() => window.__drawV')
             if abs(got - want) > 1: tried['rul-miss'] = tried.get('rul-miss', 0) + 1; print('  draw miss: wanted', want, 'got', got, st['scene'])
