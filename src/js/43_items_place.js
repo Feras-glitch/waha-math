@@ -530,7 +530,7 @@ ITEM.roadPick = {
       else { roadArrow(R.S.tiles[item.n].g, dir); await S('gen.road.look'); } }
     say(...lineOf(item.q), { free: true });
     if (item.ask === 'hops') { const np = numberPick(nearNums(item.want, 10), item.want); const k = await np.p; np.box.remove(); return { ans: k, ctx: R }; }
-    const alt = roadAlt(item);
+    const alt = roadAlt(item); /*T*/if (TESTHOOK && (alt < 0 || alt > (item.last || 20))) throw new Error('roadPick: بطاقة خارج الطريق ' + alt);/*/T*/   /* لا بلاطة لها (وصار للواحد والعشرين كلمة في S1-U5، فلا يكشفها نقص الجملة؛ Gate 19 نوفمبر) */
     const cp = cardPick([{ id: numw(item.want), k: 'w', ok: true, hide: true }, { id: numw(alt), k: 'a', ok: false, hide: true }], { intro: item.q, keepQ: true }); const pk = await cp.p; cp.done(); cp.box.remove();
     return { ans: pk.k === 'w' ? item.want : alt, ctx: R }; },
   judge(item, k) { if (k === item.want) return { ok: true }; if (item.ask === 'land') return k === item.n + (item.dir || 1) * (item.k - 1) ? { ok: false, err: 'roadOwnTile' } : (k - item.n) * (item.dir || 1) < 0 ? { ok: false, err: 'roadDir' } : { ok: false, err: 'roadHops' };

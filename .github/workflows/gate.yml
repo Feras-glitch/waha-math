@@ -29,7 +29,7 @@ jobs:
           python-version: '3.12'
       - name: Tools
         run: |
-          pip install openpyxl==3.1.5 playwright==1.56.0
+          pip install openpyxl==3.1.5 playwright==1.56.0 pyyaml
           python -m playwright install --with-deps chromium
       - name: Part ${{ matrix.part }}
         run: |
@@ -57,7 +57,7 @@ jobs:
           python-version: '3.12'
       - name: Tools
         run: |
-          pip install openpyxl==3.1.5 playwright==1.56.0
+          pip install openpyxl==3.1.5 playwright==1.56.0 pyyaml
           python -m playwright install --with-deps chromium
       - uses: actions/download-artifact@v4
         with:
