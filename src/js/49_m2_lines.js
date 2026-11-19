@@ -184,3 +184,75 @@ SCENES.chaosFig = async C => { const it = ITEM.figPick.make({ pics: C.pics, ask:
   while (true) { S(C.find, { free: true }); const k = await tapOne(G.map((g, i) => ({ g, k: i, label: labelText('geoFig') + ' ' + DG(i + 1) })), { ok: it.want, pad: 100 }); hush(); tries++; logAttempt({ scene: 'chaos', tag: 'find', ok: k === it.want, firstTry: tries === 1 }); if (k === it.want) break; SFX.soft(); await S('gen.pat.chaosNo'); if (tries >= 2) { const m = ITEM.figPick.aid(it, svg, G); await sleep(1400); m.remove(); } }
   SFX.good(); fz.remove(); okRing(svg, G[it.want], 2); if (C.after) await S(C.after); };
 WRAP_ART.roadKinds = svg => { const g = el('g', {}, svg); el('path', { d: 'M60 90 H300', stroke: GEO.road, 'stroke-width': 7, 'stroke-linecap': 'round' }, g); el('path', { d: 'M60 140 C110 100 150 180 200 140 S270 110 300 140', fill: 'none', stroke: GEO.road, 'stroke-width': 7, 'stroke-linecap': 'round' }, g); el('path', { d: 'M60 196 L120 166 L180 196 L240 166 L300 190', fill: 'none', stroke: GEO.road, 'stroke-width': 7, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
+
+/* =====================================================================
+   الدرس 3: القطعة المستقيمة (C106 قياسها، C107 تسميتها بطرفيها، C114 أقصر مسافة بين نقطتين)
+   ===================================================================== */
+const SEGFIG = {
+  tri: { pts: { a: [90, 176], b: [270, 176], j: [180, 56] }, segs: ['ab', 'bj', 'ja'], lab: { a: [-14, 8], b: [14, 8], j: [0, -12] } },
+  zed: { pts: { a: [70, 66], b: [250, 66], j: [110, 176], d: [290, 176] }, segs: ['ab', 'bj', 'jd'], lab: { a: [0, -12], b: [0, -12], j: [0, 24], d: [0, 24] } },
+  quad: { pts: { a: [84, 62], b: [270, 54], j: [290, 172], d: [72, 184] }, segs: ['ab', 'bj', 'jd', 'da'], lab: { a: [-10, -10], b: [10, -10], j: [14, 16], d: [-14, 16] } },
+  fan: { pts: { a: [60, 182], b: [180, 46], j: [300, 182], d: [180, 182] }, segs: ['ab', 'bj', 'bd'], lab: { a: [-10, 20], b: [0, -12], j: [10, 20], d: [0, 24] } },
+};
+const segSame = (x, y) => x === y || x === y[1] + y[0];
+function segFigAt(svg, name, o = {}) { const F = SEGFIG[name], G = {}; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg);
+  for (const sg of F.segs) { const P = F.pts[sg[0]], Q = F.pts[sg[1]], g = el('g', { 'data-seg': sg }, svg); geoLine(g, P[0], P[1], Q[0], Q[1], { color: 'transparent', w: 30 }); geoLine(g, P[0], P[1], Q[0], Q[1], { w: 4 }); if (o.ticks && o.ticks[sg]) geoObj(g, 'seg', P, Q, { ticks: o.ticks[sg], dots: false, color: 'transparent' }); G[sg] = g; }
+  for (const [k, [x, y]] of Object.entries(F.pts)) ptAt(svg, x, y, k, { r: 5.5, lab: F.lab[k] }).setAttribute('pointer-events', 'none'); return { F, G }; }
+/* ================= ⑤ المس القطعة المسمّاة (C107): fig، want حرفان بترتيب النطق (ب ج أو ج ب: القطعة نفسها) ================= */
+ITEM.segTap = {
+  make(spec) { return { ...spec, tag: 'seg-tap' }; },
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), { F, G } = segFigAt(svg, item.fig), keys = F.segs, hit = keys.find(k => segSame(k, item.want)); let done = false;
+    if (tries >= 3) { const m = helpG(svg); for (const k of item.want) { const [x, y] = F.pts[k]; el('circle', { cx: x, cy: y, r: 13, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5, 'stroke-dasharray': '4 3' }, m); } }   /* الحلّ المشترك: الطرفان محاطان، واللمس للطفل */
+    const askQ = async () => { await S(tries >= 3 ? 'gen.geo.together.seg' : (item.q || 'gen.geo.tapSeg'), { noGap: true }); for (const [i, k] of [...item.want].entries()) await sayLtr(k, i ? {} : { noGap: true }); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
+    const k = await tapOne(keys.map(sg => ({ g: G[sg], k: sg, label: labelText('geoSeg') + ' ' + LTR[sg[0]] + ' ' + LTR[sg[1]] })), { ok: hit, pad: 56 }); done = true; REPLAY_HOOK = null; hush(); return { ans: k, ctx: { svg, G, hit } }; },
+  judge(item, k) { return segSame(k, item.want) ? { ok: true } : { ok: false, err: k.includes(item.want[0]) || k.includes(item.want[1]) ? 'segOneEnd' : 'segName' }; },
+  mark(r, k, col) { for (const l of r.ctx.G[k].querySelectorAll('line')) if (l.getAttribute('stroke') !== 'transparent') { l.setAttribute('stroke', col); l.setAttribute('stroke-width', 6); } },
+  onOk(item, r) { SFX.good(); this.mark(r, r.ans, GEO.hl); }, onWrong() { SFX.soft(); },
+  async hint2(item, r) { const F = SEGFIG[item.fig], m = helpG(r.ctx.svg); for (const k of item.want) { const [x, y] = F.pts[k]; el('circle', { cx: x, cy: y, r: 13, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, m); } await sleep(1400); m.remove(); }, async together() {},
+  async reveal(item, r) { this.mark(r, r.ctx.hit, GEO.hl); await S('gen.geo.reveal.seg2'); },
+  praise: () => 'praiseLook', twin(item) { return item.twin || null; },
+};
+/* ---------- ثلاثة طرق بين نقطتين: واحد مستقيم (رقمه st)، وواحد منحنٍ، وواحد منكسر ---------- */
+function roads3At(svg, st, v = 0) { const A = [56, 116], B = [304, 116], G = []; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, svg);
+  const ST = 'M56 116 L304 116', CU = 'M56 116 C120 6 240 6 304 116', CD = 'M56 116 C120 226 240 226 304 116', BU = 'M56 116 L110 56 L180 100 L250 50 L304 116', BD = 'M56 116 L120 190 L190 146 L250 196 L304 116';
+  const CU2 = 'M56 116 C100 40 260 60 304 116', CD2 = 'M56 116 C90 190 270 170 304 116', BU2 = 'M56 116 L150 40 L304 116', BD2 = 'M56 116 L200 200 L304 116';
+  /* v: 0 منحنٍ ومنكسر، 1 منحنيان، 2 منكسران؛ والمستقيم بينهما دائماً */
+  const up = v === 3 ? BU2 : v === 2 ? BU : CU, dn = v === 3 ? CD2 : v === 2 ? BD2 : v === 1 ? CD2 : BD, up2 = v === 3 ? CU2 : v === 2 ? BU2 : v === 1 ? CU2 : BU, dn2 = v === 3 ? BD2 : v === 2 ? BD : CD;   /* 3: منكسر فوق ومنحنٍ تحت */
+  const list = st === 0 ? [ST, up, dn] : st === 1 ? [up, ST, dn] : [up2, dn2, ST];
+  list.forEach((d, i) => { const g = el('g', { 'data-road': i }, svg); el('path', { d, fill: 'none', stroke: 'transparent', 'stroke-width': 30 }, g); el('path', { d, fill: 'none', stroke: GEO.road, 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g); G.push(g); });
+  for (const [P, home] of [[A, true], [B, false]]) { const g = el('g', { 'pointer-events': 'none' }, svg); el('circle', { cx: P[0], cy: P[1], r: 13, fill: '#fffdf6', stroke: GEO.ink, 'stroke-width': 2.5 }, g); if (home) el('path', { d: `M${P[0] - 7} ${P[1] + 6} V${P[1] - 2} L${P[0]} ${P[1] - 8} L${P[0] + 7} ${P[1] - 2} V${P[1] + 6} Z`, fill: css('--chaos') }, g); else el('rect', { x: P[0] - 7, y: P[1] - 6, width: 14, height: 12, fill: css('--compass') }, g); }
+  return { G, want: st }; }
+/* ================= ⑥ أيّ الطرق أقصر؟ (C114): st موضع الطريق المستقيم (0 الأول، 1 الأوسط، 2 الأخير) ================= */
+ITEM.pathShort = {
+  make(spec) { return { ...spec, tag: 'path-short' }; },
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), R3 = roads3At(svg, item.st, item.v || 0);
+    if (tries >= 3) { const m = helpG(svg), p = R3.G[R3.want].querySelectorAll('path')[1]; el('path', { d: p.getAttribute('d'), fill: 'none', stroke: css('--think'), 'stroke-width': 2, 'stroke-dasharray': '5 4', transform: 'translate(0 -9)' }, m); }   /* الحلّ المشترك: خيط مشدود مرسوم فوق أحد الطرق، والاختيار للطفل */
+    say(...lineOf(tries >= 3 ? 'gen.geo.together.short' : item.q), { free: true });
+    const k = await tapOne(R3.G.map((g, i) => ({ g, k: i, label: labelText('geoRoad') + ' ' + DG(i + 1) })), { ok: R3.want, pad: 56 }); hush(); return { ans: k, ctx: { svg, R3 } }; },
+  judge(item, k) { return k === item.st ? { ok: true } : { ok: false, err: 'pathNotStraight' }; },
+  paint(r, k, col) { r.ctx.R3.G[k].querySelectorAll('path')[1].setAttribute('stroke', col); },
+  onOk(item, r) { SFX.good(); this.paint(r, r.ans, GEO.hl); }, onWrong() { SFX.soft(); },
+  async hint2(item, r) { const p = r.ctx.R3.G[r.ctx.R3.want].querySelectorAll('path')[1], m = helpG(r.ctx.svg); el('path', { d: p.getAttribute('d'), fill: 'none', stroke: css('--think'), 'stroke-width': 2, 'stroke-dasharray': '5 4', transform: 'translate(0 -9)' }, m); await sleep(1400); m.remove(); }, async together() {},
+  async reveal(item, r) { this.paint(r, r.ctx.R3.want, GEO.hl); await S('gen.geo.reveal.short'); },
+  praise: () => 'praiseThink', twin(item) { return item.twin || null; },
+};
+/* ---------- مشاهد الدرس 3 ---------- */
+/* الخيط المشدود: دبّوسان وخيط مرتخٍ بينهما؛ يلمسه الطفل فيُشدّ. lines: [الدعوة، بعد الشدّ] */
+SCENES.tautString = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2] = c.lines, A = [60, 120], B = [300, 120]; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg);
+  const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg), hitp = el('path', { fill: 'none', stroke: 'transparent', 'stroke-width': 40 }, g), p = el('path', { fill: 'none', stroke: GEO.road, 'stroke-width': 5, 'stroke-linecap': 'round' }, g), set = t => { const d = `M${A[0]} ${A[1]} C${130} ${120 + 90 * t} ${230} ${120 - 80 * t} ${B[0]} ${B[1]}`; p.setAttribute('d', d); hitp.setAttribute('d', d); }; set(1);
+  ptAt(svg, A[0], A[1], 'a', { r: 6, lab: [0, -14] }); ptAt(svg, B[0], B[1], 'b', { r: 6, lab: [0, -14] });
+  await answerWhile(l1, () => tapOne([{ g, k: 's', label: labelText('rulString') }], { ok: 's', pad: 60 })); await symTween(900, t => set(1 - t)); set(0); SFX.good(); logAttempt({ scene: c.s || 'hook', tag: 'tautString', ok: true }); await S(l2); };
+/* اسم القطعة: يلمسها الطفل فتدور نصف دورة ويتبادل الطرفان موضعيهما: القطعة هي هي. lines: [الاسم، الدعوة، ختام] */
+SCENES.segNameShow = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2, l3] = c.lines; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg);
+  const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg), inner = el('g', {}, g); geoLine(inner, 80, 140, 280, 90, { color: 'transparent', w: 36 }); geoLine(inner, 80, 140, 280, 90, { w: 4 }); const pa = ptAt(svg, 80, 140, 'a', { r: 6, lab: [0, -14] }), pb = ptAt(svg, 280, 90, 'b', { r: 6, lab: [0, -14] });
+  await S(l1, { noGap: true }); await sayLtr('a', { noGap: true }); await sayLtr('b');
+  await answerWhile(l2, () => tapOne([{ g, k: 's', label: labelText('geoSeg') }], { ok: 's', pad: 60 })); pa.remove(); pb.remove(); const pts = el('g', {}, svg); await symTween(900, t => { inner.setAttribute('transform', `rotate(${180 * t} 180 115)`); });
+  ptAt(pts, 80, 140, 'b', { r: 6, lab: [0, -14] }); ptAt(pts, 280, 90, 'a', { r: 6, lab: [0, -14] }); SFX.pop(); logAttempt({ scene: c.s || 'explore', tag: 'segName', ok: true }); await S('gen.geo.seg', { noGap: true }); await sayLtr('b', { noGap: true }); await sayLtr('a'); await S(l3); };
+/* «صحّح لفوضى» ببندٍ من البنود: فوضى على المسرح، والطفل يحلّ البند حتى يصيب. C: item (مواصفة البند، وq جملة فوضى)، after */
+SCENES.chaosItem = async C => { const def = ITEM[C.item.t], it = def.make({ ...C.item, q: C.find }); let tries = 0;
+  while (true) { const p = def.ask(it, 'chaos', tries >= 2 ? 3 : 0), svg = $('#stage svg'); if (tries === 0 && svg) { const fz = chaosAt(svg, 334, 30, .28); chaosGiggle(fz); }
+    const r = await p, ok = def.judge(it, r.ans, r).ok; tries++; logAttempt({ scene: 'chaos', tag: 'find', ok, firstTry: tries === 1 }); document.querySelectorAll('#stage .choices').forEach(b => b.remove()); if (ok) { if (def.onOk) await def.onOk(it, r); else SFX.good(); break; } SFX.soft(); await S('gen.pat.chaosNo'); }
+  if (C.after) await S(C.after); };
+SCENES.recallSeg = async c => { const svg = newStage(232, { oasis: false, ground: 0 }); segFigAt(svg, c.fig || 'tri'); await sleep(300); await S(c.lines); };
+SCENES.recallRoads = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), R3 = roads3At(svg, c.st ?? 1, c.v || 0); await sleep(400); R3.G[R3.want].querySelectorAll('path')[1].setAttribute('stroke', GEO.hl); await S(c.lines); };
+WRAP_ART.segRoad = svg => { const g = el('g', {}, svg); el('rect', { x: 60, y: 60, width: 240, height: 130, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, g); geoObj(g, 'seg', [90, 150], [270, 100], { names: ['a', 'b'], labP: [0, -12], labQ: [0, -12], w: 5, color: GEO.road }); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };

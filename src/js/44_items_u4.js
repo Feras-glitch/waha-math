@@ -38,6 +38,8 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
   else if (P.kind === 'span') spanTables(g, P.a, P.b);
   else if (P.kind === 'sym') { const F = symFoldAt(g, P.sym, 180, 100, 1.5, P.ang ?? 90); if (P.folded) F.flat(); }   /* S1-U6 */
   else if (P.kind === 'ruler') rulerReasonPic(g, P);   /* S2-U0 */
+  else if (P.kind === 'segfig') segFigAt(g, P.fig, { ticks: P.ticks });
+  else if (P.kind === 'roads') roads3At(g, P.st, P.v || 0);
   else if (P.kind === 'figs') P.pics.forEach((n, i) => lfigAt(g, n, LINE_X3[P.pics.length === 2 ? i * 2 : i], 100));   /* S2-U1 */
   else if (P.kind === 'rulerMm') ITEM.rulerMm.draw(ITEM.rulerMm.make({ cm: P.cm, mm: P.mm, thing: P.thing }), g);
   else if (P.kind === 'string') { const R = rulerAt(g, { x: 30, y: 176, pxcm: 30, from: 0, to: 10, mm: false }); stringAt(g, R, P.len, P.span, 84); }

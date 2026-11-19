@@ -35,6 +35,7 @@ function rulThingAt(parent, kind, x1, x2, y, color) { const g = el('g', { 'data-
   else if (kind === 'crayon') { el('rect', { x: x1, y: y - 13, width: Math.max(0, w - 12), height: 13, rx: 2, fill: c }, g); el('rect', { x: x1 + w * .25, y: y - 13, width: w * .3, height: 13, fill: '#fff', opacity: .55 }, g); el('path', { d: `M${x2 - 12} ${y - 12} L${x2} ${y - 6.5} L${x2 - 12} ${y - 1} Z`, fill: c }, g); }
   else if (kind === 'leaf') { el('path', { d: `M${x1} ${y - 7} Q${x1 + w / 2} ${y - 24} ${x2} ${y - 7} Q${x1 + w / 2} ${y + 8} ${x1} ${y - 7} Z`, fill: '#5fa35a', stroke: '#3d7a3f', 'stroke-width': 1.2 }, g); el('line', { x1, y1: y - 7, x2, y2: y - 7, stroke: '#3d7a3f', 'stroke-width': 1 }, g); }
   else if (kind === 'key') { el('circle', { cx: x1 + 9, cy: y - 9, r: 9, fill: 'none', stroke: '#b9862a', 'stroke-width': 4 }, g); el('path', { d: `M${x1 + 18} ${y - 11} H${x2} V${y - 2} H${x2 - 5} V${y - 7} H${x2 - 11} V${y - 2} H${x2 - 16} V${y - 7} H${x1 + 18} Z`, fill: '#d9a441' }, g); }
+  else if (kind === 'seg' || Array.isArray(kind)) { const nm = Array.isArray(kind) ? kind : ['a', 'b']; geoObj(g, 'seg', [x1, y - 8], [x2, y - 8], { names: nm, labP: [0, -10], labQ: [0, -10] }); }   /* قطعة مستقيمة مسمّاة (S2-U1): kind = ['a', 'b'] */
   else el('rect', { x: x1, y: y - 12, width: w, height: 12, rx: 2, fill: c, stroke: '#0003', 'stroke-width': 1 }, g);   /* strip */
   return g; }
 /* عدد ووحدته منطوقين: «خمسة سنتيمترات»، «سنتيمتر واحد»، «سنتيمتران»، «اثنا عشر سنتيمتراً» */
