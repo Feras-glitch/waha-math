@@ -284,7 +284,8 @@
   "item": {
    "t": "rayDraw",
    "pts": "dn",
-   "want": "ba"
+   "want": "ba",
+   "ghost": "ab"
   },
   "find": "ch.find",
   "after": "ch.after",
@@ -320,12 +321,13 @@
     {
      "t": "rayStar",
      "q": "gm.q",
-     "ang": 25,
+     "ang": 40,
      "ord": [
       1,
       0,
       2
-     ]
+     ],
+     "flip": true
     },
     {
      "t": "reason",
@@ -425,7 +427,7 @@
   {
    "t": "rayStar",
    "q": "gm.q",
-   "ang": 155,
+   "ang": 140,
    "ord": [
     2,
     1,

@@ -156,6 +156,32 @@ export const factOf = it => { const t = it.t;
   if (t === 'makeTen') return (it.ask || 'total') === 'moved' ? `friend|${it.a}` : `add|${s2(it.a, it.b)}`;
   if (t === 'backTen') return `sub|${it.a}|${it.b}`;
   if (t === 'roadPick') return it.ask === 'land' ? `jump|${it.n}|${(it.dir || 1) * it.k}` : it.ask === 'hops' ? `jump|${it.n}|${it.b - it.n}` : `${['next', 'more'].includes(it.ask) ? 'succ' : 'pred'}|${it.n}`;
+  /* S2-U0 وS2-U1 (الفحص المستقل لبوابة S2-U0/U1 (9): «بنود مقيَّمة تطابق في جوهرها ما عُرض قبلها» ولا يراها فحص النصّ لأنها في مشهد أو بترتيب آخر أو بشيء آخر):
+     القراءة على المسطرة ببدايتها ونهايتها بلا الشيء المقيس، والرسم بطوله، والخيط بطوله، والاختيار بين الرسوم بمجموعتها وسؤالها أياً كان الترتيب،
+     والنقطة على الشبكة بموضعها، والقطعة بشكلها وطرفيها، والطرق بموضع المستقيم ونوع جاريه، والمنتصف بطول قطعته أياً كانت بدايتها،
+     والنجمة باتجاه شعاعها (ord ترتيب في الصفحة لا في الرسم)، وصورة بند التعليل بما ترسمه */
+  if (t === 'rulerRead') return it.a || it.brk ? `rul|${it.a || 0}|${it.b}|${it.brk || 0}` : Array.isArray(it.thing) ? `rulseg|${it.b}` : `rul0|${it.b}`;
+  if (t === 'mmIn') return `mmin|${it.n}`;
+  if (t === 'rulerMm') return `rmm|${it.ask || 'mm'}|${it.cm}|${it.mm}`;
+  if (t === 'drawLen') return `draw|${it.cm}|${it.mm || 0}`;
+  if (t === 'stringRead') return `str|${it.len}|${it.span}`;   /* المنحني بطوله وامتداده: الامتداد الآخر رسم آخر */
+  if (t === 'toolFixed') return `tool|${it.ask || 'fixed'}|${[...it.pics].sort().join(',')}`;
+  if (t === 'figPick') return `fig|${it.ask}|${[...it.pics].sort().join(',')}`;
+  if (t === 'gridPoint') return `gp|${it.r}|${it.u}`;
+  if (t === 'gridRead') return `gr|${it.ask || 'r'}|${it.r}|${it.u}`;
+  if (t === 'segTap') return `seg|${it.fig}|${[...it.want].sort().join('')}`;
+  if (t === 'pathShort') return `road|${it.st}|${it.v || 0}`;
+  if (t === 'tickMatch') return `tick|${it.fig}|${it.ref}`;
+  if (t === 'midMark') return it.a ? `mid|${it.len}|${it.a}` : `mid|${it.len}`;   /* القطعة التي لا تبدأ عند الصفر مسألة أخرى: تُقرأ بدايتها ونهايتها */
+  if (t === 'halfLen') return `half|${it.len}`;
+  if (t === 'midJudge') return `midj|${it.l}|${it.r}`;
+  if (t === 'rayDraw') return `rayd|${it.pts}|${it.want}`;
+  if (t === 'rayStar') return `star|${it.ang}|${it.flip ? 1 : 0}`;
+  if (t === 'geoName') return `gname|${it.kind}|${it.pts}|${it.from}${it.to}`;
+  if (t === 'colJudge') return `colj|${it.ang}|${it.off}`;
+  if (t === 'reason' && it.pic) { const P = it.pic;
+    if (P.kind === 'ruler') return `rulpic|${P.a || 0}|${P.b}|${P.brk || 0}`; if (P.kind === 'string') return `strpic|${P.len}|${P.span}`; if (P.kind === 'rulerMm') return `rmmpic|${P.cm}|${P.mm}`;
+    if (P.kind === 'roads') return `roadpic|${P.st}|${P.v || 0}`; if (P.kind === 'midj') return `midjpic|${P.l}|${P.r}`; }
   return null; };
 
 /* أعداد مسائل «معي» (mat.facts: مواصفاتُ بنود { of: نوعه، ... }): أعداد مفاتيحها، وجواب كلٍّ منها (الجمع بحاصله، والطرح بباقيه، والعشرة والآحاد بعدده وآحاده، وصديق
@@ -233,6 +259,24 @@ export function d240(lessons, code, MAKERS) {
   /* عدّ الأشياء، وعدّ فراغات الإطار («كم يحتاج سبعة ليصير عشرة؟» والإطار أمامه)، ولمحته: أداءٌ يُرى في الصورة لا جوابٌ يُحفظ، فيُحسب بين التقييمات وحدها (الحقائق الخمس لأصدقاء العشرة تُعرض كلها في الاكتشاف، المواصفة د6) */
   const ASSESS_ONLY = /^(count|friend|fglance)\|/;
   const SCENE_FACTS = {
+    /* S2-U0 وS2-U1: ما يعرضه المشهد بجوابه على المسطرة والشبكة والطرق (الفحص المستقل لبوابة S2-U0/U1 (9)) */
+    rulerWorked: s => { const a = s.a || 0, k = Array.isArray(s.thing) ? `rulseg|${s.b}` : a || s.brk ? `rul|${a}|${s.b}|${s.brk || 0}` : `rul0|${s.b}`; return [k, `rulpic|${a}|${s.b}|${s.brk || 0}`]; },
+    chaosRuler: s => { const a = s.a || 0; return [a || s.brk ? `rul|${a}|${s.b}|${s.brk || 0}` : `rul0|${s.b}`, `rulpic|${a}|${s.b}|${s.brk || 0}`]; },
+    recallRuler: s => { const a = s.a || 0, b = s.b || 4; return [Array.isArray(s.thing) ? `rulseg|${b}` : a || s.brk ? `rul|${a}|${b}|${s.brk || 0}` : `rul0|${b}`, `rulpic|${a}|${b}|${s.brk || 0}`]; },
+    mmRead: s => [`rmm|mm|${s.cm}|${s.mm}`, `rmm|cm|${s.cm}|${s.mm}`, `rmm|near|${s.cm}|${s.mm}`, `rmmpic|${s.cm}|${s.mm}`],
+    recallMm: s => [`rmm|mm|${s.cm || 3}|${s.mm || 6}`, `rmm|cm|${s.cm || 3}|${s.mm || 6}`, `rmmpic|${s.cm || 3}|${s.mm || 6}`],
+    drawShow: s => [`draw|${s.cm}|${s.mm || 0}`], recallDraw: s => [`draw|${s.cm || 6}|${s.mm || 0}`],
+    stringShow: s => [`str|${s.len}|${s.span}`, `strpic|${s.len}|${s.span}`], recallString: s => [`str|${s.len || 7}|${s.span || 5}`, `strpic|${s.len || 7}|${s.span || 5}`],
+    gridWalk: s => [`gp|${s.r}|${s.u}`, `gr|r|${s.r}|${s.u}`, `gr|u|${s.r}|${s.u}`], recallGridPt: s => [`gp|${s.r || 3}|${s.u || 2}`, `gr|r|${s.r || 3}|${s.u || 2}`, `gr|u|${s.r || 3}|${s.u || 2}`], chaosGridPt: s => [`gp|${s.r}|${s.u}`],
+    chaosFig: s => [`fig|${s.ask}|${[...s.pics].sort().join(',')}`],
+    recallFigs: s => ['fine', 'straight', 'curve', 'broken', 'open', 'closed', 'h', 'v', 'dg', 'seg', 'ray', 'line', 'col', 'ncol'].map(k => `fig|${k}|${[...s.pics].sort().join(',')}`),
+    chaosItem: s => [factOf(s.item)].filter(Boolean),
+    recallRoads: s => [`road|${s.st ?? 1}|${s.v || 0}`, `roadpic|${s.st ?? 1}|${s.v || 0}`],
+    recallMid: s => [`midj|${s.l || 4}|${s.r || 4}`, `midjpic|${s.l || 4}|${s.r || 4}`],
+    foldStrip: s => [`half|${s.len || 8}`, `mid|${s.len || 8}`],
+    recallRay: s => [`gname|${s.kind || 'ray'}|${s.pts || 'up'}|${s.from || 'a'}${s.to || 'b'}`],
+    recallCol: s => [`colj|${s.ang || 15}|${s.off || 0}`],
+    roadMap: () => ['mid|6', 'half|6', 'rulseg|6'],
     shelvesWalk: s => Array.from({ length: Math.max(0, s.n - 1) }, (_, i) => `part|${s.n}|${s2(i + 1, s.n - i - 1)}`),
     mailExplore: s => (s.boxes || []).map(b => `digitMatch|${b.n}`),
     takeHook: s => [`sub|${s.a}|${s.b}`],
@@ -294,7 +338,7 @@ export function d240(lessons, code, MAKERS) {
     'rugHook', 'rodMaker', 'teenWrite', 'rodFactory', 'chaos31', 'fingersHook', 'frameFriends', 'completeFrame', 'chaosFrame', 'countAllHook', 'makeTenLab', 'tenBus', 'chaosTakeMore', 'unitStrip', 'recallU4',
     'rhythmHook', 'patRead', 'patWorked', 'chaosPattern', 'recallPat', 'chaosGuess', 'patCircle', 'patSoundLab', 'chaosLoops', 'patHunt', 'skipBeads', 'skipWorked', 'chaosPairs', 'recallSkip', 'gridHook', 'gridGuide', 'gridWorked', 'chaosGrid', 'recallGrid', 'handsHook',
     'foldShow', 'foldLab', 'halfScene', 'chaosHalf', 'recallSym', 'foldWays', 'lineWorked', 'chaosFold', 'gridLab', 'doubleShow', 'doubleWorked', 'chaosWing', 'chaosDbl', 'paintFold', 'recallMir',
-    'spanClash', 'tileRuler', 'mmZoom', 'rulerWorked', 'chaosRuler', 'recallRuler', 'recallTools', 'alignShow', 'mmRead', 'cardSteps', 'drawShow', 'stringShow', 'recallAlign', 'recallMm', 'recallDraw', 'recallString', 'homeMeasure',
+    'digitPairs', 'spanClash', 'tileRuler', 'mmZoom', 'rulerWorked', 'chaosRuler', 'recallRuler', 'recallTools', 'alignShow', 'mmRead', 'cardSteps', 'drawShow', 'stringShow', 'recallAlign', 'recallMm', 'recallDraw', 'recallString', 'homeMeasure',
     'treasureHook', 'pointShow', 'gridWalk', 'chaosGridPt', 'recallGridPt', 'recallFigs', 'figLab', 'zigHook', 'antEscape', 'chaosFig', 'tautString', 'segNameShow', 'chaosItem', 'recallSeg', 'recallRoads', 'ticksShow', 'foldStrip', 'recallTicks', 'recallMid', 'torchHook', 'rayOrderShow', 'recallRay', 'railHook', 'linesThrough', 'recallCol', 'roadMap', 'homeSeg'];   /* S2-U1: النقاط والخطوط رسوم لا مولّدات */   /* S2-U0: المسطرة وأدوات القياس رسوم لا مولّدات */   /* S1-U6 */   /* S1-U5: عناصر النمط رسومه لا مولّدات */   /* S1-U4: رسوم القياس والعدد لا مولّدات */
   for (const m of code.matchAll(/^SCENES\.(\w+) = /gm)) if (!SCENE_DRAWS[m[1]] && !SCENE_NONE.includes(m[1])) errors.push(`المشهد ${m[1]} غير مسجَّل في SCENE_DRAWS أو SCENE_NONE في build/d240.mjs: هل يرسم شيئاً له مولّد؟ (D253 (1))`);
   /* ما رآه الطفل أو حلّه في درس: أسماء، وهيئات لكل مهمة، ونصوص البنود */

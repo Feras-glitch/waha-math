@@ -42,7 +42,7 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
   else if (P.kind === 'midj') ITEM.midJudge.draw({ l: P.l, r: P.r }, g);
   else if (P.kind === 'segfig') segFigAt(g, P.fig, { ticks: P.ticks });
   else if (P.kind === 'roads') roads3At(g, P.st, P.v || 0);
-  else if (P.kind === 'figs') P.pics.forEach((n, i) => lfigAt(g, n, LINE_X3[P.pics.length === 2 ? i * 2 : i], 100));   /* S2-U1 */
+  else if (P.kind === 'figs') P.pics.forEach((n, i) => { const x = LINE_X3[P.pics.length === 2 ? i * 2 : i]; lfigAt(g, n, x, 100); if (P.pics.length === 2) badge(g, x + 40, 58, i + 1); });   /* S2-U1؛ والصورتان مرقّمتان: «الخط الأول» هو الأيمن */
   else if (P.kind === 'rulerMm') ITEM.rulerMm.draw(ITEM.rulerMm.make({ cm: P.cm, mm: P.mm, thing: P.thing }), g);
   else if (P.kind === 'string') { const R = rulerAt(g, { x: 30, y: 176, pxcm: 30, from: 0, to: 10, mm: false }); stringAt(g, R, P.len, P.span, 84); }
   else if (P.kind === 'pat') patRowAt(svg, P.seq || patSeq(P.unit, P.n), { y: 100, parent: g, arrow: false });   /* S1-U5 */

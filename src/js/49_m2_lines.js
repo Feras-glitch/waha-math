@@ -18,8 +18,8 @@ function geoObj(parent, kind, P, Q, o = {}) { const g = el('g', { 'data-geo': ki
   if (o.ticks) { const mx = (P[0] + Q[0]) / 2, my = (P[1] + Q[1]) / 2; for (let i = 0; i < o.ticks; i++) { const t = (i - (o.ticks - 1) / 2) * 6, cx = mx + ux * t, cy = my + uy * t; geoLine(g, cx - uy * 8, cy + ux * 8, cx + uy * 8, cy - ux * 8, { color: o.tickColor || css('--chaos'), w: 2.6 }); } }
   if (o.dots !== false) { ptAt(g, P[0], P[1], o.names && o.names[0], { lab: o.labP }); if (kind !== 'x') ptAt(g, Q[0], Q[1], o.names && o.names[1], { lab: o.labQ }); } return g; }
 /* أسماء منطوقة: «القطعة» ثم حرفاها، والحروف بأسمائها (ألف، باء…) */
-async function sayGeo(kind, keys, opt = {}) { await S('gen.geo.' + kind, { noGap: true }); for (const [i, k] of keys.entries()) await S('gen.ltr.' + k, i < keys.length - 1 ? { noGap: true } : opt); }
-async function sayLtr(k, opt) { return S('gen.ltr.' + k, opt); }
+async function sayGeo(kind, keys, opt = {}) { await S('gen.geo.' + kind, { noGap: true, append: opt.append !== false }); for (const [i, k] of keys.entries()) await S('gen.ltr.' + k, { ...(i < keys.length - 1 ? { noGap: true } : opt), append: true }); }
+async function sayLtr(k, opt) { return S('gen.ltr.' + k, { append: true, ...(opt || {}) }); }
 
 /* ---------- مكتبة الرسوم الصغيرة (تُرسم في مربع 96 × 96 مركزه الأصل): لكل رسم خصائصه التي تسأل عنها بنود linePick ---------- */
 const LFIG = {
@@ -27,6 +27,9 @@ const LFIG = {
   stV: { p: { straight: 1, open: 1, v: 1 }, d: g => geoLine(g, 0, -36, 0, 36) },
   stD: { p: { straight: 1, open: 1, dg: 1 }, d: g => geoLine(g, -32, 30, 32, -30) },
   stD2: { p: { straight: 1, open: 1, dg: 1 }, d: g => geoLine(g, -34, -18, 34, 18) },
+  stH2: { p: { straight: 1, open: 1, h: 1 }, d: g => geoLine(g, -28, 16, 36, 16) },
+  stV2: { p: { straight: 1, open: 1, v: 1 }, d: g => geoLine(g, -16, -30, -16, 36) },
+  stD3: { p: { straight: 1, open: 1, dg: 1 }, d: g => geoLine(g, -14, 34, 16, -34) },
   wave: { p: { curve: 1, open: 1 }, d: g => el('path', { d: 'M-38 6 C-22 -34 -8 34 6 0 S30 -22 38 4', fill: 'none', stroke: GEO.ink, 'stroke-width': 3.2, 'stroke-linecap': 'round' }, g) },
   arc: { p: { curve: 1, open: 1 }, d: g => el('path', { d: 'M-36 22 Q0 -46 36 22', fill: 'none', stroke: GEO.ink, 'stroke-width': 3.2, 'stroke-linecap': 'round' }, g) },
   spiral: { p: { curve: 1, open: 1 }, d: g => el('path', { d: 'M4 4 C-10 -6 -14 14 2 16 C22 18 26 -12 4 -20 C-22 -28 -36 6 -22 26', fill: 'none', stroke: GEO.ink, 'stroke-width': 3.2, 'stroke-linecap': 'round' }, g) },
@@ -52,26 +55,36 @@ const LFIG = {
   dotFat: { p: { fat: 1 }, d: g => { el('circle', { r: 22, fill: GEO.pt, opacity: .85 }, g); } },
   dotRing: { p: { fat: 1 }, d: g => { el('circle', { r: 20, fill: 'none', stroke: GEO.pt, 'stroke-width': 5 }, g); } },
   dotX: { p: { fat: 1 }, d: g => { el('path', { d: 'M-22 -22 L22 22 M22 -22 L-22 22', stroke: css('--chaos'), 'stroke-width': 12, 'stroke-linecap': 'round' }, g); } },
+  dotSq: { p: { fat: 1 }, d: g => { el('rect', { x: -19, y: -19, width: 38, height: 38, rx: 6, fill: GEO.pt, opacity: .85 }, g); } },
+  dotBlob: { p: { fat: 1 }, d: g => { el('path', { d: 'M-20 -4 C-24 -22 -2 -26 8 -18 C24 -22 28 0 18 10 C20 24 -4 26 -12 16 C-24 14 -24 4 -20 -4 Z', fill: css('--chaos'), opacity: .8 }, g); } },
   col: { p: { col: 1 }, d: g => { for (const [x, y] of [[-30, 18], [0, 0], [30, -18]]) ptAt(g, x, y); } },
   col2: { p: { col: 1 }, d: g => { for (const [x, y] of [[-32, -8], [-4, -1], [32, 8]]) ptAt(g, x, y); } },
   ncol: { p: { ncol: 1 }, d: g => { for (const [x, y] of [[-30, 18], [0, -14], [30, 14]]) ptAt(g, x, y); } },
   ncol2: { p: { ncol: 1 }, d: g => { for (const [x, y] of [[-30, -6], [2, 8], [30, -10]]) ptAt(g, x, y); } },
+  col3: { p: { col: 1 }, d: g => { for (const [x, y] of [[-28, -22], [2, 2], [27, 22]]) ptAt(g, x, y); } },
+  ncol3: { p: { ncol: 1 }, d: g => { for (const [x, y] of [[-32, 12], [-2, -8], [32, 14]]) ptAt(g, x, y); } },
 };
 function lfigAt(parent, name, x, y, k = 1) { const g = el('g', { transform: `translate(${x} ${y})`, 'data-fig': name }, parent); el('rect', { x: -50, y: -50, width: 100, height: 100, rx: 16, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2.5 }, g); LFIG[name].d(el('g', { transform: `scale(${k})` }, g)); return g; }
 /* ================= ① أيّ الرسوم…؟ (C101، C103، C104، C105، C110، C111، C113): pics ثلاثة، ask خاصيّة واحدة يملكها رسم واحد منها ================= */
 const LINE_X3 = [290, 180, 70];
 const LINE_ERR = { fine: 'pointFat', straight: 'lineKind', curve: 'lineKind', broken: 'lineKind', open: 'lineOpen', closed: 'lineOpen', h: 'lineDir', v: 'lineDir', dg: 'lineDir', seg: 'segRayLine', ray: 'segRayLine', line: 'segRayLine', col: 'colWrong', ncol: 'colWrong' };
+const FIG_GRP = { fine: 'fine', straight: 'kind', curve: 'kind', broken: 'kind', open: 'open', closed: 'open', h: 'dir', v: 'dir', dg: 'dir', seg: 'name', ray: 'name', line: 'name', col: 'col', ncol: 'col' };
+const FIG_COLPTS = { col: [[-30, 18], [30, -18]], col2: [[-32, -8], [32, 8]], ncol: [[-30, 18], [30, 14]], ncol2: [[-30, -6], [30, -10]], col3: [[-28, -22], [27, 22]], ncol3: [[-32, 12], [32, 14]] };
 ITEM.figPick = {
   make(spec) { const has = spec.pics.map(n => !!LFIG[n].p[spec.ask]), want = has.indexOf(true); /*T*/if (TESTHOOK && has.filter(Boolean).length !== 1) testBug('figPick: الخاصيّة ' + spec.ask + ' ليست لرسم واحد في ' + spec.pics.join(','));/*/T*/ return { ...spec, want, tag: 'line-' + spec.ask }; },
   async ask(item, mode, tries) { const svg = newStage(200, { oasis: false, ground: 0 }), G = item.pics.map((n, i) => lfigAt(svg, n, LINE_X3[i], 100));
     if (tries >= 3) this.aid(item, svg, G);   /* الحلّ المشترك: علامة على ما يميّز كل رسم، والاختيار للطفل */
-    say(...lineOf(tries >= 3 ? 'gen.geo.together.pick' : item.q), { free: true });
+    say(...lineOf(tries >= 3 ? (FIG_GRP[item.ask] === 'col' ? 'gen.geo.together.pickCol' : 'gen.geo.together.pick') : item.q), { free: true });
     const k = await tapOne(G.map((g, i) => ({ g, k: i, label: labelText('geoFig') + ' ' + DG(i + 1) })), { ok: item.want, pad: 100 }); hush(); return { ans: k, ctx: { svg, G } }; },
-  aid(item, svg, G) { const m = helpG(svg); item.pics.forEach((n, i) => { const p = LFIG[n].p, key = p.gap ? 'geoAidGap' : p.closed ? 'geoAidClosed' : p.broken ? 'geoAidBroken' : p.curve ? 'geoAidCurve' : p.straight ? 'geoAidStraight' : p.seg ? 'geoAidSeg' : p.ray ? 'geoAidRay' : p.line ? 'geoAidLine' : null; if (!key) return;
-      const t = el('text', { x: LINE_X3[i], y: 176, 'text-anchor': 'middle', 'font-size': 14, fill: css('--think') }, m); t.textContent = labelText(key); }); return m; },
+  /* الحلّ المشترك: تحت كل رسم وصفٌ لما يميّزه في الخاصيّة المسؤول عنها (لا اسم الجواب)، والاختيار للطفل.
+     وللنقاط الثلاث: خطّ مستقيم من الأولى إلى الثالثة، فيُرى هل يمرّ بالوسطى */
+  aid(item, svg, G) { const m = helpG(svg), grp = FIG_GRP[item.ask];
+    if (grp === 'col') { item.pics.forEach((n, i) => { const q = FIG_COLPTS[n]; if (q) geoLine(m, LINE_X3[i] + q[0][0], 100 + q[0][1], LINE_X3[i] + q[1][0], 100 + q[1][1], { color: css('--think'), w: 1.8, dash: '4 3' }); }); return m; }
+    item.pics.forEach((n, i) => { const p = LFIG[n].p, key = grp === 'kind' ? (p.straight ? 'geoAidStraight' : p.curve ? 'geoAidCurve' : p.broken ? 'geoAidBroken' : null) : grp === 'open' ? (p.closed ? 'geoAidClosed' : p.open ? 'geoAidOpen' : null) : grp === 'dir' ? (p.h ? 'geoAidH' : p.v ? 'geoAidV' : p.dg ? 'geoAidDg' : null) : grp === 'fine' ? (p.fine ? 'geoAidFine' : 'geoAidFat') : (p.seg ? 'geoAidSeg' : p.ray ? 'geoAidRay' : p.line ? 'geoAidLine' : null); if (!key) return;
+      const t = el('text', { x: LINE_X3[i], y: 176, 'text-anchor': 'middle', 'font-size': 12.5, fill: css('--think') }, m); t.textContent = labelText(key); }); return m; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: LINE_ERR[item.ask] || 'lineKind' }; },
   onOk(item, r) { SFX.good(); okRing(r.ctx.svg, r.ctx.G[r.ans], 2); }, onWrong() { SFX.soft(); },
-  async hint2(item, r) { const m = this.aid(item, r.ctx.svg, r.ctx.G); await sleep(1600); m.remove(); }, async together() {},
+  async hint2(item) { await S('gen.geo.hint.' + FIG_GRP[item.ask]); }, async together() {},   /* المستوى 2: سؤال يوجّه النظر، بلا كتابة على الرسوم */
   async reveal(item, r) { okRing(r.ctx.svg, r.ctx.G[item.want], 2); await S('gen.geo.reveal.' + item.ask); },
   praise: () => 'praiseLook', twin(item) { return item.twin || null; },
 };
@@ -87,13 +100,14 @@ function geoGrid(svg, o = {}) { const c = o.cell || 40, cols = o.cols || 7, rows
       for (let j = 1; j <= u; j++) { const [xa, ya] = P(r, j - 1), [, yb] = P(r, j); el('path', { d: `M${xa} ${ya} Q${xa + 18} ${(ya + yb) / 2} ${xa} ${yb}`, fill: 'none', stroke: css('--think'), 'stroke-width': 2.6 }, m); SFX.tick(); if (o2.silent) await sleep(o2.ms || 200); else await S(numw(j), { noGap: true, num: true }); } return m; } }; }
 /* لافتة الحركة: سهم يمين وعدده، ثم سهم إلى الأعلى وعدده (الأسهم مرسومة: لا حرف سهم في خط القراءة) */
 const geoMoveLabel = (svg, r, u) => { const g = el('g', { 'pointer-events': 'none' }, svg), num = (x, n) => { const t = el('text', { x, y: 257, 'text-anchor': 'middle', 'font-size': 20, 'font-weight': 700, fill: GEO.ink }, g); t.textContent = DG(n); };
-  geoLine(g, 122, 250, 148, 250, { color: css('--compass'), w: 3 }); geoArrow(g, 150, 250, 0, css('--compass'), 8); num(166, r); geoLine(g, 206, 262, 206, 240, { color: css('--think'), w: 3 }); geoArrow(g, 206, 238, -90, css('--think'), 8); num(224, u); return g; };
+  /* القارئ يبدأ من اليمين: «يميناً» وعددها في الجهة اليمنى، ثم «إلى الأعلى» وعددها يسارها */
+  geoLine(g, 196, 250, 222, 250, { color: css('--compass'), w: 3 }); geoArrow(g, 224, 250, 0, css('--compass'), 8); num(240, r); geoLine(g, 124, 262, 124, 240, { color: css('--think'), w: 3 }); geoArrow(g, 124, 238, -90, css('--think'), 8); num(142, u); return g; };
 /* ================= ② ضع النقطة: r مربعات يميناً ثم u إلى الأعلى (C102، إنتاج) ================= */
 ITEM.gridPoint = {
   make(spec) { return { ...spec, tag: 'grid-point' }; },
   async ask(item, mode, tries) { const svg = newStage(270, { oasis: false, ground: 0 }), Gd = geoGrid(svg); geoMoveLabel(svg, item.r, item.u); let cur = null, dot = null, walk = null, done = false;
     if (tries >= 3) walk = await Gd.walk(item.r, 0, { silent: true });   /* الحلّ المشترك: قفزات اليمين مرسومة، والصعود للطفل */
-    const askQ = async () => { await S(tries >= 3 ? 'gen.geo.together.grid' : (item.q || 'gen.geo.gridQ'), { noGap: true }); await S(numw(item.r), { noGap: true, num: true }); await S('gen.geo.thenUp', { noGap: true }); await S(numw(item.u), { num: true }); };
+    const askQ = async () => { await S(tries >= 3 ? 'gen.geo.together.grid' : (item.q || 'gen.geo.gridQ'), { noGap: true }); await S(numw(item.r), { noGap: true, append: true }); await S('gen.geo.thenUp', { noGap: true, append: true }); await S(numw(item.u), { append: true }); };   /* السؤال كله يبقى مكتوباً */
     askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
     const set = (r, u) => { cur = [r, u]; if (dot) dot.remove(); const [x, y] = Gd.P(r, u); dot = el('g', { 'pointer-events': 'none' }, svg); el('circle', { cx: x, cy: y, r: 9, fill: GEO.pt, stroke: '#fff', 'stroke-width': 2.5 }, dot); /*T*/window.__gridPt = cur;/*/T*/ };
     const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { if (q[1] > Gd.y0 + 24) return false; set(...Gd.snap(q)); SFX.tick(); }, move(q) { set(...Gd.snap(q)); }, up() {} });
@@ -129,7 +143,7 @@ ITEM.pointTap = {
     const k = await tapOne(item.pts.map(([key], i) => ({ g: G[i], k: key, label: labelText('geoPoint') + ' ' + LTR[key] })), { ok: item.want, pad: 64 }); done = true; REPLAY_HOOK = null; hush(); return { ans: k, ctx: { svg, G } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'pointName' }; },
   onOk(item, r) { SFX.good(); okRing(r.ctx.svg, r.ctx.G[item.pts.findIndex(p => p[0] === r.ans)], 6); }, onWrong() { SFX.soft(); },
-  async hint2(item, r) { const i = item.pts.findIndex(p => p[0] === item.want), m = helpG(r.ctx.svg); el('circle', { cx: item.pts[i][1], cy: item.pts[i][2] - 20, r: 15, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, m); await sleep(1300); m.remove(); }, async together() {},
+  async hint2(item) { await S('gen.geo.hint.ptName', { noGap: true }); await sayLtr(item.want); }, async together() {},   /* المستوى 2: أين يُكتب الاسم، ثم الحرف ثانية؛ بلا إحاطة الجواب */
   async reveal(item, r) { okRing(r.ctx.svg, r.ctx.G[item.pts.findIndex(p => p[0] === item.want)], 6); await S('gen.geo.reveal.name', { noGap: true }); await sayLtr(item.want); },
   praise: () => 'praiseLook', twin(item) { return item.twin || null; },
 };
@@ -213,12 +227,13 @@ ITEM.segTap = {
   praise: () => 'praiseLook', twin(item) { return item.twin || null; },
 };
 /* ---------- ثلاثة طرق بين نقطتين: واحد مستقيم (رقمه st)، وواحد منحنٍ، وواحد منكسر ---------- */
-function roads3At(svg, st, v = 0) { const A = [56, 116], B = [304, 116], G = []; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, svg);
-  const ST = 'M56 116 L304 116', CU = 'M56 116 C120 6 240 6 304 116', CD = 'M56 116 C120 226 240 226 304 116', BU = 'M56 116 L110 56 L180 100 L250 50 L304 116', BD = 'M56 116 L120 190 L190 146 L250 196 L304 116';
-  const CU2 = 'M56 116 C100 40 260 60 304 116', CD2 = 'M56 116 C90 190 270 170 304 116', BU2 = 'M56 116 L150 40 L304 116', BD2 = 'M56 116 L200 200 L304 116';
-  /* v: 0 منحنٍ ومنكسر، 1 منحنيان، 2 منكسران؛ والمستقيم بينهما دائماً */
-  const up = v === 3 ? BU2 : v === 2 ? BU : CU, dn = v === 3 ? CD2 : v === 2 ? BD2 : v === 1 ? CD2 : BD, up2 = v === 3 ? CU2 : v === 2 ? BU2 : v === 1 ? CU2 : BU, dn2 = v === 3 ? BD2 : v === 2 ? BD : CD;   /* 3: منكسر فوق ومنحنٍ تحت */
-  const list = st === 0 ? [ST, up, dn] : st === 1 ? [up, ST, dn] : [up2, dn2, ST];
+function roads3At(svg, st, v = 0) { const yb = st === 0 ? 52 : st === 2 ? 180 : 116, A = [56, yb], B = [304, yb], G = []; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, svg);
+  /* s: +1 إلى الأسفل، −1 إلى الأعلى؛ d عمق الطريق عن الخط بين المكانين */
+  const ST = `M56 ${yb} L304 ${yb}`, cu = (s, d) => `M56 ${yb} C120 ${yb + s * d * 1.33} 240 ${yb + s * d * 1.33} 304 ${yb}`, vee = (s, d, x = 180) => `M56 ${yb} L${x} ${yb + s * d} L304 ${yb}`, zig = (s, d) => `M56 ${yb} L110 ${yb + s * d} L180 ${yb + s * d * .45} L250 ${yb + s * d} L304 ${yb}`;
+  /* v: 0 منحنٍ ومنكسر، 1 منحنيان، 2 منكسران، 3 منكسر ومنحنٍ (بعكس 0). والمستقيم: st = 0 أعلى الثلاثة، 1 بينها، 2 أسفلها؛ والترتيب في الصفحة من الأعلى إلى الأسفل */
+  let list;
+  if (st === 1) { const up = v === 3 ? vee(-1, 76, 150) : v === 2 ? zig(-1, 62) : cu(-1, 80), dn = v === 3 ? cu(1, 62) : v === 2 ? vee(1, 84, 200) : v === 1 ? cu(1, 56) : zig(1, 78); list = [up, ST, dn]; }
+  else { const s = st === 0 ? 1 : -1, near = v === 2 || v === 3 ? vee(s, 56, st === 0 ? 150 : 210) : cu(s, 56), far = v === 1 || v === 3 ? cu(s, 148) : zig(s, 150); list = st === 0 ? [ST, near, far] : [far, near, ST]; }
   list.forEach((d, i) => { const g = el('g', { 'data-road': i }, svg); el('path', { d, fill: 'none', stroke: 'transparent', 'stroke-width': 30 }, g); el('path', { d, fill: 'none', stroke: GEO.road, 'stroke-width': 6, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g); G.push(g); });
   for (const [P, home] of [[A, true], [B, false]]) { const g = el('g', { 'pointer-events': 'none' }, svg); el('circle', { cx: P[0], cy: P[1], r: 13, fill: '#fffdf6', stroke: GEO.ink, 'stroke-width': 2.5 }, g); if (home) el('path', { d: `M${P[0] - 7} ${P[1] + 6} V${P[1] - 2} L${P[0]} ${P[1] - 8} L${P[0] + 7} ${P[1] - 2} V${P[1] + 6} Z`, fill: css('--chaos') }, g); else el('rect', { x: P[0] - 7, y: P[1] - 6, width: 14, height: 12, fill: css('--compass') }, g); }
   return { G, want: st }; }
@@ -232,7 +247,7 @@ ITEM.pathShort = {
   judge(item, k) { return k === item.st ? { ok: true } : { ok: false, err: 'pathNotStraight' }; },
   paint(r, k, col) { r.ctx.R3.G[k].querySelectorAll('path')[1].setAttribute('stroke', col); },
   onOk(item, r) { SFX.good(); this.paint(r, r.ans, GEO.hl); }, onWrong() { SFX.soft(); },
-  async hint2(item, r) { const p = r.ctx.R3.G[r.ctx.R3.want].querySelectorAll('path')[1], m = helpG(r.ctx.svg); el('path', { d: p.getAttribute('d'), fill: 'none', stroke: css('--think'), 'stroke-width': 2, 'stroke-dasharray': '5 4', transform: 'translate(0 -9)' }, m); await sleep(1400); m.remove(); }, async together() {},
+  async hint2() { await S('gen.geo.hint.short'); }, async together() {},   /* المستوى 2: يتخيّل الخيط المشدود، ولا يُرسم له */
   async reveal(item, r) { this.paint(r, r.ctx.R3.want, GEO.hl); await S('gen.geo.reveal.short'); },
   praise: () => 'praiseThink', twin(item) { return item.twin || null; },
 };
@@ -272,31 +287,32 @@ SEGFIG.paraF = { pts: { a: [110, 62], b: [290, 62], j: [250, 172], d: [70, 172] 
 ITEM.tickMatch = {
   make(spec) { const want = Object.keys(spec.ticks).find(k => k !== spec.ref && spec.ticks[k] === spec.ticks[spec.ref]); return { ...spec, want, tag: 'tick-match' }; },
   async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), { F, G } = segFigAt(svg, item.fig, { ticks: item.ticks }), others = F.segs.filter(k => k !== item.ref); ITEM.segTap.mark({ ctx: { G } }, item.ref, css('--compass')); let done = false;
-    if (tries >= 3) { const m = helpG(svg), P = F.pts[item.ref[0]], Q = F.pts[item.ref[1]]; el('circle', { cx: (P[0] + Q[0]) / 2, cy: (P[1] + Q[1]) / 2, r: 17, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5, 'stroke-dasharray': '4 3' }, m); }   /* الحلّ المشترك: شرطات القطعة المسؤول عنها محاطة، والبحث عن مثلها للطفل */
+    if (tries >= 3) { const m = helpG(svg), C = Object.values(F.pts).reduce((a, q) => [a[0] + q[0] / Object.keys(F.pts).length, a[1] + q[1] / Object.keys(F.pts).length], [0, 0]);   /* الحلّ المشترك: عدد الشرطات مكتوب عند كل قطعة معلَّمة، والمطابقة للطفل */
+      for (const sg of F.segs) { if (!item.ticks[sg]) continue; const P = F.pts[sg[0]], Q = F.pts[sg[1]], M = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], d = Math.hypot(M[0] - C[0], M[1] - C[1]) || 1, t = el('text', { x: M[0] + (M[0] - C[0]) / d * 24, y: M[1] + (M[1] - C[1]) / d * 24 + 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 700, fill: css('--think') }, m); t.textContent = DG(item.ticks[sg]); } }
     const askQ = async () => { await S(tries >= 3 ? 'gen.geo.together.tick' : (item.q || 'gen.geo.tickQ'), { noGap: true }); for (const [i, k] of [...item.ref].entries()) await sayLtr(k, i ? {} : { noGap: true }); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
     const k = await tapOne(others.map(sg => ({ g: G[sg], k: sg, label: labelText('geoSeg') + ' ' + LTR[sg[0]] + ' ' + LTR[sg[1]] })), { ok: item.want, pad: 56 }); done = true; REPLAY_HOOK = null; hush(); return { ans: k, ctx: { svg, G } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'tickWrong' }; },
   onOk(item, r) { SFX.good(); ITEM.segTap.mark(r, r.ans, GEO.hl); }, onWrong() { SFX.soft(); },
-  async hint2(item, r) { const F = SEGFIG[item.fig], m = helpG(r.ctx.svg); for (const sg of [item.ref, item.want]) { const P = F.pts[sg[0]], Q = F.pts[sg[1]]; el('circle', { cx: (P[0] + Q[0]) / 2, cy: (P[1] + Q[1]) / 2, r: 17, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, m); } await sleep(1500); m.remove(); }, async together() {},
+  async hint2(item, r) { const F = SEGFIG[item.fig], m = helpG(r.ctx.svg), P = F.pts[item.ref[0]], Q = F.pts[item.ref[1]]; el('circle', { cx: (P[0] + Q[0]) / 2, cy: (P[1] + Q[1]) / 2, r: 17, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, m); await S('gen.geo.hint.tick'); m.remove(); }, async together() {},   /* المستوى 2: شرطات القطعة المسؤول عنها وحدها */
   async reveal(item, r) { ITEM.segTap.mark(r, item.want, GEO.hl); await S('gen.geo.reveal.tick'); },
   praise: () => 'praiseLook', twin(item) { return item.twin || null; },
 };
 /* ================= ⑧ ضع نقطة المنتصف (C109، إنتاج): len طول القطعة (سم). يسحب الطفل النقطة م على القطعة، وزرّان للمليمتر ================= */
 ITEM.midMark = {
   make(spec) { const a = spec.a || 0; return { ...spec, a, want: a * 10 + spec.len * 5, tag: 'mid-mark' + (a ? '-off' : '') }; },   /* a: القطعة تبدأ عند a سم لا عند الصفر */
-  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }), y = 196, R = rulerAt(svg, { x: 30, y, pxcm: 30, from: 0, to: 10, mm: false }), A0 = item.a * 10, L = A0 + item.len * 10; let v = item.start ?? Math.max(A0 + 5, Math.min(L - 5, Math.round(A0 + item.len * 3))), Ln = null;
-    geoObj(svg, 'seg', [R.X(item.a), y - 12], [R.X(item.a + item.len), y - 12], { names: item.names || ['a', 'b'], labP: [0, -12], labQ: [0, -12] });
+  async ask(item, mode, tries) { const svg = newStage(300, { oasis: false, ground: 0 }), y = 152, R = rulerAt(svg, { x: 30, y, pxcm: 30, from: 0, to: 10, mm: false }), A0 = item.a * 10, L = A0 + item.len * 10; let v = item.start ?? Math.max(A0 + 5, Math.min(L - 5, Math.round(A0 + item.len * 3))), Ln = null;
+    geoObj(svg, 'seg', [R.X(item.a), y - 12], [R.X(item.a + item.len), y - 12], { names: item.names || ['a', 'b'], labP: item.len <= 3 ? [-14, -4] : [0, -12], labQ: item.len <= 3 ? [14, -4] : [0, -12] });   /* القطعة القصيرة: حرفاها على الجانبين، فلا يتراكبان مع م */
     const tip = el('g', { 'pointer-events': 'none' }, svg); el('circle', { r: 9, fill: css('--chaos'), stroke: '#fff', 'stroke-width': 2.5 }, tip); const tl = el('text', { y: -14, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 700, fill: css('--chaos') }, tip); tl.textContent = LTR.m;
     const parts = el('g', { 'pointer-events': 'none' }, svg);
-    if (tries >= 3) { const g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.a + item.len * a)} ${y - 44} Q${R.X(item.a + item.len * (a + b) / 2)} ${y - 70} ${R.X(item.a + item.len * b)} ${y - 44}`, fill: 'none', stroke: css('--think'), 'stroke-width': 2.4, 'stroke-dasharray': '5 4' }, g); }   /* الحلّ المشترك: قوسان متساويان فوق القطعة، والسحب للطفل */
-    const set = n => { v = Math.max(A0, Math.min(L, Math.round(n))); tip.setAttribute('transform', `translate(${R.X(v / 10)} ${y - 12})`); if (Ln) Ln.remove(); Ln = rulerLens(svg, R, v / 10, { y: 16, cx: 180 }); /*T*/window.__midV = v;/*/T*/ }; set(v);
+    if (tries >= 3) { const g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.a + item.len * a)} ${y - 36} Q${R.X(item.a + item.len * (a + b) / 2)} ${y - 58} ${R.X(item.a + item.len * b)} ${y - 36}`, fill: 'none', stroke: css('--think'), 'stroke-width': 2.4, 'stroke-dasharray': '5 4' }, g); }   /* الحلّ المشترك: قوسان متساويان فوق القطعة، والسحب للطفل */
+    const set = n => { v = Math.max(A0, Math.min(L, Math.round(n))); tip.setAttribute('transform', `translate(${R.X(v / 10)} ${y - 12})`); if (Ln) Ln.remove(); Ln = rulerLens(svg, R, v / 10, { y: 8, cx: 180, mark: css('--chaos') }); /*T*/window.__midV = v;/*/T*/ }; set(v);
     say(...lineOf(tries >= 3 ? 'gen.geo.together.mid' : item.q), { free: true });
     const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { if (q[1] < y - 50 || q[1] > y + RUL_H + 6) return false; set((q[0] - R.X(0)) / 3); }, move(q) { set((q[0] - R.X(0)) / 3); }, up() {} });
     /*T*/window.__midWant = item.want; window.__midAt = n => { const m = svg.getScreenCTM(); return { x: m.a * R.X(n / 10) + m.e, y: m.d * (y - 12) + m.f }; };/*/T*/
-    const nudge = rulNudges(svg, 262, s => set(v + s), ['rulLeft', 'rulRight']); AUTO({ kind: 'midMark', ok: () => { set(item.want); rulDoneBtn().click(); }, wrong: () => { set(item.want + (item.want + 12 <= L ? 12 : -12)); rulDoneBtn().click(); } });
+    const nudge = rulNudges(svg, 254, s => set(v + s), ['rulLeft', 'rulRight']); AUTO({ kind: 'midMark', ok: () => { set(item.want); rulDoneBtn().click(); }, wrong: () => { set(item.want + (item.want + 12 <= L ? 12 : -12)); rulDoneBtn().click(); } });
     await rulDone(() => { input.off(); nudge.forEach(b => b.remove()); }); return { ans: v, ctx: { svg, R, set, y } }; },
   judge(item, v) { return Math.abs(v - item.want) <= 1 ? { ok: true } : { ok: false, err: Math.abs(v - item.want) <= 15 ? 'midEye' : 'midOff' }; },
-  show(item, r) { const { svg, R, y } = r.ctx, g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.a + item.len * a)} ${y - 44} Q${R.X(item.a + item.len * (a + b) / 2)} ${y - 70} ${R.X(item.a + item.len * b)} ${y - 44}`, fill: 'none', stroke: GEO.hl, 'stroke-width': 2.6 }, g); return g; },
+  show(item, r) { const { svg, R, y } = r.ctx, g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.a + item.len * a)} ${y - 36} Q${R.X(item.a + item.len * (a + b) / 2)} ${y - 58} ${R.X(item.a + item.len * b)} ${y - 36}`, fill: 'none', stroke: GEO.hl, 'stroke-width': 2.6 }, g); return g; },
   onOk(item, r) { SFX.good(); r.ctx.set(item.want); this.show(item, r); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { const g = this.show(item, r); await sleep(1400); g.remove(); }, async together() {},
   async reveal(item, r) { const a = r.ans; await symTween(700, t => r.ctx.set(a + (item.want - a) * t)); r.ctx.set(item.want); this.show(item, r); await S('gen.geo.reveal.mid'); },
@@ -321,7 +337,7 @@ ITEM.halfLen = { ...numItem,
     if (tries >= 3) { await S('gen.geo.together.half'); hops = await rulerHops(svg, R, 0, item.len / 2, { silent: true }); ptAt(svg, R.X(item.len / 2), 118, 'm', { r: 6, color: css('--chaos'), lab: [0, -14] }); } else await S(item.q);
     const np = numberPick(shuffle(item.nums), item.want, { digits: true, west: true }); return { ans: await np.p, ctx: { svg, np, R, hops } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: k === item.len ? 'halfWhole' : 'halfWrong' }; },
-  async hint2(item, r) { const g = ptAt(r.ctx.svg, r.ctx.R.X(item.len / 2), 118, 'm', { r: 6, color: css('--chaos'), lab: [0, -14] }); await sleep(1300); g.remove(); }, async together() {},
+  async hint2() { await S('gen.geo.hint.half'); }, async together() {},   /* المستوى 2: سؤال، بلا وضع م فوق عدد الجواب */
   async reveal(item, r) { ptAt(r.ctx.svg, r.ctx.R.X(item.len / 2), 118, 'm', { r: 6, color: css('--chaos'), lab: [0, -14] }); r.ctx.R.mark(item.len / 2); await sayLen(item.want); },
   praise: () => 'praiseMeasure', twin(item) { return item.twin || null; },
 };
@@ -352,17 +368,21 @@ const rayEdge = (P, Q) => { const dx = Q[0] - P[0], dy = Q[1] - P[1]; let t = 1e
 function rayFrame(svg) { return el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg); }
 function rayLineAt(parent, P, Q, col) { const E = rayEdge(P, Q), g = el('g', { 'pointer-events': 'none' }, parent); geoLine(g, P[0], P[1], E[0], E[1], { color: col, w: 4 }); geoArrow(g, E[0], E[1], Math.atan2(Q[1] - P[1], Q[0] - P[0]) * 180 / Math.PI, col, 11); return g; }
 /* ================= ⑪ ارسم الشعاع (C110، إنتاج): pts مجموعة نقاط (RAYPTS)، want حرفان: البداية ثم النقطة التي يمرّ بها ================= */
+/* نقطة ثالثة ليست على خطّ النقطتين (فلا يصير البند اختياراً من اثنين): اسمها حرف غير حرفيهما */
+function rayThird(PT) { const [k1, k2] = Object.keys(PT), P = PT[k1], Q = PT[k2], M = [(P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2], d = Math.hypot(Q[0] - P[0], Q[1] - P[1]), n = [-(Q[1] - P[1]) / d, (Q[0] - P[0]) / d], key = k1 === 'a' || k2 === 'a' ? 'j' : 'b';
+  const cand = [1, -1].map(s => [M[0] + n[0] * 74 * s + (Q[0] - P[0]) / d * 26, M[1] + n[1] * 74 * s + (Q[1] - P[1]) / d * 26]), inb = c => c[0] >= 50 && c[0] <= 310 && c[1] >= 52 && c[1] <= 196; return [key, cand.find(inb) || cand[0]]; }
 ITEM.rayDraw = {
   make(spec) { return { ...spec, tag: 'ray-draw' }; },
-  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), PT = RAYPTS[item.pts], keys = Object.keys(PT); rayFrame(svg); let done = false;
-    const G = {}; for (const k of keys) { const g = el('g', {}, svg); ptAt(g, PT[k][0], PT[k][1], k, { r: 7, lab: [0, -16] }); G[k] = g; }
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), PT = { ...RAYPTS[item.pts] }; { const [k3, p3] = rayThird(PT); PT[k3] = p3; } const keys = Object.keys(PT); rayFrame(svg); let done = false;
+    if (item.ghost) rayLineAt(svg, PT[item.ghost[0]], PT[item.ghost[1]], css('--chaos')).setAttribute('opacity', .45);   /* «صحّح لفوضى»: شعاعها الخاطئ مرسوم باهتاً */
+    const side = Math.abs(PT[keys[0]][0] - PT[keys[1]][0]) < 24, G = {}; for (const k of keys) { const g = el('g', {}, svg); ptAt(g, PT[k][0], PT[k][1], k, { r: 7, lab: side ? [18, 6] : [0, -16] }); G[k] = g; }   /* الشعاع الرأسي: الحروف جانباً، لا على مساره */
     if (tries >= 3) { const m = helpG(svg), [x, y] = PT[item.want[0]]; el('circle', { cx: x, cy: y, r: 15, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5, 'stroke-dasharray': '4 3' }, m); }   /* الحلّ المشترك: نقطة البداية محاطة، واللمس للطفل */
     const askQ = async () => { await S(tries >= 3 ? 'gen.geo.together.ray' : (item.q || 'gen.geo.rayQ'), { noGap: true }); for (const [i, k] of [...item.want].entries()) await sayLtr(k, i ? {} : { noGap: true }); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
-    const t = k => ({ g: G[k], k, label: labelText('geoPoint') + ' ' + LTR[k] }), p1 = await tapOne(keys.map(t), { ok: item.want[0], pad: 64 }); hush(); el('circle', { cx: PT[p1][0], cy: PT[p1][1], r: 12, fill: 'none', stroke: css('--compass'), 'stroke-width': 3, 'pointer-events': 'none' }, svg); SFX.tick();
-    const p2 = await tapOne(keys.filter(k => k !== p1).map(t), { ok: item.want[1], pad: 64, kind: 'rayTo' }); done = true;   /* kind آخر: مرحلتان لا محاولتان (عدّاد الفحص) */ REPLAY_HOOK = null; rayLineAt(svg, PT[p1], PT[p2], css('--compass')); return { ans: p1 + p2, ctx: { svg, PT } }; },
+    const t = k => ({ g: G[k], k, label: labelText('geoPoint') + ' ' + LTR[k] }), p1 = await tapOne(keys.map(t), { ok: item.want[0], bad: item.want[1], pad: 64 }); hush(); el('circle', { cx: PT[p1][0], cy: PT[p1][1], r: 12, fill: 'none', stroke: css('--compass'), 'stroke-width': 3, 'pointer-events': 'none' }, svg); SFX.tick();
+    const rest = keys.filter(k => k !== p1), p2 = await tapOne(rest.map(t), { ok: rest.includes(item.want[1]) ? item.want[1] : rest[0], pad: 64, kind: 'rayTo' }); done = true;   /* kind آخر: مرحلتان لا محاولتان (عدّاد الفحص) */ REPLAY_HOOK = null; rayLineAt(svg, PT[p1], PT[p2], css('--compass')); return { ans: p1 + p2, ctx: { svg, PT } }; },
   judge(item, a) { return a === item.want ? { ok: true } : { ok: false, err: a === item.want[1] + item.want[0] ? 'rayReversed' : 'rayWrong' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
-  async hint2(item, r) { const m = helpG(r.ctx.svg), [x, y] = r.ctx.PT[item.want[0]]; el('circle', { cx: x, cy: y, r: 15, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, m); await sleep(1400); m.remove(); }, async together() {},
+  async hint2() { await S('gen.geo.hint.rayDraw'); }, async together() {},   /* المستوى 2: سؤال عن الحرف الأول في الاسم، بلا إحاطة */
   async reveal(item, r) { rayLineAt(r.ctx.svg, r.ctx.PT[item.want[0]], r.ctx.PT[item.want[1]], GEO.hl); await S('gen.geo.reveal.rayDraw'); },
   praise: () => 'praiseThink', twin(item) { return item.twin || null; },
 };
@@ -379,21 +399,25 @@ ITEM.geoName = {
   praise: () => 'praiseThink', twin(item) { return item.twin || null; },
 };
 /* ================= ⑬ أيّ نجمة يضيئها الشعاع؟ (C110): ang اتجاه الشعاع بالدرجات. نجمة على امتداده، ونجمة خلف بدايته، ونجمة خارج خطّه ================= */
-function rayStarGeo(ang) { const a = ang * Math.PI / 180, u = [Math.cos(a), -Math.sin(a)], n = [-u[1], u[0]], C = [180, 116], A = [C[0] - u[0] * 60, C[1] - u[1] * 60], B = [A[0] + u[0] * 62, A[1] + u[1] * 62];
+function rayStarGeo(ang, flip) { const a = ang * Math.PI / 180, u = [Math.cos(a), -Math.sin(a)], f = flip ? -1 : 1, n = [-u[1] * f, u[0] * f],   /* flip: النجمة الخارجة عن الخط في الجهة الأخرى */ C = [180, 116], A = [C[0] - u[0] * 60, C[1] - u[1] * 60], B = [A[0] + u[0] * 62, A[1] + u[1] * 62];
   return { A, B, S: [[A[0] + u[0] * 150, A[1] + u[1] * 150], [A[0] - u[0] * 52, A[1] - u[1] * 52], [A[0] + u[0] * 96 + n[0] * 58, A[1] + u[1] * 96 + n[1] * 58]] }; }
 const starPath = (x, y, r) => { let d = ''; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; d += (i ? 'L' : 'M') + (x + rr * Math.cos(a)).toFixed(1) + ' ' + (y + rr * Math.sin(a)).toFixed(1); } return d + 'Z'; };
 ITEM.rayStar = {
   make(spec) { const ord = spec.ord || [0, 1, 2]; return { ...spec, ord, want: ord.indexOf(0), tag: 'ray-star' }; },
-  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), Gm = rayStarGeo(item.ang); el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#22324a', stroke: css('--line'), 'stroke-width': 2 }, svg);
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), Gm = rayStarGeo(item.ang, item.flip); el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#22324a', stroke: css('--line'), 'stroke-width': 2 }, svg);
     const St = item.ord.map((si, i) => { const [x, y] = Gm.S[si], g = el('g', {}, svg); el('path', { d: starPath(x, y, 15), fill: '#8f9bb0', stroke: '#fff', 'stroke-width': 1.5 }, g); return g; });
     const tor = el('g', { 'pointer-events': 'none' }, svg); el('circle', { cx: Gm.A[0], cy: Gm.A[1], r: 9, fill: '#f6d24a', stroke: '#fff', 'stroke-width': 2 }, tor); ptAt(tor, Gm.A[0], Gm.A[1], 'a', { r: 3, color: '#fff', lab: [0, -16] }); ptAt(tor, Gm.B[0], Gm.B[1], 'b', { r: 4.5, color: '#fff', lab: [0, -14] });
     if (tries >= 3) geoLine(helpG(svg), Gm.A[0], Gm.A[1], Gm.B[0], Gm.B[1], { color: '#f6d24a', w: 4 });   /* الحلّ المشترك: أول الشعاع مرسوم من أ إلى ب، والامتداد للطفل */
     say(...lineOf(tries >= 3 ? 'gen.geo.together.star' : item.q), { free: true });
-    const k = await tapOne(St.map((g, i) => ({ g, k: i, label: labelText('geoStar') + ' ' + DG(i + 1) })), { ok: item.want, pad: 64 }); hush(); const beam = rayLineAt(svg, Gm.A, Gm.B, '#f6d24a'); svg.insertBefore(beam, St[0]); return { ans: k, ctx: { svg, St, Gm } }; },
+    const k = await tapOne(St.map((g, i) => ({ g, k: i, label: labelText('geoStar') + ' ' + DG(i + 1) })), { ok: item.want, pad: 64 }); hush(); return { ans: k, ctx: { svg, St, Gm } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.ord[k] === 1 ? 'rayBehind' : 'rayOffLine' }; },
+  /* الشعاع لا يُرسم إلا عند الصواب أو الكشف: رسمه بعد كل لمسة كان يدلّ على النجمة الصحيحة في الإتقان والاختبار */
+  beam(r) { if (r.ctx.beam) return; const { svg, St, Gm } = r.ctx; r.ctx.beam = rayLineAt(svg, Gm.A, Gm.B, '#f6d24a'); svg.insertBefore(r.ctx.beam, St[0]); },
   lit(r, i) { r.ctx.St[i].firstChild.setAttribute('fill', '#f6d24a'); },
-  onOk(item, r) { SFX.good(); this.lit(r, r.ans); }, onWrong() { SFX.soft(); }, async hint2(item, r) { await sleep(1200); }, async together() {},
-  async reveal(item, r) { this.lit(r, item.want); await S('gen.geo.reveal.star'); },
+  onOk(item, r) { SFX.good(); this.beam(r); this.lit(r, r.ans); }, onWrong() { SFX.soft(); },
+  /* المستوى 2: أول الشعاع من أ إلى ب، والامتداد للطفل */
+  async hint2(item, r) { const { svg, Gm } = r.ctx; geoLine(helpG(svg), Gm.A[0], Gm.A[1], Gm.B[0], Gm.B[1], { color: '#f6d24a', w: 4 }); await S('gen.geo.hint.star'); }, async together() {},
+  async reveal(item, r) { this.beam(r); this.lit(r, item.want); await S('gen.geo.reveal.star'); },
   praise: () => 'praiseThink', twin(item) { return item.twin || null; },
 };
 /* ---------- مشاهد الدرس 5 ---------- */
@@ -463,14 +487,28 @@ WRAP_ART.railLine = svg => { const g = el('g', {}, svg); el('rect', { x: 50, y: 
 /* خريطة مدينة صغيرة: المدرسة والحديقة والمخبز. يبني الطفل طرقها خطوةً خطوة باللمس (الهدف التالي ينبض):
    قطعة بين مكانين وتُسمّى وتُقاس، ثم شعاع يخرج من المدينة، ثم سكة حديد (مستقيم)، ثم محطة راحة عند منتصف أطول طريق، ثم طريق حرّ من اختياره.
    lines: [مقدّمة، القطعة، بعدها، الشعاع، بعده، المستقيم، بعده، المحطة، بعدها، الحرّ، ختام] */
-SCENES.roadMap = async c => { const svg = newStage(270, { oasis: false, ground: 0 }), L = c.lines; el('rect', { x: 14, y: 10, width: 332, height: 250, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, svg);
-  const PL = { a: [70, 200, '#c8392d'], b: [250, 200, '#2f9d6b'], j: [160, 80, '#d99a2b'], d: [300, 90, '#3d7cc0'] }, roads = el('g', { 'pointer-events': 'none' }, svg), G = {};
-  for (const [k, [x, y, col]] of Object.entries(PL)) { const g = el('g', {}, svg); el('circle', { cx: x, cy: y, r: 15, fill: '#fffdf6', stroke: col, 'stroke-width': 3 }, g); el('rect', { x: x - 7, y: y - 5, width: 14, height: 11, fill: col }, g); el('path', { d: `M${x - 9} ${y - 5} L${x} ${y - 12} L${x + 9} ${y - 5} Z`, fill: col }, g); const t = el('text', { x, y: y + 34, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 700, fill: GEO.ink, 'pointer-events': 'none' }, g); t.textContent = LTR[k]; G[k] = g; }
-  const pick = async (k, pulse = true) => { await tapOne([{ g: G[k], k, label: labelText('geoPlace') + ' ' + LTR[k] }], { ok: k, pad: 64, pulse }); SFX.tick(); }, P = k => [PL[k][0], PL[k][1]];
-  await S(L[0]); S(L[1], { free: true }); await pick('a'); hush(); await pick('b'); geoLine(roads, ...P('a'), ...P('b'), { color: GEO.road, w: 6 }); await sayGeo('seg', ['a', 'b']); const cmL = Math.round(Math.hypot(P('b')[0] - P('a')[0], P('b')[1] - P('a')[1]) / 30);
-  { const t = el('text', { x: (P('a')[0] + P('b')[0]) / 2, y: P('a')[1] - 12, 'text-anchor': 'middle', 'font-size': 16, 'font-weight': 700, fill: GEO.ink, 'pointer-events': 'none' }, svg); t.textContent = cmL + ' ' + labelText('rulCm'); } await S(L[2]); await sayLen(cmL);
-  S(L[3], { free: true }); await pick('j'); hush(); await pick('d'); roads.appendChild(rayLineAt(svg, P('j'), P('d'), GEO.road)); await sayGeo('ray', ['j', 'd']); await S(L[4]);
-  S(L[5], { free: true }); await pick('a'); hush(); await pick('j'); { const E1 = rayEdge(P('a'), P('j')), E2 = rayEdge(P('j'), P('a')), g = el('g', {}, roads); geoLine(g, E2[0], E2[1], E1[0], E1[1], { color: '#5b6770', w: 5, dash: '10 5' }); const a = Math.atan2(P('j')[1] - P('a')[1], P('j')[0] - P('a')[0]) * 180 / Math.PI; geoArrow(g, E1[0], E1[1], a, '#5b6770', 11); geoArrow(g, E2[0], E2[1], a + 180, '#5b6770', 11); } await sayGeo('line', ['a', 'j']); await S(L[6]);
-  const mid = [(P('a')[0] + P('b')[0]) / 2, P('a')[1]], st = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg); el('circle', { cx: mid[0], cy: mid[1], r: 13, fill: css('--chaos'), opacity: .3, stroke: css('--chaos'), 'stroke-width': 2.5 }, st);
-  await answerWhile(L[7], () => tapOne([{ g: st, k: 'm', label: labelText('geoStop') }], { ok: 'm', pad: 64, pulse: true })); st.remove(); ptAt(svg, mid[0], mid[1], 'm', { r: 8, color: css('--chaos'), lab: [0, 26] }); SFX.good(); await S(L[8]); await sayLen(cmL / 2);
-  S(L[9], { free: true }); await pick('b', false); hush(); await pick('d', false); geoLine(roads, ...P('b'), ...P('d'), { color: GEO.road, w: 6 }); await sayGeo('seg', ['b', 'd']); logAttempt({ scene: c.s || 'game', tag: 'roadMap', ok: true }); await S(L[10]); };
+SCENES.roadMap = async c => { const L = c.lines, PL = { a: [70, 196, '#c8392d'], b: [250, 196, '#2f9d6b'], j: [160, 80, '#d99a2b'], d: [300, 92, '#3d7cc0'] }, P = k => [PL[k][0], PL[k][1]], cmL = Math.round((PL.b[0] - PL.a[0]) / 30), did = { seg: 0, ray: 0, line: 0, mid: 0, free: null };
+  /* حدود الخريطة لا حدود مسرح الأشعة: المستقيم يمتدّ خلف المكانين حتى إطار الخريطة ويُرى سهماه */
+  const edge = (A, B) => { const dx = B[0] - A[0], dy = B[1] - A[1]; let t = 1e9; for (const [v, d, lo, hi] of [[A[0], dx, 28, 332], [A[1], dy, 24, 246]]) { if (d > 0) t = Math.min(t, (hi - v) / d); else if (d < 0) t = Math.min(t, (lo - v) / d); } return [A[0] + dx * t, A[1] + dy * t]; };
+  let svg, roads, G;
+  const paint = () => { roads.innerHTML = '';
+    if (did.line) { const E1 = edge(P('a'), P('j')), E2 = edge(P('j'), P('a')), a = Math.atan2(P('j')[1] - P('a')[1], P('j')[0] - P('a')[0]) * 180 / Math.PI; geoLine(roads, E2[0], E2[1], E1[0], E1[1], { color: '#5b6770', w: 5, dash: '10 5' }); geoArrow(roads, E1[0], E1[1], a, '#5b6770', 11); geoArrow(roads, E2[0], E2[1], a + 180, '#5b6770', 11); }
+    if (did.seg) { geoLine(roads, ...P('a'), ...P('b'), { color: GEO.road, w: 6 }); const t = el('text', { x: (P('a')[0] + P('b')[0]) / 2 + (did.mid ? 44 : 0), y: P('a')[1] - 12, 'text-anchor': 'middle', 'font-size': 16, 'font-weight': 700, fill: GEO.ink }, roads); t.textContent = cmL + ' ' + labelText('rulCm'); }
+    if (did.ray) { const E = edge(P('j'), P('d')); geoLine(roads, ...P('j'), E[0], E[1], { color: GEO.road, w: 4 }); geoArrow(roads, E[0], E[1], Math.atan2(P('d')[1] - P('j')[1], P('d')[0] - P('j')[0]) * 180 / Math.PI, GEO.road, 11); }
+    if (did.free) geoLine(roads, ...P(did.free[0]), ...P(did.free[1]), { color: GEO.road, w: 6 });
+    if (did.mid) ptAt(roads, (P('a')[0] + P('b')[0]) / 2, P('a')[1], 'm', { r: 8, color: css('--chaos'), lab: [0, -14] }); };
+  const build = () => { svg = newStage(270, { oasis: false, ground: 0 }); el('rect', { x: 14, y: 10, width: 332, height: 250, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, svg); roads = el('g', { 'pointer-events': 'none' }, svg); G = {};
+    for (const [k, [x, y, col]] of Object.entries(PL)) { const g = el('g', {}, svg); el('circle', { cx: x, cy: y, r: 15, fill: '#fffdf6', stroke: col, 'stroke-width': 3 }, g); el('rect', { x: x - 7, y: y - 5, width: 14, height: 11, fill: col }, g); el('path', { d: `M${x - 9} ${y - 5} L${x} ${y - 12} L${x + 9} ${y - 5} Z`, fill: col }, g);
+      const [lx, ly] = k === 'j' ? [-46, -22] : k === 'a' ? [40, 36] : [0, 34], t = el('text', { x: x + lx, y: y + ly, 'text-anchor': 'middle', 'font-size': 14, 'font-weight': 700, fill: GEO.ink, 'pointer-events': 'none' }, g); t.textContent = LTR[k] + ' · ' + labelText('geoPl.' + k); G[k] = g; } paint(); };   /* اسما أ وج بعيدان عن مسار سكة الحديد */   /* لكل مكان حرفه واسمه: البيت والمدرسة والحديقة والمخبز */
+  const pick = async (k, pulse = true) => { await tapOne([{ g: G[k], k, label: labelText('geoPlace') + ' ' + LTR[k] }], { ok: k, pad: 64, pulse }); SFX.tick(); };
+  build(); await S(L[0]); S(L[1], { free: true }); await pick('a'); hush(); await pick('b'); did.seg = 1; paint(); await sayGeo('seg', ['a', 'b'], { append: false }); await S(L[2]); await sayLen(cmL);
+  S(L[3], { free: true }); await pick('j'); hush(); await pick('d'); did.ray = 1; paint(); await sayGeo('ray', ['j', 'd'], { append: false }); await S(L[4]);
+  S(L[5], { free: true }); await pick('a'); hush(); await pick('j'); did.line = 1; paint(); await sayGeo('line', ['a', 'j'], { append: false }); await S(L[6]);
+  /* المحطة: يضعها الطفل نفسه عند منتصف الطريق أ ب على المسطرة (بند المنتصف)، حتى يصيب؛ ثم تعود الخريطة والمحطة عليها */
+  { const it = ITEM.midMark.make({ len: cmL, names: ['a', 'b'], q: L[7] }); let n = 0;
+    while (true) { const r = await ITEM.midMark.ask(it, 'explore', n >= 2 ? 3 : 0), ok = ITEM.midMark.judge(it, r.ans).ok; logAttempt({ scene: c.s || 'game', tag: 'roadMid', ok, firstTry: n === 0 }); n++; if (ok) { ITEM.midMark.onOk(it, r); break; } SFX.soft(); await S('gen.geo.midAgain'); }
+    await sleep(700); did.mid = 1; build(); SFX.good(); await S(L[8]); await sayLen(cmL / 2); }
+  /* الطريق الحرّ: يختار الطفل مكانين (غير الطريق المبنيّ أ ب) فتصل بينهما قطعة ويُنطق اسمها */
+  { const all = ['a', 'b', 'j', 'd'], t = k => ({ g: G[k], k, label: labelText('geoPlace') + ' ' + LTR[k] }); S(L[9], { free: true }); const k1 = await tapOne(all.map(t), { ok: all, pad: 64, pulse: false }); hush(); SFX.tick(); const ring = el('circle', { cx: PL[k1][0], cy: PL[k1][1], r: 20, fill: 'none', stroke: css('--compass'), 'stroke-width': 3, 'pointer-events': 'none' }, svg);
+    const rest = all.filter(k => k !== k1 && !['ab', 'aj', 'dj'].includes([k1, k].sort().join(''))),   /* لا طريق فوق طريق مبنيّ: أ ب، وسكة أ ج، وشعاع ج د */ k2 = await tapOne(rest.map(t), { ok: rest, pad: 64, pulse: false, kind: 'roadTo' }); SFX.tick(); ring.remove(); did.free = [k1, k2]; paint(); await sayGeo('seg', [k1, k2], { append: false }); }
+  logAttempt({ scene: c.s || 'game', tag: 'roadMap', ok: true }); await S(L[10]); };

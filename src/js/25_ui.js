@@ -38,7 +38,7 @@ function labelText(k) { const D = CUR ? LDATA[CUR.id] : null; return (D && D.lab
 /* شارة العدّ: لون النص يُختار بحسب الخلفية (T10) */
 function badge(parent, x, y, n, col) { const bg = col || css('--compass'); const m = el('g', { transform: `translate(${x} ${y})`, 'pointer-events': 'none', 'data-badge': 1 }, parent);
   el('circle', { r: 15, fill: bg, stroke: '#fff', 'stroke-width': 3 }, m);
-  if (digitsShown()) { const t = el('text', { y: 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 800, fill: onColor(bg), 'font-family': css('--f') }, m); t.textContent = DG(n); }
+  if (digitsShown()) { const t = el('text', { y: 6, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 800, fill: onColor(bg), 'font-family': css('--f') }, m); t.textContent = typeof n === 'string' ? n : DG(n); }   /* نصّ جاهز (أرقام المسطرة في المرحلة 2) يُكتب كما هو */
   else el('circle', { r: 4.5, fill: onColor(bg) }, m);   /* قبل «أرقام الواحة» لا رقم مكتوباً: الشارة نقطة، والعدد مسموع */
   anim(m, [{ transform: `translate(${x}px,${y}px) scale(.2)` }, { transform: `translate(${x}px,${y}px) scale(1)` }], { duration: 260, easing: 'cubic-bezier(.3,1.6,.6,1)' }); return m; }
 function renderMute() { for (const id of ['#muteBtn', '#muteBtn2']) { const b = $(id); if (b) { b.innerHTML = SET.muted ? ICON.mute : ICON.sound; b.setAttribute('aria-pressed', SET.muted); } } }
