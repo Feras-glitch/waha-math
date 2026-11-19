@@ -267,6 +267,7 @@ Object.assign(SEGFIG, {
   isoF: { pts: { a: [90, 180], b: [270, 180], j: [180, 52] }, segs: ['ab', 'bj', 'ja'], lab: { a: [-12, 12], b: [12, 12], j: [0, -12] } },
 });
 SEGFIG.kiteF.lab.j = [16, 10];
+SEGFIG.paraF = { pts: { a: [110, 62], b: [290, 62], j: [250, 172], d: [70, 172] }, segs: ['ab', 'bj', 'jd', 'da'], lab: { a: [-10, -10], b: [10, -10], j: [12, 18], d: [-12, 18] } };
 /* ================= ⑦ أيّ قطعة تساوي القطعة المعلَّمة؟ (C108): fig، ticks { قطعة: عدد الشرطات }، ref القطعة المسؤول عنها ================= */
 ITEM.tickMatch = {
   make(spec) { const want = Object.keys(spec.ticks).find(k => k !== spec.ref && spec.ticks[k] === spec.ticks[spec.ref]); return { ...spec, want, tag: 'tick-match' }; },
@@ -282,20 +283,20 @@ ITEM.tickMatch = {
 };
 /* ================= ⑧ ضع نقطة المنتصف (C109، إنتاج): len طول القطعة (سم). يسحب الطفل النقطة م على القطعة، وزرّان للمليمتر ================= */
 ITEM.midMark = {
-  make(spec) { return { ...spec, want: spec.len * 5, tag: 'mid-mark' }; },
-  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }), y = 196, R = rulerAt(svg, { x: 30, y, pxcm: 30, from: 0, to: 10, mm: false }), L = item.len * 10; let v = item.start ?? Math.max(5, Math.min(L - 5, Math.round(L * .3))), Ln = null;
-    geoObj(svg, 'seg', [R.X(0), y - 12], [R.X(item.len), y - 12], { names: item.names || ['a', 'b'], labP: [0, -12], labQ: [0, -12] });
+  make(spec) { const a = spec.a || 0; return { ...spec, a, want: a * 10 + spec.len * 5, tag: 'mid-mark' + (a ? '-off' : '') }; },   /* a: القطعة تبدأ عند a سم لا عند الصفر */
+  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }), y = 196, R = rulerAt(svg, { x: 30, y, pxcm: 30, from: 0, to: 10, mm: false }), A0 = item.a * 10, L = A0 + item.len * 10; let v = item.start ?? Math.max(A0 + 5, Math.min(L - 5, Math.round(A0 + item.len * 3))), Ln = null;
+    geoObj(svg, 'seg', [R.X(item.a), y - 12], [R.X(item.a + item.len), y - 12], { names: item.names || ['a', 'b'], labP: [0, -12], labQ: [0, -12] });
     const tip = el('g', { 'pointer-events': 'none' }, svg); el('circle', { r: 9, fill: css('--chaos'), stroke: '#fff', 'stroke-width': 2.5 }, tip); const tl = el('text', { y: -14, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 700, fill: css('--chaos') }, tip); tl.textContent = LTR.m;
     const parts = el('g', { 'pointer-events': 'none' }, svg);
-    if (tries >= 3) { const g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.len * a)} ${y - 44} Q${R.X(item.len * (a + b) / 2)} ${y - 70} ${R.X(item.len * b)} ${y - 44}`, fill: 'none', stroke: css('--think'), 'stroke-width': 2.4, 'stroke-dasharray': '5 4' }, g); }   /* الحلّ المشترك: قوسان متساويان فوق القطعة، والسحب للطفل */
-    const set = n => { v = Math.max(0, Math.min(L, Math.round(n))); tip.setAttribute('transform', `translate(${R.X(v / 10)} ${y - 12})`); if (Ln) Ln.remove(); Ln = rulerLens(svg, R, v / 10, { y: 16, cx: 180 }); /*T*/window.__midV = v;/*/T*/ }; set(v);
+    if (tries >= 3) { const g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.a + item.len * a)} ${y - 44} Q${R.X(item.a + item.len * (a + b) / 2)} ${y - 70} ${R.X(item.a + item.len * b)} ${y - 44}`, fill: 'none', stroke: css('--think'), 'stroke-width': 2.4, 'stroke-dasharray': '5 4' }, g); }   /* الحلّ المشترك: قوسان متساويان فوق القطعة، والسحب للطفل */
+    const set = n => { v = Math.max(A0, Math.min(L, Math.round(n))); tip.setAttribute('transform', `translate(${R.X(v / 10)} ${y - 12})`); if (Ln) Ln.remove(); Ln = rulerLens(svg, R, v / 10, { y: 16, cx: 180 }); /*T*/window.__midV = v;/*/T*/ }; set(v);
     say(...lineOf(tries >= 3 ? 'gen.geo.together.mid' : item.q), { free: true });
     const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { if (q[1] < y - 50 || q[1] > y + RUL_H + 6) return false; set((q[0] - R.X(0)) / 3); }, move(q) { set((q[0] - R.X(0)) / 3); }, up() {} });
     /*T*/window.__midWant = item.want; window.__midAt = n => { const m = svg.getScreenCTM(); return { x: m.a * R.X(n / 10) + m.e, y: m.d * (y - 12) + m.f }; };/*/T*/
     const nudge = rulNudges(svg, 262, s => set(v + s), ['rulLeft', 'rulRight']); AUTO({ kind: 'midMark', ok: () => { set(item.want); rulDoneBtn().click(); }, wrong: () => { set(item.want + (item.want + 12 <= L ? 12 : -12)); rulDoneBtn().click(); } });
     await rulDone(() => { input.off(); nudge.forEach(b => b.remove()); }); return { ans: v, ctx: { svg, R, set, y } }; },
   judge(item, v) { return Math.abs(v - item.want) <= 1 ? { ok: true } : { ok: false, err: Math.abs(v - item.want) <= 15 ? 'midEye' : 'midOff' }; },
-  show(item, r) { const { svg, R, y } = r.ctx, g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.len * a)} ${y - 44} Q${R.X(item.len * (a + b) / 2)} ${y - 70} ${R.X(item.len * b)} ${y - 44}`, fill: 'none', stroke: GEO.hl, 'stroke-width': 2.6 }, g); return g; },
+  show(item, r) { const { svg, R, y } = r.ctx, g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.a + item.len * a)} ${y - 44} Q${R.X(item.a + item.len * (a + b) / 2)} ${y - 70} ${R.X(item.a + item.len * b)} ${y - 44}`, fill: 'none', stroke: GEO.hl, 'stroke-width': 2.6 }, g); return g; },
   onOk(item, r) { SFX.good(); r.ctx.set(item.want); this.show(item, r); }, onWrong() { SFX.soft(); },
   async hint2(item, r) { const g = this.show(item, r); await sleep(1400); g.remove(); }, async together() {},
   async reveal(item, r) { const a = r.ans; await symTween(700, t => r.ctx.set(a + (item.want - a) * t)); r.ctx.set(item.want); this.show(item, r); await S('gen.geo.reveal.mid'); },
@@ -346,7 +347,7 @@ WRAP_ART.restStop = svg => { const g = el('g', {}, svg); el('rect', { x: 60, y: 
 /* =====================================================================
    الدرس 5: الشعاع وتسميته المرتّبة (C110): البداية أولاً
    ===================================================================== */
-const RAYPTS = { h: { a: [90, 150], b: [230, 150] }, up: { a: [100, 180], b: [220, 100] }, dn: { a: [110, 70], b: [230, 150] }, hj: { j: [100, 120], d: [250, 120] }, upj: { j: [260, 180], d: [150, 90] }, dnj: { j: [250, 70], d: [130, 150] } };
+const RAYPTS = { v: { a: [180, 186], b: [180, 96] }, vj: { j: [170, 60], d: [170, 150] }, h: { a: [90, 150], b: [230, 150] }, up: { a: [100, 180], b: [220, 100] }, dn: { a: [110, 70], b: [230, 150] }, hj: { j: [100, 120], d: [250, 120] }, upj: { j: [260, 180], d: [150, 90] }, dnj: { j: [250, 70], d: [130, 150] } };
 const rayEdge = (P, Q) => { const dx = Q[0] - P[0], dy = Q[1] - P[1]; let t = 1e9; for (const [v, d, lo, hi] of [[P[0], dx, 30, 330], [P[1], dy, 26, 206]]) { if (d > 0) t = Math.min(t, (hi - v) / d); else if (d < 0) t = Math.min(t, (lo - v) / d); } return [P[0] + dx * t, P[1] + dy * t]; };
 function rayFrame(svg) { return el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg); }
 function rayLineAt(parent, P, Q, col) { const E = rayEdge(P, Q), g = el('g', { 'pointer-events': 'none' }, parent); geoLine(g, P[0], P[1], E[0], E[1], { color: col, w: 4 }); geoArrow(g, E[0], E[1], Math.atan2(Q[1] - P[1], Q[0] - P[0]) * 180 / Math.PI, col, 11); return g; }
@@ -455,3 +456,21 @@ SCENES.linesThrough = async c => { const [l1, l2, l3, l4, l5] = c.lines; let svg
   await tapOne([{ g: h, k: 1, label: labelText('geoAddLine') }], { ok: 1, pad: 60 }); hush(); ln = full(A, B, css('--chaos')); svg.insertBefore(ln, pa); await anim(ln, [{ opacity: 1 }, { opacity: .2 }, { opacity: 1 }], { duration: 900 }).done.catch(() => {}); SFX.good(); logAttempt({ scene: c.s || 'explore', tag: 'linesThrough', ok: true }); await S(l5); };
 SCENES.recallCol = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), P = col3Geo(c.ang || 15, c.off || 0); rayFrame(svg); geoLine(svg, P[0][0], P[0][1], P[2][0], P[2][1], { color: GEO.soft, w: 2, dash: '5 4' }); ['a', 'b', 'j'].forEach((k, i) => ptAt(svg, P[i][0], P[i][1], k, { r: 6, lab: [0, -14] })); await sleep(300); await S(c.lines); };
 WRAP_ART.railLine = svg => { const g = el('g', {}, svg); el('rect', { x: 50, y: 80, width: 260, height: 90, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, g); for (let x = 66; x <= 294; x += 14) el('rect', { x: x - 2.5, y: 108, width: 5, height: 34, fill: '#8a6a4a' }, g); for (const y of [114, 136]) geoLine(g, 58, y, 302, y, { color: '#5b6770', w: 4 }); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
+
+/* =====================================================================
+   الدرس 7: مشروع «خريطة الطرق» (ربط الوحدة) ثم اختبارها
+   ===================================================================== */
+/* خريطة مدينة صغيرة: المدرسة والحديقة والمخبز. يبني الطفل طرقها خطوةً خطوة باللمس (الهدف التالي ينبض):
+   قطعة بين مكانين وتُسمّى وتُقاس، ثم شعاع يخرج من المدينة، ثم سكة حديد (مستقيم)، ثم محطة راحة عند منتصف أطول طريق، ثم طريق حرّ من اختياره.
+   lines: [مقدّمة، القطعة، بعدها، الشعاع، بعده، المستقيم، بعده، المحطة، بعدها، الحرّ، ختام] */
+SCENES.roadMap = async c => { const svg = newStage(270, { oasis: false, ground: 0 }), L = c.lines; el('rect', { x: 14, y: 10, width: 332, height: 250, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, svg);
+  const PL = { a: [70, 200, '#c8392d'], b: [250, 200, '#2f9d6b'], j: [160, 80, '#d99a2b'], d: [300, 90, '#3d7cc0'] }, roads = el('g', { 'pointer-events': 'none' }, svg), G = {};
+  for (const [k, [x, y, col]] of Object.entries(PL)) { const g = el('g', {}, svg); el('circle', { cx: x, cy: y, r: 15, fill: '#fffdf6', stroke: col, 'stroke-width': 3 }, g); el('rect', { x: x - 7, y: y - 5, width: 14, height: 11, fill: col }, g); el('path', { d: `M${x - 9} ${y - 5} L${x} ${y - 12} L${x + 9} ${y - 5} Z`, fill: col }, g); const t = el('text', { x, y: y + 34, 'text-anchor': 'middle', 'font-size': 17, 'font-weight': 700, fill: GEO.ink, 'pointer-events': 'none' }, g); t.textContent = LTR[k]; G[k] = g; }
+  const pick = async (k, pulse = true) => { await tapOne([{ g: G[k], k, label: labelText('geoPlace') + ' ' + LTR[k] }], { ok: k, pad: 64, pulse }); SFX.tick(); }, P = k => [PL[k][0], PL[k][1]];
+  await S(L[0]); S(L[1], { free: true }); await pick('a'); hush(); await pick('b'); geoLine(roads, ...P('a'), ...P('b'), { color: GEO.road, w: 6 }); await sayGeo('seg', ['a', 'b']); const cmL = Math.round(Math.hypot(P('b')[0] - P('a')[0], P('b')[1] - P('a')[1]) / 30);
+  { const t = el('text', { x: (P('a')[0] + P('b')[0]) / 2, y: P('a')[1] - 12, 'text-anchor': 'middle', 'font-size': 16, 'font-weight': 700, fill: GEO.ink, 'pointer-events': 'none' }, svg); t.textContent = cmL + ' ' + labelText('rulCm'); } await S(L[2]); await sayLen(cmL);
+  S(L[3], { free: true }); await pick('j'); hush(); await pick('d'); roads.appendChild(rayLineAt(svg, P('j'), P('d'), GEO.road)); await sayGeo('ray', ['j', 'd']); await S(L[4]);
+  S(L[5], { free: true }); await pick('a'); hush(); await pick('j'); { const E1 = rayEdge(P('a'), P('j')), E2 = rayEdge(P('j'), P('a')), g = el('g', {}, roads); geoLine(g, E2[0], E2[1], E1[0], E1[1], { color: '#5b6770', w: 5, dash: '10 5' }); const a = Math.atan2(P('j')[1] - P('a')[1], P('j')[0] - P('a')[0]) * 180 / Math.PI; geoArrow(g, E1[0], E1[1], a, '#5b6770', 11); geoArrow(g, E2[0], E2[1], a + 180, '#5b6770', 11); } await sayGeo('line', ['a', 'j']); await S(L[6]);
+  const mid = [(P('a')[0] + P('b')[0]) / 2, P('a')[1]], st = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg); el('circle', { cx: mid[0], cy: mid[1], r: 13, fill: css('--chaos'), opacity: .3, stroke: css('--chaos'), 'stroke-width': 2.5 }, st);
+  await answerWhile(L[7], () => tapOne([{ g: st, k: 'm', label: labelText('geoStop') }], { ok: 'm', pad: 64, pulse: true })); st.remove(); ptAt(svg, mid[0], mid[1], 'm', { r: 8, color: css('--chaos'), lab: [0, 26] }); SFX.good(); await S(L[8]); await sayLen(cmL / 2);
+  S(L[9], { free: true }); await pick('b', false); hush(); await pick('d', false); geoLine(roads, ...P('b'), ...P('d'), { color: GEO.road, w: 6 }); await sayGeo('seg', ['b', 'd']); logAttempt({ scene: c.s || 'game', tag: 'roadMap', ok: true }); await S(L[10]); };
