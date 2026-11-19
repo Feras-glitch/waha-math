@@ -250,9 +250,95 @@ SCENES.segNameShow = async c => { const svg = newStage(232, { oasis: false, grou
   ptAt(pts, 80, 140, 'b', { r: 6, lab: [0, -14] }); ptAt(pts, 280, 90, 'a', { r: 6, lab: [0, -14] }); SFX.pop(); logAttempt({ scene: c.s || 'explore', tag: 'segName', ok: true }); await S('gen.geo.seg', { noGap: true }); await sayLtr('b', { noGap: true }); await sayLtr('a'); await S(l3); };
 /* «صحّح لفوضى» ببندٍ من البنود: فوضى على المسرح، والطفل يحلّ البند حتى يصيب. C: item (مواصفة البند، وq جملة فوضى)، after */
 SCENES.chaosItem = async C => { const def = ITEM[C.item.t], it = def.make({ ...C.item, q: C.find }); let tries = 0;
+  if (C.lines) { const svg = newStage(232, { oasis: false, ground: 0 }), fz = chaosAt(svg, 180, 120, .6); await chaosGiggle(fz); await S(C.lines); }   /* قول فوضى أولاً (حين يكون المشهد إشعالاً) */
   while (true) { const p = def.ask(it, 'chaos', tries >= 2 ? 3 : 0), svg = $('#stage svg'); if (tries === 0 && svg) { const fz = chaosAt(svg, 334, 30, .28); chaosGiggle(fz); }
     const r = await p, ok = def.judge(it, r.ans, r).ok; tries++; logAttempt({ scene: 'chaos', tag: 'find', ok, firstTry: tries === 1 }); document.querySelectorAll('#stage .choices').forEach(b => b.remove()); if (ok) { if (def.onOk) await def.onOk(it, r); else SFX.good(); break; } SFX.soft(); await S('gen.pat.chaosNo'); }
   if (C.after) await S(C.after); };
 SCENES.recallSeg = async c => { const svg = newStage(232, { oasis: false, ground: 0 }); segFigAt(svg, c.fig || 'tri'); await sleep(300); await S(c.lines); };
 SCENES.recallRoads = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), R3 = roads3At(svg, c.st ?? 1, c.v || 0); await sleep(400); R3.G[R3.want].querySelectorAll('path')[1].setAttribute('stroke', GEO.hl); await S(c.lines); };
 WRAP_ART.segRoad = svg => { const g = el('g', {}, svg); el('rect', { x: 60, y: 60, width: 240, height: 130, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, g); geoObj(g, 'seg', [90, 150], [270, 100], { names: ['a', 'b'], labP: [0, -12], labQ: [0, -12], w: 5, color: GEO.road }); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
+
+/* =====================================================================
+   الدرس 4: القطع المتساوية وعلاماتها (C108)، ونقطة المنتصف (C109)
+   ===================================================================== */
+Object.assign(SEGFIG, {
+  rectF: { pts: { a: [80, 62], b: [280, 62], j: [280, 172], d: [80, 172] }, segs: ['ab', 'bj', 'jd', 'da'], lab: { a: [-10, -10], b: [10, -10], j: [12, 18], d: [-12, 18] } },
+  kiteF: { pts: { a: [180, 34], b: [262, 100], j: [180, 204], d: [98, 100] }, segs: ['ab', 'bj', 'jd', 'da'], lab: { a: [0, -10], b: [14, 4], j: [0, 0], d: [-14, 4] } },
+  isoF: { pts: { a: [90, 180], b: [270, 180], j: [180, 52] }, segs: ['ab', 'bj', 'ja'], lab: { a: [-12, 12], b: [12, 12], j: [0, -12] } },
+});
+SEGFIG.kiteF.lab.j = [16, 10];
+/* ================= ⑦ أيّ قطعة تساوي القطعة المعلَّمة؟ (C108): fig، ticks { قطعة: عدد الشرطات }، ref القطعة المسؤول عنها ================= */
+ITEM.tickMatch = {
+  make(spec) { const want = Object.keys(spec.ticks).find(k => k !== spec.ref && spec.ticks[k] === spec.ticks[spec.ref]); return { ...spec, want, tag: 'tick-match' }; },
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), { F, G } = segFigAt(svg, item.fig, { ticks: item.ticks }), others = F.segs.filter(k => k !== item.ref); ITEM.segTap.mark({ ctx: { G } }, item.ref, css('--compass')); let done = false;
+    if (tries >= 3) { const m = helpG(svg), P = F.pts[item.ref[0]], Q = F.pts[item.ref[1]]; el('circle', { cx: (P[0] + Q[0]) / 2, cy: (P[1] + Q[1]) / 2, r: 17, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5, 'stroke-dasharray': '4 3' }, m); }   /* الحلّ المشترك: شرطات القطعة المسؤول عنها محاطة، والبحث عن مثلها للطفل */
+    const askQ = async () => { await S(tries >= 3 ? 'gen.geo.together.tick' : (item.q || 'gen.geo.tickQ'), { noGap: true }); for (const [i, k] of [...item.ref].entries()) await sayLtr(k, i ? {} : { noGap: true }); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
+    const k = await tapOne(others.map(sg => ({ g: G[sg], k: sg, label: labelText('geoSeg') + ' ' + LTR[sg[0]] + ' ' + LTR[sg[1]] })), { ok: item.want, pad: 56 }); done = true; REPLAY_HOOK = null; hush(); return { ans: k, ctx: { svg, G } }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'tickWrong' }; },
+  onOk(item, r) { SFX.good(); ITEM.segTap.mark(r, r.ans, GEO.hl); }, onWrong() { SFX.soft(); },
+  async hint2(item, r) { const F = SEGFIG[item.fig], m = helpG(r.ctx.svg); for (const sg of [item.ref, item.want]) { const P = F.pts[sg[0]], Q = F.pts[sg[1]]; el('circle', { cx: (P[0] + Q[0]) / 2, cy: (P[1] + Q[1]) / 2, r: 17, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, m); } await sleep(1500); m.remove(); }, async together() {},
+  async reveal(item, r) { ITEM.segTap.mark(r, item.want, GEO.hl); await S('gen.geo.reveal.tick'); },
+  praise: () => 'praiseLook', twin(item) { return item.twin || null; },
+};
+/* ================= ⑧ ضع نقطة المنتصف (C109، إنتاج): len طول القطعة (سم). يسحب الطفل النقطة م على القطعة، وزرّان للمليمتر ================= */
+ITEM.midMark = {
+  make(spec) { return { ...spec, want: spec.len * 5, tag: 'mid-mark' }; },
+  async ask(item, mode, tries) { const svg = newStage(290, { oasis: false, ground: 0 }), y = 196, R = rulerAt(svg, { x: 30, y, pxcm: 30, from: 0, to: 10, mm: false }), L = item.len * 10; let v = item.start ?? Math.max(5, Math.min(L - 5, Math.round(L * .3))), Ln = null;
+    geoObj(svg, 'seg', [R.X(0), y - 12], [R.X(item.len), y - 12], { names: item.names || ['a', 'b'], labP: [0, -12], labQ: [0, -12] });
+    const tip = el('g', { 'pointer-events': 'none' }, svg); el('circle', { r: 9, fill: css('--chaos'), stroke: '#fff', 'stroke-width': 2.5 }, tip); const tl = el('text', { y: -14, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 700, fill: css('--chaos') }, tip); tl.textContent = LTR.m;
+    const parts = el('g', { 'pointer-events': 'none' }, svg);
+    if (tries >= 3) { const g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.len * a)} ${y - 44} Q${R.X(item.len * (a + b) / 2)} ${y - 70} ${R.X(item.len * b)} ${y - 44}`, fill: 'none', stroke: css('--think'), 'stroke-width': 2.4, 'stroke-dasharray': '5 4' }, g); }   /* الحلّ المشترك: قوسان متساويان فوق القطعة، والسحب للطفل */
+    const set = n => { v = Math.max(0, Math.min(L, Math.round(n))); tip.setAttribute('transform', `translate(${R.X(v / 10)} ${y - 12})`); if (Ln) Ln.remove(); Ln = rulerLens(svg, R, v / 10, { y: 16, cx: 180 }); /*T*/window.__midV = v;/*/T*/ }; set(v);
+    say(...lineOf(tries >= 3 ? 'gen.geo.together.mid' : item.q), { free: true });
+    const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { if (q[1] < y - 50 || q[1] > y + RUL_H + 6) return false; set((q[0] - R.X(0)) / 3); }, move(q) { set((q[0] - R.X(0)) / 3); }, up() {} });
+    /*T*/window.__midWant = item.want; window.__midAt = n => { const m = svg.getScreenCTM(); return { x: m.a * R.X(n / 10) + m.e, y: m.d * (y - 12) + m.f }; };/*/T*/
+    const nudge = rulNudges(svg, 262, s => set(v + s), ['rulLeft', 'rulRight']); AUTO({ kind: 'midMark', ok: () => { set(item.want); rulDoneBtn().click(); }, wrong: () => { set(item.want + (item.want + 12 <= L ? 12 : -12)); rulDoneBtn().click(); } });
+    await rulDone(() => { input.off(); nudge.forEach(b => b.remove()); }); return { ans: v, ctx: { svg, R, set, y } }; },
+  judge(item, v) { return Math.abs(v - item.want) <= 1 ? { ok: true } : { ok: false, err: Math.abs(v - item.want) <= 15 ? 'midEye' : 'midOff' }; },
+  show(item, r) { const { svg, R, y } = r.ctx, g = helpG(svg); for (const [a, b] of [[0, .5], [.5, 1]]) el('path', { d: `M${R.X(item.len * a)} ${y - 44} Q${R.X(item.len * (a + b) / 2)} ${y - 70} ${R.X(item.len * b)} ${y - 44}`, fill: 'none', stroke: GEO.hl, 'stroke-width': 2.6 }, g); return g; },
+  onOk(item, r) { SFX.good(); r.ctx.set(item.want); this.show(item, r); }, onWrong() { SFX.soft(); },
+  async hint2(item, r) { const g = this.show(item, r); await sleep(1400); g.remove(); }, async together() {},
+  async reveal(item, r) { const a = r.ans; await symTween(700, t => r.ctx.set(a + (item.want - a) * t)); r.ctx.set(item.want); this.show(item, r); await S('gen.geo.reveal.mid'); },
+  praise: () => 'praiseMeasure', twin(item) { return item.twin || null; },
+};
+/* ================= ⑨ هل م منتصف القطعة؟ (C109): l وr طولا الجزأين بالسنتيمتر مكتوبان على الرسم ================= */
+ITEM.midJudge = {
+  make(spec) { return { ...spec, want: spec.l === spec.r ? 'yes' : 'no', tag: 'mid-judge' }; },
+  draw(item, svg) { const k = 30, x0 = 180 - (item.l + item.r) * k / 2, y = 120, xm = x0 + item.l * k, x1 = x0 + (item.l + item.r) * k; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg);
+    geoObj(svg, 'seg', [x0, y], [x1, y], { names: ['a', 'b'], labP: [0, -14], labQ: [0, -14] }); ptAt(svg, xm, y, 'm', { r: 6, color: css('--chaos'), lab: [0, -14] });
+    for (const [xa, xb, n] of [[x0, xm, item.l], [xm, x1, item.r]]) { el('path', { d: `M${xa + 3} ${y + 14} v8 H${xb - 3} v-8`, fill: 'none', stroke: GEO.soft, 'stroke-width': 2 }, svg); const t = el('text', { x: (xa + xb) / 2, y: y + 46, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 700, fill: GEO.ink }, svg); t.textContent = DG(n) + ' ' + labelText('rulCm'); } },
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }); this.draw(item, svg); await S(tries >= 3 ? 'gen.geo.together.midJ' : item.q); const k = await choosePick([['yes', labelText('yes')], ['no', labelText('no')]], item.want); return { ans: k, ctx: { svg } }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'midJudgeWrong' }; },
+  onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2() { await S('gen.geo.hint.midJ'); }, async together() {},
+  async reveal(item) { await S(item.want === 'yes' ? 'gen.geo.reveal.midYes' : 'gen.geo.reveal.midNo'); },
+  praise: () => 'praiseThink', twin(item) { return item.twin || null; },
+};
+/* ================= ⑩ قطعة طولها len: كم يبعد منتصفها عن طرفها؟ (C109) ================= */
+ITEM.halfLen = { ...numItem,
+  make(spec) { const w = spec.len / 2; return { ...spec, want: w, nums: rulNear(w, spec.len, w + 1, w - 1), tag: 'half-len' }; },
+  async ask(item, mode, tries) { const svg = newStage(214, { oasis: false, ground: 0 }), it = ITEM.rulerRead.make({ b: item.len, thing: ['a', 'b'] }), R = ITEM.rulerRead.draw(it, svg); let hops = null;
+    if (tries >= 3) { await S('gen.geo.together.half'); hops = await rulerHops(svg, R, 0, item.len / 2, { silent: true }); ptAt(svg, R.X(item.len / 2), 118, 'm', { r: 6, color: css('--chaos'), lab: [0, -14] }); } else await S(item.q);
+    const np = numberPick(shuffle(item.nums), item.want, { digits: true, west: true }); return { ans: await np.p, ctx: { svg, np, R, hops } }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: k === item.len ? 'halfWhole' : 'halfWrong' }; },
+  async hint2(item, r) { const g = ptAt(r.ctx.svg, r.ctx.R.X(item.len / 2), 118, 'm', { r: 6, color: css('--chaos'), lab: [0, -14] }); await sleep(1300); g.remove(); }, async together() {},
+  async reveal(item, r) { ptAt(r.ctx.svg, r.ctx.R.X(item.len / 2), 118, 'm', { r: 6, color: css('--chaos'), lab: [0, -14] }); r.ctx.R.mark(item.len / 2); await sayLen(item.want); },
+  praise: () => 'praiseMeasure', twin(item) { return item.twin || null; },
+};
+/* ---------- مشاهد الدرس 4 ---------- */
+/* علامات التساوي: مستطيل، يلمس الطفل كل ضلع فتظهر شرطاته (المتساويان بالعدد نفسه). c: fig، ticks، order، lines: [الدعوة، بعد الزوج الأول، ختام] */
+SCENES.ticksShow = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), { F, G } = segFigAt(svg, c.fig || 'rectF'), [l1, l2, l3] = c.lines, order = c.order || ['ab', 'jd', 'bj', 'da']; S(l1, { free: true });
+  for (const [i, sg] of order.entries()) { await tapOne([{ g: G[sg], k: sg, label: labelText('geoSeg') + ' ' + LTR[sg[0]] + ' ' + LTR[sg[1]] }], { ok: sg, pad: 56, pulse: true }); if (i === 0) hush(); geoObj(svg, 'seg', F.pts[sg[0]], F.pts[sg[1]], { ticks: c.ticks[sg], dots: false, color: 'transparent' }); SFX.tick(); if (i === 1) await S(l2); }
+  logAttempt({ scene: c.s || 'explore', tag: 'ticksShow', ok: true }); await S(l3); };
+/* طيّ الشريط: شريط ورقي طرفاه أ وب؛ يلمسه الطفل فيُطوى حتى ينطبق الطرفان، ثم يُفتح وعند خط الطيّ النقطة م. c: len، lines: [الدعوة، بعد الطيّ، بعد الفتح والقياس] */
+SCENES.foldStrip = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2, l3] = c.lines, L = c.len || 8, k = 30, x0 = 180 - L * k / 2, y = 96, xm = 180; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg);
+  const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg), left = el('rect', { x: x0, y: y - 14, width: L * k / 2, height: 28, fill: '#f6d98a', stroke: '#c9a54a', 'stroke-width': 2 }, g), right = el('rect', { x: xm, y: y - 14, width: L * k / 2, height: 28, fill: '#f6d98a', stroke: '#c9a54a', 'stroke-width': 2 }, g);
+  const pa = ptAt(svg, x0, y, 'a', { r: 5, lab: [0, -22] }), pb = ptAt(svg, x0 + L * k, y, 'b', { r: 5, lab: [0, -22] });
+  await answerWhile(l1, () => tapOne([{ g, k: 's', label: labelText('geoStrip') }], { ok: 's', pad: 60 }));
+  await symTween(900, t => { const sx = 1 - 2 * t; right.setAttribute('transform', `translate(${xm} 0) scale(${sx} 1) translate(${-xm} 0)`); pb.setAttribute('transform', `translate(${-L * k * t} 0)`); }); SFX.pop(); await S(l2);
+  await symTween(700, t => { const sx = -1 + 2 * t; right.setAttribute('transform', `translate(${xm} 0) scale(${sx} 1) translate(${-xm} 0)`); pb.setAttribute('transform', `translate(${-L * k * (1 - t)} 0)`); }); right.removeAttribute('transform'); pb.removeAttribute('transform');
+  geoLine(svg, xm, y - 14, xm, y + 14, { color: css('--chaos'), w: 2.4, dash: '4 3' }); ptAt(svg, xm, y, 'm', { r: 6, color: css('--chaos'), lab: [0, -22] });
+  for (const [xa, xb] of [[x0, xm], [xm, x0 + L * k]]) { el('path', { d: `M${xa + 3} ${y + 26} v8 H${xb - 3} v-8`, fill: 'none', stroke: GEO.soft, 'stroke-width': 2 }, svg); const t = el('text', { x: (xa + xb) / 2, y: y + 58, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 700, fill: GEO.ink }, svg); t.textContent = DG(L / 2) + ' ' + labelText('rulCm'); }
+  SFX.good(); logAttempt({ scene: c.s || 'explore', tag: 'foldStrip', ok: true }); await S(l3); };
+SCENES.recallTicks = async c => { const svg = newStage(232, { oasis: false, ground: 0 }); segFigAt(svg, c.fig || 'rectF', { ticks: c.ticks || { ab: 1, jd: 1, bj: 2, da: 2 } }); await sleep(300); await S(c.lines); };
+SCENES.recallMid = async c => { const svg = newStage(232, { oasis: false, ground: 0 }); ITEM.midJudge.draw({ l: c.l || 4, r: c.r || 4 }, svg); await sleep(300); await S(c.lines); };
+WRAP_ART.restStop = svg => { const g = el('g', {}, svg); el('rect', { x: 60, y: 70, width: 240, height: 110, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, g); geoObj(g, 'seg', [90, 130], [270, 130], { w: 5, color: GEO.road }); el('circle', { cx: 180, cy: 130, r: 12, fill: css('--chaos'), stroke: '#fff', 'stroke-width': 3 }, g); el('path', { d: 'M168 118 L180 102 L192 118 Z', fill: css('--compass') }, g); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };

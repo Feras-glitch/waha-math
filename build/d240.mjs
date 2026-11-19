@@ -10,7 +10,7 @@
 // وفوق ذلك (D240 «لكل مفهوم بند تعرّف وبند إنتاج أو تعليل»): لكل مفهوم يتقنه التطبيق بند إنتاج أو تعليل واحد على الأقل، ولكل مفهوم
 // «تأسيس» في الدرس فحص إتقان (إلا «المدخل»)، ولكل درس اختيار حقيقي للطفل (D239).
 
-const PROD = new Set(['rulerAlign', 'drawLen', 'gridPoint',   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
+const PROD = new Set(['rulerAlign', 'drawLen', 'gridPoint', 'midMark',   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
   'reason', 'connect', 'completeRect', 'vertices', 'count', 'produce', 'fill', 'trace', 'buildTower', 'splitMake', 'buildTo', 'faceTap',
   'split', 'join', 'remove', 'eqPair', 'unknownStart', 'fact', 'story',
   'place', 'lineTap', 'lrTap', 'robot', 'mapPut', 'roadHop',   /* S1-U3: يضع الطفل الشيء، ويلمس العربة، ويلمس اليد، ويبرمج الروبوت، ويضع قطعة الخريطة، ويقفز */
@@ -295,7 +295,7 @@ export function d240(lessons, code, MAKERS) {
     'rhythmHook', 'patRead', 'patWorked', 'chaosPattern', 'recallPat', 'chaosGuess', 'patCircle', 'patSoundLab', 'chaosLoops', 'patHunt', 'skipBeads', 'skipWorked', 'chaosPairs', 'recallSkip', 'gridHook', 'gridGuide', 'gridWorked', 'chaosGrid', 'recallGrid', 'handsHook',
     'foldShow', 'foldLab', 'halfScene', 'chaosHalf', 'recallSym', 'foldWays', 'lineWorked', 'chaosFold', 'gridLab', 'doubleShow', 'doubleWorked', 'chaosWing', 'chaosDbl', 'paintFold', 'recallMir',
     'spanClash', 'tileRuler', 'mmZoom', 'rulerWorked', 'chaosRuler', 'recallRuler', 'recallTools', 'alignShow', 'mmRead', 'cardSteps', 'drawShow', 'stringShow', 'recallAlign', 'recallMm', 'recallDraw', 'recallString', 'homeMeasure',
-    'treasureHook', 'pointShow', 'gridWalk', 'chaosGridPt', 'recallGridPt', 'recallFigs', 'figLab', 'zigHook', 'antEscape', 'chaosFig', 'tautString', 'segNameShow', 'chaosItem', 'recallSeg', 'recallRoads'];   /* S2-U1: النقاط والخطوط رسوم لا مولّدات */   /* S2-U0: المسطرة وأدوات القياس رسوم لا مولّدات */   /* S1-U6 */   /* S1-U5: عناصر النمط رسومه لا مولّدات */   /* S1-U4: رسوم القياس والعدد لا مولّدات */
+    'treasureHook', 'pointShow', 'gridWalk', 'chaosGridPt', 'recallGridPt', 'recallFigs', 'figLab', 'zigHook', 'antEscape', 'chaosFig', 'tautString', 'segNameShow', 'chaosItem', 'recallSeg', 'recallRoads', 'ticksShow', 'foldStrip', 'recallTicks', 'recallMid'];   /* S2-U1: النقاط والخطوط رسوم لا مولّدات */   /* S2-U0: المسطرة وأدوات القياس رسوم لا مولّدات */   /* S1-U6 */   /* S1-U5: عناصر النمط رسومه لا مولّدات */   /* S1-U4: رسوم القياس والعدد لا مولّدات */
   for (const m of code.matchAll(/^SCENES\.(\w+) = /gm)) if (!SCENE_DRAWS[m[1]] && !SCENE_NONE.includes(m[1])) errors.push(`المشهد ${m[1]} غير مسجَّل في SCENE_DRAWS أو SCENE_NONE في build/d240.mjs: هل يرسم شيئاً له مولّد؟ (D253 (1))`);
   /* ما رآه الطفل أو حلّه في درس: أسماء، وهيئات لكل مهمة، ونصوص البنود */
   const SKIPK = new Set(['lines', 'labels', 'talk', 'adultCard', 'bag', 'mat', 'concepts', 'riddles', 'title', 'icon', 'id', 'unit']);
