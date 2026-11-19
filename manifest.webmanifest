@@ -1,0 +1,18 @@
+{
+  "name": "واحة الرياضيات",
+  "short_name": "واحة الرياضيات",
+  "description": "الرياضيات من بوابة الهندسة للأطفال: دروس تفاعلية مسموعة، تعمل بلا إنترنت.",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#C2E3EE",
+  "theme_color": "#F6D58E",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
