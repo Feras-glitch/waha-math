@@ -368,6 +368,20 @@
   "stepMore": "أَكْثَرُ",
   "stepLess": "أَقَلُّ",
   "homeEst": "التَّقْدِيرُ",
-  "homeMeas": "القِيَاسُ"
+  "homeMeas": "القِيَاسُ",
+  "geoFig": "الرَّسْمُ",
+  "geoPoint": "النُّقْطَةُ",
+  "geoMark": "عَلَامَةُ الكَنْزِ",
+  "geoHop": "القَفْزَةُ",
+  "geoRight": "يَمِينًا",
+  "geoUp": "إِلَى الأَعْلَى",
+  "geoAidGap": "فِيهِ فَتْحَةٌ",
+  "geoAidClosed": "مُغْلَقٌ",
+  "geoAidBroken": "أَجْزَاءٌ مُسْتَقِيمَةٌ",
+  "geoAidCurve": "يَنْحَنِي",
+  "geoAidStraight": "مُسْتَقِيمٌ",
+  "geoAidSeg": "طَرَفَانِ",
+  "geoAidRay": "طَرَفٌ وَسَهْمٌ",
+  "geoAidLine": "سَهْمَانِ"
  }
 }

@@ -93,6 +93,7 @@ function stoneArt(svg, unit, x = 180, y = 150) {
   if (unit === 'm1.u6') { const h = symAt(b, 'heart', 0, 2, .78); el('line', { x1: 0, y1: -46, x2: 0, y2: 44, stroke: '#fff', 'stroke-width': 2.5, 'stroke-dasharray': '5 4' }, h); }   /* حجر «نصفان متطابقان»: قلب وخط طيّه */
   if (unit === 'm1.u5') {   /* حجر «الأنماط السحرية»: صفّ نمط من مثلث ودائرة، وتحته خرز */
     ['tri', 'cir', 'tri', 'cir'].forEach((t, i) => patTokAt(b, t, 36 - i * 24, -14, 20)); ['bR', 'bB', 'bB', 'bR', 'bB', 'bB'].forEach((t, i) => patTokAt(b, t, 40 - i * 16, 20, 13)); }
+  if (unit === 'm2.u1') { geoObj(b, 'seg', [-40, 18], [-4, -22]); geoObj(b, 'ray', [-4, -22], [22, 4], { ext: 20 }); }   /* حجر «خيوط الطرق»: قطعة وشعاع */
   if (unit === 'm2.u0') rulerAt(b, { x: -44, y: -20, pxcm: 15, from: 0, to: 6, mm: false, lead: 5 }).g.setAttribute('transform', 'rotate(-12)');   /* حجر «أدواتي الأولى»: مسطرة */
   const ks = unit === 'm1.u2' ? ['cube', 'sphere', 'cylinder', 'cone'] : unit === 'm1.u3' || unit === 'm1.u4' || unit === 'm1.u5' || unit === 'm1.u6' || unit.startsWith('m2.') ? [] : ['circle', 'square', 'triangle', 'rect'];
   ks.forEach((k, i) => { const px = (i % 2 ? 22 : -22), py = i < 2 ? -12 : 24;

@@ -16,6 +16,12 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     mirror: () => { el('rect', { x: 34, y: 6, width: 4, height: 46, rx: 2, fill: css('--compass') }, s); for (const d of [1, -1]) symP(el('g', { transform: `translate(${36 + d * 15} 30) scale(.3)` }, s), d > 0 ? 'M-30 34 L30 34 L-30 -40 Z' : 'M30 34 L-30 34 L30 -40 Z', css('--triangle')); },
     wing: () => { symAt(s, 'butterfly', 36, 29, .46); },
     hunt6: () => { symAt(s, 'face', 24, 29, .34); symAt(s, 'carFront', 52, 30, .3); },
+    geopt: () => { for (let i = 0; i <= 3; i++) { el('line', { x1: 12 + i * 16, y1: 8, x2: 12 + i * 16, y2: 52, stroke: '#cfdde6', 'stroke-width': 1.5 }, s); el('line', { x1: 8, y1: 10 + i * 13, x2: 64, y2: 10 + i * 13, stroke: '#cfdde6', 'stroke-width': 1.5 }, s); } ptAt(s, 44, 23, 'a', { r: 4, lab: [12, -3], size: 15 }); },   /* S2-U1 */
+    geokinds: () => { el('path', { d: 'M10 16 H62', stroke: GEO.ink, 'stroke-width': 3, 'stroke-linecap': 'round' }, s); el('path', { d: 'M10 32 C22 18 34 46 46 32 S58 24 62 30', fill: 'none', stroke: GEO.ink, 'stroke-width': 3, 'stroke-linecap': 'round' }, s); el('path', { d: 'M10 50 L24 40 L38 50 L52 40 L62 48', fill: 'none', stroke: GEO.ink, 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, s); },
+    geoseg: () => { geoObj(s, 'seg', [14, 40], [58, 22], { names: ['a', 'b'], labP: [-2, -9], labQ: [2, -9] }); },
+    geomid: () => { geoObj(s, 'seg', [10, 34], [62, 34]); el('circle', { cx: 36, cy: 34, r: 5, fill: css('--chaos') }, s); for (const x of [23, 49]) el('line', { x1: x, y1: 27, x2: x, y2: 41, stroke: css('--chaos'), 'stroke-width': 2.4 }, s); },
+    georay: () => { geoObj(s, 'ray', [12, 44], [36, 30], { ext: 24 }); },
+    geoline: () => { geoObj(s, 'line', [26, 36], [46, 24], { ext: 20 }); },
     ruler: () => { rulerAt(s, { x: 8, y: 18, pxcm: 11, from: 0, to: 5, mm: false, lead: 3 }).g.setAttribute('transform', 'rotate(-8 36 30)'); },   /* S2-U0 */
     rulmm: () => { rulerAt(s, { x: 8, y: 22, pxcm: 28, from: 0, to: 2, mm: true, lead: 3 }); el('rect', { x: 8, y: 10, width: 39, height: 9, rx: 2, fill: css('--compass') }, s); },
     rulbrk: () => { rulerAt(s, { x: 12, y: 22, pxcm: 16, from: 3, to: 6, mm: false, broken: true }); el('rect', { x: 12, y: 10, width: 32, height: 9, rx: 2, fill: css('--chaos') }, s); },
