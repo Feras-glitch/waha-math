@@ -1,7 +1,12 @@
 import sys; sys.path.insert(0,'/home/claude/waha-math/tools/m2gen')
 from common import *
 U=ROOT+'/content/m2/u0'
-dump(U+'/unit.json', {"id":"m2.u0","title":"أَدَوَاتِي الأُولَى: المِسْطَرَةُ","sub":"المَرْحَلَةُ الثَّانِيَةُ: البَنَّاؤُونَ","district":"حَيُّ الأَدَوَاتِ","hosts":["square","rect","circle"],"hunt":[]})
+dump(U+'/unit.json', {"id":"m2.u0","title":"أَدَوَاتِي الأُولَى: المِسْطَرَةُ","sub":"المَرْحَلَةُ الثَّانِيَةُ: البَنَّاؤُونَ","district":"حَيُّ الأَدَوَاتِ","hosts":["square","rect","circle"],"hunt":[],
+ "workshop":{"pieces":[{"k":"rect","size":70,"w":96,"h":44},{"k":"triangle","size":70,"w":70,"h":61},{"k":"square","size":64},{"k":"circle","size":60}],
+  "puzzles":[
+   {"id":"pencil","name":"gen.ws.p.pencil","slots":[{"k":"rect","x":164,"y":130,"size":150,"w":150,"h":46},{"k":"triangle","x":262,"y":130,"size":46,"w":46,"h":46,"rot":90},{"k":"square","x":66,"y":130,"size":46}],"extra":{"k":"circle","size":56}},
+   {"id":"hammer","name":"gen.ws.p.hammer","slots":[{"k":"rect","x":180,"y":80,"size":120,"w":120,"h":44},{"k":"rect","x":180,"y":160,"size":116,"w":116,"h":30,"rot":90}],"extra":{"k":"circle","size":56}},
+   {"id":"steps","name":"gen.ws.p.steps","slots":[{"k":"rect","x":96,"y":130,"size":150,"w":150,"h":22,"rot":90},{"k":"rect","x":176,"y":130,"size":150,"w":150,"h":22,"rot":90},{"k":"rect","x":136,"y":92,"size":58,"w":58,"h":20},{"k":"rect","x":136,"y":168,"size":58,"w":58,"h":20}],"extra":{"k":"triangle","size":60,"w":60,"h":52}}]}})
 def rr(b,q='pr.1',thing='pencil',**k): 
     d={"t":"rulerRead","q":q,"b":b,"thing":thing}; d.update(k); return d
 def tw(a,b): a=dict(a); a['twin']=b; return a

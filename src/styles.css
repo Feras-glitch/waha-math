@@ -169,6 +169,10 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .choices.cards .card.hidden-text .q { display: inline-flex; color: var(--ink); opacity: .75; }   /* رمز سماع واحد لكل البطاقات المخفية: لا لون فوضى ولا علامة تميّزها (D236) */
 .choices.cards .sent { font-size: 28px; font-weight: 800; letter-spacing: .04em; unicode-bidi: isolate-override; }
 .choices.nums { grid-template-columns: repeat(3, 1fr); }
+.choices.steppers { grid-auto-flow: column; grid-auto-columns: 1fr; gap: 10px; }   /* عدّاد بزرّين (مهمة البيت، S2-U0) */
+.steppers .stp { display: grid; grid-template-columns: 64px 1fr 64px; align-items: center; gap: 6px; direction: ltr; }
+.steppers .stpb { min-height: 64px; padding: 0; text-align: center; font-size: 30px; line-height: 1; color: var(--compass); }
+.steppers .stpv { display: grid; justify-items: center; line-height: 1.1; } .steppers .stpv b { font-size: 34px; } .steppers .stpv small { font-size: 14px; color: var(--ink); opacity: .75; }
 .choices.nums .num { display: grid; justify-items: center; text-align: center; min-height: 72px; }
 .choices.nums .num b { font-size: 30px; line-height: 1.1; color: var(--compass); }
 .choices.nums .num span { font-size: 17px; }
