@@ -1135,7 +1135,7 @@ export function lint(content, js) {
   { const pre = new Set(['m1.u1.d1', 'm1.u1.d2']), nk = t => String(t || '').replace(/[\u064B-\u0652\u0670]/g, '');
     const defs = t => /أربعة أضلاع متساوية|أضلاعه الأربعة متساوية|أضلاع[هي] كلها متساوية|كل ضلعين متقابلين (فيه |فيهما )?متساويان/.test(t) && !/ليست كلها|كل ما في المستطيل/.test(t);   /* و«أضلاعي كلها متساوية» في لغز «من أنا؟» (الفحص المستقل للقرارات، 10) */
     for (const L of Object.values(lessons)) { if (pre.has(L.id)) continue;
-      for (const [k, v] of Object.entries(L.lines || {})) { const t = nk(Array.isArray(v) ? v[v.length - 1] : v); if (typeof t === 'string' && defs(t) && !/؟\s*$/.test(t.replace(/من أنا؟\s*$/, '')) && !/ركن|أركان/.test(t)) errors.push(`${L.id}.${k}: يصف المربع أو المستطيل بأضلاعه بلا الركن («${t.slice(0, 60)}»)، فيصدق على المعيّن ومتوازي الأضلاع (M-05)`); } } }
+      for (const [k, v] of Object.entries(L.lines || {})) { const t = nk(Array.isArray(v) ? v[v.length - 1] : v); if (typeof t === 'string' && defs(t) && !/؟\s*$/.test(t.replace(/من أنا؟\s*$/, '')) && !/ركن|أركان|قائم|معين|متوازي|منتظم/.test(t)) errors.push(`${L.id}.${k}: يصف المربع أو المستطيل بأضلاعه بلا الركن («${t.slice(0, 60)}»)، فيصدق على المعيّن ومتوازي الأضلاع (M-05)`); } } }
   // 4ج5) المجسّم «له سُمك» لا «يملأ الكفّ» (القرار 6، M-16، D266): الكرة الزجاجية مجسّم ولا تملأ الكفّ. والبحث بلا تشكيل، لأن ترتيب الشدّة والفتحة يختلف
   //      بين الجمل (الفحص المستقل للقرارات، 3: بقيت ثماني جمل لم يبلغها بحثٌ بالتشكيل)
   { const nk5 = t => String(t || '').replace(/[\u064B-\u0652\u0670]/g, ''); const walk5 = (v, at) => { if (typeof v === 'string') { if (/[يت]ملأ ال?كف/.test(nk5(v))) errors.push(`${at}: «يملأ الكفّ» وصفاً للمجسّم («${nk5(v).slice(0, 60)}»)، والمعتمد «له سُمك» (M-16)`); return; }

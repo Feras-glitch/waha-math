@@ -2,7 +2,7 @@
    الورشة (D198-2) وألغاز الظلال (D197، D202، D245): محطة مكانية إلزامية في المسار قبل درس التحدّي،
    ولا تُحسب في الحمل. القطعة تُسحب أو تُلمس ثم يُلمس ظلّها (بديل النقر، D246). والبناء الحرّ بعد الشارة.
    ===================================================================== */
-const ROTSYM = { circle: 1, square: 90, rect: 180, triangle: 360, sphere: 1, cube: 90, cylinder: 360, cone: 360, plank: 180 };
+const ROTSYM = { circle: 1, square: 90, rect: 180, triangle: 360, rtri: 360, para: 180, sphere: 1, cube: 90, cylinder: 360, cone: 360, plank: 180 };
 /* لوح خشبي طوله L (أفقيّاً، ومركزه عند 0): قطعة «ألغاز الألواح» */
 function plankAt(parent, L) { el('rect', { x: -L / 2, y: -13, width: L, height: 26, rx: 5, fill: MAT.wood, stroke: '#fff', 'stroke-width': 2.5 }, parent);
   for (let x = -L / 2 + 14; x < L / 2 - 8; x += 26) el('path', { d: `M${x} -5 q6 5 12 0`, fill: 'none', stroke: MAT.woodDk, 'stroke-width': 1.5, opacity: .6 }, parent);

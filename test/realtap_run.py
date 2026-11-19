@@ -41,7 +41,8 @@ LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6
            'm2.u0.d1', 'm2.u0.d2', 'm2.u0.d3', 'm2.u0.d4',
            'm2.u1.d1', 'm2.u1.d2', 'm2.u1.d3', 'm2.u1.d4', 'm2.u1.d5', 'm2.u1.d6', 'm2.u1.d7',
            'm2.u2.d1', 'm2.u2.d2', 'm2.u2.d3', 'm2.u2.d4', 'm2.u2.d5',
-           'm2.u3.d1', 'm2.u3.d2', 'm2.u3.d3', 'm2.u3.d4', 'm2.u3.d5', 'm2.u3.d6', 'm2.u3.d7', 'm2.u3.d8']
+           'm2.u3.d1', 'm2.u3.d2', 'm2.u3.d3', 'm2.u3.d4', 'm2.u3.d5', 'm2.u3.d6', 'm2.u3.d7', 'm2.u3.d8',
+           'm2.u4.d1', 'm2.u4.d2', 'm2.u4.d3', 'm2.u4.d4', 'm2.u4.d5', 'm2.u4.d6', 'm2.u4.d7', 'm2.u4.d8']
 if os.environ.get('ONLY'): LESSONS = [l for l in LESSONS if l in os.environ['ONLY'].split(',')]   # تشغيل جزئي أثناء التطوير
 # ما خرج من نافذة الشريط (القطار، الطريق) مخفيّ لا يُلمس: يُلمس زرّ التحريك نحوه حتى يظهر
 REVEAL = """(sel) => { const g = document.querySelector(sel); if (!g || getComputedStyle(g).visibility !== 'hidden') return null;
@@ -180,7 +181,7 @@ async def run(p, dev):
           else:
             for q in await pg.evaluate('() => window.__blot()'): await tap(q['x'], q['y']); await pg.wait_for_timeout(60)
           xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
-        if k in ('rulAlign', 'rulDraw', 'gridPt', 'midMark', 'paraDraw', 'perpTurn', 'angMatch', 'angDraw'):   # S2-U0: سحب حقيقي للمسطرة حتى الصفر، ولمسة حقيقية عند طول الخط المطلوب؛ ثم «تمّ»
+        if k in ('rulAlign', 'rulDraw', 'gridPt', 'midMark', 'paraDraw', 'perpTurn', 'angMatch', 'angDraw', 'polyDraw', 'plyTilt'):   # S2-U0: سحب حقيقي للمسطرة حتى الصفر، ولمسة حقيقية عند طول الخط المطلوب؛ ثم «تمّ»
           await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1; DONE = "() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
           if k == 'rulAlign':
             q = await pg.evaluate('() => window.__rulAt()'); off = await pg.evaluate('() => window.__rulOff'); await drag(q['x'], q['y'], q['x'] + off * q['k'], q['y'], 14)
@@ -198,6 +199,13 @@ async def run(p, dev):
               if a == 90: break
               q = await pg.evaluate('(s) => window.__perpBtn(s)', 1 if a > 90 else -1); await tap(q['x'], q['y']); await pg.wait_for_timeout(80)
             if await pg.evaluate('() => window.__perpAng') != 90: tried['rul-miss'] = tried.get('rul-miss', 0) + 1; print('  turn miss', st['scene'])
+          elif k == 'polyDraw':   # S2-U4: لمسات حقيقية على نقاط الشبكة بالترتيب، والأخيرة تعود إلى الأولى فتغلق المضلع
+            for r, u in await pg.evaluate('() => window.__polyDrawWant'):
+              q = await pg.evaluate('([r, u]) => window.__polyDrawAt(r, u)', [r, u]); await tap(q['x'], q['y']); await pg.wait_for_timeout(70)
+            if not (await pg.evaluate('() => window.__polyDraw') or {}).get('closed'): tried['rul-miss'] = tried.get('rul-miss', 0) + 1; print('  polygon not closed', st['scene'])
+          elif k == 'plyTilt':   # ولمسات حقيقية على زرّ الإمالة
+            for _ in range(3): q = await pg.evaluate('() => window.__tiltBtn()'); await tap(q['x'], q['y']); await pg.wait_for_timeout(80)
+            if not await pg.evaluate('() => window.__tilt()'): tried['rul-miss'] = tried.get('rul-miss', 0) + 1; print('  tilt miss', st['scene'])
           elif k == 'angMatch':   # S2-U3: لمسات حقيقية على زرّي الباب حتى انفتاح النموذج
             w = await pg.evaluate('() => window.__auto && window.__auto.want')
             for _ in range(14):

@@ -1,0 +1,135 @@
+{
+ "id": "m2.u4",
+ "title": "عَائِلَةُ المُضَلَّعَاتِ",
+ "sub": "المَرْحَلَةُ الثَّانِيَةُ: البَنَّاؤُونَ",
+ "district": "حَيُّ المُضَلَّعَاتِ",
+ "hosts": [
+  "square",
+  "rect",
+  "triangle"
+ ],
+ "hunt": [],
+ "workshop": {
+  "pieces": [
+   {
+    "k": "rtri",
+    "size": 50
+   },
+   {
+    "k": "square",
+    "size": 50
+   },
+   {
+    "k": "para",
+    "size": 70,
+    "h": 36
+   },
+   {
+    "k": "rtri",
+    "size": 36
+   }
+  ],
+  "puzzles": [
+   {
+    "id": "hut",
+    "name": "gen.ws.p.hut",
+    "slots": [
+     {
+      "k": "square",
+      "x": 150,
+      "y": 160,
+      "size": 72
+     },
+     {
+      "k": "rtri",
+      "x": 132,
+      "y": 106,
+      "size": 36,
+      "rot": 270
+     },
+     {
+      "k": "rtri",
+      "x": 168,
+      "y": 106,
+      "size": 36
+     }
+    ],
+    "extra": {
+     "k": "para",
+     "size": 70,
+     "h": 36
+    }
+   },
+   {
+    "id": "boat",
+    "name": "gen.ws.p.boat",
+    "slots": [
+     {
+      "k": "rect",
+      "x": 150,
+      "y": 160,
+      "size": 64,
+      "w": 64,
+      "h": 30
+     },
+     {
+      "k": "rtri",
+      "x": 103,
+      "y": 160,
+      "size": 30,
+      "rot": 180
+     },
+     {
+      "k": "rtri",
+      "x": 197,
+      "y": 160,
+      "size": 30,
+      "rot": 90
+     },
+     {
+      "k": "rtri",
+      "x": 165,
+      "y": 105,
+      "size": 60
+     }
+    ],
+    "extra": {
+     "k": "square",
+     "size": 40
+    }
+   },
+   {
+    "id": "tree",
+    "name": "gen.ws.p.tree",
+    "slots": [
+     {
+      "k": "rect",
+      "x": 150,
+      "y": 186,
+      "size": 40,
+      "w": 22,
+      "h": 40
+     },
+     {
+      "k": "rtri",
+      "x": 125,
+      "y": 141,
+      "size": 50,
+      "rot": 270
+     },
+     {
+      "k": "rtri",
+      "x": 175,
+      "y": 141,
+      "size": 50
+     }
+    ],
+    "extra": {
+     "k": "para",
+     "size": 60,
+     "h": 30
+    }
+   }
+  ]
+ }
+}

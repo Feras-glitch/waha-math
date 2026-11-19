@@ -78,7 +78,7 @@ function backdrop(svg, H, opt = {}) {
 /* ألوان المسائل محايدة: لا يُصنَّف الشكل بلونه (قاعدة التصميم في مواصفة المحرّك) */
 const NEUTRAL = ['#6c7fa8', '#4a6f94', '#7e9a4e', '#b8607a', '#5c9bb0', '#8c8c6e'];   /* لا يقترب أيّها من ألوان الهوية الثمانية (ΔE2000 ≥ 12.8؛ كان الثاني #b07a57 بلون الأسطوانة نفسه، ثم #2f4f6f فذاب في سماء الوضع الليلي) */
 let colorIx = 0; const nextColor = () => NEUTRAL[(colorIx++) % NEUTRAL.length];
-const IDC = { circle: '--circle', square: '--square', triangle: '--triangle', rect: '--rect' };
+const IDC = { circle: '--circle', square: '--square', triangle: '--triangle', rect: '--rect', rtri: '--triangle', para: '--rect' };
 /* ألوان مادّية لأشياء البيت (M7): خشب، وورق، ومعدن؛ لا ألوان الشخصيات */
 const MAT = { wood: '#a9774a', woodDk: '#7a5232', paper: '#f3eadb', metal: '#8d9aa3', cloth: '#5c9bb0', clay: '#c98f55', red: '#c0564a' };
 
@@ -94,6 +94,8 @@ function shapeGeom(s) {
     case 'rect': { const w = s.w || S * 1.5, h = s.h || S * .8; return { poly: [[-w / 2, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]] }; }
     case 'triangle': { const w = s.w || S, h = s.h || S * .9, ax = s.apex ?? 0; return { poly: [[ax * w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]] }; }
     case 'quad': { const w = s.w || S * 1.4, h = s.h || S * .8, k = s.skew ?? .28; return { poly: [[-w / 2 + w * k, -h / 2], [w / 2, -h / 2], [w / 2, h / 2], [-w / 2, h / 2]] }; }   // رباعي بركن غير قائم (شبه منحرف قائم، بلا اسم في م1)
+    case 'rtri': return { poly: [[-S / 2, -S / 2], [S / 2, S / 2], [-S / 2, S / 2]] };   // مثلث قائم متساوي الساقين، قائمته أسفل اليسار (قطعة التانغرام، S2-U4)
+    case 'para': { const w = s.w || S, h = s.h || S / 2, k = s.skew ?? h; return { poly: [[-w / 2 + k / 2, -h / 2], [w / 2 + k / 2, -h / 2], [w / 2 - k / 2, h / 2], [-w / 2 - k / 2, h / 2]] }; }   // متوازي أضلاع (قطعة التانغرام)
     case 'circle': return { r: S / 2 };
     case 'oval': return { rx: S / 2, ry: S / 3.1 };
     default: return {};

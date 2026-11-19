@@ -44,6 +44,8 @@ const POLYS = {
   /* ليست مضلعات */
   nOpen: { p: [[-30, -55], [70, -10], [55, 55], [-55, 55], [-75, -15]], open: true }, nOpen2: { p: [[-70, 45], [-70, -45], [70, -45], [70, 45], [-20, 45]], open: true },
   nCurve: { p: [[-70, 45], [0, -55], [70, 45]], curve: [0, 34] }, nCurve2: { p: [[-70, -45], [70, -45], [70, 45], [-70, 45]], curve: [1, 30] },
+  nOpen3: { p: [[16, 52], [60, 52], [0, -55], [-60, 52], [-16, 52]], open: true }, nOpen4: { p: [[-55, 50], [55, 50], [70, -30], [0, -62], [-70, -30]], open: true },
+  nCurve3: { p: [[-55, -45], [55, -45], [70, 40], [-70, 40]], curve: [2, -22] },
   nCircle: { circle: 62 }, nCross: { p: [[-70, -45], [70, 45], [70, -45], [-70, 45]] }, nStar: { p: polyReg(5, 66).map((_, i, a) => a[(i * 2) % 5]) },
 };
 /* تحويل: دوران rot (درجات، عكس عقارب الساعة على الشاشة) وتكبير s، ثم الإزاحة إلى C */
@@ -227,7 +229,7 @@ ITEM.quadName = {
   async ask(item, mode, tries) { const svg = plyStage(), R = plyDraw(svg, item, { marks: item.marks || (tries >= 3 ? true : false) }), T = item.marks ? null : plyTools(svg, R, { ang: true });
     if (item.seam) seamAt(svg, R, item.seam, PLY_C, item.rot || 0, item.s || 1);
     if (tries >= 3) { await S('gen.poly.together.quad'); if (T) { await T.show('len'); await T.show('ang'); } } else await S(item.q);
-    const k = await choosePick(item.pick.map(o => plyOpt('q', o)), item.ok); if (T) T.off(); return { ans: k, ctx: { svg, R } }; },
+    const k = await choosePick(shuffle(item.pick).map(o => plyOpt('q', o)), item.ok); if (T) T.off(); return { ans: k, ctx: { svg, R } }; },   /* مخلوطة: الجواب لا يثبت في موضع */
   judge(item, k) { return item.ok.includes(k) ? { ok: true } : { ok: false, err: PLY_ERR.quad(item.want, k) }; },
   async onOk(item, r) { SFX.good(); if (r.ans !== item.want) await S('gen.poly.exact.' + item.want); }, onWrong() { SFX.soft(); },
   async hint2() { await S('gen.poly.hint.quad'); }, async together() {},
@@ -313,7 +315,7 @@ ITEM.polyName = {
   make(spec) { const pr = polyProps(POLYS[spec.k]); /*T*/if (TESTHOOK && !spec.pick.includes(pr.n)) testBug('polyName: العدد الصحيح ليس بين الخيارات');/*/T*/ return { ...spec, want: pr.n, tag: 'poly-name-' + pr.n }; },
   async ask(item, mode, tries) { const svg = plyStage(), R = plyDraw(svg, item, { C: [180, 118] }); let aid = null;
     if (tries >= 3) { await S('gen.poly.together.name'); aid = helpG(svg); await badgeCount(aid, R.sides.map(sg => ({ x: sg.mid[0], y: sg.mid[1] })), css('--think')); } else await S(item.q);
-    const k = await choosePick(item.pick.map(n => plyOpt('n', String(n))), String(item.want)); return { ans: +k, ctx: { svg, R, aid } }; },
+    const k = await choosePick(shuffle(item.pick).map(n => plyOpt('n', String(n))), String(item.want)); return { ans: +k, ctx: { svg, R, aid } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'polyNameN' }; },
   onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
   async hint2() { await S('gen.poly.hint.name'); }, async together() {},
@@ -427,7 +429,7 @@ SCENES.polyParts = async c => { const svg = plyStage(), L = c.lines, R = polyAt(
   logAttempt({ scene: c.s || 'explore', tag: 'polyParts', ok: true }); await S(L[5]); };
 /* المثلثات بأضلاعها: ثلاثة مثلثات، يلمس الطفل كلاً منها فتُكتب أطواله ويُسمّى. lines: [مقدمة، ختام] */
 SCENES.triMeasure = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), L = c.lines, X = [292, 180, 68], K = c.keys || ['tEq2', 'tIsoA2', 'tScaA2'], by = c.by || 'side';
-  const Rs = K.map((k, i) => { el('rect', { x: X[i] - 54, y: 22, width: 108, height: 196, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg); return polyAt(svg, k, [X[i], 110], { s: .6, dots: false }); });
+  const Rs = K.map((k, i) => { el('rect', { x: X[i] - 54, y: 22, width: 108, height: 196, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg); const xs = POLYS[k].p.map(p => p[0]), w = Math.max(...xs) - Math.min(...xs), sc = Math.min(.6, 88 / w); return polyAt(svg, k, [X[i] - (Math.max(...xs) + Math.min(...xs)) / 2 * sc, 110], { s: sc, dots: false }); });   /* كل مثلث في بطاقته بعرضه (المنفرج العريض لا يدخل البطاقة المجاورة) */
   await S(L[0]); for (const [i, R] of Rs.entries()) { await tapOne([{ g: R.g, k: i, label: labelText('plyShape') + ' ' + DG(i + 1) }], { ok: i, pad: 30, pulse: true }); SFX.tick();
     if (by === 'side') { for (let j = 0; j < 3; j++) { const sl = sideLabel(svg, R, j); if (sl) sl.setAttribute('transform', `translate(${(R.sides[j].mid[0] - R.cen[0]) * -.25} ${(R.sides[j].mid[1] - R.cen[1]) * -.25})`); } polyMarks(R.g, R, ['eq']); }
     else { for (let j = 0; j < 3; j++) vertLabel(svg, R, j); }
@@ -458,10 +460,10 @@ SCENES.squareTilt = async c => { const svg = plyStage(), L = c.lines, holder = e
   await symTween(900, t => { holder.innerHTML = ''; R = polyAt(holder, c.k || 'qSq', [180, 118], { rot: 45 * t, marks: true }); }); SFX.tick(); logAttempt({ scene: c.s || 'explore', tag: 'squareTilt', ok: true }); await S(L[1]); };
 /* صانع الرباعيات (لعبة د4): أعواد مستطيل (أو مربع)، يُميله الطفل بالزرّين فيصير متوازي أضلاع (أو معيّناً)؛ الأطوال باقية والقوائم تزول. ثم يسمّيه.
    c.from: rect | square، lines: [الدعوة، بعد الإمالة، السؤال، ختام] */
-SCENES.quadMaker = async c => { const svg = plyStage(), L = c.lines, sq = c.from === 'square', W = sq ? 100 : 150, H = sq ? 100 : 80, len = H, holder = el('g', {}, svg); let sh = 0;
+SCENES.quadMaker = async c => { const svg = newStage(290, { oasis: false, ground: 0 }), L = c.lines, sq = c.from === 'square', W = sq ? 100 : 150, H = sq ? 100 : 80, len = H; plyFrame(svg, 204); const holder = el('g', {}, svg); let sh = 0;   /* إطار 204 وزرّا الإمالة تحته على مسرح 290 */
   const draw = () => { holder.innerHTML = ''; const dx = len * Math.sin(sh * Math.PI / 180), dy = len * Math.cos(sh * Math.PI / 180), C = [180, 118], P = [[-W / 2 + dx / 2, -dy / 2], [W / 2 + dx / 2, -dy / 2], [W / 2 - dx / 2, dy / 2], [-W / 2 - dx / 2, dy / 2]]; const R = polyAt(holder, { p: P }, C, { marks: true }); for (let i = 0; i < 4; i++) sideLabel(holder, R, i); return R; };
   let R = draw(); S(L[0], { free: true }); let n = 0; const nudge = rulNudges(svg, 254, s => { sh = Math.max(0, Math.min(40, sh + s * 10)); R = draw(); n++; SFX.tick(); }, ['plyTiltMore', 'plyTiltLess']);
-  AUTO({ kind: 'plyTilt', ok: () => { sh = 30; R = draw(); rulDoneBtn().click(); } }); await rulDone(() => nudge.forEach(b => b.remove())); hush();
+  AUTO({ kind: 'plyTilt', ok: () => { sh = 30; R = draw(); rulDoneBtn().click(); } }); /*T*/window.__tiltBtn = () => { const r = nudge[1].getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }; window.__tilt = () => sh;/*/T*/ await rulDone(() => nudge.forEach(b => b.remove())); hush();
   if (!sh) { sh = 30; await symTween(500, t => { sh = 30 * t; R = draw(); }); } await S(L[1]);
   const opts = sq ? ['square', 'rhom', 'rect'] : ['rect', 'para', 'square'], okK = QTRUE[sq ? 'rhom' : 'para'];
   await S(L[2]); let t = 0; while (true) { const k = await choosePick(opts.map(o => plyOpt('q', o)), okK), ok = okK.includes(k); logAttempt({ scene: c.s || 'game', tag: 'quadMaker', ok, firstTry: t === 0 }); t++; if (ok) { SFX.good(); break; } SFX.soft(); await S('gen.poly.makerNo'); }
@@ -517,7 +519,7 @@ SCENES.composeShow = async c => { const L = c.lines; await S(L[0]); for (const f
 /* ثلاثة مربعات: يلمس الطفل موضعاً للمربع الثالث بجانب اثنين متجاورين، فيظهر الشكل في صندوق «مستقيم» أو «زاوية». lines: [الدعوة، الأشكال اثنان] */
 SCENES.trominoes = async c => { const svg = plyStage(), L = c.lines, cc = 34, O = [146, 70], bins = { I: [], L: [] }; minoAt(svg, [[0, 0], [1, 0]], O[0], O[1], cc);
   const spots = [[-1, 0, 'I'], [2, 0, 'I'], [0, -1, 'L'], [1, -1, 'L'], [0, 1, 'L'], [1, 1, 'L']], gs = spots.map(([a, b]) => { const g = el('g', {}, svg); el('rect', { x: O[0] + a * cc + 3, y: O[1] + b * cc + 3, width: cc - 6, height: cc - 6, rx: 4, fill: 'none', stroke: css('--think'), 'stroke-width': 2, 'stroke-dasharray': '4 3' }, g); return g; });
-  const box = (k, x) => { el('rect', { x: x - 60, y: 150, width: 120, height: 60, rx: 10, fill: '#fff', stroke: css('--line'), 'stroke-width': 2 }, svg); }; box('I', 260); box('L', 100);
+  const box = (k, x) => { el('rect', { x: x - 60, y: 150, width: 120, height: 60, rx: 10, fill: '#fff', stroke: css('--line'), 'stroke-width': 2 }, svg); const t = el('text', { x, y: 204, 'text-anchor': 'middle', 'font-size': 13, 'font-weight': 700, fill: GEO.ink, 'pointer-events': 'none' }, svg); t.textContent = labelText(k === 'I' ? 'plyMinoI' : 'plyMinoL'); }; box('I', 260); box('L', 100);
   S(L[0], { free: true }); const left = new Set(gs.keys()); while (left.size) { const k = await tapOne([...left].map(i => ({ g: gs[i], k: i, label: labelText('plySpot') })), { ok: [...left], pad: 36 }); if (left.size === 6) hush(); left.delete(k); gs[k].remove(); const [a, b, t] = spots[k];
     const tmp = minoAt(svg, [[a, b]], O[0], O[1], cc, '#f2b84b'); await sleep(FAST ? 10 : 300); tmp.remove(); bins[t].push(k); const n = bins[t].length - 1; minoAt(svg, t === 'I' ? [[0, 0], [1, 0], [2, 0]] : [[0, 0], [1, 0], [0, 1]], (t === 'I' ? 216 : 74) + (n % 3) * 4, 160 + (n % 3) * 3, 11, '#6c7fa8'); SFX.tick(); }
   logAttempt({ scene: c.s || 'explore', tag: 'trominoes', ok: true }); await S(L[1]); };

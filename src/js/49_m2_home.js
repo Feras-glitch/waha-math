@@ -77,7 +77,7 @@ SCENES.homeNums = async c => { const unit = c.unit, H = PROG.home = isObj(PROG.h
   if (!again && rec) { if (back && !c.quiet) { stage0(); await S(back); } return; }
   stage0(); const askId = again ? c.askAgain || 'gen.home.askAgain' : c.ask || 'gen.home.ask'; await S(askId); const cp = cardPick([{ id: 'gen.home.did', k: 'yes', ok: true }, { id: 'gen.home.no', k: 'no' }], { keepOrder: true, intro: askId }), pick = await cp.p; cp.done(); cp.box.remove();
   if (pick.k === 'no') { logAttempt({ scene: c.s || 'hook', tag: 'homeLater', ok: true }); await S('gen.home.later'); if (back && !c.quiet) await S(back); return; }
-  const vals = {}; for (const f of again ? c.again : c.fields) { stage0(); if (f.pick) { await S(f.q); const k = await choosePick(f.pick.map(([k2, lab, line]) => [k2, labelText(lab), '<i></i>', line]), null); vals[f.key] = f.pick.findIndex(x => x[0] === k); }
+  const vals = {}; for (const f of again ? c.again : c.fields) { stage0(); if (f.pick) { await S(f.q); const k = await choosePick(f.pick.map(([k2, line]) => [k2, T(line), '<i></i>', line]), null); vals[f.key] = f.pick.findIndex(x => x[0] === k); }
     else { S(f.q, { free: true }); const v = await stepperAsk([{ key: f.key, min: f.min ?? 0, max: f.max ?? 99, val: f.val ?? 1, unit: f.unit || 'rulCm' }]); vals[f.key] = v[f.key]; } }
   if (again) rec.an = vals; else rec = H[unit] = { at: Date.now(), items: [], n: vals }; saveProg();
   logAttempt({ scene: c.s || 'hook', tag: again ? 'homeAgain' : 'homeNums', ok: true }); SFX.good(); const say = again ? c.sayAgain : c.say; if (say && HOME_SAY[say]) await HOME_SAY[say](rec, vals);
