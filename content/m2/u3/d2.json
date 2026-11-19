@@ -1,0 +1,631 @@
+{
+ "id": "m2.u3.d2",
+ "title": "قَائِمَةٌ وَحَادَّةٌ وَمُنْفَرِجَةٌ",
+ "icon": [
+  "angkind"
+ ],
+ "concepts": {
+  "C133": "الزاوية القائمة (تأسيس رسمي): ركن الورقة مرجعاً",
+  "C134": "الحادة والمنفرجة"
+ },
+ "bag": {
+  "items": [
+   {
+    "icon": "paper",
+    "label": "bagPaper"
+   }
+  ],
+  "ask": "bag.ask",
+  "adult": "ركن الورقة (ورقة مطوية مرتين)، وكتاب وقلم مبريّ ومقص.",
+  "screenPath": "على الشاشة يضع الطفل ركن الورقة على الزوايا ويصنّفها؛ وفحص أشياء البيت بركن الورقة في مسار «معي»."
+ },
+ "labels": {
+  "bagPaper": "رُكْنُ الوَرَقَةِ"
+ },
+ "lines": {
+  "bag.ask": "هَلْ {مَعَكَ|مَعَكِ} رُكْنُ الوَرَقَةِ؟ أَمْ نَلْعَبُ عَلَى الشَّاشَةِ؟",
+  "hook.01": "نَصْنَعُ رُكْنَ الوَرَقَةِ مِنْ جَدِيدٍ. {اِلْمِسِ|اِلْمِسِي} الوَرَقَةَ لِنَطْوِيَهَا.",
+  "hook.02": "{اِلْمِسْهَا|اِلْمِسِيهَا} لِنَطْوِيَهَا مِنْ جَدِيدٍ، حَافَّةً عَلَى حَافَّةٍ.",
+  "hook.03": "هَذَا رُكْنُ الوَرَقَةِ: زَاوِيَةٌ قَائِمَةٌ، رُبْعُ دَوْرَةٍ. بِهِ نُقَارِنُ كُلَّ زَاوِيَةٍ.",
+  "mat.01": "{ضَعْ|ضَعِي} رُكْنَ الوَرَقَةِ عَلَى رُكْنِ كِتَابٍ، ثُمَّ عَلَى رَأْسِ قَلَمٍ مَبْرِيٍّ، ثُمَّ عَلَى مِقَصٍّ مَفْتُوحٍ كَثِيرًا. ثُمَّ {اِلْمِسْ|اِلْمِسِي} «تَمَّ».",
+  "mat.02": "وَالآنَ عَلَى الشَّاشَةِ.",
+  "cc.01": "{اِلْمِسْ|اِلْمِسِي} كُلَّ زَاوِيَةٍ لِنَضَعَ عَلَيْهَا رُكْنَ الوَرَقَةِ.",
+  "cc.02": "أَصْغَرُ مِنْ رُكْنِ الوَرَقَةِ: حَادَّةٌ. مِثْلُهُ: قَائِمَةٌ. أَكْبَرُ مِنْهُ وَأَصْغَرُ مِنْ نِصْفِ دَوْرَةٍ: مُنْفَرِجَةٌ.",
+  "wk.01": "رَأْسُ القَلَمِ المَبْرِيِّ حَادٌّ، وَرُكْنُ الكِتَابِ قَائِمٌ، وَمَسْنَدُ الكُرْسِيِّ المَائِلِ مُنْفَرِجٌ.",
+  "game.01": "لُعْبَةُ: صَائِدُ الزَّوَايَا!",
+  "pk.acute": "فِي أَيِّ رَسْمٍ زَاوِيَةٌ حَادَّةٌ؟",
+  "pk.right": "فِي أَيِّ رَسْمٍ زَاوِيَةٌ قَائِمَةٌ؟",
+  "pk.obtuse": "فِي أَيِّ رَسْمٍ زَاوِيَةٌ مُنْفَرِجَةٌ؟",
+  "pr.intro": "هَيَّا نَتَمَرَّنُ عَلَى أَنْوَاعِ الزَّوَايَا.",
+  "pr.corner": "{اِلْمِسِ|اِلْمِسِي} الوَرَقَةَ لِنَضَعَ رُكْنَ الوَرَقَةِ. مَا نَوْعُ هَذِهِ الزَّاوِيَةِ؟",
+  "ch.find": "تَقُولُ فَوْضَى: هَذِهِ لَيْسَتْ قَائِمَةً، لِأَنَّهَا مَائِلَةٌ! {اِلْمِسِ|اِلْمِسِي} الوَرَقَةَ لِنَضَعَ رُكْنَ الوَرَقَةِ. مَا نَوْعُهَا؟",
+  "ch.after": [
+   "chaos",
+   "آه! القَائِمَةُ تَبْقَى قَائِمَةً وَإِنْ مَالَتْ."
+  ],
+  "ch.right": "نَحْكُمُ عَلَى الزَّاوِيَةِ بِرُكْنِ الوَرَقَةِ، فِي أَيِّ اتِّجَاهٍ كَانَتْ.",
+  "ch.wrong": [
+   "chaos",
+   "القَائِمَةُ يَكُونُ ضِلْعَاهَا أُفُقِيًّا وَرَأْسِيًّا دَائِمًا."
+  ],
+  "ms.3": "لِمَاذَا هَذِهِ الزَّاوِيَةُ قَائِمَةٌ مَعَ أَنَّهَا مَائِلَةٌ؟",
+  "ms.3a": "لِأَنَّ رُكْنَ الوَرَقَةِ يَنْطَبِقُ عَلَيْهَا.",
+  "ms.3b": "لِأَنَّ كُلَّ زَاوِيَةٍ مَائِلَةٍ تَكُونُ قَائِمَةً دَائِمًا.",
+  "ms.3c": "لِأَنَّ ضِلْعَيْهَا طَوِيلَانِ وَمُتَسَاوِيَانِ فِي الطُّولِ.",
+  "ms.4": "مَتَى تَكُونُ الزَّاوِيَةُ حَادَّةً؟",
+  "ms.4a": "حِينَ تَكُونُ أَصْغَرَ مِنْ رُكْنِ الوَرَقَةِ.",
+  "ms.4b": "حِينَ يَكُونُ ضِلْعَاهَا قَصِيرَيْنِ.",
+  "ms.4c": "حِينَ تَكُونُ أَكْبَرَ مِنْ رُكْنِ الوَرَقَةِ.",
+  "ms.recall": "رُكْنُ الوَرَقَةِ زَاوِيَةٌ قَائِمَةٌ، رُبْعُ دَوْرَةٍ، وَبِهِ نُقَارِنُ.",
+  "ms.recall2": "أَصْغَرُ مِنْ رُكْنِ الوَرَقَةِ: حَادَّةٌ؛ وَأَكْبَرُ مِنْهُ: مُنْفَرِجَةٌ.",
+  "ms.ok": "رَائِعٌ! {صِرْتَ تُمَيِّزُ|صِرْتِ تُمَيِّزِينَ} الحَادَّةَ وَالقَائِمَةَ وَالمُنْفَرِجَةَ. {هَذِهِ نَجْمَتُكَ|هَذِهِ نَجْمَتُكِ}.",
+  "wrap.01": "صِدْنَا فِي حَيِّ الزَّوَايَا زَوَايَا حَادَّةً وَقَائِمَةً وَمُنْفَرِجَةً!",
+  "wrap.home": [
+   "chaos",
+   "مُهِمَّةُ البَيْتِ: {اِبْحَثْ|اِبْحَثِي} بِرُكْنِ الوَرَقَةِ عَنْ زَاوِيَةٍ حَادَّةٍ وَقَائِمَةٍ وَمُنْفَرِجَةٍ فِي البَيْتِ."
+  ]
+ },
+ "flow": [
+  {
+   "s": "hook",
+   "scene": "cornerFold",
+   "lines": [
+    "hook.01",
+    "hook.02",
+    "hook.03"
+   ]
+  },
+  {
+   "s": "explore",
+   "scene": "cornerCompare",
+   "degs": [
+    50,
+    90,
+    130
+   ],
+   "mat": {
+    "prompt": "mat.01",
+    "show": [],
+    "icon": true,
+    "after": "mat.02",
+    "facts": []
+   },
+   "lines": [
+    "cc.01",
+    "cc.02"
+   ]
+  },
+  {
+   "s": "worked",
+   "scene": "recallKinds",
+   "degs": [
+    30,
+    90,
+    140
+   ],
+   "lines": [
+    "wk.01"
+   ]
+  },
+  {
+   "s": "game",
+   "scene": "items",
+   "mode": "practice",
+   "intro": "game.01",
+   "items": [
+    {
+     "t": "angleKindPick",
+     "q": "pk.acute",
+     "degs": [
+      40,
+      120,
+      90
+     ],
+     "ask": "acute",
+     "twin": {
+      "t": "angleKindPick",
+      "q": "pk.obtuse",
+      "degs": [
+       100,
+       60,
+       90
+      ],
+      "ask": "obtuse"
+     }
+    },
+    {
+     "t": "angleKindPick",
+     "q": "pk.right",
+     "degs": [
+      150,
+      90,
+      20
+     ],
+     "ask": "right",
+     "twin": {
+      "t": "angleKindPick",
+      "q": "pk.right",
+      "degs": [
+       70,
+       90,
+       135
+      ],
+      "ask": "right"
+     }
+    },
+    {
+     "t": "angleKindPick",
+     "q": "pk.acute",
+     "degs": [
+      170,
+      80,
+      90
+     ],
+     "ask": "acute",
+     "twin": {
+      "t": "angleKindPick",
+      "q": "pk.obtuse",
+      "degs": [
+       90,
+       25,
+       100
+      ],
+      "ask": "obtuse"
+     }
+    }
+   ]
+  },
+  {
+   "s": "practice"
+  },
+  {
+   "s": "chaos"
+  },
+  {
+   "s": "mastery"
+  },
+  {
+   "s": "wrap"
+  }
+ ],
+ "practice": {
+  "intro": "pr.intro",
+  "normal": [
+   {
+    "t": "angleKind",
+    "q": "pr.corner",
+    "deg": 90,
+    "rot": 0,
+    "set": [
+     "acute",
+     "right",
+     "obtuse"
+    ],
+    "corner": true,
+    "twin": {
+     "t": "angleKind",
+     "q": "pr.corner",
+     "deg": 60,
+     "rot": 0,
+     "set": [
+      "acute",
+      "right",
+      "obtuse"
+     ],
+     "corner": true
+    }
+   },
+   {
+    "t": "angleKind",
+    "q": "pr.corner",
+    "deg": 120,
+    "rot": 10,
+    "set": [
+     "acute",
+     "right",
+     "obtuse"
+    ],
+    "corner": true,
+    "twin": {
+     "t": "angleKind",
+     "q": "pr.corner",
+     "deg": 35,
+     "rot": -10,
+     "set": [
+      "acute",
+      "right",
+      "obtuse"
+     ],
+     "corner": true
+    }
+   },
+   {
+    "t": "angleKindPick",
+    "q": "pk.obtuse",
+    "degs": [
+     60,
+     90,
+     160
+    ],
+    "ask": "obtuse",
+    "twin": {
+     "t": "angleKindPick",
+     "q": "pk.acute",
+     "degs": [
+      110,
+      90,
+      45
+     ],
+     "ask": "acute"
+    }
+   }
+  ],
+  "challenge": [
+   {
+    "t": "angleKind",
+    "q": "pr.corner",
+    "deg": 85,
+    "rot": 0,
+    "set": [
+     "acute",
+     "right",
+     "obtuse"
+    ],
+    "corner": true,
+    "twin": {
+     "t": "angleKind",
+     "q": "pr.corner",
+     "deg": 95,
+     "rot": 20,
+     "set": [
+      "acute",
+      "right",
+      "obtuse"
+     ],
+     "corner": true
+    }
+   },
+   {
+    "t": "angleKind",
+    "q": "pr.corner",
+    "deg": 90,
+    "rot": 45,
+    "set": [
+     "acute",
+     "right",
+     "obtuse"
+    ],
+    "corner": true,
+    "twin": {
+     "t": "angleKind",
+     "q": "pr.corner",
+     "deg": 90,
+     "rot": -30,
+     "set": [
+      "acute",
+      "right",
+      "obtuse"
+     ],
+     "corner": true
+    }
+   },
+   {
+    "t": "angleKindPick",
+    "q": "pk.right",
+    "degs": [
+     30,
+     90,
+     150
+    ],
+    "ask": "right",
+    "rots": [
+     35,
+     -40,
+     10
+    ],
+    "twin": {
+     "t": "angleKindPick",
+     "q": "pk.right",
+     "degs": [
+      160,
+      90,
+      15
+     ],
+     "ask": "right",
+     "rots": [
+      0,
+      60,
+      0
+     ]
+    }
+   }
+  ]
+ },
+ "chaos": {
+  "kind": "scene",
+  "scene": "chaosItem",
+  "item": {
+   "t": "angleKind",
+   "deg": 90,
+   "rot": 40,
+   "set": [
+    "acute",
+    "right",
+    "obtuse"
+   ],
+   "corner": true
+  },
+  "find": "ch.find",
+  "after": "ch.after",
+  "right": "ch.right",
+  "wrong": "ch.wrong"
+ },
+ "mastery": {
+  "concepts": {
+   "C133": [
+    {
+     "t": "angleKind",
+     "q": "pr.corner",
+     "deg": 90,
+     "rot": 25,
+     "set": [
+      "acute",
+      "right",
+      "obtuse"
+     ],
+     "corner": true
+    },
+    {
+     "t": "angleKind",
+     "q": "pr.corner",
+     "deg": 80,
+     "rot": 0,
+     "set": [
+      "acute",
+      "right",
+      "obtuse"
+     ],
+     "corner": true
+    },
+    {
+     "t": "reason",
+     "q": "ms.3",
+     "pic": {
+      "kind": "angle",
+      "deg": 90,
+      "rot": 35,
+      "arc": "in"
+     },
+     "opts": [
+      {
+       "id": "ms.3a",
+       "ok": true
+      },
+      {
+       "id": "ms.3b"
+      },
+      {
+       "id": "ms.3c"
+      }
+     ]
+    }
+   ],
+   "C134": [
+    {
+     "t": "angleKindPick",
+     "q": "pk.obtuse",
+     "degs": [
+      140,
+      90,
+      55
+     ],
+     "ask": "obtuse"
+    },
+    {
+     "t": "angleKind",
+     "q": "pr.corner",
+     "deg": 25,
+     "rot": 30,
+     "set": [
+      "acute",
+      "right",
+      "obtuse"
+     ],
+     "corner": true
+    },
+    {
+     "t": "angleKindPick",
+     "q": "pk.acute",
+     "degs": [
+      95,
+      65,
+      90
+     ],
+     "ask": "acute"
+    },
+    {
+     "t": "reason",
+     "q": "ms.4",
+     "pic": {
+      "kind": "angle",
+      "deg": 40,
+      "rot": 10
+     },
+     "opts": [
+      {
+       "id": "ms.4a",
+       "ok": true
+      },
+      {
+       "id": "ms.4b"
+      },
+      {
+       "id": "ms.4c"
+      }
+     ]
+    }
+   ]
+  },
+  "recall": {
+   "C133": {
+    "scene": "recallAngle",
+    "deg": 90,
+    "rot": 20,
+    "corner": true,
+    "lines": [
+     "ms.recall"
+    ]
+   },
+   "C134": {
+    "scene": "recallKinds",
+    "degs": [
+     45,
+     90,
+     150
+    ],
+    "lines": [
+     "ms.recall2"
+    ]
+   }
+  },
+  "remedial": {
+   "C133": [
+    {
+     "t": "angleKind",
+     "q": "pr.corner",
+     "deg": 90,
+     "rot": -15,
+     "set": [
+      "acute",
+      "right",
+      "obtuse"
+     ],
+     "corner": true,
+     "twin": {
+      "t": "angleKind",
+      "q": "pr.corner",
+      "deg": 100,
+      "rot": 0,
+      "set": [
+       "acute",
+       "right",
+       "obtuse"
+      ],
+      "corner": true
+     }
+    }
+   ],
+   "C134": [
+    {
+     "t": "angleKind",
+     "q": "pr.corner",
+     "deg": 150,
+     "rot": 5,
+     "set": [
+      "acute",
+      "right",
+      "obtuse"
+     ],
+     "corner": true,
+     "twin": {
+      "t": "angleKindPick",
+      "q": "pk.acute",
+      "degs": [
+       90,
+       35,
+       125
+      ],
+      "ask": "acute"
+     }
+    }
+   ]
+  },
+  "mixed": {
+   "lesson": "m2.u3.d1",
+   "concept": "C132",
+   "item": {
+    "t": "angleName",
+    "q": "pr.name",
+    "nm": [
+     "a",
+     "d",
+     "m"
+    ],
+    "deg": 65,
+    "rot": 10
+   }
+  },
+  "ok": "ms.ok"
+ },
+ "review": [
+  {
+   "t": "angleKind",
+   "q": "pr.corner",
+   "deg": 90,
+   "rot": 60,
+   "set": [
+    "acute",
+    "right",
+    "obtuse"
+   ],
+   "corner": true,
+   "c": "C133"
+  },
+  {
+   "t": "angleKindPick",
+   "q": "pk.obtuse",
+   "degs": [
+    115,
+    90,
+    20
+   ],
+   "ask": "obtuse",
+   "c": "C134"
+  },
+  {
+   "t": "angleKind",
+   "q": "pr.corner",
+   "deg": 70,
+   "rot": -20,
+   "set": [
+    "acute",
+    "right",
+    "obtuse"
+   ],
+   "corner": true,
+   "c": "C133"
+  },
+  {
+   "t": "angleKindPick",
+   "q": "pk.acute",
+   "degs": [
+    130,
+    50,
+    90
+   ],
+   "ask": "acute",
+   "c": "C134"
+  },
+  {
+   "t": "angleKind",
+   "q": "pr.corner",
+   "deg": 165,
+   "rot": 10,
+   "set": [
+    "acute",
+    "right",
+    "obtuse"
+   ],
+   "corner": true,
+   "c": "C134"
+  }
+ ],
+ "wrap": {
+  "art": "angleKinds",
+  "lines": [
+   "wrap.01"
+  ],
+  "home": "wrap.home"
+ },
+ "talk": "اصطادوا معاً زوايا البيت بركن الورقة: ركن الطاولة (قائمة)، ورأس القلم (حادة)، ومسند كرسي مائل (منفرجة). ودعوه يعلّل: «أصغر من ركن الورقة» أو «أكبر منه»."
+}

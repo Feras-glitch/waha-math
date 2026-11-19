@@ -44,6 +44,11 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
   else if (P.kind === 'corner') { rayFrame(g); paperCornerAt(g, [130, 170], 0, 110); }
   else if (P.kind === 'shore') { const Gm = shoreAt(g, P.ix || 150); for (const [x, y] of Gm.cands) geoLine(g, Gm.I[0], Gm.I[1] + 15, x, y, { color: GEO.road, w: 2.4, dash: '6 5' }); perpMarkAt(g, Gm.foot, 0, 90, 11); }
   else if (P.kind === 'pair') { rayFrame(g); linePairAt(g, P.kind2 || 'para', { rot: P.rot || 0, dv: P.dv, short: P.short, marks: P.marks }); }
+  else if (P.kind === 'angle') { rayFrame(g); const d = P.deg, rx = d > 180 && d < 360; angleAt(g, rx ? [180, 120] : d === 180 ? [180, 150] : [140, 160], P.rot || 0, rx ? 360 - d : d, { names: P.nm, arc: rx ? 'out' : (P.arc || 'in'), l1: 100, l2: 100 }); if (P.label != null) degText(g, 290, 52, P.label, { size: 20, color: ANG.v }); }   /* S2-U3 */
+  else if (P.kind === 'angles2') { rayFrame(g); ITEM.angleBig.draw({ degs: P.degs, lens: P.lens }, g); }
+  else if (P.kind === 'prot') ITEM.protRead.draw(ITEM.protRead.make({ deg: P.deg, side: P.side }), g);
+  else if (P.kind === 'rose') { roseAt(g, [180, 128], 80); if (P.face) faceArrow(g, [180, 128], P.face); }
+  else if (P.kind === 'clocks') { rayFrame(g); [[262, 118], [98, 118]].forEach((C, i) => { el('circle', { cx: C[0], cy: C[1], r: 66, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 3 }, g); angHandAt(g, C, 54).set(90); if (i) el('path', { d: angArc(C, 30, 0, 0, true), fill: 'none', stroke: ANG.arc, 'stroke-width': 4 }, g); }); }
   else if (P.kind === 'twopts') { rayFrame(g); const PT = RAYPTS[P.pts]; for (const k of Object.keys(PT)) ptAt(g, PT[k][0], PT[k][1], k, { r: 7, lab: [0, -16] }); }   /* نقطتان بلا خط: السؤال عن المستقيمات المارّة بهما لا يُرى جوابه */
   else if (P.kind === 'segfig') segFigAt(g, P.fig, { ticks: P.ticks });
   else if (P.kind === 'roads') roads3At(g, P.st, P.v || 0);

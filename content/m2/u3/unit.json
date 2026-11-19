@@ -1,0 +1,133 @@
+{
+ "id": "m2.u3",
+ "title": "زَوَايَا الأَرْكَانِ",
+ "sub": "المَرْحَلَةُ الثَّانِيَةُ: البَنَّاؤُونَ",
+ "district": "حَيُّ الزَّوَايَا",
+ "hosts": [
+  "square",
+  "rect",
+  "triangle"
+ ],
+ "hunt": [],
+ "workshop": {
+  "pieces": [
+   {
+    "k": "triangle",
+    "size": 70,
+    "w": 70,
+    "h": 61
+   },
+   {
+    "k": "rect",
+    "size": 70,
+    "w": 96,
+    "h": 44
+   },
+   {
+    "k": "square",
+    "size": 64
+   },
+   {
+    "k": "circle",
+    "size": 60
+   }
+  ],
+  "puzzles": [
+   {
+    "id": "roof",
+    "name": "gen.ws.p.roof",
+    "slots": [
+     {
+      "k": "square",
+      "x": 150,
+      "y": 150,
+      "size": 96
+     },
+     {
+      "k": "triangle",
+      "x": 150,
+      "y": 72,
+      "size": 96,
+      "w": 96,
+      "h": 60
+     }
+    ],
+    "extra": {
+     "k": "circle",
+     "size": 56
+    }
+   },
+   {
+    "id": "fan",
+    "name": "gen.ws.p.fan",
+    "slots": [
+     {
+      "k": "triangle",
+      "x": 110,
+      "y": 96,
+      "size": 64,
+      "w": 64,
+      "h": 56
+     },
+     {
+      "k": "triangle",
+      "x": 190,
+      "y": 96,
+      "size": 64,
+      "w": 64,
+      "h": 56,
+      "rot": 90
+     },
+     {
+      "k": "triangle",
+      "x": 110,
+      "y": 166,
+      "size": 64,
+      "w": 64,
+      "h": 56,
+      "rot": 270
+     },
+     {
+      "k": "triangle",
+      "x": 190,
+      "y": 166,
+      "size": 64,
+      "w": 64,
+      "h": 56,
+      "rot": 180
+     }
+    ],
+    "extra": {
+     "k": "square",
+     "size": 56
+    }
+   },
+   {
+    "id": "clock",
+    "name": "gen.ws.p.clock",
+    "slots": [
+     {
+      "k": "circle",
+      "x": 150,
+      "y": 120,
+      "size": 110
+     },
+     {
+      "k": "rect",
+      "x": 150,
+      "y": 200,
+      "size": 120,
+      "w": 120,
+      "h": 24
+     }
+    ],
+    "extra": {
+     "k": "triangle",
+     "size": 60,
+     "w": 60,
+     "h": 52
+    }
+   }
+  ]
+ }
+}

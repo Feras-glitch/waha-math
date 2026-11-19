@@ -10,7 +10,7 @@
 // وفوق ذلك (D240 «لكل مفهوم بند تعرّف وبند إنتاج أو تعليل»): لكل مفهوم يتقنه التطبيق بند إنتاج أو تعليل واحد على الأقل، ولكل مفهوم
 // «تأسيس» في الدرس فحص إتقان (إلا «المدخل»)، ولكل درس اختيار حقيقي للطفل (D239).
 
-const PROD = new Set(['rulerAlign', 'drawLen', 'gridPoint', 'midMark', 'rayDraw', 'paraDraw', 'perpTurn',   /* S2-U2: يرسم الموازي ويدير المعامد */   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
+const PROD = new Set(['rulerAlign', 'drawLen', 'gridPoint', 'midMark', 'rayDraw', 'paraDraw', 'perpTurn', 'angleMatch', 'angleDraw',   /* S2-U3: يفتح الباب بانفتاح الزاوية، ويرسم الزاوية بالمنقلة */   /* S2-U2: يرسم الموازي ويدير المعامد */   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
   'reason', 'connect', 'completeRect', 'vertices', 'count', 'produce', 'fill', 'trace', 'buildTower', 'splitMake', 'buildTo', 'faceTap',
   'split', 'join', 'remove', 'eqPair', 'unknownStart', 'fact', 'story',
   'place', 'lineTap', 'lrTap', 'robot', 'mapPut', 'roadHop',   /* S1-U3: يضع الطفل الشيء، ويلمس العربة، ويلمس اليد، ويبرمج الروبوت، ويضع قطعة الخريطة، ويقفز */
@@ -190,6 +190,24 @@ export const factOf = it => { const t = it.t;
   if (t === 'sideRel') return `side|${it.fig}|${it.rel}|${it.ref}`;
   if (t === 'shortToLine') return `shore|${it.ix || 150}`;
   if (t === 'pairName') return `pair|${it.kind}|${it.rot || 0}|${it.ang || ''}`;
+  /* S2-U3: الزاوية بقياسها ودورانها، والاسم برأسه وطرفيه، والمنقلة بقياسها وجهتها، والوردة باتجاهها والتفاتها */
+  if (t === 'angleParts') return `angp|${it.ask || 'v'}|${it.deg}|${it.rot || 0}`;
+  if (t === 'angleBig') return `angb|${it.ask || 'big'}|${it.degs.join(',')}|${it.lens.join(',')}`;
+  if (t === 'angleName') return `angn|${it.nm[1]}|${[it.nm[0], it.nm[2]].sort().join('')}`;
+  if (t === 'angleTurn') return `angt|${it.turns}|${it.cw === false ? 0 : 1}|${it.rot ?? 90}`;   /* البدء في موضع آخر رسمٌ آخر */
+  if (t === 'angleMatch') return `angm|${it.deg}`;
+  if (t === 'angleKind') return `angk|${it.deg}|${it.rot || 0}`;
+  if (t === 'angleKindPick') return `angkp|${it.ask}|${[...it.degs].sort((x, y) => x - y).join(',')}`;
+  if (t === 'turnDeg') return `tdeg|${it.turns}|${it.a0 || 0}`;
+  if (t === 'reflexOf') return `rfx|${it.deg}`;
+  if (t === 'protRead') return `prot|${it.deg}|${it.side || 'r'}`;
+  if (t === 'protPlace') return `pplace|${it.deg}|${it.rot || 0}`;
+  if (t === 'angleDraw') return `angd|${it.deg}`;
+  if (t === 'angleEstimate') return `ange|${it.deg}`;
+  if (t === 'compassFind') return `cmpf|${it.want}|${(it.hide || []).join('')}`;
+  if (t === 'compassTurn') return `cmpt|${it.face}|${it.turns}|${it.cw === false ? 0 : 1}`;
+  if (t === 'reason' && it.pic && it.pic.kind === 'angle') return `angpic|${it.pic.deg}|${it.pic.rot || 0}`;
+  if (t === 'reason' && it.pic && it.pic.kind === 'prot') return `protpic|${it.pic.deg}|${it.pic.side || 'r'}`;
   if (t === 'reason' && it.pic) { const P = it.pic; if (P.kind === 'paragrid') return `pgpic|${P.d}`; if (P.kind === 'shore') return `shorepic|${P.ix || 150}`;
     if (P.kind === 'ruler') return `rulpic|${P.a || 0}|${P.b}|${P.brk || 0}`; if (P.kind === 'string') return `strpic|${P.len}|${P.span}`; if (P.kind === 'rulerMm') return `rmmpic|${P.cm}|${P.mm}`;
     if (P.kind === 'roads') return `roadpic|${P.st}|${P.v || 0}`; if (P.kind === 'midj') return `midjpic|${P.l}|${P.r}`; }
@@ -290,7 +308,12 @@ export function d240(lessons, code, MAKERS) {
     roadMap: () => ['mid|6', 'half|6', 'rulseg|6'],
     extendShow: s => [`meet|${s.kind || 'conv'}|${s.rot || 0}|${s.dv || 0}`], distShow: s => [`pgap|${s.d || 3}|h|1`, `pseg|${s.d || 3}|210`], recallParaGrid: s => [`pgap|${s.d || 3}|h|1`, `pgpic|${s.d || 3}`],
     shoreShow: s => [`shore|${s.ix || 150}`, `shorepic|${s.ix || 150}`], recallShore: s => [`shore|${s.ix || 150}`, `shorepic|${s.ix || 150}`], recallPair: s => [`pair|${s.kind || 'para'}|${s.rot || 0}|${s.ang || ''}`],
-    perpShow: () => ['corner|90|0', 'pair|perp|0|'], sidesShow: () => ['side|rectF|par|ab', 'side|rectF|par|jd', 'side|rectF|perp|ab', 'side|rectF|perp|bj'], streetMap: () => ['pdraw|2|h|1', 'pturn|0|45', 'shore|120'],
+    perpShow: () => ['corner|90|0', 'pair|perp|0|'],
+    nameShow: s => { const nm = s.nm || ['a', 'b', 'j']; return [`angn|${nm[1]}|${[nm[0], nm[2]].sort().join('')}`]; }, cornerCompare: s => (s.degs || [50, 90, 130]).map(d => `angk|${d}|0`), protSteps: s => [`prot|${s.deg || 120}|r`, `protpic|${s.deg || 120}|r`],
+    angDrawShow: s => [`angd|${s.deg}`], estimateShow: s => [`ange|${s.deg}`], recallProt: s => [`prot|${s.deg || 120}|${s.side || 'r'}`, `protpic|${s.deg || 120}|${s.side || 'r'}`], recallTurn: s => [`tdeg|${s.turns || 1}|0`],
+    recallAngle: s => [`angk|${s.deg || 60}|${s.rot || 0}`, `angpic|${s.deg || 60}|${s.rot || 0}`], degreeDisc: () => ['tdeg|1|0', 'tdeg|2|0', 'tdeg|4|0'], cakeSlice: s => [`rfx|${s.deg || 60}`],
+    compassTurns: () => [1, 2, 3, 4].map(q => `cmpt|n|${q}|1`), recallRose: s => s.face ? [`cmpf|${s.face}|`] : [],
+    angleCity: () => ['prot|110|l', 'prot|70|r', 'prot|40|r', 'prot|90|r', 'prot|140|l', 'angk|110|0', 'angk|70|0', 'angk|40|0', 'angk|90|0', 'angk|140|0'], sidesShow: () => ['side|rectF|par|ab', 'side|rectF|par|jd', 'side|rectF|perp|ab', 'side|rectF|perp|bj'], streetMap: () => ['pdraw|2|h|1', 'pturn|0|45', 'shore|120'],
     shelvesWalk: s => Array.from({ length: Math.max(0, s.n - 1) }, (_, i) => `part|${s.n}|${s2(i + 1, s.n - i - 1)}`),
     mailExplore: s => (s.boxes || []).map(b => `digitMatch|${b.n}`),
     takeHook: s => [`sub|${s.a}|${s.b}`],
@@ -352,6 +375,7 @@ export function d240(lessons, code, MAKERS) {
     'rugHook', 'rodMaker', 'teenWrite', 'rodFactory', 'chaos31', 'fingersHook', 'frameFriends', 'completeFrame', 'chaosFrame', 'countAllHook', 'makeTenLab', 'tenBus', 'chaosTakeMore', 'unitStrip', 'recallU4',
     'rhythmHook', 'patRead', 'patWorked', 'chaosPattern', 'recallPat', 'chaosGuess', 'patCircle', 'patSoundLab', 'chaosLoops', 'patHunt', 'skipBeads', 'skipWorked', 'chaosPairs', 'recallSkip', 'gridHook', 'gridGuide', 'gridWorked', 'chaosGrid', 'recallGrid', 'handsHook',
     'foldShow', 'foldLab', 'halfScene', 'chaosHalf', 'recallSym', 'foldWays', 'lineWorked', 'chaosFold', 'gridLab', 'doubleShow', 'doubleWorked', 'chaosWing', 'chaosDbl', 'paintFold', 'recallMir',
+    'doorHook', 'sticksAngle', 'turnShow', 'nameShow', 'cornerCompare', 'doorStraight', 'degreeDisc', 'clockTwins', 'cakeSlice', 'protIntro', 'protSteps', 'angDrawShow', 'estimateShow', 'compassIntro', 'compassTurns', 'angleCity', 'recallAngle', 'recallKinds', 'recallProt', 'recallTurn', 'recallRose',   /* S2-U3 */
     'crossHook', 'sticksLab', 'extendShow', 'distShow', 'cornerFold', 'perpShow', 'shoreShow', 'sidesShow', 'recallPair', 'recallShore', 'recallParaGrid', 'streetMap',   /* S2-U2 */
     'digitPairs', 'spanClash', 'tileRuler', 'mmZoom', 'rulerWorked', 'chaosRuler', 'recallRuler', 'recallTools', 'alignShow', 'mmRead', 'cardSteps', 'drawShow', 'stringShow', 'recallAlign', 'recallMm', 'recallDraw', 'recallString', 'homeMeasure',
     'treasureHook', 'pointShow', 'gridWalk', 'chaosGridPt', 'recallGridPt', 'recallFigs', 'figLab', 'zigHook', 'antEscape', 'chaosFig', 'tautString', 'segNameShow', 'chaosItem', 'recallSeg', 'recallRoads', 'ticksShow', 'foldStrip', 'recallTicks', 'recallMid', 'torchHook', 'rayOrderShow', 'recallRay', 'railHook', 'linesThrough', 'recallCol', 'roadMap', 'homeSeg'];   /* S2-U1: النقاط والخطوط رسوم لا مولّدات */   /* S2-U0: المسطرة وأدوات القياس رسوم لا مولّدات */   /* S1-U6 */   /* S1-U5: عناصر النمط رسومه لا مولّدات */   /* S1-U4: رسوم القياس والعدد لا مولّدات */

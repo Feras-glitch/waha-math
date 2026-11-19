@@ -164,14 +164,14 @@ const teenDigits = () => { const S = LESSON_SEQ(), d = S.indexOf('m1.u4.d5'); if
 function numberPick(nums, ok, opt = {}) {
   /*T*/if (TESTHOOK && new Set(nums).size < 3) testBug('numberPick بأقلّ من ثلاثة خيارات: ' + nums.join(','));/*/T*/   /* (الفحص المستقل J2 (5): ترشيحٌ بعد nearNums أنقصها في موضع ندائه، فالحارس يراها في كل موضع) */
   const box = document.createElement('div'); box.className = 'choices nums'; (opt.host || $('#stage')).appendChild(box);
-  const showDigits = opt.digits ?? digitsKnown(), teens = teenDigits();
+  const showDigits = opt.digits ?? digitsKnown(), teens = teenDigits(), W = opt.word || numw;   /* word: كلمة العدد مع تمييزه (الدرجات في S2-U3: «تسعون درجة») */
   const btns = nums.map(n => { const b = document.createElement('button'); b.className = 'pick num'; b.dataset.k = n;
-    b.innerHTML = (opt.west ? `<b dir="ltr">${n}</b>` : showDigits && (n <= 10 || teens) ? `<b>${DG(n)}</b>` : '') + `<span>${esc(T(numw(n)))}</span>`; b.setAttribute('aria-label', plain(T(numw(n))));
+    b.innerHTML = (opt.west ? `<b dir="ltr">${n}</b>` : showDigits && (n <= 10 || teens) ? `<b>${DG(n)}</b>` : '') + `<span>${esc(T(W(n)))}</span>`; b.setAttribute('aria-label', plain(T(W(n))));
     /*T*/if (TESTHOOK) b.dataset.ok = n === ok;/*/T*/ box.appendChild(b); return b; });
   let answered = false;
   AUTO({ kind: 'num', ok: () => btns.find(b => +b.dataset.k === ok).click(), wrong: () => (btns.find(b => +b.dataset.k !== ok) || btns[0]).click() });
   const p = gate(new Promise(res => btns.forEach(b => b.onclick = () => { if (box.dataset.done) return; box.dataset.done = 1; answered = true; AUTO_CLEAR(); hush(); SFX.tick(); res(+b.dataset.k); })));
-  if (opt.read !== false) readChoices(btns.map(b => ({ line: lineOf(numw(+b.dataset.k)), el: b })), { intro: opt.intro, host: box, noGap: true });   /* الأعداد خيارات: لا تحلّ محلّ السؤال، و«أعد الجملة» يعيد السؤال ثم الأعداد */
+  if (opt.read !== false) readChoices(btns.map(b => ({ line: lineOf(W(+b.dataset.k)), el: b })), { intro: opt.intro, host: box, noGap: true });   /* الأعداد خيارات: لا تحلّ محلّ السؤال، و«أعد الجملة» يعيد السؤال ثم الأعداد */
   return { box, btns, p };
 }
 /* خيارات عددية حول الجواب: ثلاثة أعداد متجاورة غير سالبة، مخلوطة */
