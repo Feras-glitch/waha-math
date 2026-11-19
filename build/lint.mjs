@@ -40,6 +40,8 @@ export function stripComments(js) {
 }
 
 export function lint(content, js) {
+  /* خصائص رسوم LFIG (S2-U1) من الكود: اسم الرسم ← خصائصه */
+  let _m2fig = null; const M2FIG = () => { if (_m2fig) return _m2fig; _m2fig = {}; const blk = (js.match(/const LFIG = \{([\s\S]*?)\n\};/) || [])[1] || ''; for (const mm of blk.matchAll(/^\s{2}(\w+): \{ p: \{([^}]*)\}/gm)) _m2fig[mm[1]] = [...mm[2].matchAll(/(\w+): 1/g)].map(x => x[1]); return _m2fig; };
   const errors = [], warn = [];
   /* كلمةٌ آخرها «كَ» خارج الصيغتين (4ب7 العامة): في الجمل والتسميات، والكلمة كل ما بين غير الحروف العربية وحركاتها (الفحص المستقل E2: نجت «قَلَمَكَ…» وتسميةٌ «صَدِيقِكَ») */
   /* و«ـكِ» خارج الصيغتين صيغة البنت وحدها، والكاف الأخيرة بلا حركة في كلمة مشكولة لا يُعرف لمن هي (الفحص المستقل E1 (13): نجت «شِبْرِك» و«شِبْرِكِ») */
@@ -485,6 +487,19 @@ export function lint(content, js) {
     const walkP = (v, where) => { if (Array.isArray(v)) return v.forEach(x => walkP(x, where)); if (!v || typeof v !== 'object') return;
       if (v.unit && v.badTok != null) { const s = seqOf(v.unit, v.n); if (s[v.bad] === v.badTok) errors.push(`${where}: بند الخطأ ${JSON.stringify(v.unit)} بلا خطأ: badTok هو العنصر الأصلي`); else { s[v.bad] = v.badTok; const f = fixes(s); if (f.length !== 1 || f[0] !== v.bad) errors.push(`${where}: بند الخطأ ${s.join(' ')} يُصلحه غير الموضع ${v.bad}: ${f.join('، ')}`); } }
       if (v.t === 'patNext' && v.n < 2 * v.unit.length) errors.push(`${where}: «ما التالي؟» يُري ${v.n} من وحدة طولها ${v.unit.length}: أقل من وحدتين كاملتين`);
+      /* S2-U0 وS2-U1: حدود بنود المسطرة والخطوط (بوابة S2-U0 وS2-U1، نوفمبر 2026) */
+      if (v.t === 'figPick') { const P = M2FIG(), has = (v.pics || []).map(n => P[n] ? P[n].includes(v.ask) : null); if (has.includes(null)) errors.push(`${where}: figPick: رسم غير معروف في ${v.pics}`); else if (has.filter(Boolean).length !== 1) errors.push(`${where}: figPick «${v.q}»: الخاصيّة ${v.ask} لـ${has.filter(Boolean).length} من الرسوم (يجب واحد): ${v.pics}`); if (new Set(v.pics).size !== 3) errors.push(`${where}: figPick: الرسوم ليست ثلاثة مختلفة`); }
+      if (v.t === 'rulerRead') { const a = v.a || 0, f = v.brk || 0; if (!(a >= f && v.b > a && v.b <= Math.max(f + 10, v.b) && v.b - f <= 11 && v.b - a >= 1)) errors.push(`${where}: rulerRead: حدود غير صالحة (a=${a}، b=${v.b}، brk=${f})`); if (v.brk && a !== 0 && a < v.brk) errors.push(`${where}: rulerRead: الشيء يبدأ قبل بداية المسطرة المكسورة`); if (a && v.b === 2 * a) errors.push(`${where}: rulerRead: الفرق يساوي قراءة البداية (${a})، فلا يُميَّز خطأ قراءة البداية`); }
+      if (v.t === 'rulerMm') { if (!(v.cm >= 1 && v.cm <= 9 && v.mm >= 1 && v.mm <= 9)) errors.push(`${where}: rulerMm: cm وmm بين 1 و9`); if (v.ask === 'near' && v.mm === 5) errors.push(`${where}: rulerMm: التقريب عند 5 ملم لم يُدرَّس`); if (v.ask === 'mm' && v.mm === v.cm) errors.push(`${where}: rulerMm: عدد المليمترات يساوي عدد السنتيمترات، فلا يُميَّز الخطأ`); }
+      if (v.t === 'drawLen') { if (!(v.cm >= 1 && v.cm * 10 + (v.mm || 0) <= 100 && (v.mm || 0) <= 9)) errors.push(`${where}: drawLen: الطول خارج المسطرة`); }
+      if (v.t === 'midMark') { if (!((v.a || 0) + v.len <= 10 && v.len >= 2)) errors.push(`${where}: midMark: القطعة خارج المسطرة أو أقصر من 2`); }
+      if (v.t === 'halfLen' && (v.len % 2 || v.len < 4 || v.len > 10)) errors.push(`${where}: halfLen: الطول زوجي بين 4 و10`);
+      if (v.t === 'stringRead' && !(v.span >= 2 && v.span < v.len && v.len <= 10)) errors.push(`${where}: stringRead: الامتداد أقصر من الخيط، والخيط حتى 10`);
+      if (v.t === 'gridPoint' || v.t === 'gridRead') { if (!(v.r >= 1 && v.r <= 7 && v.u >= 1 && v.u <= 5)) errors.push(`${where}: ${v.t}: الموقع خارج الشبكة (7 × 5)`); if (v.r === v.u) errors.push(`${where}: ${v.t}: اليمين يساوي الأعلى (${v.r})، فلا يُميَّز خطأ التبديل`); }
+      if (v.t === 'tickMatch') { const same = Object.keys(v.ticks || {}).filter(k => k !== v.ref && v.ticks[k] === v.ticks[v.ref]); if (same.length !== 1) errors.push(`${where}: tickMatch: ${same.length} قطعة بعدد شرطات ${v.ref} (يجب واحدة)`); }
+      if (v.t === 'rayStar' && v.ord && [...v.ord].sort().join('') !== '012') errors.push(`${where}: rayStar: ord ليس ترتيباً للنجوم الثلاث`);
+      if (v.t === 'pathShort' && ![0, 1, 2].includes(v.st)) errors.push(`${where}: pathShort: st بين 0 و2`);
+      if (v.t === 'midJudge' && !(v.l >= 2 && v.r >= 2 && v.l + v.r <= 10)) errors.push(`${where}: midJudge: الجزآن بين 2 و8 ومجموعهما حتى 10`);
       if (v.t === 'gridMirror') { const left = v.cells[0][1] <= 1, key = L => L.map(([r, c]) => r * 8 + c).sort((a, b) => a - b).join(','); if (!v.cells.every(([r, c]) => r >= 0 && r <= 3 && c >= 0 && c <= 3 && (c <= 1) === left)) errors.push(`${where}: نصف الشبكة المعطى على جانبي الخط`);
         if (key(v.cells.map(([r, c]) => [r, 3 - c])) === key(v.cells.map(([r, c]) => [r, left ? c + 2 : c - 2]))) errors.push(`${where}: نصف الشبكة ${JSON.stringify(v.cells)} نسخُه كعكسه: لا يكشف خطأ النسخ بالاتجاه نفسه (S1-U6)`); }
       if (v.t === 'patIs') for (const r of v.rows) if (r.seq && [1, 2, 3, 4].some(p => per(r.seq, p))) errors.push(`${where}: صفّ «ليس نمطاً» ${r.seq.join(' ')} له دورة`);
@@ -1109,8 +1124,9 @@ export function lint(content, js) {
         if (ok.length === 1 && bad.length) R.push({ where: where + ' «' + v.q + '»', long: ok[0] > Math.max(...bad), short: ok[0] < Math.min(...bad) }); }
       for (const [k, x] of Object.entries(v)) if (k !== 'twin' && x && typeof x === 'object') grab(x, L, where); };
     for (const L of Object.values(lessons)) { const M = L.mastery || {}; grab([M.concepts || {}, M.mixed || {}], L, L.id + ' الإتقان'); grab(L.review || [], L, L.id + ' المراجعة'); grab(L.test || {}, L, L.id + ' الاختبار'); }
-    const cap = Math.ceil(R.length / 3);
-    for (const [k, w] of [['long', 'أطول'], ['short', 'أقصر']]) { const H = R.filter(r => r[k]); if (H.length > cap) errors.push(`بنود التعليل في التقييم: الصحيح ${w} البطاقات وحده في ${H.length} من ${R.length} (الحدّ ${cap})، فيُعرف بطوله: ${H.map(r => r.where).join('، ')}`); } }
+    /* والحدّ لكل مرحلة وحدها (م1، م2…): بنود مرحلة جديدة لا توسّع حدّ مرحلة سابقة (بوابة S2-U0 وS2-U1: بنود م2 رفعت الحدّ فنجت طفرة A-13) */
+    for (const st of [...new Set(R.map(r => r.where.split('.')[0]))]) { const RS = R.filter(r => r.where.split('.')[0] === st), cap = Math.ceil(RS.length / 3);
+      for (const [k, w] of [['long', 'أطول'], ['short', 'أقصر']]) { const H = RS.filter(r => r[k]); if (H.length > cap) errors.push(`بنود التعليل في التقييم (${st}): الصحيح ${w} البطاقات وحده في ${H.length} من ${RS.length} (الحدّ ${cap})، فيُعرف بطوله: ${H.map(r => r.where).join('، ')}`); } } }
   // 4ج4) المربع والمستطيل بالركن (مراجعة الخصم M-05: «أربعة أضلاع متساوية» وحدها تعريف المعيّن، و«كل ضلعين متقابلين متساويان» وحدها تعريف متوازي الأضلاع):
   //      من درس «ركن» (m1.u1.d3) فصاعداً، كل جملة تصف بهما شكلاً (لا سؤال) فيها الركن. ودرسا d1 وd2 قبل الركن، فيصفان بالحوافّ والرؤوس
   { const pre = new Set(['m1.u1.d1', 'm1.u1.d2']), nk = t => String(t || '').replace(/[\u064B-\u0652\u0670]/g, '');

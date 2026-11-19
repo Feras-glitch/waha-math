@@ -195,7 +195,7 @@ d4={"id":"m2.u0.d4","title":"وَرْشَةُ القِيَاسِ","icon":["stone
   {"s":"hook","scene":"stoneHook","placed":0,"lines":["hook.01","hook.02"]},
   {"s":"explore","scene":"lines","mat":MAT(),"lines":["rv.01","rv.02","rv.03"]},
   {"s":"game","scene":"items","mode":"practice","stage":"game","intro":"gm.intro","items":[
-    tw(rr(8,'gm.1','leaf'),rr(4,'gm.1','key')), tw(al(7,thing='nail',q='gm.2'),al(4,thing='leaf',q='gm.2')), tw({"t":"rulerRead","q":"gm.3","b":8,"a":4,"thing":"crayon"},{"t":"rulerRead","q":"gm.3","b":10,"a":7,"thing":"pencil"})]},
+    tw(rr(8,'gm.1','leaf'),rr(4,'gm.1','key')), tw(al(7,thing='nail',q='gm.2'),al(4,thing='leaf',q='gm.2')), tw({"t":"rulerRead","q":"gm.3","b":9,"a":4,"thing":"crayon"},{"t":"rulerRead","q":"gm.3","b":10,"a":7,"thing":"pencil"})]},
   {"s":"practice"},{"s":"test"},{"s":"wrap"}],
  "practice":{"intro":"pr.intro",
   "normal":[tw(dict(rm(4,3,'mm','leaf'),q='pr.1'),dict(rm(6,7,'mm','nail'),q='pr.1')), tw(dict(rm(2,2,'near','key'),q='pr.2'),dict(rm(8,3,'near','leaf'),q='pr.2')), tw(dl(4),dl(7))],
