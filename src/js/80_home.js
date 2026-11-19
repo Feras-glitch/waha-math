@@ -37,6 +37,11 @@ function stopIconInner(L) { const s = el('svg', { viewBox: '0 0 72 56' }); const
     plyfam: () => { polyAt(s, 'qKite', [24, 32], { s: .3, dots: false, fill: '#cfe6f5' }); polyAt(s, 'qTrap', [50, 34], { s: .2, dots: false, fill: '#f2d38a' }); },
     plyhex: () => { polyAt(s, 'r6', [36, 32], { s: .32, dots: false, fill: '#f2b84b' }); },
     plycut: () => { polyAt(s, 'cRect', [36, 32], { s: .36, dots: false, fill: '#f2d38a' }); geoLine(s, 18, 43, 54, 21, { color: PLY.cut, w: 2, dash: '4 3' }); },
+    /* S2-U6 */
+    lentape: () => { tapeAt(s, { x: 14, y: 22, to: 20, pxcm: 2.4, label: 10 }); },
+    lenconv: () => { const t = el('text', { x: 36, y: 38, 'text-anchor': 'middle', 'font-size': 15, 'font-weight': 800, fill: '#33454c', direction: 'ltr' }, s); t.textContent = '1m=100'; },
+    lencalc: () => { el('rect', { x: 12, y: 10, width: 48, height: 40, rx: 6, fill: '#fffdf6', stroke: '#9fb4c0', 'stroke-width': 2 }, s); const t = el('text', { x: 36, y: 36, 'text-anchor': 'middle', 'font-size': 18, 'font-weight': 800, fill: '#33454c' }, s); t.textContent = '+'; },
+    lencity: () => { for (const [x, h] of [[18, 26], [32, 38], [48, 20]]) el('rect', { x: x - 6, y: 52 - h, width: 12, height: h, fill: '#f2d38a', stroke: '#b9794e', 'stroke-width': 1.5 }, s); geoLine(s, 8, 56, 64, 56, { color: '#c8392d', w: 2.2 }); },
     /* S2-U5 */
     axmir: () => { polyAt(s, 'tIsoA2', [36, 32], { s: .3, dots: false, fill: '#cfe6f5' }); geoLine(s, 36, 6, 36, 58, { color: AXC.line, w: 2.2, dash: '4 3' }); },
     axcount: () => { polyAt(s, 'qSq', [36, 32], { s: .34, dots: false, fill: '#f2d38a' }); for (const [x1, y1, x2, y2] of [[36, 8, 36, 56], [12, 32, 60, 32], [14, 10, 58, 54], [58, 10, 14, 54]]) geoLine(s, x1, y1, x2, y2, { color: AXC.line, w: 1.8, dash: '3 3' }); },

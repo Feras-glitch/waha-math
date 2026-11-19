@@ -283,7 +283,9 @@ const diagsOf = n => { const D = []; for (let i = 0; i < n; i++) for (let j = i 
 ITEM.diagCount = { ...numItem,
   make(spec) { const n = POLYS[spec.k].p.length, w = diagsOf(n).length; return { ...spec, want: w, nums: nearNums(w, 12, 0), tag: 'diag-count' }; },
   async ask(item, mode, tries) { const svg = plyStage(), R = plyDraw(svg, item, { C: [180, 118] });
-    if (tries >= 3) { await S('gen.poly.together.diagN'); const m = helpG(svg); for (const [i, [a, b]] of diagsOf(R.n).entries()) { geoLine(m, R.P[a][0], R.P[a][1], R.P[b][0], R.P[b][1], { color: css('--think'), w: 2.6 }); badge(m, (R.P[a][0] + R.P[b][0]) / 2 + (i % 2 ? 10 : -10), (R.P[a][1] + R.P[b][1]) / 2, i + 1, css('--think')); SFX.tick(); await S(numw(i + 1), { noGap: true, num: true }); } }
+    if (tries >= 3) { await S('gen.poly.together.diagN'); const m = helpG(svg), D = diagsOf(R.n), C0 = R.cen; let tot = 0;   /* رأساً رأساً: الأقطار الجديدة من كل رأس، وشارة عند الرأس بالمجموع حتى الآن (Gate S2-U4: شارات منتصفات الأقطار تتراكب في المركز) */
+      for (let v = 0; v < R.n; v++) { const mine = D.filter(([a]) => a === v); if (!mine.length) continue; for (const [a, b] of mine) geoLine(m, R.P[a][0], R.P[a][1], R.P[b][0], R.P[b][1], { color: css('--think'), w: 2.6 }); tot += mine.length;
+        const p = R.P[v], dx = p[0] - C0[0], dy = p[1] - C0[1], d = Math.hypot(dx, dy) || 1; badge(m, p[0] + dx / d * 24, p[1] + dy / d * 24, tot, css('--think')); SFX.tick(); await S(numw(tot), { noGap: true, num: true }); } }
     else await S(item.q);
     const np = numberPick(item.nums, item.want); return { ans: await np.p, ctx: { svg, R } }; },
   judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'diagCount' }; },

@@ -4,12 +4,12 @@
    لا صواب ولا خطأ: القياس تمّ خارج الشاشة. والمحفوظ في PROG.home[الوحدة] = { at، items: [{ est، cm، mm }]، cup، again: { cm، mm } }، ويُعرض في لوحة الكبار.
    ===================================================================== */
 /* عدّاد بزرّين (− و+) تحت المسرح: spec = [{ key، min، max، val، unit: تسمية الوحدة }]. يعيد القيم عند «تمّ» */
-function stepperAsk(spec) { const box = document.createElement('div'); box.className = 'choices steppers'; $('#stage').appendChild(box); const V = {}; let touched = false;   /* الأعداد بأرقام المسطرة؛ وtouched: هل غيّر الطفل شيئاً قبل «تمّ» */
+function stepperAsk(spec, o = {}) { const box = document.createElement('div'); box.className = 'choices steppers' + (spec.length > 2 ? ' many' : ''); $('#stage').appendChild(box); const V = {}, shows = []; let touched = false;   /* o.auto: { ok، wrong } قيمٌ يضعها سائق الفحص قبل «تمّ»؛ وstep: مقدار الزيادة (1) */   /* الأعداد بأرقام المسطرة؛ وtouched: هل غيّر الطفل شيئاً قبل «تمّ» */
   for (const s of spec) { V[s.key] = s.val; const w = document.createElement('div'); w.className = 'stp'; const mk = (d, lab) => { const b = document.createElement('button'); b.className = 'pick stpb'; b.textContent = d < 0 ? '−' : '+'; b.setAttribute('aria-label', plain(labelText(lab)) + ' ' + plain(labelText(s.unit)));
-      b.onclick = () => { touched = true; V[s.key] = Math.max(s.min, Math.min(s.max, V[s.key] + d)); show(); SFX.tick(); }; return b; };
-    const out = document.createElement('span'); out.className = 'stpv'; out.setAttribute('aria-live', 'polite'); const show = () => { out.innerHTML = `<b dir="ltr">${V[s.key]}</b><small>${esc(G(labelText(s.unit)))}</small>`; out.dataset.v = V[s.key]; };
-    w.appendChild(mk(-1, 'stepLess')); w.appendChild(out); w.appendChild(mk(1, 'stepMore'));   /* الأقلّ يساراً والأكثر يميناً، كاتجاه طريق الأعداد والمسطرة */ box.appendChild(w); show(); }
-  const d = doneBtn(); let fin = false; AUTO({ kind: 'homeNum', ok: () => d.b.click(), wrong: () => d.b.click() });
+      b.onclick = () => { touched = true; V[s.key] = Math.max(s.min, Math.min(s.max, V[s.key] + d * (s.step || 1))); show(); SFX.tick(); }; return b; };
+    const out = document.createElement('span'); out.className = 'stpv'; out.setAttribute('aria-live', 'polite'); const show = () => { out.innerHTML = `<b dir="ltr">${V[s.key]}</b><small>${esc(G(labelText(s.unit)))}</small>`; out.dataset.v = V[s.key]; if (o.onChange) o.onChange(V); };
+    w.appendChild(mk(-1, 'stepLess')); w.appendChild(out); w.appendChild(mk(1, 'stepMore')); shows.push([s.key, show]);   /* الأقلّ يساراً والأكثر يميناً، كاتجاه طريق الأعداد والمسطرة */ box.appendChild(w); show(); }
+  const d = doneBtn(); let fin = false; const put = vals => { if (vals) { Object.assign(V, vals); touched = true; shows.forEach(([, f]) => f()); } }; AUTO({ kind: o.kind || 'homeNum', ok: () => { put(o.auto && o.auto.ok); d.b.click(); }, wrong: () => { put(o.auto && o.auto.wrong); d.b.click(); } });
   return gate(new Promise(res => d.b.onclick = () => { if (fin) return; fin = true; AUTO_CLEAR(); hush(); box.remove(); d.bar.remove(); res({ ...V, touched }); })); }
 /* شريطا التقدير والقياس على مسطرة 0–30 */
 function homeBars(svg, it) { const k = 10, x0 = 30, g = el('g', {}, svg), R = rulerAt(g, { x: x0, y: 150, pxcm: k, from: 0, to: 30, mm: false, lead: 6 });
@@ -59,6 +59,8 @@ SCENES.homeSeg = async c => { const unit = c.unit, H = PROG.home = isObj(PROG.ho
 function homeArt(svg, art) { const g = el('g', { 'pointer-events': 'none' }, svg);
   if (art === 'clock') { el('circle', { cx: 180, cy: 112, r: 80, fill: '#fffdf6', stroke: GEO.ink, 'stroke-width': 4 }, g); for (let k = 0; k < 12; k++) { const a = k * Math.PI / 6; geoLine(g, 180 + Math.cos(a) * 68, 112 + Math.sin(a) * 68, 180 + Math.cos(a) * (k % 3 ? 62 : 56), 112 + Math.sin(a) * (k % 3 ? 62 : 56), { color: GEO.ink, w: k % 3 ? 2 : 3.5 }); } }
   else if (art === 'corner') { el('rect', { x: 70, y: 40, width: 220, height: 150, rx: 6, fill: '#efe6d6', stroke: css('--line'), 'stroke-width': 2 }, g); for (let x = 70; x <= 290; x += 44) geoLine(g, x, 40, x, 190, { color: '#c9b79c', w: 2 }); paperCornerAt(g, [70, 190], 0, 60); }
+  else if (art === 'fold') { el('rect', { x: 110, y: 46, width: 140, height: 140, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 2.5 }, g); geoLine(g, 180, 40, 180, 192, { color: '#c8392d', w: 3, dash: '8 6' }); geoLine(g, 104, 116, 256, 116, { color: '#c8392d', w: 3, dash: '8 6' }); }   /* S2-U6: مهمة المحاور */
+  else if (art === 'tile') { el('rect', { x: 120, y: 56, width: 120, height: 120, fill: '#e6d3b3', stroke: '#b9794e', 'stroke-width': 3 }, g); el('rect', { x: 150, y: 86, width: 60, height: 60, transform: 'rotate(45 180 116)', fill: '#3d7cc0', opacity: .7 }, g); }
   else if (art === 'window') { el('rect', { x: 110, y: 36, width: 140, height: 152, rx: 4, fill: '#dff0fb', stroke: '#8a6a4a', 'stroke-width': 6 }, g); geoLine(g, 180, 36, 180, 188, { color: '#8a6a4a', w: 5 }); geoLine(g, 110, 112, 250, 112, { color: '#8a6a4a', w: 5 }); }   /* S2-U5: نافذة الغرفة */
   else if (art === 'shapes') { [['tScaR', 100, 110, .6], ['cRect', 250, 110, .7]].forEach(([k, x, y, s]) => polyAt(g, k, [x, y], { s, dots: false, fill: '#f2d38a' })); }
   return g; }
@@ -70,6 +72,8 @@ const HOME_SAY = {
   parAgain: async (r, v) => S(r.n && Math.abs(v.d3 - r.n.d1) <= 1 ? 'gen.home.par3Eq' : 'gen.home.par3Ne'),
   clock: async (r, v) => { const svg = newStage(230, { oasis: false, ground: 0 }); homeArt(svg, 'clock'); const sm = homeClock(svg, v.hour); await S(sm === 90 ? 'gen.home.clockRight' : 'gen.home.clockNot'); if (sm !== 90) { const s2 = newStage(230, { oasis: false, ground: 0 }); homeArt(s2, 'clock'); homeClock(s2, 3); await S('gen.home.clockThree'); } },
   cut: async (r, v) => S(v.shapes >= 3 ? 'gen.home.cutMany' : 'gen.home.cutFew'),   /* S2-U4: أشكال من مثلثين */
+  axes: async () => S('gen.home.axesSay'),   /* S2-U5 */
+  tileAgain: async (r, v) => S(v.tile === 4 ? 'gen.home.tileOk' : 'gen.home.tileNo'),
   winAgain: async (r, v) => S(v.sides === v.verts ? 'gen.home.winEq' : 'gen.home.winNe'),
   clockAgain: async (r, v) => { const svg = newStage(230, { oasis: false, ground: 0 }); homeArt(svg, 'clock'); homeClock(svg, 6); await S(v.kind === 2 ? 'gen.home.sixOk' : 'gen.home.sixNo'); await S(v.q === 1 ? 'gen.home.quarterOk' : 'gen.home.quarterNo'); },
 };

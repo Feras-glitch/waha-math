@@ -87,16 +87,19 @@ ITEM.axisCount = {
   praise: () => 'praiseCount', twin(item) { return item.twin || null; },
 };
 
+/* مقياس عدّاد المحاور: أقرب موضعين للمس (رأس ومنتصف ضلع) بينهما 58 على الأقل (هدف لمس كامل)، ما دام الشكل يسع الإطار */
+function axHuntScale(item) { const S0 = axShape({ ...item, s: 1 }), P = S0.P, n = P.length, Q = [...P, ...P.map((p, i) => axMid(p, P[(i + 1) % n]))]; let md = 1e9; for (let i = 0; i < Q.length; i++) for (let j = i + 1; j < Q.length; j++) md = Math.min(md, Math.hypot(Q[i][0] - Q[j][0], Q[i][1] - Q[j][1]));
+  const mx = Math.max(...P.map(p => Math.abs(p[0]))), my = Math.max(...P.map(p => Math.abs(p[1]))); return Math.max(1, Math.min(58 / md, 146 / mx, 100 / my)); }
 /* ================= ③ عدّاد المحاور (C173، إنتاج): يلمس الطفل موضعين على حافة الشكل (رأسين أو منتصفي ضلعين) فيُطوى عليهما؛
    المحور يبقى بنجمة، وغيره يُمحى. «تمّ» حين يظنّ أنه وجدها كلها، ثم يُعدّ ما وُجد ================= */
 ITEM.axisHunt = {
   make(spec) { const Sh = axShape(spec); /*T*/if (TESTHOOK && (!Sh.P || !Sh.axes.length)) testBug('axisHunt: شكل بلا محاور أو بلا رؤوس');/*/T*/ return { ...spec, want: Sh.axes.length, tag: 'axis-hunt' }; },
-  async ask(item, mode, tries) { const svg = axStage(262), Sh = axShape(item), C = AX_C, n = Sh.P.length, spots = [...Sh.P.map((p, i) => ({ id: i, p })), ...Sh.P.map((p, i) => ({ id: 'm' + i, p: axMid(p, Sh.P[(i + 1) % n]) }))];
+  async ask(item, mode, tries) { const svg = axStage(262), C = AX_C, sc = axHuntScale(item), Sh = axShape({ ...item, s: sc }), n = Sh.P.length, spots = [...Sh.P.map((p, i) => ({ id: i, p })), ...Sh.P.map((p, i) => ({ id: 'm' + i, p: axMid(p, Sh.P[(i + 1) % n]) }))];
     const base = el('polygon', { points: polyStr(Sh.P.map(p => [p[0] + C[0], p[1] + C[1]])), fill: PLY.fill, stroke: PLY.edge, 'stroke-width': 4, 'stroke-linejoin': 'round' }, svg);
     const found = [], kept = el('g', { 'pointer-events': 'none' }, svg), stars = el('g', { 'pointer-events': 'none' }, svg); let first = null, busy = false, done = false;
     if (tries >= 3) axLinesAt(svg, Sh, C, { dim: true, color: AXC.guide });   /* الحلّ المشترك: المحاور كلها باهتة، وعلى الطفل أن يطويها */
     const dots = spots.map(s => { const g = el('g', { role: 'button', tabindex: 0, 'aria-label': plain(G(labelText(typeof s.id === 'number' ? 'plyVertex' : 'axMidSide'))), 'data-spot': s.id, style: 'cursor:pointer' }, svg), x = s.p[0] + C[0], y = s.p[1] + C[1];
-      el('circle', { cx: x, cy: y, r: 22, fill: '#fff', opacity: .01 }, g); el('circle', { cx: x, cy: y, r: typeof s.id === 'number' ? 7 : 6, fill: typeof s.id === 'number' ? PLY.edge : '#fff', stroke: PLY.edge, 'stroke-width': 2.5, class: 'dot' }, g); s.g = g; s.x = x; s.y = y; return s; });
+      el('circle', { cx: x, cy: y, r: 28, fill: '#fff', opacity: .01 }, g); el('circle', { cx: x, cy: y, r: typeof s.id === 'number' ? 7 : 6, fill: typeof s.id === 'number' ? PLY.edge : '#fff', stroke: PLY.edge, 'stroke-width': 2.5, class: 'dot' }, g); s.g = g; s.x = x; s.y = y; return s; });
     const sameAx = (a, b) => Math.abs(a - b) < .6 || Math.abs(Math.abs(a - b) - 180) < .6;
     const pickSpot = async s => { if (busy || done) return; if (!first) { first = s; s.g.querySelector('.dot').setAttribute('fill', AXC.line); SFX.tick(); return; } if (first === s) { first.g.querySelector('.dot').setAttribute('fill', typeof s.id === 'number' ? PLY.edge : '#fff'); first = null; return; }
       busy = true; const A = first, B = s; first = null; A.g.querySelector('.dot').setAttribute('fill', typeof A.id === 'number' ? PLY.edge : '#fff');
@@ -303,13 +306,13 @@ ITEM.worldPick = {
   praise: () => 'praiseSym', twin(item) { return item.twin || null; },
 };
 
-/* ================= ⑪ صمّم بمحاور (C177، إنتاج): شبكة 5×5 يلوّن الطفل خاناتها؛ need: أقلّ عدد للمحاور (المحاور الممكنة أربعة: رأسي وأفقي وقطران) ================= */
-const DSG = { n: 5, c: 48, x0: 60, y0: 16 };   /* خانة 48 بكسلاً: هدف لمس كامل */
+/* ================= ⑪ صمّم بمحاور (C177، إنتاج): شبكة 4×4 يلوّن الطفل خاناتها؛ need: أقلّ عدد للمحاور (المحاور الممكنة أربعة: رأسي وأفقي وقطران) ================= */
+const DSG = { n: 4, c: 66, x0: 48, y0: 14 };   /* شبكة 4×4 وخانة 66: هدف لمس كامل على كل شاشة */
 const dsgAxes = on => { const n = DSG.n, has = f => on.size > 0 && [...on].every(k => { const [r, c] = k.split(',').map(Number), [r2, c2] = f(r, c); return on.has(r2 + ',' + c2); });
   return [['v', (r, c) => [r, n - 1 - c]], ['h', (r, c) => [n - 1 - r, c]], ['d', (r, c) => [c, r]], ['e', (r, c) => [n - 1 - c, n - 1 - r]]].filter(([, f]) => has(f)).map(([k]) => k); };
 ITEM.designSym = {
   make(spec) { return { ...spec, want: spec.need, tag: 'design-sym-' + spec.need }; },
-  async ask(item, mode, tries) { const svg = newStage(272, { oasis: false, ground: 0 }), { n, c, x0, y0 } = DSG, on = new Set(), cells = {};
+  async ask(item, mode, tries) { const svg = newStage(292, { oasis: false, ground: 0 }), { n, c, x0, y0 } = DSG, on = new Set(), cells = {};
     el('rect', { x: x0 - 8, y: y0 - 8, width: n * c + 16, height: n * c + 16, rx: 10, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg);
     const axG = el('g', { 'pointer-events': 'none' }, svg), mid = x0 + n * c / 2, midY = y0 + n * c / 2;
     const guides = { v: [mid, y0 - 4, mid, y0 + n * c + 4], h: [x0 - 4, midY, x0 + n * c + 4, midY], d: [x0, y0, x0 + n * c, y0 + n * c], e: [x0 + n * c, y0, x0, y0 + n * c] };
@@ -318,7 +321,7 @@ ITEM.designSym = {
     for (let r = 0; r < n; r++) for (let q = 0; q < n; q++) { const k = r + ',' + q, g = el('g', { role: 'button', tabindex: 0, 'aria-label': `${DG(r + 1)}، ${DG(q + 1)}`, 'data-cell': k, style: 'cursor:pointer' }, svg), b = el('rect', { x: x0 + q * c + 1, y: y0 + r * c + 1, width: c - 2, height: c - 2, rx: 4, fill: '#fff', stroke: '#d5e2ea', 'stroke-width': 1.5 }, g);
       const tog = () => { if (on.has(k)) { on.delete(k); b.setAttribute('fill', '#fff'); } else { on.add(k); b.setAttribute('fill', '#3d7cc0'); } SFX.tick(); show(); }; g.onclick = tog; g.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); tog(); } }; cells[k] = { g, tog }; }
     for (const k of item.start || []) { cells[k].tog(); cells[k].g.onclick = null; cells[k].g.onkeydown = null; cells[k].g.removeAttribute('role'); cells[k].g.querySelector('rect').setAttribute('fill', '#2a5f94'); }   /* خانات البداية (start): مُلوَّنة ثابتة يكمل الطفل حولها */
-    /*T*/window.__dsgCell = k => { const m = svg.getScreenCTM(), [r, q] = k.split(',').map(Number), x = x0 + q * c + c / 2, y = y0 + r * c + c / 2; return { x: m.a * x + m.e, y: m.d * y + m.f }; }; window.__dsgWant = (item.need >= 2 ? ['1,1', '1,3', '3,1', '3,3', '2,2'] : (item.start || []).length ? ['1,3', '2,3'] : ['0,1', '0,3', '2,2']).filter(k => !(item.start || []).includes(k));/*/T*/
+    /*T*/window.__dsgCell = k => { const m = svg.getScreenCTM(), [r, q] = k.split(',').map(Number), x = x0 + q * c + c / 2, y = y0 + r * c + c / 2; return { x: m.a * x + m.e, y: m.d * y + m.f }; }; window.__dsgWant = (item.need >= 2 ? ['0,0', '0,3', '3,0', '3,3', '1,1', '1,2', '2,1', '2,2'] : (item.start || []).length ? ['1,2', '2,2'] : ['0,1', '0,2', '2,1', '2,2']).filter(k => !(item.start || []).includes(k));/*/T*/
     await S(tries >= 3 ? 'gen.ax.together.dsg' : item.q);
     AUTO({ kind: 'dsg', ok: () => { for (const k of window.__dsgWant || ['2,2']) if (!on.has(k)) cells[k].tog(); rulDoneBtn().click(); }, wrong: () => { if (!on.has('0,1')) cells['0,1'].tog(); rulDoneBtn().click(); } });
     await rulDone(() => { for (const k in cells) { cells[k].g.onclick = null; cells[k].g.onkeydown = null; cells[k].g.removeAttribute('role'); } });

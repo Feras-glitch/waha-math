@@ -42,7 +42,9 @@ LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6
            'm2.u1.d1', 'm2.u1.d2', 'm2.u1.d3', 'm2.u1.d4', 'm2.u1.d5', 'm2.u1.d6', 'm2.u1.d7',
            'm2.u2.d1', 'm2.u2.d2', 'm2.u2.d3', 'm2.u2.d4', 'm2.u2.d5',
            'm2.u3.d1', 'm2.u3.d2', 'm2.u3.d3', 'm2.u3.d4', 'm2.u3.d5', 'm2.u3.d6', 'm2.u3.d7', 'm2.u3.d8',
-           'm2.u4.d1', 'm2.u4.d2', 'm2.u4.d3', 'm2.u4.d4', 'm2.u4.d5', 'm2.u4.d6', 'm2.u4.d7', 'm2.u4.d8']
+           'm2.u4.d1', 'm2.u4.d2', 'm2.u4.d3', 'm2.u4.d4', 'm2.u4.d5', 'm2.u4.d6', 'm2.u4.d7', 'm2.u4.d8',
+           'm2.u5.d1', 'm2.u5.d2', 'm2.u5.d3', 'm2.u5.d4', 'm2.u5.d5',
+           'm2.u6.d1', 'm2.u6.d2', 'm2.u6.d3', 'm2.u6.d4', 'm2.u6.d5']
 if os.environ.get('ONLY'): LESSONS = [l for l in LESSONS if l in os.environ['ONLY'].split(',')]   # تشغيل جزئي أثناء التطوير
 # ما خرج من نافذة الشريط (القطار، الطريق) مخفيّ لا يُلمس: يُلمس زرّ التحريك نحوه حتى يظهر
 REVEAL = """(sel) => { const g = document.querySelector(sel); if (!g || getComputedStyle(g).visibility !== 'hidden') return null;
@@ -181,6 +183,41 @@ async def run(p, dev):
           else:
             for q in await pg.evaluate('() => window.__blot()'): await tap(q['x'], q['y']); await pg.wait_for_timeout(60)
           xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
+        if k in ('lenOrder', 'fence', 'track'):   # S2-U6: لمسات حقيقية على بطاقات الأطوال بالترتيب، وقطع السور، وزرّي كل مقطع في المضمار
+          await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1; DONE = "() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
+          if k == 'lenOrder':
+            for i in await pg.evaluate('() => window.__ordWant'): q = await pg.evaluate('(i) => window.__ordAt(i)', i); await tap(q['x'], q['y']); await pg.wait_for_timeout(90)
+            await pg.wait_for_timeout(60); continue
+          if k == 'fence':
+            for i in await pg.evaluate('() => window.__fenceWant'): q = await pg.evaluate('(i) => window.__fenceAt(i)', i); await tap(q['x'], q['y']); await pg.wait_for_timeout(90)
+            want = await pg.evaluate('() => window.__auto && window.__item ? window.__item.goal : null')
+            if want is not None and await pg.evaluate('() => window.__fenceSum') != want: tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  fence sum miss', st['scene'])
+          else:
+            cur = await pg.evaluate('() => window.__track'); goal = [400, 300, 200, 100] if len(cur) == 4 else [500, 300, 200]
+            for i, (c, g2) in enumerate(zip(cur, goal)):
+              d = 50 if g2 > c else -50
+              for _ in range(abs(g2 - c) // 50):
+                q = await pg.evaluate("(s) => { const e = document.querySelector('#stage svg [data-step=\"' + s + '\"] circle'); const r = e.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }", '%d:%d' % (i, d)); await tap(q['x'], q['y']); await pg.wait_for_timeout(70)
+            if await pg.evaluate('() => window.__track') != goal: tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  track miss', st['scene'])
+          xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
+        if k in ('axPts', 'axHunt', 'dsg'):   # S2-U5: لمسات حقيقية على تقاطعات الشبكة (الصورة)، وعلى طرفي كل محور (عدّاد المحاور)، وعلى خانات التصميم
+          await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1; DONE = "() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
+          if k == 'axPts':
+            want = await pg.evaluate('() => window.__axWant')
+            for r, u in want: q = await pg.evaluate('([r, u]) => window.__axAt(r, u)', [r, u]); await tap(q['x'], q['y']); await pg.wait_for_timeout(120)
+            if await pg.evaluate('() => window.__axPlaced') != len(want): tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  image points miss', st['scene'])
+            await pg.wait_for_timeout(60); continue
+          if k == 'axHunt':
+            want = await pg.evaluate('() => window.__axHuntWant')
+            for pair in want:
+              for sid in pair:
+                spots = await pg.evaluate('() => window.__axSpots()'); sp = next(x for x in spots if x['id'] == sid); await tap(sp['x'], sp['y']); await pg.wait_for_timeout(120)
+              await pg.wait_for_timeout(700)
+            if await pg.evaluate('() => window.__axFound') != len(want): tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  axis hunt miss', st['scene'])
+          else:
+            for kk in await pg.evaluate('() => window.__dsgWant'): q = await pg.evaluate('(k) => window.__dsgCell(k)', kk); await tap(q['x'], q['y']); await pg.wait_for_timeout(80)
+            if not set(await pg.evaluate('() => window.__dsgWant')) <= set(await pg.evaluate('() => window.__dsgOn') or []): tried['ax-miss'] = tried.get('ax-miss', 0) + 1; print('  design cells miss', st['scene'])
+          xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
         if k in ('rulAlign', 'rulDraw', 'gridPt', 'midMark', 'paraDraw', 'perpTurn', 'angMatch', 'angDraw', 'polyDraw', 'plyTilt'):   # S2-U0: سحب حقيقي للمسطرة حتى الصفر، ولمسة حقيقية عند طول الخط المطلوب؛ ثم «تمّ»
           await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1; DONE = "() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
           if k == 'rulAlign':
@@ -309,7 +346,7 @@ async def main():
       bad, tried, errs = await run(p, dev); allbad += bad
       print(dev, ('mouse' if MOUSE else 'touch'), 'waits tried:', tried, '| incomplete:', bad, '| errors:', errs[:3])
       allbad += [('errors', dev)] if errs else []
-      allbad += [('grid-miss', dev)] if tried.get('grid-miss') or tried.get('mir-miss') or tried.get('rul-miss') else []   # شبكة المئة: اللمسة الحقيقية في مركز البلاطة تختارها هي (D275)
+      allbad += [('grid-miss', dev)] if tried.get('grid-miss') or tried.get('mir-miss') or tried.get('rul-miss') or tried.get('ax-miss') else []   # شبكة المئة: اللمسة الحقيقية في مركز البلاطة تختارها هي (D275)
   print('FAILS:', len(allbad))
   sys.exit(1 if allbad else 0)
 asyncio.run(main())

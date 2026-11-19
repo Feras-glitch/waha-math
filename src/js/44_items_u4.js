@@ -52,6 +52,10 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
     if (P.measure) for (let i = 0; i < R.n; i++) sideLabel(g, R, i); if (P.angles) for (let i = 0; i < R.n; i++) vertLabel(g, R, i); }
   else if (P.kind === 'axis') { rayFrame(g); const Sh = axShape({ k: P.k, sym: P.sym, rot: P.rot || 0 }), L = axLineOf(Sh, P);   /* S2-U5: شكل وخطّ عليه، ومطويّاً إن طُلب (fold) */
     const F = axFoldAt(g, { k: P.k, sym: P.sym, rot: P.rot || 0 }, [180, 118], L, { S: Sh }); if (P.fold) F.flat(); if (P.axes) axLinesAt(g, Sh, [180, 118], { r: 96 }); }
+  else if (P.kind === 'tape') { rayFrame(g); ITEM.tapeRead.draw({ len: P.len, thing: P.thing || 'table' }, g); }   /* S2-U6 */
+  else if (P.kind === 'thing') { rayFrame(g); lenThing(g, P.thing, 180, 112, 1.3); }
+  else if (P.kind === 'conv') { rayFrame(g); convEq(g, { v: P.v, to: P.to }, 112); }
+  else if (P.kind === 'calc') { const T = calcTable(g, { a: P.a, b: P.b, op: P.op }, 20); if (P.res) { T.r1.textContent = String(P.res[0]); T.r2.textContent = String(P.res[1]); } }
   else if (P.kind === 'axgrid') { const Gd = axGrid(g, P.ax || 'v', P.a ?? 5, { c: 24, cols: 10, rows: 6, x0: 60, y0: 176 }); axFigAt(g, Gd, P.pts, P.segs); if (P.img) axFigAt(g, Gd, P.img, P.segs, { color: AXC.img }); }
   else if (P.kind === 'rose') { roseAt(g, [180, 128], 80); if (P.face) faceArrow(g, [180, 128], P.face); }
   else if (P.kind === 'clocks') { rayFrame(g); [[262, 118], [98, 118]].forEach((C, i) => { el('circle', { cx: C[0], cy: C[1], r: 66, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 3 }, g); angHandAt(g, C, 54).set(90); if (i) el('path', { d: angArc(C, 30, 0, 0, true), fill: 'none', stroke: ANG.arc, 'stroke-width': 4 }, g); }); }
