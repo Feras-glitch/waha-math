@@ -97,6 +97,8 @@ function showHome() {
       + `<span>${esc(G(labelText('reviewToday')))}<small>${esc(G(labelText('reviewSub')))}</small></span>${ST_ICON.star()}`;
     rb.onclick = () => { SFX.tick(); runReview(); }; path.appendChild(rb); }
   UNITS.forEach((U, ui) => { const uOpen = unitOpen(ui);
+    /* لافتة المرحلة قبل أول أحيائها (من م2 فصاعداً): الخريطة واحدة، والمراحل أقسامها */
+    if (ui && stageOf(U.id) !== stageOf(UNITS[ui - 1].id) && LABELS.ui['stage.' + stageOf(U.id)]) { const sh = document.createElement('div'); sh.className = 'stagehead'; sh.textContent = G(labelText('stage.' + stageOf(U.id))); path.appendChild(sh); }
     const head = document.createElement('div'); head.className = 'unithead' + (uOpen ? '' : ' locked');
     head.innerHTML = `<span class="hosts">${hostsSVG(U.id)}</span><span class="ut">${esc(U.title)}<small>${esc(U.district || U.sub)}${uOpen ? '' : ' · ' + esc(labelText('unitLocked'))}</small></span>${PROG['badge:' + U.id] ? `<svg class="ub" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 14 q9 -8 18 0 q-9 8 -18 0z" fill="url(#waterG)"/></svg>` : uOpen ? '' : ST_ICON.lock(css('--muted'))}`;
     path.appendChild(head);

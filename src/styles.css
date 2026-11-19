@@ -89,6 +89,7 @@ svg [tabindex]:focus:not(:focus-visible) { outline: none; }   /* المتصفح 
 .chaosbody { pointer-events: none; }   /* فوضى زينة لا هدف: لا تأخذ لمسة شيء تحتها (D255) */
 .unithead { display: flex; align-items: center; gap: 10px; margin: 8px 4px 0; font-size: 19px; font-weight: 800; }
 .unithead .ut { flex: 1; }
+.stagehead { margin: 26px 4px 4px; padding: 10px 14px; border-radius: 16px; background: var(--compass); color: #fff; font-family: var(--fd); font-size: 20px; font-weight: 800; text-align: center; box-shadow: 0 4px 0 var(--line); }   /* لافتة المرحلة (م2) */
 .unithead small { display: block; font-size: 13px; color: var(--muted); font-weight: 700; }
 .soon { display: flex; align-items: center; justify-content: center; gap: 10px; margin: 14px 4px 4px; padding: 12px; border: 2px dashed var(--line); border-radius: 22px; color: var(--muted); font-family: var(--fd); font-size: 18px; font-weight: 800; }
 .soon svg { width: 56px; height: 32px; }
