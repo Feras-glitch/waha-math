@@ -38,6 +38,7 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
   else if (P.kind === 'span') spanTables(g, P.a, P.b);
   else if (P.kind === 'sym') { const F = symFoldAt(g, P.sym, 180, 100, 1.5, P.ang ?? 90); if (P.folded) F.flat(); }   /* S1-U6 */
   else if (P.kind === 'ruler') rulerReasonPic(g, P);   /* S2-U0 */
+  else if (P.kind === 'geoname') ITEM.geoName.draw(ITEM.geoName.make({ kind: P.gk, pts: P.pts, from: P.from, to: P.to }), g);
   else if (P.kind === 'midj') ITEM.midJudge.draw({ l: P.l, r: P.r }, g);
   else if (P.kind === 'segfig') segFigAt(g, P.fig, { ticks: P.ticks });
   else if (P.kind === 'roads') roads3At(g, P.st, P.v || 0);

@@ -342,3 +342,69 @@ SCENES.foldStrip = async c => { const svg = newStage(232, { oasis: false, ground
 SCENES.recallTicks = async c => { const svg = newStage(232, { oasis: false, ground: 0 }); segFigAt(svg, c.fig || 'rectF', { ticks: c.ticks || { ab: 1, jd: 1, bj: 2, da: 2 } }); await sleep(300); await S(c.lines); };
 SCENES.recallMid = async c => { const svg = newStage(232, { oasis: false, ground: 0 }); ITEM.midJudge.draw({ l: c.l || 4, r: c.r || 4 }, svg); await sleep(300); await S(c.lines); };
 WRAP_ART.restStop = svg => { const g = el('g', {}, svg); el('rect', { x: 60, y: 70, width: 240, height: 110, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, g); geoObj(g, 'seg', [90, 130], [270, 130], { w: 5, color: GEO.road }); el('circle', { cx: 180, cy: 130, r: 12, fill: css('--chaos'), stroke: '#fff', 'stroke-width': 3 }, g); el('path', { d: 'M168 118 L180 102 L192 118 Z', fill: css('--compass') }, g); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
+
+/* =====================================================================
+   الدرس 5: الشعاع وتسميته المرتّبة (C110): البداية أولاً
+   ===================================================================== */
+const RAYPTS = { h: { a: [90, 150], b: [230, 150] }, up: { a: [100, 180], b: [220, 100] }, dn: { a: [110, 70], b: [230, 150] }, hj: { j: [100, 120], d: [250, 120] }, upj: { j: [260, 180], d: [150, 90] }, dnj: { j: [250, 70], d: [130, 150] } };
+const rayEdge = (P, Q) => { const dx = Q[0] - P[0], dy = Q[1] - P[1]; let t = 1e9; for (const [v, d, lo, hi] of [[P[0], dx, 30, 330], [P[1], dy, 26, 206]]) { if (d > 0) t = Math.min(t, (hi - v) / d); else if (d < 0) t = Math.min(t, (lo - v) / d); } return [P[0] + dx * t, P[1] + dy * t]; };
+function rayFrame(svg) { return el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: GEO.paper, stroke: css('--line'), 'stroke-width': 2 }, svg); }
+function rayLineAt(parent, P, Q, col) { const E = rayEdge(P, Q), g = el('g', { 'pointer-events': 'none' }, parent); geoLine(g, P[0], P[1], E[0], E[1], { color: col, w: 4 }); geoArrow(g, E[0], E[1], Math.atan2(Q[1] - P[1], Q[0] - P[0]) * 180 / Math.PI, col, 11); return g; }
+/* ================= ⑪ ارسم الشعاع (C110، إنتاج): pts مجموعة نقاط (RAYPTS)، want حرفان: البداية ثم النقطة التي يمرّ بها ================= */
+ITEM.rayDraw = {
+  make(spec) { return { ...spec, tag: 'ray-draw' }; },
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), PT = RAYPTS[item.pts], keys = Object.keys(PT); rayFrame(svg); let done = false;
+    const G = {}; for (const k of keys) { const g = el('g', {}, svg); ptAt(g, PT[k][0], PT[k][1], k, { r: 7, lab: [0, -16] }); G[k] = g; }
+    if (tries >= 3) { const m = helpG(svg), [x, y] = PT[item.want[0]]; el('circle', { cx: x, cy: y, r: 15, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5, 'stroke-dasharray': '4 3' }, m); }   /* الحلّ المشترك: نقطة البداية محاطة، واللمس للطفل */
+    const askQ = async () => { await S(tries >= 3 ? 'gen.geo.together.ray' : (item.q || 'gen.geo.rayQ'), { noGap: true }); for (const [i, k] of [...item.want].entries()) await sayLtr(k, i ? {} : { noGap: true }); }; askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
+    const t = k => ({ g: G[k], k, label: labelText('geoPoint') + ' ' + LTR[k] }), p1 = await tapOne(keys.map(t), { ok: item.want[0], pad: 64 }); hush(); el('circle', { cx: PT[p1][0], cy: PT[p1][1], r: 12, fill: 'none', stroke: css('--compass'), 'stroke-width': 3, 'pointer-events': 'none' }, svg); SFX.tick();
+    const p2 = await tapOne(keys.filter(k => k !== p1).map(t), { ok: item.want[1], pad: 64 }); done = true; REPLAY_HOOK = null; rayLineAt(svg, PT[p1], PT[p2], css('--compass')); return { ans: p1 + p2, ctx: { svg, PT } }; },
+  judge(item, a) { return a === item.want ? { ok: true } : { ok: false, err: a === item.want[1] + item.want[0] ? 'rayReversed' : 'rayWrong' }; },
+  onOk() { SFX.good(); }, onWrong() { SFX.soft(); },
+  async hint2(item, r) { const m = helpG(r.ctx.svg), [x, y] = r.ctx.PT[item.want[0]]; el('circle', { cx: x, cy: y, r: 15, fill: 'none', stroke: css('--think'), 'stroke-width': 2.5 }, m); await sleep(1400); m.remove(); }, async together() {},
+  async reveal(item, r) { rayLineAt(r.ctx.svg, r.ctx.PT[item.want[0]], r.ctx.PT[item.want[1]], GEO.hl); await S('gen.geo.reveal.rayDraw'); },
+  praise: () => 'praiseThink', twin(item) { return item.twin || null; },
+};
+/* ================= ⑫ ما اسم هذا الرسم؟ (C107، C110، C111): kind seg | ray | line، pts، from وto (بترتيب الرسم). الخيارات ثلاث بطاقات مكتوبة ================= */
+ITEM.geoName = {
+  make(spec) { const a = spec.from, b = spec.to, opts = spec.kind === 'ray' ? [['ray', a + b, true], ['ray', b + a], ['seg', a + b]] : spec.kind === 'line' ? [['line', a + b, true], ['ray', a + b], ['seg', a + b]] : [['seg', a + b, true], ['ray', a + b], ['line', a + b]]; return { ...spec, opts, tag: 'geo-name-' + spec.kind }; },
+  draw(item, svg) { const PT = RAYPTS[item.pts], P = PT[item.from], Q = PT[item.to]; rayFrame(svg); if (item.kind === 'ray') rayLineAt(svg, P, Q, GEO.ink); else if (item.kind === 'line') { rayLineAt(svg, P, Q, GEO.ink); rayLineAt(svg, Q, P, GEO.ink); } else geoLine(svg, P[0], P[1], Q[0], Q[1], { w: 4 }); for (const k of [item.from, item.to]) ptAt(svg, PT[k][0], PT[k][1], k, { r: 7, lab: [0, -16] }); },
+  async ask(item) { const svg = newStage(232, { oasis: false, ground: 0 }); this.draw(item, svg); await S(item.q); const cp = cardPick(item.opts.map(([k, nm, ok], i) => ({ id: `gen.nm.${k}.${nm}`, k: 'o' + i, ok: !!ok })), { intro: item.q }), c = await cp.p; cp.done(); return { ans: c.ok ? 'ok' : c.k, ctx: { svg, cp, c } }; },
+  judge(item, a) { return a === 'ok' ? { ok: true } : { ok: false, err: item.kind === 'ray' && a === 'o1' ? 'rayReversed' : 'segRayLine' }; },
+  onOk(item, r) { SFX.good(); r.ctx.cp.btns.find(b => b.dataset.k === r.ctx.c.k).classList.add('ok'); }, onWrong(item, r) { SFX.soft(); r.ctx.cp.btns.find(b => b.dataset.k === r.ctx.c.k).classList.add('no'); },
+  mark(item, r) { const b = r.ctx.cp.btns.find(x => x.dataset.k === 'o0'); if (b) b.classList.add('ok'); },
+  async hint2(item) { await S(item.kind === 'ray' ? 'gen.geo.hint.rayName' : 'gen.geo.hint.name'); }, async together() {},
+  async reveal(item, r) { this.mark(item, r); await S(`gen.nm.${item.opts[0][0]}.${item.opts[0][1]}`); },
+  praise: () => 'praiseThink', twin(item) { return item.twin || null; },
+};
+/* ================= ⑬ أيّ نجمة يضيئها الشعاع؟ (C110): ang اتجاه الشعاع بالدرجات. نجمة على امتداده، ونجمة خلف بدايته، ونجمة خارج خطّه ================= */
+function rayStarGeo(ang) { const a = ang * Math.PI / 180, u = [Math.cos(a), -Math.sin(a)], n = [-u[1], u[0]], C = [180, 116], A = [C[0] - u[0] * 60, C[1] - u[1] * 60], B = [A[0] + u[0] * 62, A[1] + u[1] * 62];
+  return { A, B, S: [[A[0] + u[0] * 150, A[1] + u[1] * 150], [A[0] - u[0] * 52, A[1] - u[1] * 52], [A[0] + u[0] * 96 + n[0] * 58, A[1] + u[1] * 96 + n[1] * 58]] }; }
+const starPath = (x, y, r) => { let d = ''; for (let i = 0; i < 10; i++) { const a = -Math.PI / 2 + i * Math.PI / 5, rr = i % 2 ? r * .45 : r; d += (i ? 'L' : 'M') + (x + rr * Math.cos(a)).toFixed(1) + ' ' + (y + rr * Math.sin(a)).toFixed(1); } return d + 'Z'; };
+ITEM.rayStar = {
+  make(spec) { const ord = spec.ord || [0, 1, 2]; return { ...spec, ord, want: ord.indexOf(0), tag: 'ray-star' }; },
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), Gm = rayStarGeo(item.ang); el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#22324a', stroke: css('--line'), 'stroke-width': 2 }, svg);
+    const St = item.ord.map((si, i) => { const [x, y] = Gm.S[si], g = el('g', {}, svg); el('path', { d: starPath(x, y, 15), fill: '#8f9bb0', stroke: '#fff', 'stroke-width': 1.5 }, g); return g; });
+    const tor = el('g', { 'pointer-events': 'none' }, svg); el('circle', { cx: Gm.A[0], cy: Gm.A[1], r: 9, fill: '#f6d24a', stroke: '#fff', 'stroke-width': 2 }, tor); ptAt(tor, Gm.A[0], Gm.A[1], 'a', { r: 3, color: '#fff', lab: [0, -16] }); ptAt(tor, Gm.B[0], Gm.B[1], 'b', { r: 4.5, color: '#fff', lab: [0, -14] });
+    if (tries >= 3) geoLine(helpG(svg), Gm.A[0], Gm.A[1], Gm.B[0], Gm.B[1], { color: '#f6d24a', w: 4 });   /* الحلّ المشترك: أول الشعاع مرسوم من أ إلى ب، والامتداد للطفل */
+    say(...lineOf(tries >= 3 ? 'gen.geo.together.star' : item.q), { free: true });
+    const k = await tapOne(St.map((g, i) => ({ g, k: i, label: labelText('geoStar') + ' ' + DG(i + 1) })), { ok: item.want, pad: 64 }); hush(); const beam = rayLineAt(svg, Gm.A, Gm.B, '#f6d24a'); svg.insertBefore(beam, St[0]); return { ans: k, ctx: { svg, St, Gm } }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: item.ord[k] === 1 ? 'rayBehind' : 'rayOffLine' }; },
+  lit(r, i) { r.ctx.St[i].firstChild.setAttribute('fill', '#f6d24a'); },
+  onOk(item, r) { SFX.good(); this.lit(r, r.ans); }, onWrong() { SFX.soft(); }, async hint2(item, r) { await sleep(1200); }, async together() {},
+  async reveal(item, r) { this.lit(r, item.want); await S('gen.geo.reveal.star'); },
+  praise: () => 'praiseThink', twin(item) { return item.twin || null; },
+};
+/* ---------- مشاهد الدرس 5 ---------- */
+/* المصباح: غرفة معتمة ومصباح عند أ؛ يلمسه الطفل فيخرج الضوء ويمتدّ حتى حافة المسرح وما بعدها. lines: [الدعوة، بعد] */
+SCENES.torchHook = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2] = c.lines, A = [70, 150], B = [170, 110]; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#22324a', stroke: css('--line'), 'stroke-width': 2 }, svg);
+  const tor = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg); el('rect', { x: A[0] - 34, y: A[1] - 2, width: 34, height: 18, rx: 5, fill: '#c9cfd6', transform: `rotate(-22 ${A[0]} ${A[1]})` }, tor); el('circle', { cx: A[0], cy: A[1], r: 11, fill: '#f6d24a', stroke: '#fff', 'stroke-width': 2 }, tor);
+  await answerWhile(l1, () => tapOne([{ g: tor, k: 't', label: labelText('geoTorch') }], { ok: 't', pad: 64, pulse: true })); const E = rayEdge(A, B), beam = geoLine(svg, A[0], A[1], A[0], A[1], { color: '#f6d24a', w: 6 }); svg.insertBefore(beam, tor);
+  await symTween(900, t => { beam.setAttribute('x2', A[0] + (E[0] - A[0]) * t); beam.setAttribute('y2', A[1] + (E[1] - A[1]) * t); }); geoArrow(svg, E[0], E[1], Math.atan2(B[1] - A[1], B[0] - A[0]) * 180 / Math.PI, '#f6d24a', 12); SFX.good(); logAttempt({ scene: 'hook', tag: 'torch', ok: true }); await S(l2); };
+/* ترتيب التسمية: يلمس الطفل أ ثم ب فيُرسم الشعاع أ ب، ثم ب ثم أ فيُرسم الشعاع ب أ بلون آخر. lines: [دعوة الأول، بعد الأول، دعوة الثاني، ختام] */
+SCENES.rayOrderShow = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2, l3, l4] = c.lines, PT = { a: [130, 130], b: [230, 100] }; rayFrame(svg); const G = {};
+  for (const k of ['a', 'b']) { const g = el('g', {}, svg); ptAt(g, PT[k][0], PT[k][1], k, { r: 7, lab: [0, -16] }); G[k] = g; }
+  const two = async (k1, k2, col, line) => { S(line, { free: true }); await tapOne([{ g: G[k1], k: k1, label: labelText('geoPoint') + ' ' + LTR[k1] }], { ok: k1, pad: 64, pulse: true }); hush(); SFX.tick(); await sayLtr(k1, { noGap: true }); await tapOne([{ g: G[k2], k: k2, label: labelText('geoPoint') + ' ' + LTR[k2] }], { ok: k2, pad: 64, pulse: true }); SFX.tick(); await sayLtr(k2); const r = rayLineAt(svg, PT[k1], PT[k2], col); svg.insertBefore(r, G.a); return r; };
+  const r1 = await two('a', 'b', css('--compass'), l1); await S(l2); r1.setAttribute('opacity', .35); await two('b', 'a', css('--chaos'), l3); r1.setAttribute('opacity', 1); logAttempt({ scene: c.s || 'explore', tag: 'rayOrder', ok: true }); await S(l4); };
+SCENES.recallRay = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), it = ITEM.geoName.make({ kind: c.kind || 'ray', pts: c.pts || 'up', from: c.from || 'a', to: c.to || 'b' }); ITEM.geoName.draw(it, svg); await sleep(300); await S(c.lines); };
+WRAP_ART.torchRay = svg => { const g = el('g', {}, svg); el('rect', { x: 60, y: 60, width: 240, height: 130, rx: 14, fill: '#22324a' }, g); rayLineAt(g, [90, 160], [170, 130], '#f6d24a'); el('circle', { cx: 90, cy: 160, r: 9, fill: '#f6d24a', stroke: '#fff', 'stroke-width': 2 }, g); el('path', { d: starPath(250, 96, 10), fill: '#f6d24a' }, g); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
