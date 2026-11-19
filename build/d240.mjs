@@ -10,7 +10,8 @@
 // وفوق ذلك (D240 «لكل مفهوم بند تعرّف وبند إنتاج أو تعليل»): لكل مفهوم يتقنه التطبيق بند إنتاج أو تعليل واحد على الأقل، ولكل مفهوم
 // «تأسيس» في الدرس فحص إتقان (إلا «المدخل»)، ولكل درس اختيار حقيقي للطفل (D239).
 
-const PROD = new Set(['rulerAlign', 'drawLen', 'gridPoint', 'midMark', 'rayDraw', 'paraDraw', 'perpTurn', 'angleMatch', 'angleDraw', 'polyFix', 'diagDraw', 'polyDraw',   /* S2-U4: يغلق الشكل ويقوّم ضلعه، ويرسم القطر، ويرسم المضلع على الشبكة */   /* S2-U3: يفتح الباب بانفتاح الزاوية، ويرسم الزاوية بالمنقلة */   /* S2-U2: يرسم الموازي ويدير المعامد */   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
+const PROD = new Set(['axisHunt', 'ptImage', 'axisFind', 'designSym',   /* S2-U5: يجد المحاور بالطيّ، ويرسم الصورة، ويجد المحور، ويصمّم بمحاور */
+  'rulerAlign', 'drawLen', 'gridPoint', 'midMark', 'rayDraw', 'paraDraw', 'perpTurn', 'angleMatch', 'angleDraw', 'polyFix', 'diagDraw', 'polyDraw',   /* S2-U4: يغلق الشكل ويقوّم ضلعه، ويرسم القطر، ويرسم المضلع على الشبكة */   /* S2-U3: يفتح الباب بانفتاح الزاوية، ويرسم الزاوية بالمنقلة */   /* S2-U2: يرسم الموازي ويدير المعامد */   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
   'reason', 'connect', 'completeRect', 'vertices', 'count', 'produce', 'fill', 'trace', 'buildTower', 'splitMake', 'buildTo', 'faceTap',
   'split', 'join', 'remove', 'eqPair', 'unknownStart', 'fact', 'story',
   'place', 'lineTap', 'lrTap', 'robot', 'mapPut', 'roadHop',   /* S1-U3: يضع الطفل الشيء، ويلمس العربة، ويلمس اليد، ويبرمج الروبوت، ويضع قطعة الخريطة، ويقفز */
@@ -225,6 +226,20 @@ export const factOf = it => { const t = it.t;
   if (t === 'partsCount') return `parts|${it.k}|${JSON.stringify(it.cuts)}`;
   if (t === 'polyDraw') return `pdrawn|${it.n}`;
   if (t === 'polyMino') return `mino|${it.n}`;
+  /* S2-U5: الشكل ودورانه والخطّ، والشبكة بمحورها ونقاطها */
+  if (t === 'axisIs') return `axis|${it.k || it.sym}|${it.rot || 0}|${it.thru ? it.thru.join('-') : it.ang ?? 90}`;
+  if (t === 'axisCount') return `axn|${it.k || it.sym}|${it.rot || 0}`;
+  if (t === 'axisHunt') return `axn|${it.k}|${it.rot || 0}`;
+  if (t === 'ptImage') return `img|${it.ax}|${JSON.stringify(it.a)}|${JSON.stringify(it.pts)}`;
+  if (t === 'axisFind') return `axf|${it.p.join(',')}|${it.p2.join(',')}`;
+  if (t === 'imageCheck') return `imgc|${JSON.stringify(it.pts)}|${[...it.wrong].sort().join(',')}`;
+  if (t === 'imageError') return `imgerr|${it.ax}|${JSON.stringify(it.pts)}|${it.bad}`;
+  if (t === 'trapLegs') return `trleg|${it.k}|${it.rot || 0}`;
+  if (t === 'axisRiddle') return `axrd|${it.n}|${[...it.figs].sort().join(',')}`;
+  if (t === 'worldPick') return `world|${it.ask || 'yes'}|${[...it.pics].sort().join(',')}`;
+  if (t === 'designSym') return `dsg|${it.need}|${(it.start || []).join(';')}`;
+  if (t === 'reason' && it.pic && it.pic.kind === 'axis') return `axpic|${it.pic.k || it.pic.sym}|${it.pic.rot || 0}`;
+  if (t === 'reason' && it.pic && it.pic.kind === 'axgrid') return `axgpic|${JSON.stringify(it.pic.pts)}`;
   if (t === 'reason' && it.pic && it.pic.kind === 'poly') return `polypic|${it.pic.k}|${it.pic.rot || 0}`;
   if (t === 'reason' && it.pic && it.pic.kind === 'angle') return `angpic|${it.pic.deg}|${it.pic.rot || 0}`;
   if (t === 'reason' && it.pic && it.pic.kind === 'prot') return `protpic|${it.pic.deg}|${it.pic.side || 'r'}`;
@@ -342,6 +357,13 @@ export function d240(lessons, code, MAKERS) {
     polyNames: s => (s.keys || ['r5', 'r6', 'r8']).flatMap(k => [`pname|${k}|0`, `plycnt|${k}|0`]), regularShow: s => (s.keys || ['qSq', 'qRect', 'qRhom']).map(k => `reg|${k}|0`),
     concaveShow: s => [`concv|${s.k || 'c5'}|0`], trominoes: () => ['mino|3'], composeShow: s => (s.order || ['rect', 'para', 'kite']).map(f => `qname|${{ rect: 'cRect', para: 'cPara', kite: 'cKite', tri: 'cTri' }[f]}|0`),
     polyCity: () => ['qSq', 'qRect2', 'r6', 'r8', 'qKite'].flatMap(k => [`pname|${k}|0`, `reg|${k}|0`]),
+    /* S2-U5 */
+    lakeHook: () => [], mirrorDist: s => [`img|v|5|${JSON.stringify([s.p || [2, 3]])}`], pinFold: s => [`axis|${s.k || 'qRect'}|0|90`], axPerpShow: s => [`img|v|5|${JSON.stringify([s.p || [2, 2]])}`],
+    checkWays: s => [`axis|${s.k || 'tIsoA'}|0|90`, `axn|${s.k || 'tIsoA'}|0`], trapIntro: s => (s.keys || ['qTrap', 'qTrap2']).map(k => `trleg|${k}|0`),
+    foldTable: s => (s.keys || ['tEq', 'tIsoA', 'tScaA']).map(k => `axn|${k}|0`), regularAxes: s => (s.keys || ['tEq', 'qSq', 'r5', 'r6']).map(k => `axn|${k}|0`), slantAxes: s => (s.figs || [['qSq', 30], ['qRhom', 20]]).map(([k, r]) => `axn|${k}|${r}`),
+    axGridWorked: s => [`img|${s.ax || 'v'}|${JSON.stringify(s.a ?? 5)}|${JSON.stringify(s.pts)}`], turnPaper: s => [`img|d|[3,1]|${JSON.stringify(s.pts || [[2, 3], [1, 4]])}`],
+    worldTour: s => (s.pics || ['butterfly', 'starfish', 'star8']).map(k => `axn|${k}|0`), nearLeaf: () => ['axn|leaf|0'], letterStyles: s => (s.pairs || [['kufiBa', 'handBa']]).flatMap(p => p.map(k => `axn|${k}|0`)),
+    recallAxis: s => [`axis|${s.k || 'tIsoA'}|${s.rot || 0}|${s.ang ?? 90}`], recallImg: s => [`img|${s.ax || 'v'}|${JSON.stringify(s.a ?? 5)}|${JSON.stringify(s.pts || [[2, 3]])}`], recallCount: s => [`axn|${s.k || 'qRect'}|${s.rot || 0}`], recallWorld: s => [`axn|${s.pic || 'butterfly'}|0`],
     recallPoly: s => [`pname|${s.k || 'r5'}|${s.rot || 0}`, `qname|${s.k || 'r5'}|${s.rot || 0}`, `plycnt|${s.k || 'r5'}|${s.rot || 0}`, ...(s.measure || s.angles ? [`reg|${s.k || 'r5'}|${s.rot || 0}`] : [])],
     angleCity: () => ['prot|110|l', 'prot|70|r', 'prot|40|r', 'prot|90|r', 'prot|140|l', 'angk|110|0', 'angk|70|0', 'angk|40|0', 'angk|90|0', 'angk|140|0'], sidesShow: () => ['side|rectF|par|ab', 'side|rectF|par|jd', 'side|rectF|perp|ab', 'side|rectF|perp|bj'], streetMap: () => ['pdraw|2|h|1', 'pturn|0|45', 'shore|120'],
     shelvesWalk: s => Array.from({ length: Math.max(0, s.n - 1) }, (_, i) => `part|${s.n}|${s2(i + 1, s.n - i - 1)}`),
@@ -406,6 +428,7 @@ export function d240(lessons, code, MAKERS) {
     'rhythmHook', 'patRead', 'patWorked', 'chaosPattern', 'recallPat', 'chaosGuess', 'patCircle', 'patSoundLab', 'chaosLoops', 'patHunt', 'skipBeads', 'skipWorked', 'chaosPairs', 'recallSkip', 'gridHook', 'gridGuide', 'gridWorked', 'chaosGrid', 'recallGrid', 'handsHook',
     'foldShow', 'foldLab', 'halfScene', 'chaosHalf', 'recallSym', 'foldWays', 'lineWorked', 'chaosFold', 'gridLab', 'doubleShow', 'doubleWorked', 'chaosWing', 'chaosDbl', 'paintFold', 'recallMir',
     'doorHook', 'sticksAngle', 'turnShow', 'nameShow', 'cornerCompare', 'doorStraight', 'degreeDisc', 'clockTwins', 'cakeSlice', 'protIntro', 'protSteps', 'angDrawShow', 'estimateShow', 'compassIntro', 'compassTurns', 'angleCity', 'recallAngle', 'recallKinds', 'recallProt', 'recallTurn', 'recallRose',   /* S2-U3 */
+    'lakeHook', 'mirrorDist', 'pinFold', 'axPerpShow', 'checkWays', 'trapIntro', 'foldTable', 'regularAxes', 'slantAxes', 'axGridWorked', 'turnPaper', 'worldTour', 'nearLeaf', 'letterStyles', 'recallAxis', 'recallImg', 'recallCount', 'recallWorld',   /* S2-U5 */
     'symShow', 'polyRules', 'polyParts', 'triMeasure', 'twoRight', 'adjOppShow', 'quadChecks', 'squareTilt', 'quadMaker', 'diagShow', 'famBuild', 'polyNames', 'regularShow', 'concaveShow', 'honeycomb', 'cutRect', 'composeShow', 'trominoes', 'polyCity', 'recallPoly', 'recallFam', 'homeNums',   /* S2-U4 */
     'crossHook', 'sticksLab', 'extendShow', 'distShow', 'cornerFold', 'perpShow', 'shoreShow', 'sidesShow', 'recallPair', 'recallShore', 'recallParaGrid', 'streetMap',   /* S2-U2 */
     'digitPairs', 'spanClash', 'tileRuler', 'mmZoom', 'rulerWorked', 'chaosRuler', 'recallRuler', 'recallTools', 'alignShow', 'mmRead', 'cardSteps', 'drawShow', 'stringShow', 'recallAlign', 'recallMm', 'recallDraw', 'recallString', 'homeMeasure',

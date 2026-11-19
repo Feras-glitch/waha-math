@@ -12,9 +12,25 @@ OUT = os.environ.get('OUT', os.path.join(HERE, 'out', 'auto')); os.makedirs(OUT,
 MODE = sys.argv[1] if len(sys.argv) > 1 else 'ok'; PATH = sys.argv[2] if len(sys.argv) > 2 else 'screen'; GENDER = sys.argv[3] if len(sys.argv) > 3 else 'f'
 MAXL = int(sys.argv[4]) if len(sys.argv) > 4 else 99; SEED = os.environ.get('SEED', '7'); SHOTS = os.environ.get('SHOTS', '1') == '1'
 URL = 'file://' + os.path.abspath(FILE) + '#fast&seed=' + SEED
+# أخطاء deepall وremedialdeep بالمحاولات: البند بخطوتين (نعم/لا ثم السبب، أو لمستان) محاولة واحدة، فيبلغ الكشف ثم التوأم (Gate S2-U4: كانت تُعدّ خطوات
+# السؤال، فيُصاب البند في محاولته الثالثة بلا كشف ويُحسب «بلا توأم»). tryN: [رقم البند، محاولته] من المحرّك؛ وبلا tryN (نسخة أقدم) تُعدّ الخطوات كما كانت
+def deep_n(v): return len(v[1]) if isinstance(v, list) else v
+def deep_wrong(deep, key, t):
+    if t is None: n = deep.get(key, 0); n = deep_n(n) if isinstance(n, list) else n
+    if t is None:
+        if n >= 4: return False
+        deep[key] = n + 1; return True
+    seq, tr = t; ent = deep.get(key)
+    if not isinstance(ent, list): ent = deep[key] = [seq, set()]
+    if ent[0] != seq:
+        if len(ent[1]) >= 4: return False
+        ent[0] = seq
+    if tr in ent[1]: return True
+    if len(ent[1]) < 4: ent[1].add(tr); return True
+    return False
 STATE = """() => { const q = s => document.querySelector(s); const vis = s => { const e = q(s); return !!e && !e.hidden; };
   const a = window.__auto; return { scene: window.__scene || '', home: vis('#home'), lesson: vis('#lesson'), covers: [...document.querySelectorAll('.cover')].filter(c => !c.hidden).map(c => c.id),
-    go: !!(q('#go') && !q('#go').disabled && !q('#go').classList.contains('idle')), auto: a ? { kind: a.kind, n: a.n, scene: a.scene } : null, mode: window.__itemMode || '', itype: window.__item ? window.__item.itype : '',
+    go: !!(q('#go') && !q('#go').disabled && !q('#go').classList.contains('idle')), auto: a ? { kind: a.kind, n: a.n, scene: a.scene } : null, mode: window.__itemMode || '', tryN: window.__itemTry || null, itype: window.__item ? window.__item.itype : '',
     say: q('#say') ? q('#say').textContent : '', crash: (q('#crashCover') && !q('#crashCover').hidden), q: window.__item ? String(window.__item.q || window.__item.story || (() => { try { return JSON.stringify(window.__item.spec); } catch (e) { return ''; } })()) : '',   /* هويّة البند: بلا q (قصة) بقصته أو ببياناته، فلا يتشارك بندان عدّاد deepall (بوابة S1-U4: بند القصة في التحدّي لم يبلغ كشفه ولا توأمه) */ twin: !!window.__itemTwin }; }"""
 SMALL = """() => { const out = []; for (const e of document.querySelectorAll('button, [role=button], input, svg g[style*="grab"], svg rect.route')) {   /* وما يُسحب: 64 (D250)؛ والمكدّس يُقاس بمنطقة توجيهه (route) */ const r = e.getBoundingClientRect(); if (!r.width || !r.height || e.closest('[hidden]') || e.dataset.routed) continue;
   if (getComputedStyle(e).visibility === 'hidden' || +getComputedStyle(e).opacity < .5) continue;   
@@ -212,9 +228,9 @@ async def main():
           if sc.endswith(':bag') or (a['kind'] == 'pick' and 'bag' in sc): how = 'bag'
           elif MODE == 'mixed' and st['mode'] in ('practice', 'explore') and st['itype'] and st['itype'] not in seen_types: seen_types.add(st['itype']); how = 'wrong'
           elif MODE == 'deep' and st['mode'] == 'practice' and st['itype'] and deep.get(st['itype'], 0) < 4: deep[st['itype']] = deep.get(st['itype'], 0) + 1; how = 'wrong'
-          elif MODE == 'deepall' and st['mode'] == 'practice' and st['itype'] and not st['twin'] and deep.get((tid, st['scene'], st['q'], a['kind']), 0) < 4: deep[(tid, st['scene'], st['q'], a['kind'])] = deep.get((tid, st['scene'], st['q'], a['kind']), 0) + 1; how = 'wrong'   # كل بند بمساعدة: الدرجات الأربع والكشف ثم التوأم (صحيحاً)
+          elif MODE == 'deepall' and st['mode'] == 'practice' and st['itype'] and not st['twin'] and deep_wrong(deep, (tid, st['scene'], st['q'], a['kind']), st.get('tryN')): how = 'wrong'   # كل بند بمساعدة: الدرجات الأربع والكشف ثم التوأم (صحيحاً)
           elif MODE == 'remedialdeep' and st['mode'] == 'mastery': how = 'wrong'   # الإتقان يخفق فيُشغَّل العلاج، وبنوده بالدرجات الأربع ثم التوأم
-          elif MODE == 'remedialdeep' and st['mode'] == 'remedial' and st['itype'] and not st['twin'] and deep.get((tid, st['scene'], st['q'], a['kind']), 0) < 4: deep[(tid, st['scene'], st['q'], a['kind'])] = deep.get((tid, st['scene'], st['q'], a['kind']), 0) + 1; how = 'wrong'
+          elif MODE == 'remedialdeep' and st['mode'] == 'remedial' and st['itype'] and not st['twin'] and deep_wrong(deep, (tid, st['scene'], st['q'], a['kind']), st.get('tryN')): how = 'wrong'
           elif MODE == 'failtest' and st['mode'] == 'test' and failed_test.setdefault(sc.split(':')[0], 0) < 3: failed_test[sc.split(':')[0]] += 1; how = 'wrong'
           elif MODE == 'failmastery' and st['mode'] == 'mastery': how = 'wrong'
           elif MODE == 'failreview' and st['mode'] == 'review':   # المبدأ 14: خطأ في بند ثم في البند الثاني ← إعادة الدرس (بالبنود لا بالانتظارات، فالبند ذو الخطوات الكثيرة خطأ واحد)
@@ -291,9 +307,10 @@ async def main():
     print('assessment misses:', len(bad)); [print(' ', *x) for x in bad[:40]]
     # التوأم (الفحص المستقل B، المبدأ 5): في deepall وremedialdeep لكل بند بلغ الكشف (أربعة أخطاء) توأمٌ يُحلّ من أول محاولة، في درسه
     want = {}
-    for key in {k[:3] for k, n in deep.items() if isinstance(k, tuple) and n >= 4}: want[key[0]] = want.get(key[0], 0) + 1   # البند بمرحلتين (لوّن ثم المس) يُعدّ مرة
+    for key in {k[:3] for k, n in deep.items() if isinstance(k, tuple) and deep_n(n) >= 4}: want[key[0]] = want.get(key[0], 0) + 1   # البند بمرحلتين (لوّن ثم المس) يُعدّ مرة
     missing = sum(max(0, n - tw_seen.get(t, 0)) for t, n in want.items()) if MODE in ('deepall', 'remedialdeep') else 0
     print('twins: %d twin items in %d lessons; items revealed: %d' % (sum(tw_seen.values()), len(tw_seen), sum(want.values())))
+    if os.environ.get('DEBUG_TW'): print('deep keys:', sorted([k for k, n in deep.items() if isinstance(k, tuple) and deep_n(n) >= 4]))
     print('twins missing:', missing); [print(' ', t, 'revealed', n, 'twins', tw_seen.get(t, 0)) for t, n in want.items() if n > tw_seen.get(t, 0)]
     clips = set(await pg.evaluate("() => window.__clips || []"))
     ids = set(json.load(open(os.path.join(HERE, '..', 'dist', 'script_m1.xlsx.ids.json'))))

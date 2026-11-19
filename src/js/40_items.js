@@ -33,10 +33,11 @@ async function runItem0(spec, mode, ctx) {
   const item = T.make(spec); item.itype = type; item.spec = spec;   // itype لا type: البند قد يكون شكلاً له type
   const help = mode === 'practice' || mode === 'explore' || mode === 'remedial';
   const scene = ctx.scene || mode; let tries = 0, together = false;
-  /*T*/window.__item = item; window.__itemMode = mode; window.__itemTwin = !!ctx.isTwin;/*/T*/
+  /*T*/window.__item = item; window.__itemMode = mode; window.__itemTwin = !!ctx.isTwin; window.__itemSeq = (window.__itemSeq || 0) + 1; const mySeq = window.__itemSeq;/*/T*/
   while (true) {
     /* المساعدة عند السكوت أو بالفانوس: «لاحظ جيداً» ثم ما يريه نوع البند، أو السؤال من جديد (الفحص المستقل B: كان «لاحظ جيداً» وحدها) */
     if (help) armIdle(async () => { await S(T.idleLine ? T.idleLine(item) : 'gen.hint.look', { aside: true }); if (T.idle) await T.idle(item); else replayLine(); }, { first: firstTime('item:' + type) });
+    /*T*/window.__itemTry = [mySeq, tries];/*/T*/   /* محاولة البند الجارية: سائق الفحص يعدّ الأخطاء بالمحاولات لا بخطوات السؤال (بندٌ بخطوتين «لا» ثم «لماذا» محاولة واحدة) */
     const t0 = Date.now(); NEUTRAL_ANS = mode === 'mastery' || mode === 'test'; let r; try { r = await T.ask(item, mode, tries); } finally { NEUTRAL_ANS = false; } disarmIdle();
     const j = T.judge(item, r.ans); tries += r.slip ? 2 : 1;   /* خطأٌ في خطوةٍ داخل البند أُصلح قبل الجواب (بناء القصة): محاولة، فلا يُحسب من أول محاولة */
     logAttempt({ scene, mode, type, tag: item.tag, ans: r.ans, ok: j.ok, firstTry: tries === 1, try: tries, err: j.ok ? null : (j.err || 'generic'), ms: Date.now() - t0, spec: specText(spec) });

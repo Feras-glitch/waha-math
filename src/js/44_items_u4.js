@@ -50,6 +50,9 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
   else if (P.kind === 'poly') { rayFrame(g); const R = polyAt(g, P.k, [180, 118], { rot: P.rot || 0, s: P.s || 1, marks: P.marks, names: P.names ? ['a', 'b', 'j', 'd', 'h', 'w'] : null, dots: P.dots });   /* S2-U4: شكل بعلاماته أو قياساته */
     if (P.seam) seamAt(g, R, P.seam, [180, 118], P.rot || 0, P.s || 1); for (const [a, b] of P.diag || []) geoLine(g, R.P[a][0], R.P[a][1], R.P[b][0], R.P[b][1], { color: CRS.b, w: 3, dash: '6 5' });
     if (P.measure) for (let i = 0; i < R.n; i++) sideLabel(g, R, i); if (P.angles) for (let i = 0; i < R.n; i++) vertLabel(g, R, i); }
+  else if (P.kind === 'axis') { rayFrame(g); const Sh = axShape({ k: P.k, sym: P.sym, rot: P.rot || 0 }), L = axLineOf(Sh, P);   /* S2-U5: شكل وخطّ عليه، ومطويّاً إن طُلب (fold) */
+    const F = axFoldAt(g, { k: P.k, sym: P.sym, rot: P.rot || 0 }, [180, 118], L, { S: Sh }); if (P.fold) F.flat(); if (P.axes) axLinesAt(g, Sh, [180, 118], { r: 96 }); }
+  else if (P.kind === 'axgrid') { const Gd = axGrid(g, P.ax || 'v', P.a ?? 5, { c: 24, cols: 10, rows: 6, x0: 60, y0: 176 }); axFigAt(g, Gd, P.pts, P.segs); if (P.img) axFigAt(g, Gd, P.img, P.segs, { color: AXC.img }); }
   else if (P.kind === 'rose') { roseAt(g, [180, 128], 80); if (P.face) faceArrow(g, [180, 128], P.face); }
   else if (P.kind === 'clocks') { rayFrame(g); [[262, 118], [98, 118]].forEach((C, i) => { el('circle', { cx: C[0], cy: C[1], r: 66, fill: '#fffdf6', stroke: css('--line'), 'stroke-width': 3 }, g); angHandAt(g, C, 54).set(90); if (i) el('path', { d: angArc(C, 30, 0, 0, true), fill: 'none', stroke: ANG.arc, 'stroke-width': 4 }, g); }); }
   else if (P.kind === 'twopts') { rayFrame(g); const PT = RAYPTS[P.pts]; for (const k of Object.keys(PT)) ptAt(g, PT[k][0], PT[k][1], k, { r: 7, lab: [0, -16] }); }   /* نقطتان بلا خط: السؤال عن المستقيمات المارّة بهما لا يُرى جوابه */
