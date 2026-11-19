@@ -152,7 +152,8 @@ WRAP_ART.rulerPath = svg => { const R = rulerAt(svg, { x: 60, y: 150, pxcm: 30, 
 /* زرّا التحريك الدقيق يمين المسرح ويساره (بلوحة المفاتيح وباللمس)، كزرّي المرآة في S1-U6. step(s): s = −1 يساراً، +1 يميناً */
 function rulNudges(svg, y, step, labels = ['rulLeft', 'rulRight']) { return [-1, 1].map(s => { const b = el('g', { role: 'button', tabindex: 0, 'aria-label': labelText(labels[s < 0 ? 0 : 1]), style: 'cursor:pointer' }, svg);
     el('circle', { cx: 180 + s * 140, cy: y, r: 36, fill: '#fffdf6', stroke: css('--compass'), 'stroke-width': 3 }, b); el('path', { d: `M${180 + s * 135} ${y - 10} l${s * 11} 10 l${-s * 11} 10`, fill: 'none', stroke: css('--compass'), 'stroke-width': 4, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, b);
-    const go = e => { if (e) e.stopPropagation(); step(s); SFX.tick(); }; b.onclick = go; b.onpointerdown = e => e.stopPropagation(); b.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); go(); } }; return b; }); }
+    const go = (e, k = 1) => { if (e) e.stopPropagation(); for (let i = 0; i < k; i++) step(s); SFX.tick(); }; b.onclick = e => go(e); b.onpointerdown = e => e.stopPropagation();
+    b.onkeydown = e => { if (isActKey(e)) { e.preventDefault(); go(); } else if (e.key === 'ArrowUp' || e.key === 'PageUp') { e.preventDefault(); go(null, 10); } }; return b; }); }   /* بلوحة المفاتيح: مفتاح الفعل خطوة، والسهم الأعلى عشر خطوات (سنتيمتر في الرسم) فلا يحتاج الرسم إلى عشرات الضغطات */
 async function rulDone(clean) { const d = doneBtn(); let fin = false; await gate(new Promise(res => d.b.onclick = () => { if (fin) return; fin = true; AUTO_CLEAR(); hush(); clean(); d.bar.remove(); res(); })); }
 const rulDoneBtn = () => document.querySelector('#stage .pick.done');
 

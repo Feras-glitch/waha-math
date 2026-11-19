@@ -41,7 +41,8 @@ export function stripComments(js) {
 
 export function lint(content, js) {
   /* خصائص رسوم LFIG (S2-U1) من الكود: اسم الرسم ← خصائصه */
-  let _m2fig = null; const M2FIG = () => { if (_m2fig) return _m2fig; _m2fig = {}; const blk = (js.match(/const LFIG = \{([\s\S]*?)\n\};/) || [])[1] || ''; for (const mm of blk.matchAll(/^\s{2}(\w+): \{ p: \{([^}]*)\}/gm)) _m2fig[mm[1]] = [...mm[2].matchAll(/(\w+): 1/g)].map(x => x[1]); return _m2fig; };
+  let _m2fig = null; const M2FIG = () => { if (_m2fig) return _m2fig; _m2fig = {}; const blk = (js.match(/const LFIG = \{([\s\S]*?)\n\};/) || [])[1] || ''; const blks = [blk, ...[...js.matchAll(/Object\.assign\(LFIG, \{([\s\S]*?)\n\}\);/g)].map(m => m[1])];   /* ورسوم الوحدات اللاحقة (Object.assign) */
+    for (const b of blks) for (const mm of b.matchAll(/^\s{2}(\w+): \{ p: \{([^}]*)\}/gm)) _m2fig[mm[1]] = [...mm[2].matchAll(/(\w+): 1/g)].map(x => x[1]); return _m2fig; };
   const errors = [], warn = [];
   /* كلمةٌ آخرها «كَ» خارج الصيغتين (4ب7 العامة): في الجمل والتسميات، والكلمة كل ما بين غير الحروف العربية وحركاتها (الفحص المستقل E2: نجت «قَلَمَكَ…» وتسميةٌ «صَدِيقِكَ») */
   /* و«ـكِ» خارج الصيغتين صيغة البنت وحدها، والكاف الأخيرة بلا حركة في كلمة مشكولة لا يُعرف لمن هي (الفحص المستقل E1 (13): نجت «شِبْرِك» و«شِبْرِكِ») */

@@ -10,7 +10,7 @@
 // وفوق ذلك (D240 «لكل مفهوم بند تعرّف وبند إنتاج أو تعليل»): لكل مفهوم يتقنه التطبيق بند إنتاج أو تعليل واحد على الأقل، ولكل مفهوم
 // «تأسيس» في الدرس فحص إتقان (إلا «المدخل»)، ولكل درس اختيار حقيقي للطفل (D239).
 
-const PROD = new Set(['rulerAlign', 'drawLen', 'gridPoint', 'midMark', 'rayDraw',   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
+const PROD = new Set(['rulerAlign', 'drawLen', 'gridPoint', 'midMark', 'rayDraw', 'paraDraw', 'perpTurn',   /* S2-U2: يرسم الموازي ويدير المعامد */   /* S2-U0: يحرّك المسطرة حتى الصفر، ويرسم بطول معلوم */
   'reason', 'connect', 'completeRect', 'vertices', 'count', 'produce', 'fill', 'trace', 'buildTower', 'splitMake', 'buildTo', 'faceTap',
   'split', 'join', 'remove', 'eqPair', 'unknownStart', 'fact', 'story',
   'place', 'lineTap', 'lrTap', 'robot', 'mapPut', 'roadHop',   /* S1-U3: يضع الطفل الشيء، ويلمس العربة، ويلمس اليد، ويبرمج الروبوت، ويضع قطعة الخريطة، ويقفز */
@@ -179,7 +179,18 @@ export const factOf = it => { const t = it.t;
   if (t === 'rayStar') return `star|${it.ang}|${it.flip ? 1 : 0}`;
   if (t === 'geoName') return `gname|${it.kind}|${it.pts}|${it.from}${it.to}`;
   if (t === 'colJudge') return `colj|${it.ang}|${it.off}`;
-  if (t === 'reason' && it.pic) { const P = it.pic;
+  /* S2-U2: المسألة بهيئة رسمها: زاوية الزوج ودورانه، والبُعد واتجاهه وموضعه، والجزيرة بموضعها (الحروف ترتيب لا رسم) */
+  if (t === 'crossPick') return `crsp|${it.ang}|${it.rot || 0}`;
+  if (t === 'meetJudge') return `meet|${it.kind}|${it.rot || 0}|${it.dv || 0}`;
+  if (t === 'paraGap') return `pgap|${it.d}|${it.dir || 'h'}|${it.lo ?? 1}`;
+  if (t === 'paraSeg') return `pseg|${it.d}|${(it.ord || [0, 1, 2]).join('')}`;
+  if (t === 'paraDraw') return `pdraw|${it.d}|${it.dir || 'h'}|${it.lo ?? 1}`;
+  if (t === 'cornerCheck') return `corner|${it.ang ?? 90}|${it.rot || 0}`;
+  if (t === 'perpTurn') return `pturn|${it.rot || 0}|${it.ang0 ?? 45}`;
+  if (t === 'sideRel') return `side|${it.fig}|${it.rel}|${it.ref}`;
+  if (t === 'shortToLine') return `shore|${it.ix || 150}`;
+  if (t === 'pairName') return `pair|${it.kind}|${it.rot || 0}|${it.ang || ''}`;
+  if (t === 'reason' && it.pic) { const P = it.pic; if (P.kind === 'paragrid') return `pgpic|${P.d}`; if (P.kind === 'shore') return `shorepic|${P.ix || 150}`;
     if (P.kind === 'ruler') return `rulpic|${P.a || 0}|${P.b}|${P.brk || 0}`; if (P.kind === 'string') return `strpic|${P.len}|${P.span}`; if (P.kind === 'rulerMm') return `rmmpic|${P.cm}|${P.mm}`;
     if (P.kind === 'roads') return `roadpic|${P.st}|${P.v || 0}`; if (P.kind === 'midj') return `midjpic|${P.l}|${P.r}`; }
   return null; };
@@ -277,6 +288,9 @@ export function d240(lessons, code, MAKERS) {
     recallRay: s => [`gname|${s.kind || 'ray'}|${s.pts || 'up'}|${s.from || 'a'}${s.to || 'b'}`],
     recallCol: s => [`colj|${s.ang || 15}|${s.off || 0}`],
     roadMap: () => ['mid|6', 'half|6', 'rulseg|6'],
+    extendShow: s => [`meet|${s.kind || 'conv'}|${s.rot || 0}|${s.dv || 0}`], distShow: s => [`pgap|${s.d || 3}|h|1`, `pseg|${s.d || 3}|210`], recallParaGrid: s => [`pgap|${s.d || 3}|h|1`, `pgpic|${s.d || 3}`],
+    shoreShow: s => [`shore|${s.ix || 150}`, `shorepic|${s.ix || 150}`], recallShore: s => [`shore|${s.ix || 150}`, `shorepic|${s.ix || 150}`], recallPair: s => [`pair|${s.kind || 'para'}|${s.rot || 0}|${s.ang || ''}`],
+    perpShow: () => ['corner|90|0', 'pair|perp|0|'], sidesShow: () => ['side|rectF|par|ab', 'side|rectF|par|jd', 'side|rectF|perp|ab', 'side|rectF|perp|bj'], streetMap: () => ['pdraw|2|h|1', 'pturn|0|45', 'shore|120'],
     shelvesWalk: s => Array.from({ length: Math.max(0, s.n - 1) }, (_, i) => `part|${s.n}|${s2(i + 1, s.n - i - 1)}`),
     mailExplore: s => (s.boxes || []).map(b => `digitMatch|${b.n}`),
     takeHook: s => [`sub|${s.a}|${s.b}`],
@@ -338,6 +352,7 @@ export function d240(lessons, code, MAKERS) {
     'rugHook', 'rodMaker', 'teenWrite', 'rodFactory', 'chaos31', 'fingersHook', 'frameFriends', 'completeFrame', 'chaosFrame', 'countAllHook', 'makeTenLab', 'tenBus', 'chaosTakeMore', 'unitStrip', 'recallU4',
     'rhythmHook', 'patRead', 'patWorked', 'chaosPattern', 'recallPat', 'chaosGuess', 'patCircle', 'patSoundLab', 'chaosLoops', 'patHunt', 'skipBeads', 'skipWorked', 'chaosPairs', 'recallSkip', 'gridHook', 'gridGuide', 'gridWorked', 'chaosGrid', 'recallGrid', 'handsHook',
     'foldShow', 'foldLab', 'halfScene', 'chaosHalf', 'recallSym', 'foldWays', 'lineWorked', 'chaosFold', 'gridLab', 'doubleShow', 'doubleWorked', 'chaosWing', 'chaosDbl', 'paintFold', 'recallMir',
+    'crossHook', 'sticksLab', 'extendShow', 'distShow', 'cornerFold', 'perpShow', 'shoreShow', 'sidesShow', 'recallPair', 'recallShore', 'recallParaGrid', 'streetMap',   /* S2-U2 */
     'digitPairs', 'spanClash', 'tileRuler', 'mmZoom', 'rulerWorked', 'chaosRuler', 'recallRuler', 'recallTools', 'alignShow', 'mmRead', 'cardSteps', 'drawShow', 'stringShow', 'recallAlign', 'recallMm', 'recallDraw', 'recallString', 'homeMeasure',
     'treasureHook', 'pointShow', 'gridWalk', 'chaosGridPt', 'recallGridPt', 'recallFigs', 'figLab', 'zigHook', 'antEscape', 'chaosFig', 'tautString', 'segNameShow', 'chaosItem', 'recallSeg', 'recallRoads', 'ticksShow', 'foldStrip', 'recallTicks', 'recallMid', 'torchHook', 'rayOrderShow', 'recallRay', 'railHook', 'linesThrough', 'recallCol', 'roadMap', 'homeSeg'];   /* S2-U1: النقاط والخطوط رسوم لا مولّدات */   /* S2-U0: المسطرة وأدوات القياس رسوم لا مولّدات */   /* S1-U6 */   /* S1-U5: عناصر النمط رسومه لا مولّدات */   /* S1-U4: رسوم القياس والعدد لا مولّدات */
   for (const m of code.matchAll(/^SCENES\.(\w+) = /gm)) if (!SCENE_DRAWS[m[1]] && !SCENE_NONE.includes(m[1])) errors.push(`المشهد ${m[1]} غير مسجَّل في SCENE_DRAWS أو SCENE_NONE في build/d240.mjs: هل يرسم شيئاً له مولّد؟ (D253 (1))`);

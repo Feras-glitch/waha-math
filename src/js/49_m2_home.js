@@ -28,7 +28,7 @@ SCENES.homeMeasure = async c => { const unit = c.unit, n = c.n || 3, H = PROG.ho
   await S(again ? 'gen.home.askAgain' : 'gen.home.ask'); const cp = cardPick([{ id: 'gen.home.yes', k: 'yes', ok: true }, { id: 'gen.home.no', k: 'no' }], { keepOrder: true, intro: again ? 'gen.home.askAgain' : 'gen.home.ask' }), pick = await cp.p; cp.done(); cp.box.remove();
   if (pick.k === 'no') { logAttempt({ scene: c.s || 'hook', tag: 'homeLater', ok: true }); await S('gen.home.later'); if (back && !c.quiet) await S(back); return; }
   if (again) { const svg = newStage(230, { oasis: false, ground: 0 }); rulerAt(svg, { x: 30, y: 96, pxcm: 30, from: 0, to: 10, mm: false }); S('gen.home.measQ', { free: true }); const v = await stepperAsk([{ key: 'cm', min: 0, max: 30, val: 10, unit: 'rulCm' }, { key: 'mm', min: 0, max: 9, val: 0, unit: 'rulMm' }]);
-    await sayLen(v.cm, 'cm', { append: false, ...(v.mm ? { noGap: true } : {}) }); if (v.mm) { await S('gen.rul.and', { noGap: true, append: true }); await sayLen(v.mm, 'mm'); }
+    if (v.cm || !v.mm) await sayLen(v.cm, 'cm', { append: false, ...(v.mm ? { noGap: true } : {}) }); if (v.mm) { if (v.cm) await S('gen.rul.and', { noGap: true, append: true }); await sayLen(v.mm, 'mm', v.cm ? {} : { append: false }); }   /* بلا «صفر سنتيمترات» */
     await S('gen.home.zeroQ'); const zp = cardPick([{ id: 'gen.home.zeroA', k: 'start', ok: true }, { id: 'gen.home.zeroB', k: 'edge' }], { intro: 'gen.home.zeroQ' }), z = await zp.p; zp.done(); zp.box.remove();
     rec.again = { cm: v.cm, mm: v.mm, zero: z.k }; saveProg(); logAttempt({ scene: c.s || 'hook', tag: 'homeAgain', ok: z.k === 'start' }); await S('gen.home.zeroSay'); if (back && !c.quiet) await S(back); return; }
   const items = [];

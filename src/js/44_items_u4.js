@@ -40,6 +40,11 @@ function reasonPic(svg, P) { const g = el('g', {}, svg);
   else if (P.kind === 'ruler') rulerReasonPic(g, P);   /* S2-U0 */
   else if (P.kind === 'geoname') ITEM.geoName.draw(ITEM.geoName.make({ kind: P.gk, pts: P.pts, from: P.from, to: P.to }), g);
   else if (P.kind === 'midj') ITEM.midJudge.draw({ l: P.l, r: P.r }, g);
+  else if (P.kind === 'paragrid') paraGridAt(g, P.d, { lo: 1, marks: true });   /* S2-U2 */
+  else if (P.kind === 'corner') { rayFrame(g); paperCornerAt(g, [130, 170], 0, 110); }
+  else if (P.kind === 'shore') { const Gm = shoreAt(g, P.ix || 150); for (const [x, y] of Gm.cands) geoLine(g, Gm.I[0], Gm.I[1] + 15, x, y, { color: GEO.road, w: 2.4, dash: '6 5' }); perpMarkAt(g, Gm.foot, 0, 90, 11); }
+  else if (P.kind === 'pair') { rayFrame(g); linePairAt(g, P.kind2 || 'para', { rot: P.rot || 0, dv: P.dv, short: P.short, marks: P.marks }); }
+  else if (P.kind === 'twopts') { rayFrame(g); const PT = RAYPTS[P.pts]; for (const k of Object.keys(PT)) ptAt(g, PT[k][0], PT[k][1], k, { r: 7, lab: [0, -16] }); }   /* نقطتان بلا خط: السؤال عن المستقيمات المارّة بهما لا يُرى جوابه */
   else if (P.kind === 'segfig') segFigAt(g, P.fig, { ticks: P.ticks });
   else if (P.kind === 'roads') roads3At(g, P.st, P.v || 0);
   else if (P.kind === 'figs') P.pics.forEach((n, i) => { const x = LINE_X3[P.pics.length === 2 ? i * 2 : i]; lfigAt(g, n, x, 100); if (P.pics.length === 2) badge(g, x + 40, 58, i + 1); });   /* S2-U1؛ والصورتان مرقّمتان: «الخط الأول» هو الأيمن */
