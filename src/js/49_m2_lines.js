@@ -408,3 +408,50 @@ SCENES.rayOrderShow = async c => { const svg = newStage(232, { oasis: false, gro
   const r1 = await two('a', 'b', css('--compass'), l1); await S(l2); r1.setAttribute('opacity', .35); await two('b', 'a', css('--chaos'), l3); r1.setAttribute('opacity', 1); logAttempt({ scene: c.s || 'explore', tag: 'rayOrder', ok: true }); await S(l4); };
 SCENES.recallRay = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), it = ITEM.geoName.make({ kind: c.kind || 'ray', pts: c.pts || 'up', from: c.from || 'a', to: c.to || 'b' }); ITEM.geoName.draw(it, svg); await sleep(300); await S(c.lines); };
 WRAP_ART.torchRay = svg => { const g = el('g', {}, svg); el('rect', { x: 60, y: 60, width: 240, height: 130, rx: 14, fill: '#22324a' }, g); rayLineAt(g, [90, 160], [170, 130], '#f6d24a'); el('circle', { cx: 90, cy: 160, r: 9, fill: '#f6d24a', stroke: '#fff', 'stroke-width': 2 }, g); el('path', { d: starPath(250, 96, 10), fill: '#f6d24a' }, g); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
+
+/* =====================================================================
+   الدرس 6: المستقيم (C111)، ومن نقطتين مستقيم واحد (C112)، والنقاط على استقامة واحدة (C113)
+   ===================================================================== */
+/* ثلاث نقاط: الأولى والثالثة على خط اتجاهه ang، والوسطى تبعد عنه off (0 = على استقامة واحدة) */
+function col3Geo(ang, off) { const a = ang * Math.PI / 180, u = [Math.cos(a), -Math.sin(a)], n = [-u[1], u[0]], C = [180, 116]; return [[C[0] - u[0] * 110, C[1] - u[1] * 110], [C[0] + u[0] * 10 + n[0] * off, C[1] + u[1] * 10 + n[1] * off], [C[0] + u[0] * 110, C[1] + u[1] * 110]]; }
+/* ================= ⑭ هل النقاط الثلاث على استقامة واحدة؟ (C113): ang، off. يلمس الطفل النقاط فتوضع حافة المسطرة على الأولى والثالثة، ثم يحكم ================= */
+ITEM.colJudge = {
+  make(spec) { return { ...spec, want: spec.off ? 'no' : 'yes', tag: 'col-judge' }; },
+  async ask(item, mode, tries) { const svg = newStage(232, { oasis: false, ground: 0 }), P = col3Geo(item.ang, item.off); rayFrame(svg); const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg); el('rect', { x: 26, y: 20, width: 308, height: 192, rx: 10, fill: '#fff', opacity: .01 }, g);
+    const edge = () => { const e = el('g', { 'pointer-events': 'none' }, svg), a = Math.atan2(P[2][1] - P[0][1], P[2][0] - P[0][0]) * 180 / Math.PI, r = el('g', { transform: `translate(${P[0][0]} ${P[0][1]}) rotate(${a})` }, e); el('rect', { x: -24, y: 0, width: 268, height: 26, fill: RUL.body, stroke: RUL.edge, 'stroke-width': 1.5, opacity: .85 }, r); for (let i = 0; i <= 12; i++) el('line', { x1: -14 + i * 20, y1: 0, x2: -14 + i * 20, y2: 8, stroke: RUL.ink, 'stroke-width': 1.2 }, r); svg.insertBefore(e, pts); return e; };
+    const pts = el('g', { 'pointer-events': 'none' }, svg); ['a', 'b', 'j'].forEach((k, i) => ptAt(pts, P[i][0], P[i][1], k, { r: 6, lab: [0, -14] }));
+    say(...lineOf(tries >= 3 ? 'gen.geo.together.col' : item.q), { free: true }); await tapOne([{ g, k: 'p', label: labelText('geoLayRuler') }], { ok: 'p', pad: 60 }); hush(); g.remove(); edge(); SFX.tick(); await sleep(tries >= 3 ? 900 : 400);
+    const k = await choosePick([['yes', labelText('yes')], ['no', labelText('no')]], item.want); return { ans: k, ctx: { svg } }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'colWrong' }; },
+  onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2() { await S('gen.geo.hint.col'); }, async together() {},
+  async reveal(item) { await S(item.want === 'yes' ? 'gen.geo.reveal.col' : 'gen.geo.reveal.ncol'); },
+  praise: () => 'praiseThink', twin(item) { return item.twin || null; },
+};
+/* ================= ⑮ جدول المقارنة: هل للرسم بداية (start)؟ نهاية (end)؟ طول يُقاس (len)؟ (C111): fig = seg | ray | line ================= */
+const GEO_PROP = { seg: { start: 1, end: 1, len: 1 }, ray: { start: 1, end: 0, len: 0 }, line: { start: 0, end: 0, len: 0 } };
+ITEM.propAsk = {
+  make(spec) { return { ...spec, want: GEO_PROP[spec.fig][spec.prop] ? 'yes' : 'no', tag: 'prop-' + spec.prop }; },
+  async ask(item, mode, tries) { const svg = newStage(200, { oasis: false, ground: 0 }), g = lfigAt(svg, item.fig + (item.alt ? '2' : ''), 180, 100); g.setAttribute('transform', 'translate(180 100) scale(1.5)');
+    if (tries >= 3) { const t = el('text', { x: 180, y: 192, 'text-anchor': 'middle', 'font-size': 15, fill: css('--think') }, helpG(svg)); t.textContent = labelText(item.fig === 'seg' ? 'geoAidSeg' : item.fig === 'ray' ? 'geoAidRay' : 'geoAidLine'); }
+    await S(tries >= 3 ? 'gen.geo.together.prop' : item.q); const k = await choosePick([['yes', labelText('yes')], ['no', labelText('no')]], item.want); return { ans: k, ctx: { svg } }; },
+  judge(item, k) { return k === item.want ? { ok: true } : { ok: false, err: 'segRayLine' }; },
+  onOk() { SFX.good(); }, onWrong() { SFX.soft(); }, async hint2(item) { await S('gen.geo.hint.name'); }, async together() {},
+  async reveal(item) { await S('gen.geo.reveal.' + item.fig); },
+  praise: () => 'praiseThink', twin(item) { return item.twin || null; },
+};
+/* ---------- مشاهد الدرس 6 ---------- */
+/* سكة الحديد: قطعة من السكة؛ يلمسها الطفل فتمتدّ من الجهتين. lines: [الدعوة، بعد] */
+SCENES.railHook = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), [l1, l2] = c.lines; el('rect', { x: 20, y: 14, width: 320, height: 204, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, svg);
+  const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg), rail = (x1, x2, parent) => { const r = el('g', {}, parent); for (let x = x1; x <= x2; x += 14) el('rect', { x: x - 2.5, y: 100, width: 5, height: 34, fill: '#8a6a4a' }, r); for (const y of [106, 128]) geoLine(r, x1 - 4, y, x2 + 4, y, { color: '#5b6770', w: 4 }); return r; }; rail(138, 222, g);
+  await answerWhile(l1, () => tapOne([{ g, k: 'r', label: labelText('geoRail') }], { ok: 'r', pad: 60, pulse: true })); const ext = el('g', {}, svg); svg.insertBefore(ext, g); const L = rail(40, 124, ext), R = rail(236, 320, ext);
+  await anim(ext, [{ opacity: 0 }, { opacity: 1 }], { duration: 800, fill: 'forwards' }).done.catch(() => {}); geoArrow(svg, 336, 117, 0, GEO.ink, 12); geoArrow(svg, 24, 117, 180, GEO.ink, 12); SFX.good(); logAttempt({ scene: 'hook', tag: 'rail', ok: true }); await S(l2); };
+/* من نقطة واحدة مستقيمات كثيرة، ومن نقطتين مستقيم واحد. lines: [دعوة النقطة الواحدة، بعدها، دعوة النقطتين، بعد الأول، بعد الثاني] */
+SCENES.linesThrough = async c => { const [l1, l2, l3, l4, l5] = c.lines; let svg = newStage(232, { oasis: false, ground: 0 }); rayFrame(svg); const C = [180, 116], hot = () => { const g = el('g', { role: 'button', tabindex: 0, style: 'cursor:pointer' }, svg); el('rect', { x: 26, y: 20, width: 308, height: 192, rx: 10, fill: '#fff', opacity: .01 }, g); return g; };
+  const full = (P, Q, col) => { const g = el('g', { 'pointer-events': 'none' }, svg), E1 = rayEdge(P, Q), E2 = rayEdge(Q, P); geoLine(g, E2[0], E2[1], E1[0], E1[1], { color: col, w: 3.6 }); const a = Math.atan2(Q[1] - P[1], Q[0] - P[0]) * 180 / Math.PI; geoArrow(g, E1[0], E1[1], a, col, 10); geoArrow(g, E2[0], E2[1], a + 180, col, 10); return g; };
+  let h = hot(); const p0 = ptAt(svg, C[0], C[1], 'a', { r: 7, lab: [14, -12] }); p0.setAttribute('pointer-events', 'none'); S(l1, { free: true }); const COL = [css('--compass'), css('--think'), GEO.hl, css('--chaos')];
+  for (let i = 0; i < 4; i++) { await tapOne([{ g: h, k: i, label: labelText('geoAddLine') }], { ok: i, pad: 60 }); if (i === 0) hush(); const a = (20 + i * 42) * Math.PI / 180, ln = full(C, [C[0] + Math.cos(a) * 40, C[1] - Math.sin(a) * 40], COL[i]); svg.insertBefore(ln, p0); SFX.tick(); await sleep(250); } await S(l2);
+  svg = newStage(232, { oasis: false, ground: 0 }); rayFrame(svg); const A = [110, 140], B = [250, 92]; h = hot(); const pa = ptAt(svg, A[0], A[1], 'a', { r: 7, lab: [0, -16] }); pa.setAttribute('pointer-events', 'none'); ptAt(svg, B[0], B[1], 'b', { r: 7, lab: [0, -16] }).setAttribute('pointer-events', 'none'); S(l3, { free: true });
+  await tapOne([{ g: h, k: 0, label: labelText('geoAddLine') }], { ok: 0, pad: 60 }); hush(); let ln = full(A, B, css('--compass')); svg.insertBefore(ln, pa); SFX.tick(); S(l4, { free: true });
+  await tapOne([{ g: h, k: 1, label: labelText('geoAddLine') }], { ok: 1, pad: 60 }); hush(); ln = full(A, B, css('--chaos')); svg.insertBefore(ln, pa); await anim(ln, [{ opacity: 1 }, { opacity: .2 }, { opacity: 1 }], { duration: 900 }).done.catch(() => {}); SFX.good(); logAttempt({ scene: c.s || 'explore', tag: 'linesThrough', ok: true }); await S(l5); };
+SCENES.recallCol = async c => { const svg = newStage(232, { oasis: false, ground: 0 }), P = col3Geo(c.ang || 15, c.off || 0); rayFrame(svg); geoLine(svg, P[0][0], P[0][1], P[2][0], P[2][1], { color: GEO.soft, w: 2, dash: '5 4' }); ['a', 'b', 'j'].forEach((k, i) => ptAt(svg, P[i][0], P[i][1], k, { r: 6, lab: [0, -14] })); await sleep(300); await S(c.lines); };
+WRAP_ART.railLine = svg => { const g = el('g', {}, svg); el('rect', { x: 50, y: 80, width: 260, height: 90, rx: 14, fill: '#eef3e6', stroke: css('--line'), 'stroke-width': 2 }, g); for (let x = 66; x <= 294; x += 14) el('rect', { x: x - 2.5, y: 108, width: 5, height: 34, fill: '#8a6a4a' }, g); for (const y of [114, 136]) geoLine(g, 58, y, 302, y, { color: '#5b6770', w: 4 }); anim(g, [{ opacity: 0 }, { opacity: 1 }], { duration: 500, delay: 200, fill: 'both' }); palmAt(svg, 330, 250, .7); palmAt(svg, 30, 250, .8); };
