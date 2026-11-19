@@ -193,7 +193,7 @@ ITEM.drawLen = {
     let done = false; const askQ = async () => { await S(tries >= 3 ? 'gen.rul.together.draw' : (item.q || 'gen.rul.drawQ'), { noGap: true }); await sayLen(item.cm, 'cm', item.mm ? { noGap: true } : {}); if (item.mm) { await S('gen.rul.and', { noGap: true }); await sayLen(item.mm, 'mm'); } };
     askQ(); REPLAY_HOOK = () => askQ(); REPLAY_HOOK.live = () => !done && svg.isConnected;
     const input = fingerInput(svg, { map: e => { const q = svgPoint(svg, e); return [q.x, q.y]; }, down(q) { if (q[1] < y - 50 || q[1] > y + RUL_H + 6) return false; set((q[0] - R.X(0)) / 3); }, move(q) { set((q[0] - R.X(0)) / 3); }, up() {} });
-    /*T*/window.__drawAt = n => { const m = svg.getScreenCTM(); return { x: m.a * R.X(n / 10) + m.e, y: m.d * (y - 10) + m.f }; };/*/T*/
+    /*T*/window.__drawWant = item.want; window.__drawAt = n => { const m = svg.getScreenCTM(); return { x: m.a * R.X(n / 10) + m.e, y: m.d * (y - 10) + m.f }; };/*/T*/
     const nudge = rulNudges(svg, 262, s => set(v + s), ['rulShorter', 'rulLonger']); AUTO({ kind: 'rulDraw', ok: () => { set(item.want); rulDoneBtn().click(); }, wrong: () => { set(item.mm ? item.cm * 10 : item.want + 10 > 100 ? item.want - 10 : item.want + 10); rulDoneBtn().click(); } });
     await rulDone(() => { done = true; REPLAY_HOOK = null; input.off(); nudge.forEach(b => b.remove()); }); return { ans: v, ctx: { svg, R, set } }; },
   judge(item, v) { return Math.abs(v - item.want) <= 1 ? { ok: true } : { ok: false, err: item.mm && Math.abs(v - item.cm * 10) <= 1 ? 'drawNoMm' : 'drawOff' }; },

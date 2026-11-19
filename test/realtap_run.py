@@ -37,7 +37,8 @@ LESSONS = ['m1.u1.d1', 'm1.u1.d2', 'm1.u1.d3', 'm1.u1.d4', 'm1.u1.d5', 'm1.u1.d6
            'm1.u3.d1', 'm1.u3.d2', 'm1.u3.d3', 'm1.u3.d4', 'm1.u3.d5', 'm1.u3.d6', 'm1.u3.d7',
            'm1.u4.d1', 'm1.u4.d2', 'm1.u4.d3', 'm1.u4.d4', 'm1.u4.d5', 'm1.u4.d6', 'm1.u4.d7', 'm1.u4.d8',
            'm1.u5.d1', 'm1.u5.d2', 'm1.u5.d3', 'm1.u5.d4', 'm1.u5.d5', 'm1.u5.d6',
-           'm1.u6.d1', 'm1.u6.d2', 'm1.u6.d3', 'm1.u6.d4', 'm1.u6.d5']
+           'm1.u6.d1', 'm1.u6.d2', 'm1.u6.d3', 'm1.u6.d4', 'm1.u6.d5',
+           'm2.u0.d1', 'm2.u0.d2', 'm2.u0.d3', 'm2.u0.d4']
 if os.environ.get('ONLY'): LESSONS = [l for l in LESSONS if l in os.environ['ONLY'].split(',')]   # تشغيل جزئي أثناء التطوير
 # ما خرج من نافذة الشريط (القطار، الطريق) مخفيّ لا يُلمس: يُلمس زرّ التحريك نحوه حتى يظهر
 REVEAL = """(sel) => { const g = document.querySelector(sel); if (!g || getComputedStyle(g).visibility !== 'hidden') return null;
@@ -176,6 +177,16 @@ async def run(p, dev):
           else:
             for q in await pg.evaluate('() => window.__blot()'): await tap(q['x'], q['y']); await pg.wait_for_timeout(60)
           xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
+        if k in ('rulAlign', 'rulDraw'):   # S2-U0: سحب حقيقي للمسطرة حتى الصفر، ولمسة حقيقية عند طول الخط المطلوب؛ ثم «تمّ»
+          await pg.wait_for_timeout(150); tried[k] = tried.get(k, 0) + 1; DONE = "() => { const e = document.querySelector('.pick.done'); const r = e.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; }"
+          if k == 'rulAlign':
+            q = await pg.evaluate('() => window.__rulAt()'); off = await pg.evaluate('() => window.__rulOff'); await drag(q['x'], q['y'], q['x'] + off * q['k'], q['y'], 14)
+            off = await pg.evaluate('() => window.__rulOff')
+            if abs(off) > .1: tried['rul-miss'] = tried.get('rul-miss', 0) + 1; print('  ruler align miss: off', off, st['scene'])
+          else:
+            want = await pg.evaluate('() => window.__drawWant'); q = await pg.evaluate('(n) => window.__drawAt(n)', want); await tap(q['x'], q['y']); got = await pg.evaluate('() => window.__drawV')
+            if abs(got - want) > 1: tried['rul-miss'] = tried.get('rul-miss', 0) + 1; print('  draw miss: wanted', want, 'got', got, st['scene'])
+          xy = await pg.evaluate(DONE); await tap(*xy); await pg.wait_for_timeout(60); continue
         if k.startswith('grid'):   # شبكة المئة (D275): لمسة حقيقية في مركز البلاطة الصحيحة، والعدسة تختار برفع الإصبع
           await pg.wait_for_timeout(150); tried['grid'] = tried.get('grid', 0) + 1; xy = await pg.evaluate('() => window.__grid && window.__grid()')
           if xy:
@@ -262,7 +273,7 @@ async def main():
       bad, tried, errs = await run(p, dev); allbad += bad
       print(dev, ('mouse' if MOUSE else 'touch'), 'waits tried:', tried, '| incomplete:', bad, '| errors:', errs[:3])
       allbad += [('errors', dev)] if errs else []
-      allbad += [('grid-miss', dev)] if tried.get('grid-miss') or tried.get('mir-miss') else []   # شبكة المئة: اللمسة الحقيقية في مركز البلاطة تختارها هي (D275)
+      allbad += [('grid-miss', dev)] if tried.get('grid-miss') or tried.get('mir-miss') or tried.get('rul-miss') else []   # شبكة المئة: اللمسة الحقيقية في مركز البلاطة تختارها هي (D275)
   print('FAILS:', len(allbad))
   sys.exit(1 if allbad else 0)
 asyncio.run(main())
